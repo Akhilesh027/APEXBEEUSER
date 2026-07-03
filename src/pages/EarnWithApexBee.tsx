@@ -535,7 +535,7 @@ const EarnWithApexBee = () => {
   const [selectedState, setSelectedState] = useState("Telangana");
   const [selectedDistrict, setSelectedDistrict] = useState("Hyderabad");
   const [selectedMandal, setSelectedMandal] = useState("Ameerpet");
-  const [locationData, setLocationData] = useState<Record<string, Record<string, string[]>>>();
+  const [locationData, setLocationData] = useState<Record<string, Record<string, string[]>>>({});
   // Form state
   const [formName, setFormName] = useState("");
   const [formMobile, setFormMobile] = useState("");
@@ -608,6 +608,7 @@ const EarnWithApexBee = () => {
   }, []);
 
   useEffect(() => {
+    if (!locationData) return;
     const states = Object.keys(locationData);
     if (states.length > 0) {
       if (!states.includes(selectedState)) {
@@ -625,6 +626,7 @@ const EarnWithApexBee = () => {
   }, [locationData]);
 
   useEffect(() => {
+    if (!locationData || !selectedState) return;
     const districts = Object.keys(locationData[selectedState] || {});
     const firstDistrict = districts[0] || "";
     const firstMandal = locationData[selectedState]?.[firstDistrict]?.[0] || "";
@@ -636,6 +638,7 @@ const EarnWithApexBee = () => {
   }, [selectedState, locationData]);
 
   useEffect(() => {
+    if (!locationData || !selectedState || !selectedDistrict) return;
     const mandals = locationData[selectedState]?.[selectedDistrict] || [];
 
     if (!mandals.includes(selectedMandal)) {
