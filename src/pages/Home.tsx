@@ -25,6 +25,8 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LocationModal from "@/components/LocationModal";
+import { ApexBeeWelcomeIntro } from "../components/welcome-intro/ApexBeeWelcomeIntro";
+import logo from "../Web images/Web images/logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -198,8 +200,24 @@ const getProductCategoryLabel = (p: Product) =>
     .filter(Boolean)
     .join(" / ");
 
+const INTRO_STORAGE_KEY = "apexbee-welcome-intro-viewed-v1";
+
 const Home = () => {
   const navigate = useNavigate();
+
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("showIntro") === "true") {
+      return true;
+    }
+    return localStorage.getItem(INTRO_STORAGE_KEY) !== "true";
+  });
+
+  const handleIntroComplete = () => {
+    localStorage.setItem(INTRO_STORAGE_KEY, "true");
+    setShowIntro(false);
+  };
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -571,8 +589,16 @@ const renderProductCard = (p: Product) => {
 };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <>
+      {showIntro && (
+        <ApexBeeWelcomeIntro
+          logoSrc={logo}
+          onComplete={handleIntroComplete}
+        />
+      )}
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        <div className="min-h-screen bg-background">
+          <Navbar />
 
       {!loggedInUser && (
         <div className="bg-blue-light border-b text-center py-2 text-sm">
@@ -1195,6 +1221,8 @@ const renderProductCard = (p: Product) => {
 
       <Footer />
     </div>
+  </main>
+  </>
   );
 };
 
