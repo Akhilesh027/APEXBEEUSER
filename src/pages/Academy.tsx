@@ -65,9 +65,9 @@ type EnrolledCourse = {
 };
 
 // ─────────────────────────────────────────────
-// Mock Data (will be fetched via API later, seeded here for UI)
+// Seed courses shown as fallback when API has no data yet
 // ─────────────────────────────────────────────
-const MOCK_COURSES: Course[] = [
+const SEED_COURSES: Course[] = [
   {
     id: "c1", title: "Vendor Success Mastery 2024", instructor: "Amit Desai", category: "Vendor Training", duration: "4h 30m", level: "Beginner", price: 0, rating: 4.8, students: 12500, image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=800", tags: ["Sales", "Inventory"], description: "Learn how to list products, manage orders, and grow your sales on ApexBee.", skills: ["Product Listing", "Order Fulfillment", "Customer Support"], curriculum: [{ module: "Platform Basics", duration: "45m" }, { module: "Inventory Management", duration: "1h 15m" }, { module: "Marketing Strategies", duration: "2h 30m" }], isPremium: false
   },
@@ -84,6 +84,8 @@ const MOCK_COURSES: Course[] = [
     id: "c5", title: "Basics of Stock Market Trading", instructor: "Vikram Finance", category: "Business", duration: "5h 20m", level: "Beginner", price: 999, rating: 4.6, students: 18000, image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800", tags: ["Finance", "Trading"], description: "Understand the stock market, NIFTY, Sensex, and how to start investing safely.", skills: ["Chart Reading", "Risk Management", "Portfolio Building"], curriculum: [{ module: "Market Basics", duration: "1h 30m" }, { module: "Technical Analysis", duration: "2h" }, { module: "Trading Psychology", duration: "1h 50m" }], isPremium: true
   },
 ];
+
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const CATEGORIES = [
   { name: "Business", icon: <Briefcase className="w-5 h-5" />, color: "bg-blue-100 text-blue-700" },
@@ -114,11 +116,80 @@ const formatCurrency = (v: number) => new Intl.NumberFormat("en-IN", { style: "c
 const Academy = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
-  const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
-  const [enrolled, setEnrolled] = useState<EnrolledCourse[]>([
-    { courseId: "c1", title: "Vendor Success Mastery 2024", progress: 65, lastAccessed: "2 days ago", completed: false, image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=800" },
-    { courseId: "c4", title: "Franchise Leadership Program", progress: 100, lastAccessed: "1 week ago", completed: true, certificateUrl: "#", image: "https://images.unsplash.com/photo-1515169067868-5387ec356754?q=80&w=800" },
-  ]);
+  const [courses, setCourses] = useState<Course[]>(SEED_COURSES);
+  const [enrolled, setEnrolled] = useState<EnrolledCourse[]>([]);
+
+  // Fetch courses from API; fall back to seed data if API returns empty
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/courses`);
+        if (res.ok) {
+          const data = await res.json();
+          const list: any[] = Array.isArray(data?.courses) ? data.courses
+            : Array.isArray(data) ? data : [];
+          if (list.length > 0) {
+            setCourses(list.map((c: any) => ({
+              id: c._id || c.id,
+              title: c.title || c.name || 'Untitled Course',
+              instructor: c.instructor || c.createdBy?.name || 'ApexBee',
+              category: c.category || 'General',
+              duration: c.duration || '—',
+              level: c.level || 'Beginner',
+              price: c.price ?? 0,
+              rating: c.rating ?? 0,
+              students: c.students ?? c.enrolledCount ?? 0,
+              image: c.thumbnail || c.image || SEED_COURSES[0].image,
+              tags: c.tags || [],
+              description: c.description || '',
+              skills: c.skills || [],
+              curriculum: c.curriculum || [],
+              isPremium: c.isPremium ?? (c.price > 0),
+            })));
+          }
+          // else: keep SEED_COURSES
+        }
+      } catch {
+        // Network error — keep seed data
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Fetch enrolled courses for logged-in user
+  useEffect(() => {
+    const fetchEnrolled = async () => {
+      const rawUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!rawUser || !token) return;
+      try {
+        const user = JSON.parse(rawUser);
+        const userId = user?._id || user?.id;
+        if (!userId) return;
+        const res = await fetch(`${API_BASE}/courses/enrolled/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const list: any[] = Array.isArray(data?.enrolled) ? data.enrolled : [];
+          if (list.length > 0) {
+            setEnrolled(list.map((e: any) => ({
+              courseId: e.courseId || e._id,
+              title: e.title || e.course?.title || '',
+              progress: e.progress ?? 0,
+              lastAccessed: e.lastAccessed || 'Recently',
+              completed: e.completed ?? false,
+              certificateUrl: e.certificateUrl,
+              image: e.image || e.course?.thumbnail || SEED_COURSES[0].image,
+            })));
+          }
+        }
+      } catch {
+        // keep empty enrolled
+      }
+    };
+    fetchEnrolled();
+  }, []);
 
   // Modals
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
