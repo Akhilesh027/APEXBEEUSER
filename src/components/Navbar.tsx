@@ -331,17 +331,26 @@ const Navbar = () => {
       }
     }
 
-    // Load initial wishlist count
-    const fetchWishlistCount = () => {
+    // Load wishlist count from real API
+    const fetchWishlistCount = async () => {
+      const { user, token } = getUserData();
+      if (!user || !token) {
+        setWishlistCount(0);
+        return;
+      }
       try {
-        const stored = localStorage.getItem("mock_wishlist");
-        if (stored) {
-          setWishlistCount(JSON.parse(stored).length);
+        const res = await fetch(`${API_BASE}/wishlist/${user._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data?.wishlist) ? data.wishlist : [];
+          setWishlistCount(items.length);
         } else {
-          setWishlistCount(2); // seed default count of 2
+          setWishlistCount(0);
         }
       } catch {
-        setWishlistCount(2);
+        setWishlistCount(0);
       }
     };
     fetchWishlistCount();
@@ -352,7 +361,7 @@ const Navbar = () => {
         const nextLoc = localStorage.getItem("user_location");
         setUserLocation(nextLoc ? JSON.parse(nextLoc) : null);
       }
-      if (e.key === "mock_wishlist") {
+      if (e.key === "wishlist_updated") {
         fetchWishlistCount();
       }
     };

@@ -85,8 +85,6 @@ const SEED_COURSES: Course[] = [
   },
 ];
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
-
 const CATEGORIES = [
   { name: "Business", icon: <Briefcase className="w-5 h-5" />, color: "bg-blue-100 text-blue-700" },
   { name: "Digital", icon: <Laptop className="w-5 h-5" />, color: "bg-purple-100 text-purple-700" },

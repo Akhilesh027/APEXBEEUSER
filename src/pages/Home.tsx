@@ -202,6 +202,21 @@ const getProductCategoryLabel = (p: Product) =>
 
 const INTRO_STORAGE_KEY = "apexbee-welcome-intro-viewed-v1";
 
+// Helper to detect if the page was reloaded/refreshed
+const isPageRefresh = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    const navEntries = window.performance?.getEntriesByType?.("navigation");
+    if (navEntries && navEntries.length > 0) {
+      return (navEntries[0] as PerformanceNavigationTiming).type === "reload";
+    }
+    // Fallback for older browsers
+    return window.performance?.navigation?.type === 1;
+  } catch (e) {
+    return false;
+  }
+};
+
 const Home = () => {
   const navigate = useNavigate();
 
@@ -211,11 +226,16 @@ const Home = () => {
     if (params.get("showIntro") === "true") {
       return true;
     }
-    return localStorage.getItem(INTRO_STORAGE_KEY) !== "true";
+    // If it's a page refresh, do not show the welcome animation
+    if (isPageRefresh()) {
+      sessionStorage.setItem(INTRO_STORAGE_KEY, "true");
+      return false;
+    }
+    return sessionStorage.getItem(INTRO_STORAGE_KEY) !== "true";
   });
 
   const handleIntroComplete = () => {
-    localStorage.setItem(INTRO_STORAGE_KEY, "true");
+    sessionStorage.setItem(INTRO_STORAGE_KEY, "true");
     setShowIntro(false);
   };
 

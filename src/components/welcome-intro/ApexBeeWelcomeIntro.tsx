@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 import { useIntroController, IntroStage } from "./useIntroController";
 import { HoneycombBackground } from "./HoneycombBackground";
+import { FloatingPollen } from "./FloatingPollen";
 import { AnimatedBee } from "./AnimatedBee";
 import { IntroText } from "./IntroText";
 import { SkipIntroButton } from "./SkipIntroButton";
@@ -140,6 +141,9 @@ export const ApexBeeWelcomeIntro: React.FC<ApexBeeWelcomeIntroProps> = ({
       >
         {/* Repeating glowing honeycomb grid */}
         <HoneycombBackground stage={stage} />
+
+        {/* Ambient glowing pollen particles */}
+        <FloatingPollen stage={stage} />
 
         {/* Skip button overlay */}
         <SkipIntroButton onSkip={completeImmediately} />

@@ -174,12 +174,12 @@ export const AnimatedBee: React.FC<AnimatedBeeProps> = ({ stage, logoSrc }) => {
 
       {/* Main Bee */}
       <motion.div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center"
+        className="fixed top-1/2 left-1/2 z-20"
         variants={flightVariants}
         initial="opening"
         animate={stage}
       >
-        <div className="relative w-40 h-40 flex items-center justify-center">
+        <div className="absolute w-40 h-40 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
           {/* Wings */}
           {stage !== "homepage-transition" && stage !== "completed" && (
             <BeeWings stage={stage} />
@@ -222,7 +222,7 @@ export const AnimatedBee: React.FC<AnimatedBeeProps> = ({ stage, logoSrc }) => {
 
             {/* Core ApexBee Logo inside the bee shell */}
             <motion.div 
-              className="absolute w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-navy-dark border-2 border-yellow-500 z-30 shadow-[0_0_12px_rgba(245,184,46,0.6)]"
+              className="relative w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-navy-dark border-2 border-yellow-500 z-30 shadow-[0_0_12px_rgba(245,184,46,0.6)]"
               animate={{ 
                 scale: isWelcomeReveal ? 1.4 : 1.0,
                 borderRadius: isWelcomeReveal ? "12px" : "9999px",
