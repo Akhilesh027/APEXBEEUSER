@@ -33,7 +33,17 @@ import Services from "./pages/Services";
 import Travel from "./pages/Travel";
 import Community from "./pages/Community";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000, // 30 seconds
+      gcTime: 300000,    // 5 minutes
+      cacheTime: 300000, // fallback
+      refetchOnWindowFocus: false, // do not re-request when user returns to window/tab
+      retry: 1,
+    },
+  },
+});
 
 /**
  * Auth guard — checks localStorage for token + user.

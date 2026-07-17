@@ -284,6 +284,16 @@ const Checkout = () => {
   const [isFirstOrder, setIsFirstOrder] = useState<boolean>(false);
   const [checkingFirstOrder, setCheckingFirstOrder] = useState<boolean>(true);
 
+  // Idempotency Key
+  const [checkoutIdempotencyKey, setCheckoutIdempotencyKey] = useState("");
+  const itemsSerialization = useMemo(() => {
+    return (orderDetails.items || []).map((it: any) => `${it.productId || it._id || it.id}-${it.quantity}`).join(',');
+  }, [orderDetails.items]);
+
+  useEffect(() => {
+    setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  }, [itemsSerialization, appliedCoupon, fulfillmentType, paymentMethod]);
+
   // Coupon
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponRule | null>(null);
@@ -1164,6 +1174,7 @@ const Checkout = () => {
       };
 
       let response: Response;
+      let hasServerResponded = false;
 
       if (finalPaymentMethod === "upi" && paymentProof) {
         const formData = new FormData();
@@ -1173,18 +1184,24 @@ const Checkout = () => {
 
         response = await fetch(`${API_BASE}/orders/with-proof`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "idempotency-key": checkoutIdempotencyKey
+          },
           body: formData,
         });
+        hasServerResponded = true;
       } else {
         response = await fetch(`${API_BASE}/orders`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            "idempotency-key": checkoutIdempotencyKey
           },
           body: JSON.stringify(orderData),
         });
+        hasServerResponded = true;
       }
 
       const result = await response.json();
@@ -1233,6 +1250,13 @@ const Checkout = () => {
       });
     } catch (err: any) {
       console.error("Order error:", err);
+      // Regenerate key to allow manual fixes and retries ONLY if the server responded.
+      // If it was a network error or timeout, retain the same key to prevent duplicate orders.
+      if (hasServerResponded) {
+        setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+      } else {
+        console.warn("[Checkout] Network error or timeout. Retaining same idempotency key:", checkoutIdempotencyKey);
+      }
       toast({
         title: "Order Failed",
         description: err?.message || "Failed",

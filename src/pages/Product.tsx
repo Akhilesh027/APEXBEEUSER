@@ -236,6 +236,12 @@ const ProductsPage = () => {
   const [hasDiscount, setHasDiscount] = useState(searchParams.get("offers") === "1");
   const [sort, setSort] = useState(searchParams.get("sort") || "popularity");
 
+  // Client-side pagination
+  const [visibleCount, setVisibleCount] = useState(24);
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [q, selectedCats, selectedBrands, minPrice, maxPrice, minRating, inStockOnly, hasDiscount, sort]);
+
   // Wishlist
   const [wishlistSet, setWishlistSet] = useState<Set<string>>(new Set());
 
@@ -413,6 +419,10 @@ const ProductsPage = () => {
 
     return list;
   }, [products, q, selectedCats, selectedBrands, minPrice, maxPrice, minRating, inStockOnly, hasDiscount, sort, categoryIdByName]);
+
+  const visibleProducts = useMemo(() => {
+    return filtered.slice(0, visibleCount);
+  }, [filtered, visibleCount]);
 
   // ─── Actions ───
   const toggleCat = (id: string) =>
@@ -782,16 +792,25 @@ const ProductsPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-                {filtered.map((p) => (
-                  <ProductCard
-                    key={p._id}
-                    product={p}
-                    wishlistSet={wishlistSet}
-                    onToggleWishlist={toggleWishlist}
-                    onAddToCart={addToCart}
-                  />
-                ))}
+              <div>
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {visibleProducts.map((p) => (
+                    <ProductCard
+                      key={p._id}
+                      product={p}
+                      wishlistSet={wishlistSet}
+                      onToggleWishlist={toggleWishlist}
+                      onAddToCart={addToCart}
+                    />
+                  ))}
+                </div>
+                {visibleCount < filtered.length && (
+                  <div className="mt-8 flex justify-center">
+                    <Button onClick={() => setVisibleCount((prev) => prev + 24)} className="px-8 rounded-xl font-bold">
+                      Load More Products
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </main>
