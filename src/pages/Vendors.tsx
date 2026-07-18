@@ -101,7 +101,91 @@ const StorePage = () => {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<'products' | 'about' | 'gallery' | 'policies' | 'hours'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'about' | 'gallery' | 'policies' | 'hours' | 'reviews'>('products');
+
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Admin moderation states
+  const [editingReview, setEditingReview] = useState<any>(null);
+  const [editRating, setEditRating] = useState<number>(5);
+  const [editComment, setEditComment] = useState<string>("");
+
+  useEffect(() => {
+    if (!store?.vendorId) return;
+
+    const fetchVendorReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        const res = await fetch(`${API_BASE}/reviews/vendor/${store.vendorId}`);
+        const data = await res.json();
+        if (res.ok && data?.reviews) {
+          setReviews(data.reviews);
+        }
+      } catch (err) {
+        console.error("Error loading vendor reviews:", err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    fetchVendorReviews();
+  }, [store?.vendorId]);
+
+  const handleAdminDelete = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete review");
+      alert("Review deleted successfully!");
+      setReviews((prev) => prev.filter((r) => r._id !== reviewId));
+    } catch (e: any) {
+      alert(e.message || "Delete failed");
+    }
+  };
+
+  const handleAdminEdit = (review: any) => {
+    setEditingReview(review);
+    setEditRating(review.rating || 5);
+    setEditComment(review.comment || "");
+  };
+
+  const handleSaveAdminEdit = async () => {
+    if (!editingReview) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/reviews/${editingReview._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rating: editRating,
+          comment: editComment
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update review");
+      alert("Review updated successfully!");
+      setReviews((prev) =>
+        prev.map((r) =>
+          r._id === editingReview._id
+            ? { ...r, rating: editRating, comment: editComment }
+            : r
+        )
+      );
+      setEditingReview(null);
+    } catch (e: any) {
+      alert(e.message || "Update failed");
+    }
+  };
 
   // Cart / Subscriptions modal states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -577,6 +661,7 @@ const StorePage = () => {
           <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1 scrollbar-none">
             {[
               { key: 'products', label: 'Products Catalog', icon: '🛍️' },
+              { key: 'reviews', label: `Reviews (${reviews.length})`, icon: '⭐' },
               { key: 'about', label: 'About Store', icon: 'ℹ️' },
               { key: 'gallery', label: 'Store Gallery', icon: '🖼️' },
               { key: 'policies', label: 'Return Policies', icon: '🛡️' },
@@ -936,7 +1021,152 @@ const StorePage = () => {
             </div>
           </section>
         )}
+
+        {activeTab === 'reviews' && (
+          <section className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="bg-white border border-gray-150 rounded-3xl p-6 sm:p-8 text-left shadow-sm">
+              <h3 className="font-bold text-navy flex items-center gap-1.5 border-b pb-3 mb-6">
+                <Star className="h-4.5 w-4.5 text-accent" />
+                Customer Reviews
+              </h3>
+
+              {reviewsLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border bg-white p-5 animate-pulse">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-28 bg-slate-100 rounded" />
+                        <div className="h-4 w-40 bg-slate-100 rounded" />
+                      </div>
+                      <div className="mt-3 h-4 w-2/3 bg-slate-100 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground text-xs select-none">
+                  <Star className="h-10 w-10 text-muted-foreground/45 mx-auto mb-2" />
+                  <p className="font-semibold text-navy">No reviews yet</p>
+                  <p>Be the first customer to purchase and write a review!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((r) => (
+                    <div key={r._id} className="rounded-2xl border bg-slate-50/50 p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex text-amber-400">
+                            {Array.from({ length: r.rating || 5 }).map((_, i) => (
+                              <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                            ))}
+                          </div>
+                          <span className="text-sm font-semibold text-[#0A1128]">
+                            {r.userId?.name || r.userId?.email || "Customer"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">
+                            {r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                          </span>
+                          {user?.role === "admin" && (
+                            <div className="flex items-center gap-2 border-l pl-3 border-gray-200">
+                              <button
+                                onClick={() => handleAdminEdit(r)}
+                                className="text-xs text-blue-600 hover:underline font-bold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleAdminDelete(r._id)}
+                                className="text-xs text-red-600 hover:underline font-bold"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {r.productId && (
+                        <div className="mt-3 flex items-center gap-2 bg-white rounded-xl p-2 border border-slate-100 max-w-sm">
+                          {r.productId.thumbnail && (
+                            <img
+                              src={r.productId.thumbnail}
+                              alt={r.productId.name}
+                              className="w-8 h-8 object-cover rounded-lg border"
+                            />
+                          )}
+                          <span className="text-xs font-bold text-navy truncate">
+                            Reviewed: {r.productId.name}
+                          </span>
+                        </div>
+                      )}
+
+                      {r.title && <h4 className="mt-3 font-bold text-navy text-sm">{r.title}</h4>}
+                      {r.comment && <p className="mt-2 text-xs sm:text-sm text-gray-500 leading-relaxed">{r.comment}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
+
+      {editingReview && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl text-left border border-gray-150">
+            <h3 className="text-lg font-black text-navy mb-4">Edit Customer Review</h3>
+            
+            <div className="space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setEditRating(num)}
+                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${
+                        editRating === num
+                          ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
+                          : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {num}★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Review Comment</label>
+                <textarea
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-navy focus:outline-none bg-slate-50 text-navy font-medium"
+                  placeholder="Write review details..."
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setEditingReview(null)}
+                className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAdminEdit}
+                className="px-4 py-2 text-xs font-bold bg-[#0A1128] text-white hover:bg-navy rounded-xl transition"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
 

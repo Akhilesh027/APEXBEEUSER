@@ -290,16 +290,16 @@ const Checkout = () => {
     return (orderDetails.items || []).map((it: any) => `${it.productId || it._id || it.id}-${it.quantity}`).join(',');
   }, [orderDetails.items]);
 
-  useEffect(() => {
-    setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-  }, [itemsSerialization, appliedCoupon, fulfillmentType, paymentMethod]);
-
   // Coupon
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponRule | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [availableCoupons, setAvailableCoupons] = useState<CouponRule[]>([]);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  useEffect(() => {
+    setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  }, [itemsSerialization, appliedCoupon, fulfillmentType, selectedPayment]);
 
   const upiConfig = useMemo(
     () => ({

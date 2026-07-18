@@ -341,7 +341,7 @@ const Academy = () => {
             <h3 className="text-2xl font-bold mb-2 flex items-center gap-2"><Award className="w-6 h-6" /> Earn While You Learn</h3>
             <p className="opacity-90 max-w-xl">Complete courses, pass quizzes, and earn Reward Points that can be redeemed in your ApexBee Wallet!</p>
           </div>
-          <Button className="bg-white text-orange-600 hover:bg-orange-50 whitespace-nowrap" onClick={() => navigate("/wallet")}>View Rewards</Button>
+          <Button className="bg-white text-orange-600 hover:bg-orange-50 whitespace-nowrap" onClick={() => navigate("/referrals")}>View Rewards</Button>
         </div>
       </div>
     );

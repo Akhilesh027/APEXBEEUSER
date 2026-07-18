@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { ShoppingCart } from "lucide-react";
 
 const API_BASE = "https://server.apexbee.in/api";
 
@@ -24,13 +25,26 @@ interface Product {
   [key: string]: any;
 }
 
-interface Subcategory { _id: string; name: string; }
+interface Subcategory {
+  _id: string;
+  name: string;
+  slug?: string;
+  image?: string;
+  level?: number;
+  parentId?: string | null;
+  isActive?: boolean;
+}
 
 interface CategoryType {
   _id: string;
   name: string;
+  slug?: string;
   image?: string;
-  subcategories?: Subcategory[];
+  level?: number;
+  parentId?: string | null;
+  isActive?: boolean;
+  children?: CategoryType[];
+  productCount?: number;
 }
 
 interface CategoryGroupItem {
@@ -321,20 +335,57 @@ const VirtualCategoryPage = ({ name }: { name: string }) => {
 // ═══════════════════════════════════════════════════════
 // Main Category Component
 // ═══════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
+// Skeleton card
+// ─────────────────────────────────────────────────────────────
+const SkeletonCard = () => (
+  <div className="rounded-2xl overflow-hidden border bg-white animate-pulse">
+    <div className="h-44 bg-gray-200" />
+    <div className="p-4 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gray-100 rounded w-1/2" />
+    </div>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// Inline subcategory row
+// ─────────────────────────────────────────────────────────────
+const SubRow = ({ subs, parentName }: { subs: CategoryType[]; parentName: string }) => {
+  if (!subs.length) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Subcategories</p>
+      <div className="flex flex-wrap gap-2">
+        {subs.map((s) => (
+          <Link
+            key={s._id}
+            to={`/category/${encodeURIComponent(s.name)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full border px-3 py-1 bg-gray-50 text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200"
+          >
+            <span>{getSubIcon(s.name)}</span>
+            <span>{s.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// Main Category Component
+// ─────────────────────────────────────────────────────────────
 const Category = () => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
 
   // ── Discovery state ──
-  const [groups, setGroups] = useState<CategoryGroup[]>([]);
-  const [trending, setTrending] = useState<TrendingCategory[]>([]);
-  const [featuredVendors, setFeaturedVendors] = useState<FeaturedVendor[]>([]);
-  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [allCats, setAllCats] = useState<CategoryType[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<{ id: string; name: string; icon: string }[]>([]);
-  const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // ── Detail state ──
   const [category, setCategory] = useState<CategoryType | null>(null);
@@ -346,27 +397,37 @@ const Category = () => {
   // ── If this is a virtual/service category → show service page ──
   const virtualType = categoryName ? detectVirtualCategory(categoryName) : null;
 
-  // ─────────────── Fetch discovery data ───────────────
+  // ─────────────── Fetch ALL categories for discovery ───────────────
   useEffect(() => {
     if (categoryName) return;
     setRecentlyViewed(getRecentlyViewed());
     const go = async () => {
       setDiscoveryLoading(true);
       try {
-        const [gr, tr, vd, sp, cr] = await Promise.all([
-          axios.get(`${API_BASE}/discovery/groups`),
-          axios.get(`${API_BASE}/discovery/trending`),
-          axios.get(`${API_BASE}/discovery/featured-vendors`),
-          axios.get(`${API_BASE}/discovery/service-providers`),
-          axios.get(`${API_BASE}/discovery/courses`),
-        ]);
-        setGroups(gr.data?.groups || []);
-        setTrending(tr.data?.trending || []);
-        setFeaturedVendors(vd.data?.vendors || []);
-        setServiceProviders(sp.data?.providers || []);
-        setCourses(cr.data?.courses || []);
-      } catch (e) { console.error(e); }
-      finally { setDiscoveryLoading(false); }
+        const res = await axios.get(`${API_BASE}/categories`);
+        const flat: CategoryType[] = (res.data?.categories || []).filter((c: CategoryType) => c.isActive !== false);
+        // Build parent → children tree
+        const parentMap = new Map<string, CategoryType>();
+        const parents: CategoryType[] = [];
+        flat.forEach((c) => {
+          if (!c.parentId) {
+            c.children = [];
+            parentMap.set(c._id, c);
+            parents.push(c);
+          }
+        });
+        flat.forEach((c) => {
+          if (c.parentId) {
+            const p = parentMap.get(String(c.parentId));
+            if (p) p.children = [...(p.children || []), c];
+          }
+        });
+        setAllCats(parents);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setDiscoveryLoading(false);
+      }
     };
     go();
   }, [categoryName]);
@@ -374,7 +435,6 @@ const Category = () => {
   // ─────────────── Fetch category detail ───────────────
   useEffect(() => {
     if (!categoryName) return;
-    // Virtual categories don't need API fetch
     if (detectVirtualCategory(categoryName)) {
       setLoading(false);
       return;
@@ -383,19 +443,21 @@ const Category = () => {
       setLoading(true);
       try {
         const catRes = await axios.get(`${API_BASE}/categories`);
-        const cats: CategoryType[] = catRes?.data?.categories || [];
-        const found = cats.find((c) => c.name.trim().toLowerCase() === categoryName.trim().toLowerCase());
+        const flat: CategoryType[] = catRes?.data?.categories || [];
+        const found = flat.find(
+          (c) => c.name.trim().toLowerCase() === categoryName.trim().toLowerCase()
+        );
         if (!found) {
-          // Not a known product category — show virtual/service page anyway
           setCategory(null);
           setLoading(false);
           return;
         }
         addRecentlyViewed({ id: found._id, name: found.name, icon: getSubIcon(found.name) });
         setCategory(found);
-        setSubcategories(found.subcategories || []);
+        // get children as subcategories
+        const subs = flat.filter((c) => c.parentId && String(c.parentId) === found._id);
+        setSubcategories(subs.map((s) => ({ _id: s._id, name: s.name, image: s.image })));
         setSelectedSubcategoryId(null);
-
         const prodRes = await axios.get(`${API_BASE}/products?category=${encodeURIComponent(categoryName)}`);
         setAllProducts(prodRes?.data?.products || []);
       } catch (err) {
@@ -411,7 +473,9 @@ const Category = () => {
   // ─────────────── Derived ───────────────
   const filteredProducts = useMemo(() => {
     if (!selectedSubcategoryId) return allProducts;
-    return allProducts.filter((p) => p.subcategory === selectedSubcategoryId);
+    return allProducts.filter(
+      (p) => p.subCategoryId === selectedSubcategoryId || p.subcategory === selectedSubcategoryId
+    );
   }, [allProducts, selectedSubcategoryId]);
 
   const selectedSubName = useMemo(
@@ -419,28 +483,29 @@ const Category = () => {
     [selectedSubcategoryId, subcategories]
   );
 
-  const filteredGroups = useMemo(() => {
-    return groups
-      .map((group) => {
-        const matchFilter = activeFilter === "all" || group.id === `grp_${activeFilter}`;
-        if (!matchFilter) return null;
-        const q = searchQuery.toLowerCase();
-        if (!q) return group;
-        const items = group.items.filter((i) => i.name.toLowerCase().includes(q));
-        if (!items.length && !group.title.toLowerCase().includes(q)) return null;
-        return { ...group, items: items.length ? items : group.items };
-      })
-      .filter(Boolean) as CategoryGroup[];
-  }, [groups, activeFilter, searchQuery]);
+  // Filter discovery parents by search
+  const filteredParents = useMemo(() => {
+    if (!searchQuery.trim()) return allCats;
+    const q = searchQuery.toLowerCase();
+    return allCats.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.children || []).some((s) => s.name.toLowerCase().includes(q))
+    );
+  }, [allCats, searchQuery]);
 
-  const filterTabs = [
-    { id: "all", label: "All", icon: "🌐" },
-    { id: "shopping", label: "Shopping", icon: "🛍️" },
-    { id: "services", label: "Services", icon: "🔧" },
-    { id: "learning", label: "Learning", icon: "🎓" },
-    { id: "travel", label: "Travel", icon: "✈️" },
-    { id: "finance", label: "Finance", icon: "💰" },
-    { id: "earn", label: "Earn", icon: "🐝" },
+  // Accent colours cycling
+  const GRADIENTS = [
+    "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    "linear-gradient(135deg,#0ea5e9,#06b6d4)",
+    "linear-gradient(135deg,#f59e0b,#f97316)",
+    "linear-gradient(135deg,#10b981,#059669)",
+    "linear-gradient(135deg,#ec4899,#f43f5e)",
+    "linear-gradient(135deg,#8b5cf6,#6d28d9)",
+    "linear-gradient(135deg,#14b8a6,#0d9488)",
+    "linear-gradient(135deg,#f97316,#b45309)",
+    "linear-gradient(135deg,#64748b,#475569)",
+    "linear-gradient(135deg,#22c55e,#16a34a)",
   ];
 
   // ═══════════════════════════════════════════════════════
@@ -584,21 +649,21 @@ const Category = () => {
                 const dp = discountPct(product);
 
                 return (
-                  <Link
+                  <div
                     key={product._id}
-                    to={`/product/${product._id}`}
-                    className="group block rounded-2xl overflow-hidden border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                    onClick={() => navigate(`/product/${product._id}`)}
+                    className="bg-white border border-gray-150 rounded-2xl p-3 relative flex flex-col justify-between hover:shadow-md cursor-pointer transition text-left group"
                   >
-                    <div className="relative h-44 md:h-52 bg-muted/20 overflow-hidden">
+                    <div className="relative h-32 bg-white overflow-hidden flex items-center justify-center mb-2">
                       <img
                         src={img} alt={title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="max-h-full max-w-full object-contain"
                         loading="lazy"
                       />
                       {dp > 0 && (
-                        <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-extrabold px-2 py-0.5 rounded-lg shadow">
-                          -{dp}%
-                        </div>
+                        <span className="absolute left-2.5 top-2.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-600 z-10">
+                          {dp}% OFF
+                        </span>
                       )}
                       {product.tag && (
                         <div className="absolute top-2 right-2 text-navy text-xs font-bold px-2 py-0.5 rounded-lg"
@@ -607,10 +672,10 @@ const Category = () => {
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-navy line-clamp-2 text-sm min-h-[40px]">{title}</h3>
-                      <div className="mt-3 flex items-baseline gap-2">
-                        <span className="text-lg font-extrabold text-navy">{price}</span>
+                    <div className="p-2.5">
+                      <h4 className="font-semibold text-gray-700 text-xs sm:text-sm leading-tight line-clamp-2 min-h-[36px]">{title}</h4>
+                      <div className="mt-2.5 flex items-baseline gap-1">
+                        <span className="font-bold text-[#0A1128] text-sm sm:text-base">{price}</span>
                         {typeof userPrice === "number" && (
                           <span className="text-xs text-muted-foreground line-through">
                             ₹{userPrice.toLocaleString("en-IN")}
@@ -621,8 +686,19 @@ const Category = () => {
                         <StarRating rating={product.rating ?? 4} />
                         <span className="text-xs text-muted-foreground">({product.reviews ?? 0})</span>
                       </div>
+                      {/* Add button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/product/${product._id}`);
+                        }}
+                        className="w-full bg-[#F3BA12] hover:bg-[#e0ab10] text-[#0A1128] font-bold text-xs py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 mt-2 transition active:scale-95 shadow-sm"
+                      >
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                        <span>Add</span>
+                      </button>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -646,59 +722,68 @@ const Category = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* ── Hero Search ── */}
-      <section style={{ background: "linear-gradient(135deg,#1e1b4b 0%,#312e81 55%,#4c1d95 100%)" }} className="py-12 md:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-white/60 text-sm font-semibold tracking-widest uppercase mb-2">ApexBee Discovery</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3 drop-shadow">
-            Discover Everything
+      {/* ── Hero ── */}
+      <section
+        className="relative py-10 overflow-hidden bg-white border-b border-gray-150"
+      >
+        {/* subtle hex pattern */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 25% 35%, #7c3aed 0%, transparent 50%), radial-gradient(circle at 75% 65%, #0ea5e9 0%, transparent 50%)",
+          }}
+        />
+        <div className="container mx-auto px-4 text-center relative">
+          <span className="inline-block text-xs font-black tracking-wider uppercase text-blue-800 mb-3 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full">
+            Shop by Category
+          </span>
+          <h1 className="text-3xl md:text-5xl font-black text-[#0A1128] mb-3 leading-tight">
+            Browse All Categories
           </h1>
-          <p className="text-white/70 mb-8 text-base md:text-lg max-w-xl mx-auto">
-            Shop · Services · Learn · Travel · Finance · Earn — all in one place
+          <p className="text-gray-500 text-xs sm:text-sm max-w-xl mx-auto mb-6">
+            Find products across Electronics, Fashion, Groceries, Beauty & more - all in one place.
           </p>
-
           {/* Search */}
           <div className="max-w-2xl mx-auto relative">
-            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl pointer-events-none">🔍</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold pointer-events-none select-none text-gray-400">Search</span>
             <input
+              id="cat-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search categories, services, courses…"
-              className="w-full rounded-2xl border-0 pl-12 pr-5 py-4 text-base text-navy placeholder:text-muted-foreground shadow-2xl focus:outline-none focus:ring-4 focus:ring-white/30"
+              placeholder="Search categories or subcategories..."
+              className="w-full rounded-full border border-gray-200 pl-12 pr-5 py-3 text-sm text-navy placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F3BA12]"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
       </section>
 
-      {/* ── Filter Tabs ── */}
-      <section className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-none">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFilter(tab.id)}
-                className="flex-shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold border transition-all"
-                style={
-                  activeFilter === tab.id
-                    ? { background: "#312e81", color: "#fff", borderColor: "transparent" }
-                    : { background: "#f8fafc", color: "#1e293b", borderColor: "#e2e8f0" }
-                }
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+      {/* ── Stats strip ── */}
+      <div
+        className="border-b bg-[#0A1128] text-white"
+      >
+        <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-6 md:gap-12 flex-wrap text-white/90 text-xs font-bold">
+          <span>📦 {allCats.length} Categories</span>
+          <span>📂 {allCats.reduce((a, c) => a + (c.children?.length || 0), 0)} Subcategories</span>
+          <span>⚡ Real-time data</span>
+          <span>🎉 10% Cashback on every order</span>
         </div>
-      </section>
+      </div>
 
       {/* ── Recently Viewed ── */}
       {recentlyViewed.length > 0 && (
-        <section className="container mx-auto px-4 pt-7">
-          <h2 className="text-lg font-bold text-navy mb-3 flex items-center gap-2">
+        <section className="container mx-auto px-4 pt-8">
+          <h2 className="text-base font-bold text-navy mb-3 flex items-center gap-2">
             <span>🕐</span> Recently Viewed
           </h2>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
@@ -716,134 +801,107 @@ const Category = () => {
         </section>
       )}
 
-      {/* ── Trending Now ── */}
-      {trending.length > 0 && (
-        <section className="container mx-auto px-4 pt-7">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-navy flex items-center gap-2">
-              <span>🔥</span> Trending Now
-            </h2>
-            <span className="text-xs bg-red-50 text-red-500 font-bold px-3 py-1 rounded-full border border-red-200 animate-pulse">
-              LIVE
-            </span>
+      {/* ── Category Grid ── */}
+      <section className="container mx-auto px-4 py-10">
+        {discoveryLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-            {trending.map((item) => (
-              <div
-                key={item.id}
-                className="flex-shrink-0 flex items-center gap-3 rounded-2xl bg-white border px-4 py-3 shadow-sm hover:shadow-md transition cursor-pointer"
-                style={{ borderLeftWidth: 4, borderLeftColor: item.color }}
-              >
-                <span className="text-2xl">{item.icon}</span>
-                <div>
-                  <p className="text-sm font-bold text-navy whitespace-nowrap">{item.name}</p>
-                  <p className="text-xs font-semibold" style={{ color: item.color }}>{item.growth} 🔼</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Category Groups ── */}
-      {discoveryLoading ? (
-        <section className="container mx-auto px-4 py-20 text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading categories…</p>
-        </section>
-      ) : filteredGroups.length === 0 ? (
-        <section className="container mx-auto px-4 py-20 text-center">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-2xl font-bold text-navy mb-2">No results found</h3>
-          <p className="text-muted-foreground mb-6">Try a different search or filter</p>
-          <button
-            onClick={() => { setSearchQuery(""); setActiveFilter("all"); }}
-            className="px-6 py-3 rounded-2xl bg-primary text-white font-semibold hover:bg-primary/90 transition"
-          >
-            Clear Filters
-          </button>
-        </section>
-      ) : (
-        filteredGroups.map((group) => (
-          <section key={group.id} className="container mx-auto px-4 pt-10">
-            {/* Group header */}
-            <div
-              className="flex items-center gap-4 rounded-3xl p-5 mb-5 shadow-md"
-              style={{ background: group.gradient }}
+        ) : filteredParents.length === 0 ? (
+          <div className="py-28 text-center">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-2xl font-bold text-navy mb-2">No categories found</h3>
+            <p className="text-muted-foreground mb-6">Try a different search term.</p>
+            <button
+              onClick={() => setSearchQuery("")}
+              className="px-6 py-3 rounded-2xl bg-primary text-white font-semibold hover:bg-primary/90 transition"
             >
-              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-4xl shadow">
-                {group.icon}
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl md:text-2xl font-extrabold text-white leading-tight">{group.title}</h2>
-                <p className="text-white/75 text-sm mt-0.5">{group.description}</p>
-              </div>
-              <Link
-                to={`/category/${encodeURIComponent(group.items[0]?.name || "")}`}
-                className="hidden md:flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
-              >
-                View All →
-              </Link>
-            </div>
+              Clear Search
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredParents.map((cat, idx) => {
+              const gradient = GRADIENTS[idx % GRADIENTS.length];
+              const isExpanded = expandedId === cat._id;
+              const subs = cat.children || [];
+              const fallbackImg = `https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&h=500&q=80`;
 
-            {/* Cards grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {group.items.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/category/${encodeURIComponent(item.name)}`}
-                  onClick={() => addRecentlyViewed({ id: item.id, name: item.name, icon: item.icon })}
-                  className="group relative rounded-2xl overflow-hidden border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
-                  style={{ borderColor: "#f1f5f9" }}
+              return (
+                <div
+                  key={cat._id}
+                  id={`cat-card-${cat._id}`}
+                  className="group rounded-3xl overflow-hidden border border-gray-100 bg-white shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col"
                 >
-                  {/* Tag */}
-                  {item.tag && (
-                    <div
-                      className="absolute top-2 left-2 z-10 text-white text-xs font-extrabold px-2 py-0.5 rounded-full shadow"
-                      style={{ background: item.color }}
-                    >
-                      {item.tag}
-                    </div>
-                  )}
-
-                  {/* Image */}
-                  <div className="h-28 md:h-36 overflow-hidden relative">
+                  {/* Image with gradient overlay */}
+                  <div className="relative h-48 overflow-hidden cursor-pointer" onClick={() => navigate(`/category/${encodeURIComponent(cat.name)}`)}>
                     <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      src={cat.image || fallbackImg}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
+                      onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    {/* Gradient overlay */}
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: `${gradient.replace("linear-gradient(135deg,", "linear-gradient(to top, ").replace(/,#[0-9a-f]+\)/i, ", transparent)")}` }}
+                    />
+                    {/* Category badge */}
+                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                      <div className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-xl px-3 py-1.5 shadow">
+                        <span className="text-xl">{getSubIcon(cat.name)}</span>
+                        <span className="font-bold text-navy text-sm leading-tight">{cat.name}</span>
+                      </div>
+                      {subs.length > 0 && (
+                        <span
+                          className="text-xs bg-white/90 text-slate-600 font-bold px-2 py-1 rounded-lg shadow"
+                        >
+                          {subs.length} sub
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="p-3 flex items-center gap-2.5">
-                    <span
-                      className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-lg"
-                      style={{ background: `${item.color}18` }}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="text-sm font-bold text-navy line-clamp-2 leading-tight">
-                      {item.name}
-                    </span>
-                  </div>
-                  {/* Bottom accent */}
-                  <div
-                    className="h-0.5 w-0 group-hover:w-full transition-all duration-500 rounded-b-2xl"
-                    style={{ background: item.color }}
-                  />
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))
-      )}
+                  {/* Body */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between">
+                      <Link
+                        to={`/category/${encodeURIComponent(cat.name)}`}
+                        onClick={() => addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) })}
+                        className="flex-1 text-sm font-bold text-navy hover:text-primary transition"
+                      >
+                        Shop {cat.name} →
+                      </Link>
+                      {subs.length > 0 && (
+                        <button
+                          type="button"
+                          id={`toggle-sub-${cat._id}`}
+                          onClick={() => setExpandedId(isExpanded ? null : cat._id)}
+                          className="ml-2 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all"
+                          style={isExpanded
+                            ? { background: "#312e81", color: "#fff", borderColor: "#312e81" }
+                            : { background: "#f8fafc", color: "#475569", borderColor: "#e2e8f0" }
+                          }
+                        >
+                          {isExpanded ? "Hide ▲" : `Subs (${subs.length}) ▼`}
+                        </button>
+                      )}
+                    </div>
 
-      {/* ── Popular Near Me ── */}
-      {featuredVendors.length > 0 && (
-        <section className="container mx-auto px-4 pt-12">
+                    {/* Subcategory row — collapsible */}
+                    {isExpanded && <SubRow subs={subs} parentName={cat.name} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── All Subcategories flat grid ── */}
+      {!discoveryLoading && allCats.length > 0 && !searchQuery && (
+        <section className="container mx-auto px-4 pb-16">
           <div
             className="rounded-3xl overflow-hidden shadow-xl"
             style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)" }}
@@ -851,173 +909,68 @@ const Category = () => {
             <div className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-white flex items-center gap-2">
-                    📍 Popular Near Me
+                  <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                    📂 All Subcategories
                   </h2>
-                  <p className="text-white/50 text-sm mt-1">Top-rated stores in your area</p>
+                  <p className="text-white/50 text-sm mt-1">Browse by specific subcategory</p>
                 </div>
-                <Link
-                  to="/local-stores"
-                  className="text-sm text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl font-semibold transition"
-                >
-                  View All →
-                </Link>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {featuredVendors.map((vendor) => (
-                  <div
-                    key={vendor.id}
-                    className="bg-white/8 backdrop-blur rounded-2xl overflow-hidden border border-white/10 hover:bg-white/15 transition group cursor-pointer"
-                  >
-                    <div className="h-28 overflow-hidden">
-                      <img src={vendor.image} alt={vendor.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                    </div>
-                    <div className="p-4">
-                      {vendor.badge && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#f59e0b22", color: "#fbbf24" }}>
-                          ✦ {vendor.badge}
-                        </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {allCats.flatMap((p) =>
+                  (p.children || []).map((s) => (
+                    <Link
+                      key={s._id}
+                      to={`/category/${encodeURIComponent(s.name)}`}
+                      onClick={() => addRecentlyViewed({ id: s._id, name: s.name, icon: getSubIcon(s.name) })}
+                      className="group relative rounded-2xl overflow-hidden bg-white/8 border border-white/10 hover:bg-white/15 hover:border-white/30 transition-all duration-200 flex flex-col"
+                    >
+                      {s.image && (
+                        <div className="h-24 overflow-hidden">
+                          <img
+                            src={s.image}
+                            alt={s.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        </div>
                       )}
-                      <h3 className="font-bold text-white mt-2 text-sm line-clamp-1">{vendor.name}</h3>
-                      <p className="text-white/50 text-xs mt-0.5">{vendor.location}</p>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <StarRating rating={vendor.rating} />
-                        <span className="text-xs text-white/50">({vendor.reviews})</span>
+                      <div className="p-3 flex items-center gap-2">
+                        <span className="text-lg">{getSubIcon(s.name)}</span>
+                        <span className="text-xs font-semibold text-white line-clamp-2 leading-snug">{s.name}</span>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                      {/* parent label */}
+                      <div className="px-3 pb-2">
+                        <span className="text-xs text-white/40">{p.name}</span>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── Featured Service Providers ── */}
-      {serviceProviders.length > 0 && (
-        <section className="container mx-auto px-4 pt-12">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl font-bold text-navy flex items-center gap-2">🔧 Featured Service Providers</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">Trusted professionals at your doorstep</p>
-            </div>
-            <Link to="/category/Home Cleaning" className="text-sm text-primary font-semibold hover:underline">See All →</Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {serviceProviders.map((sp) => (
-              <div
-                key={sp.id}
-                className="rounded-2xl border bg-white shadow-sm hover:shadow-lg transition group cursor-pointer overflow-hidden hover:-translate-y-1 duration-300"
-              >
-                <div className="h-32 overflow-hidden relative">
-                  <img src={sp.image} alt={sp.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  {sp.badge && (
-                    <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-primary text-white shadow">
-                      {sp.badge}
-                    </span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-navy text-sm line-clamp-1">{sp.name}</h3>
-                  <p className="text-muted-foreground text-xs mt-0.5">{sp.category}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1">
-                      <StarRating rating={sp.rating} />
-                      <span className="text-xs text-muted-foreground ml-0.5">{sp.rating}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{sp.jobs.toLocaleString()} jobs</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── ApexBee Academy ── */}
-      {courses.length > 0 && (
-        <section className="container mx-auto px-4 pt-12">
-          <div
-            className="rounded-3xl p-6 md:p-8 shadow-xl overflow-hidden"
-            style={{ background: "linear-gradient(135deg,#064e3b 0%,#065f46 50%,#047857 100%)" }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-7 gap-4">
-              <div>
-                <p className="text-emerald-300 text-xs font-bold tracking-widest uppercase mb-1">ApexBee Academy</p>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-white flex items-center gap-2">🎓 Learn & Grow</h2>
-                <p className="text-white/60 text-sm mt-1">Expert-led courses to grow your skills & income</p>
-              </div>
-              <Link
-                to="/category/Technology"
-                className="bg-white text-emerald-800 font-bold text-sm px-5 py-2.5 rounded-2xl hover:bg-white/90 transition self-start whitespace-nowrap shadow"
-              >
-                Browse All Courses →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {courses.map((course) => (
-                <div key={course.id} className="bg-white rounded-2xl overflow-hidden shadow group cursor-pointer hover:shadow-xl transition hover:-translate-y-1 duration-300">
-                  <div className="h-28 overflow-hidden relative">
-                    <img src={course.image} alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                    {course.badge && (
-                      <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full shadow"
-                        style={{ background: "#fef3c7", color: "#92400e" }}>
-                        {course.badge}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-bold text-navy text-sm line-clamp-2 min-h-[38px]">{course.title}</h3>
-                    <p className="text-muted-foreground text-xs mt-1">by {course.instructor}</p>
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <StarRating rating={course.rating} />
-                      <span className="text-xs text-muted-foreground">({course.students.toLocaleString()})</span>
-                    </div>
-                    <div className="flex items-baseline gap-2 mt-2">
-                      <span className="font-extrabold text-navy text-base">₹{course.price.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground line-through">₹{course.originalPrice.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Earn With ApexBee banner ── */}
-      <section className="container mx-auto px-4 pt-12 pb-6">
+      {/* ── Earn CTA ── */}
+      <section className="container mx-auto px-4 pt-4 pb-14">
         <div
           className="rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 shadow-xl overflow-hidden relative"
           style={{ background: "linear-gradient(135deg,#78350f 0%,#b45309 60%,#d97706 100%)" }}
         >
-          {/* BG pattern */}
           <div className="absolute inset-0 opacity-10" style={{
             backgroundImage: "radial-gradient(circle at 20% 50%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }} />
-
           <div className="flex-1 relative">
             <p className="text-amber-300 text-xs font-bold tracking-widest uppercase mb-2">Unlimited Earning Potential</p>
             <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">🐝 Earn With ApexBee</h2>
             <p className="text-white/75 mt-3 text-sm md:text-base max-w-md">
               Refer friends, build a team, sell your products or services, and earn unlimited passive income.
             </p>
-            <div className="flex gap-6 mt-5 flex-wrap">
-              {[["₹50K+", "Avg monthly"], ["50K+", "Active partners"], ["7", "Network levels"]].map(([val, lbl]) => (
-                <div key={lbl}>
-                  <div className="text-2xl font-extrabold text-white">{val}</div>
-                  <div className="text-white/60 text-xs">{lbl}</div>
-                </div>
-              ))}
-            </div>
           </div>
           <div className="flex flex-col gap-3 relative">
             <Link
-              to="/category/Refer %26 Earn"
+              to="/earn-with-apexbee"
               className="bg-white text-amber-900 font-extrabold px-7 py-3.5 rounded-2xl hover:bg-white/90 transition text-center shadow-lg whitespace-nowrap"
             >
               Start Earning 🚀
@@ -1026,17 +979,15 @@ const Category = () => {
               to="/referrals"
               className="border-2 border-white/40 text-white font-semibold px-7 py-3 rounded-2xl hover:bg-white/10 transition text-center text-sm whitespace-nowrap"
             >
-              Refer & Get ₹500 🎁
+              Refer &amp; Get ₹500 🎁
             </Link>
           </div>
         </div>
       </section>
 
-      <div className="h-10" />
       <Footer />
     </div>
   );
 };
 
 export default Category;
-

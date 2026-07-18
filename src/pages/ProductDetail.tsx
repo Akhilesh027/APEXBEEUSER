@@ -126,6 +126,67 @@ const ProductDetail = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
 
+  // Admin moderation states
+  const [editingReview, setEditingReview] = useState<any>(null);
+  const [editRating, setEditRating] = useState<number>(5);
+  const [editComment, setEditComment] = useState<string>("");
+
+  const handleAdminDelete = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete review");
+      alert("Review deleted successfully!");
+      setReviews((prev) => prev.filter((r) => r._id !== reviewId));
+    } catch (e: any) {
+      alert(e.message || "Delete failed");
+    }
+  };
+
+  const handleAdminEdit = (review: any) => {
+    setEditingReview(review);
+    setEditRating(review.rating || 5);
+    setEditComment(review.comment || "");
+  };
+
+  const handleSaveAdminEdit = async () => {
+    if (!editingReview) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/reviews/${editingReview._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rating: editRating,
+          comment: editComment
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update review");
+      alert("Review updated successfully!");
+      setReviews((prev) =>
+        prev.map((r) =>
+          r._id === editingReview._id
+            ? { ...r, rating: editRating, comment: editComment }
+            : r
+        )
+      );
+      setEditingReview(null);
+    } catch (e: any) {
+      alert(e.message || "Update failed");
+    }
+  };
+
   // 🔑 Get referral code
   const user = useMemo(() => {
     try {
@@ -593,7 +654,25 @@ const ProductDetail = () => {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
+                    {user?.role === "admin" && (
+                      <div className="flex items-center gap-2 border-l pl-3 border-gray-200">
+                        <button
+                          onClick={() => handleAdminEdit(r)}
+                          className="text-xs text-blue-600 hover:underline font-bold"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleAdminDelete(r._id)}
+                          className="text-xs text-red-600 hover:underline font-bold"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {r.title && <h4 className="mt-3 font-bold text-navy">{r.title}</h4>}
@@ -658,6 +737,62 @@ const ProductDetail = () => {
             <Button onClick={() => setShowShare(false)} className="w-full mt-4 bg-red-500 text-white">
               Close
             </Button>
+          </div>
+        </div>
+      )}
+
+      {editingReview && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl text-left border border-gray-150">
+            <h3 className="text-lg font-black text-navy mb-4">Edit Customer Review</h3>
+            
+            <div className="space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setEditRating(num)}
+                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${
+                        editRating === num
+                          ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
+                          : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {num}★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Review Comment</label>
+                <textarea
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-navy focus:outline-none bg-slate-50 text-navy font-medium"
+                  placeholder="Write review details..."
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setEditingReview(null)}
+                className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAdminEdit}
+                className="px-4 py-2 text-xs font-bold bg-[#0A1128] text-white hover:bg-navy rounded-xl transition"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}

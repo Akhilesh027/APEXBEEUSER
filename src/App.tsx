@@ -32,6 +32,7 @@ import Academy from "./pages/Academy";
 import Services from "./pages/Services";
 import Travel from "./pages/Travel";
 import Community from "./pages/Community";
+import AdminReviews from "./pages/AdminReviews";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +105,7 @@ const App = () => (
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+          <Route path="/admin/reviews" element={<ProtectedRoute><AdminReviews /></ProtectedRoute>} />
 
           {/* ===== Catch-all ===== */}
           <Route path="*" element={<NotFound />} />
