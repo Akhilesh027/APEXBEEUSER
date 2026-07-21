@@ -1,5 +1,7 @@
 // src/pages/Community.tsx — Module 13: Community, Support & Engagement
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5500/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -40,51 +42,312 @@ const FEED_ITEMS = [
 const Community = () => {
   const [activeTab, setActiveTab] = useState("feed");
   const [supportTab, setSupportTab] = useState("faq"); // faq, tickets, contact
-  
-  // Ticket Form State
+
+  // Dynamic Feed States
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [postInput, setPostInput] = useState("");
+  const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  // Support Ticket Form State
   const [showTicketModal, setShowTicketModal] = useState(false);
-  const [tickets, setTickets] = useState([
-    { id: "TKT-8902", subject: "Order Delayed", status: "Resolved", date: "10 Oct 2025" },
-    { id: "TKT-9104", subject: "Refund Not Received", status: "In Progress", date: "12 Oct 2025" },
-  ]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [ticketCategory, setTicketCategory] = useState("Order Issue");
+  const [ticketSubject, setTicketSubject] = useState("");
+  const [ticketMessage, setTicketMessage] = useState("");
+
+  const getAuth = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const token = localStorage.getItem("token");
+    return { user, token };
+  };
+
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoadingFeed(true);
+      const res = await fetch(`${API_BASE}/v1/community/posts`);
+      const data = await res.json();
+      if (res.ok) {
+        setPosts(Array.isArray(data?.posts) ? data.posts : []);
+      }
+    } catch (err) {
+      console.error("fetchPosts error:", err);
+    } finally {
+      setLoadingFeed(false);
+    }
+  }, []);
+
+  const fetchTickets = useCallback(async () => {
+    try {
+      const { user, token } = getAuth();
+      if (!user || !token) return;
+      const userId = user._id || user.id;
+      setLoadingTickets(true);
+      const res = await fetch(`${API_BASE}/support-tickets?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTickets(Array.isArray(data?.tickets) ? data.tickets : []);
+      }
+    } catch (err) {
+      console.error("fetchTickets error:", err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  useEffect(() => {
+    if (activeTab === "support") {
+      fetchTickets();
+    }
+  }, [activeTab, fetchTickets]);
+
+  const handleCreatePost = async () => {
+    if (!postInput.trim()) return;
+    const { token } = getAuth();
+    if (!token) {
+      alert("Please login to publish community posts");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/v1/community/posts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: postInput, postType: "general" })
+      });
+      if (res.ok) {
+        setPostInput("");
+        fetchPosts();
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to publish post");
+      }
+    } catch (err) {
+      console.error("publish post error:", err);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    const { token } = getAuth();
+    if (!token) {
+      alert("Please login to like posts");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/v1/community/posts/${postId}/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchPosts();
+      }
+    } catch (err) {
+      console.error("like post error:", err);
+    }
+  };
+
+  const handleReportPost = async (postId: string) => {
+    const { token } = getAuth();
+    if (!token) {
+      alert("Please login to flag posts");
+      return;
+    }
+    const reason = prompt("Enter the reason for reporting this post:");
+    if (!reason) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/community/posts/${postId}/report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason })
+      });
+      if (res.ok) {
+        alert("Thank you. The post has been flagged for admin review.");
+        fetchPosts();
+      }
+    } catch (err) {
+      console.error("report post error:", err);
+    }
+  };
+
+  const handleOpenComments = async (postId: string) => {
+    setActiveCommentsPostId(postId);
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/community/posts/${postId}/comments`);
+      const data = await res.json();
+      if (res.ok) {
+        setComments(Array.isArray(data?.comments) ? data.comments : []);
+      }
+    } catch (err) {
+      console.error("fetchComments error:", err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentInput.trim() || !activeCommentsPostId) return;
+    const { token } = getAuth();
+    if (!token) {
+      alert("Please login to add comments");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/v1/community/posts/${activeCommentsPostId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: commentInput })
+      });
+      if (res.ok) {
+        setCommentInput("");
+        handleOpenComments(activeCommentsPostId);
+      }
+    } catch (err) {
+      console.error("add comment error:", err);
+    }
+  };
+
+  const handleCreateTicket = async () => {
+    if (!ticketSubject.trim() || !ticketMessage.trim()) {
+      alert("Subject and details are required");
+      return;
+    }
+    const { user, token } = getAuth();
+    if (!user || !token) {
+      alert("Please login to raise support tickets");
+      return;
+    }
+    try {
+      const userId = user._id || user.id;
+      const res = await fetch(`${API_BASE}/support-tickets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId,
+          category: ticketCategory,
+          subject: ticketSubject,
+          message: ticketMessage
+        })
+      });
+      if (res.ok) {
+        setTicketSubject("");
+        setTicketMessage("");
+        setShowTicketModal(false);
+        fetchTickets();
+      }
+    } catch (err) {
+      console.error("create ticket error:", err);
+    }
+  };
 
   const renderFeed = () => (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Post Box */}
-      <Card>
+      <Card className="border border-gray-200 shadow-sm rounded-2xl overflow-hidden bg-white">
         <CardContent className="p-4 flex gap-3 items-center">
-          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold">You</div>
-          <input type="text" placeholder="Share something with the community..." className="flex-1 bg-gray-50 border-0 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" />
-          <Button size="sm" className="bg-navy hover:bg-navy/90 text-white rounded-full">Post</Button>
+          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold flex-shrink-0">
+            🐝
+          </div>
+          <input
+            type="text"
+            value={postInput}
+            onChange={(e) => setPostInput(e.target.value)}
+            placeholder="Share something with the community..."
+            className="flex-1 bg-gray-50 border-0 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 text-navy"
+          />
+          <Button onClick={handleCreatePost} size="sm" className="bg-navy hover:bg-navy/90 text-white rounded-full font-bold px-5">
+            Post
+          </Button>
         </CardContent>
       </Card>
 
       {/* Feed Items */}
       <div className="space-y-4">
-        {FEED_ITEMS.map((item) => (
-          <Card key={item.id} className="hover:shadow-sm transition-shadow">
-            <CardContent className="p-5">
-              <div className="flex gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-navy/20 flex items-center justify-center font-bold text-navy flex-shrink-0">
-                  {item.avatar}
-                </div>
-                <div>
-                  <p className="text-sm">
-                    <strong className="text-navy cursor-pointer hover:underline">{item.user}</strong>{" "}
-                    <span className="text-muted-foreground">{item.action}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.time}</p>
-                </div>
-              </div>
-              <p className="text-sm leading-relaxed text-gray-800 mb-4">{item.content}</p>
-              <div className="flex items-center gap-4 border-t pt-3">
-                <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-navy transition-colors"><Heart className="w-4 h-4" /> Like</button>
-                <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-navy transition-colors"><MessageCircle className="w-4 h-4" /> Comment</button>
-                <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-navy transition-colors"><Share2 className="w-4 h-4" /> Share</button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {loadingFeed ? (
+          [1, 2].map((i) => (
+            <Card key={i} className="p-6 border border-gray-200">
+              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/3 mb-2" />
+              <div className="h-3 bg-gray-200 animate-pulse rounded w-1/4 mb-4" />
+              <div className="h-10 bg-gray-200 animate-pulse rounded w-full" />
+            </Card>
+          ))
+        ) : posts.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-8">No community posts yet. Be the first to share!</p>
+        ) : (
+          posts.map((item) => {
+            const isLiked = item.likes?.includes(getAuth().user?._id || getAuth().user?.id);
+            const relativeTime = new Date(item.createdAt).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+
+            return (
+              <Card key={item._id} className="hover:shadow-md transition-shadow border border-gray-200 rounded-2xl overflow-hidden bg-white">
+                <CardContent className="p-5">
+                  <div className="flex gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-navy/20 flex items-center justify-center font-bold text-navy flex-shrink-0 text-lg">
+                      {item.authorAvatar || "🐝"}
+                    </div>
+                    <div>
+                      <p className="text-sm">
+                        <strong className="text-navy cursor-pointer hover:underline">{item.authorName}</strong>{" "}
+                        <Badge variant="outline" className="text-[10px] scale-95 border-gray-300 font-bold uppercase tracking-wider">
+                          {item.postType}
+                        </Badge>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{relativeTime}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed text-gray-800 mb-4 whitespace-pre-wrap">{item.content}</p>
+                  <div className="flex items-center gap-6 border-t pt-3">
+                    <button
+                      onClick={() => handleLikePost(item._id)}
+                      className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${isLiked ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-navy"
+                        }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} /> Like ({item.likes?.length || 0})
+                    </button>
+                    <button
+                      onClick={() => handleOpenComments(item._id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-navy transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" /> Comment
+                    </button>
+                    <button
+                      onClick={() => handleReportPost(item._id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-orange-600 transition-colors ml-auto"
+                    >
+                      <AlertCircle className="w-4 h-4" /> Report Post
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -250,9 +513,8 @@ const Community = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.key ? "border-navy text-navy" : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
-              }`}
+              className={`flex items-center px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key ? "border-navy text-navy" : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
+                }`}
             >
               {tab.icon}{tab.label}
             </button>
@@ -272,25 +534,91 @@ const Community = () => {
           <div className="space-y-4 pt-2">
             <div>
               <label className="text-sm font-medium mb-1 block">Category</label>
-              <select className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
-                <option>Order Issue</option>
-                <option>Service Issue</option>
-                <option>Wallet & Payments</option>
-                <option>Other</option>
+              <select
+                value={ticketCategory}
+                onChange={(e) => setTicketCategory(e.target.value)}
+                className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+              >
+                <option value="Order Issue">Order Issue</option>
+                <option value="Service Issue">Service Issue</option>
+                <option value="Wallet & Payments">Wallet & Payments</option>
+                <option value="Other">Other</option>
               </select>
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Subject</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30" placeholder="Brief description..." />
+              <input
+                type="text"
+                value={ticketSubject}
+                onChange={(e) => setTicketSubject(e.target.value)}
+                className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                placeholder="Brief description..."
+              />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Details</label>
-              <textarea className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 min-h-[100px] resize-none" placeholder="Explain the issue in detail..." />
+              <textarea
+                value={ticketMessage}
+                onChange={(e) => setTicketMessage(e.target.value)}
+                className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 min-h-[100px] resize-none"
+                placeholder="Explain the issue in detail..."
+              />
             </div>
-            <Button className="w-full bg-navy hover:bg-navy/90 text-white" onClick={() => {
-              setTickets([{ id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`, subject: "New Ticket", status: "Pending", date: "Just now" }, ...tickets]);
-              setShowTicketModal(false);
-            }}>Submit Ticket</Button>
+            <Button className="w-full bg-navy hover:bg-navy/90 text-white font-bold" onClick={handleCreateTicket}>
+              Submit Ticket
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Comments Modal Dialog ── */}
+      <Dialog open={activeCommentsPostId !== null} onOpenChange={(open) => !open && setActiveCommentsPostId(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              💬 Post Discussion
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+              {loadingComments ? (
+                <p className="text-center text-xs text-muted-foreground">Loading comments...</p>
+              ) : comments.length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground py-4">No comments yet. Write a response below!</p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c._id} className="p-3 bg-muted/40 rounded-xl">
+                    <div className="flex justify-between items-center mb-1">
+                      <strong className="text-navy text-xs">{c.authorName}</strong>
+                      <span className="text-[9px] text-muted-foreground">
+                        {new Date(c.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="border-t pt-3 flex gap-2">
+              <input
+                type="text"
+                value={commentInput}
+                onChange={(e) => setCommentInput(e.target.value)}
+                placeholder="Add a reply..."
+                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-gray-50 focus:bg-white text-navy"
+                onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+              />
+              <Button onClick={handleAddComment} className="bg-navy hover:bg-navy/90 text-white font-bold">
+                Reply
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

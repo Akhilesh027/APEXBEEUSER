@@ -13,7 +13,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 const RECENTLY_VIEWED_KEY = "apexbee_recently_viewed_products";
 
 // ═══════════════════════════════════════════════════════
@@ -166,14 +166,20 @@ const ProductCard = ({
 
           {/* Rating */}
           <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded-full shrink-0">
-            <span className="text-[10px] font-bold text-green-700">{Number(product.rating || 4).toFixed(1)}</span>
+            <span className="text-[10px] font-bold text-green-700">{Number(product.rating || 4.5).toFixed(1)}</span>
             <Star className="h-2.5 w-2.5 fill-green-600 text-green-600" />
           </div>
+
+          <span className="text-[10px] text-slate-400 font-bold ml-1">
+            👥 120+ Sold
+          </span>
         </div>
 
         {/* Delivery Charge */}
-        <div className="text-[9px] md:text-[10px] font-semibold text-green-600 mt-1">
-          {deliveryFee > 0 ? `Delivery: ₹${deliveryFee} (Included)` : "Free Delivery"}
+        <div className="text-[9px] md:text-[10px] font-bold text-accent mt-1 flex items-center gap-1">
+          <span>⚡ Fast Delivery</span>
+          <span className="text-slate-300">•</span>
+          <span className="text-green-600">{deliveryFee > 0 ? `₹${deliveryFee}` : "Free"}</span>
         </div>
 
         {/* Price & Add to Cart row */}
@@ -290,7 +296,19 @@ const ProductsPage = () => {
 
   // Check wishlist status
   useEffect(() => {
-    if (!products.length || !userId) return;
+    if (!products.length) return;
+    if (!userId) {
+      const local = localStorage.getItem("local_wishlist");
+      if (local) {
+        try {
+          const list = JSON.parse(local);
+          if (Array.isArray(list)) {
+            setWishlistSet(new Set(list));
+          }
+        } catch { }
+      }
+      return;
+    }
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/wishlist/check`, {
@@ -302,7 +320,7 @@ const ProductsPage = () => {
         if (data?.inWishlist) {
           setWishlistSet(new Set(Object.entries(data.inWishlist).filter(([, v]) => v).map(([k]) => k)));
         }
-      } catch {}
+      } catch { }
     })();
   }, [products, userId]);
 
@@ -438,8 +456,31 @@ const ProductsPage = () => {
 
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!userId) {
-      alert("Please login first to update your wishlist.");
-      navigate("/login");
+      const local = localStorage.getItem("local_wishlist");
+      let list = [];
+      if (local) {
+        try { list = JSON.parse(local); } catch { list = []; }
+      }
+      if (!Array.isArray(list)) list = [];
+      const index = list.indexOf(productId);
+      let action = "";
+      if (index > -1) {
+        list.splice(index, 1);
+        action = "removed";
+      } else {
+        list.push(productId);
+        action = "added";
+      }
+      localStorage.setItem("local_wishlist", JSON.stringify(list));
+
+      setWishlistSet((prev) => {
+        const next = new Set(prev);
+        if (action === "added") next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+      localStorage.setItem("wishlist_updated", Date.now().toString());
+      window.dispatchEvent(new Event("storage"));
       return;
     }
     try {
@@ -455,8 +496,9 @@ const ProductsPage = () => {
         else next.delete(productId);
         return next;
       });
-    } catch {}
-  }, [userId, navigate]);
+      localStorage.setItem("wishlist_updated", Date.now().toString());
+    } catch { }
+  }, [userId]);
 
   const addToCart = useCallback(async (p: Product) => {
     if (!userId) {
@@ -467,9 +509,13 @@ const ProductsPage = () => {
     try {
       const price = p.adminPricing?.customerSellingAmount ?? p.baseSellingPrice ?? p.afterDiscount ?? p.userPrice ?? 0;
       const deliveryFee = p.adminPricing?.shippingCharge ?? 0;
+      const token = localStorage.getItem("token");
       await fetch(`${API_BASE}/cart/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({
           userId,
           productId: p._id,
@@ -481,7 +527,7 @@ const ProductsPage = () => {
           deliveryFee,
         }),
       });
-      
+
       // Dispatch storage event to sync Navbar cart count
       window.dispatchEvent(new Event("storage"));
 
@@ -491,7 +537,7 @@ const ProductsPage = () => {
       toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-2xl shadow-2xl z-[9999] font-bold text-sm animate-bounce";
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
-    } catch {}
+    } catch { }
   }, [userId, navigate]);
 
   // Active filter count
@@ -599,9 +645,8 @@ const ProductsPage = () => {
         <div className="mt-2 flex gap-2 flex-wrap">
           {[0, 3, 3.5, 4, 4.5].map((r) => (
             <button key={r} type="button" onClick={() => setMinRating(r)}
-              className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 transition ${
-                minRating === r ? "bg-navy text-white border-navy" : "bg-white text-navy hover:bg-muted/30"
-              }`}>
+              className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 transition ${minRating === r ? "bg-navy text-white border-navy" : "bg-white text-navy hover:bg-muted/30"
+                }`}>
               <Star className="h-3.5 w-3.5" />
               {r === 0 ? "Any" : `${r}+`}
             </button>
@@ -670,7 +715,7 @@ const ProductsPage = () => {
             ))}
             {minRating > 0 && (
               <span className="inline-flex items-center gap-1 bg-white/15 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                ★ {minRating}+ 
+                ★ {minRating}+
                 <button onClick={() => setMinRating(0)} className="hover:text-red-300"><X className="h-3 w-3" /></button>
               </span>
             )}

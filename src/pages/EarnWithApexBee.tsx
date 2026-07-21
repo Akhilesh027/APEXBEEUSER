@@ -1,10 +1,10 @@
 // src/pages/EarnWithApexBee.tsx — Module 9: Business Opportunity Marketplace
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Briefcase,
@@ -35,10 +35,15 @@ import {
   UploadCloud,
   Check,
   ExternalLink,
+  HelpCircle,
+  UserCheck,
+  DollarSign
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
@@ -51,9 +56,6 @@ const PORTAL_LINKS: Record<string, string> = {
   course_provider: "http://localhost:5174",
 };
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
 type Opportunity = {
   id: string;
   role: string;
@@ -69,6 +71,9 @@ type Opportunity = {
   incomeModel: string[];
   trainingProcess: string[];
   faqs: { q: string; a: string }[];
+  investment?: string;
+  difficulty?: string;
+  timeCommitment?: string;
 };
 
 type Application = {
@@ -92,11 +97,9 @@ type SuccessStory = {
   earnings: string;
   quote: string;
   avatar: string;
+  videoLink?: string;
 };
 
-// ─────────────────────────────────────────────
-// Data
-// ─────────────────────────────────────────────
 const OPPORTUNITIES: Opportunity[] = [
   {
     id: "vendor",
@@ -117,6 +120,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "What are the fees?", a: "Zero for the first 3 months, then 5-10% per order depending on category." },
       { q: "Can I sell multiple categories?", a: "Yes, you can list products across multiple categories." },
     ],
+    investment: "Low",
+    difficulty: "Medium",
+    timeCommitment: "Full-Time"
   },
   {
     id: "manufacturer",
@@ -136,6 +142,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "Minimum order quantity?", a: "You set your own MOQ. We suggest starting with manageable quantities." },
       { q: "How are payments processed?", a: "Bi-weekly settlements with detailed invoicing." },
     ],
+    investment: "High",
+    difficulty: "High",
+    timeCommitment: "Full-Time"
   },
   {
     id: "wholesaler",
@@ -155,6 +164,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "What categories can I wholesale?", a: "All product categories available on ApexBee." },
       { q: "Is there a minimum commitment?", a: "No long-term contracts required. List and fulfill at your pace." },
     ],
+    investment: "Medium",
+    difficulty: "Medium",
+    timeCommitment: "Full-Time"
   },
   {
     id: "entrepreneur",
@@ -174,6 +186,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "Do I need any investment?", a: "No investment required. Just your time and network." },
       { q: "How do I get paid?", a: "Weekly payouts to your ApexBee Wallet, transferable to bank." },
     ],
+    investment: "Zero",
+    difficulty: "Easy",
+    timeCommitment: "Flexible"
   },
   {
     id: "franchise",
@@ -199,6 +214,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "What investment is required?", a: "Varies by tier: District ₹2L, Mandal ₹5L, State ₹15L+." },
       { q: "Is the territory exclusive?", a: "Yes, you get exclusive rights for your region." },
     ],
+    investment: "High",
+    difficulty: "High",
+    timeCommitment: "Full-Time"
   },
   {
     id: "service_provider",
@@ -218,6 +236,9 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "What services can I offer?", a: "Cleaning, plumbing, electrical, salon, AC repair, painting, and more." },
       { q: "How do I receive payments?", a: "Payments are processed digitally after service completion." },
     ],
+    investment: "Low",
+    difficulty: "Medium",
+    timeCommitment: "Flexible"
   },
   {
     id: "delivery_partner",
@@ -237,52 +258,17 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "Can I choose my working hours?", a: "Yes, complete flexibility. Choose shifts that suit you." },
       { q: "How often do I get paid?", a: "Daily payouts to your ApexBee Wallet." },
     ],
-  },
-  {
-    id: "course_provider",
-    role: "Become a Course Provider",
-    emoji: "🎓",
-    tagline: "Upload courses, teach online & earn revenue",
-    incomePotential: "₹20,000 – ₹2,00,000/month",
-    color: "#6366F1",
-    gradient: "from-indigo-500 to-violet-600",
-    requirements: ["Expertise in your subject", "Quality recording equipment", "Course content prepared", "Teaching experience preferred"],
-    benefits: ["Reach thousands of learners", "Automated enrollment & payments", "Issue branded certificates", "Student analytics dashboard", "Marketing support from ApexBee"],
-    overview: "Create and sell courses on the ApexBee Academy. Share your knowledge, build a student base, and earn recurring revenue from course enrollments.",
-    responsibilities: ["Create high-quality course content", "Respond to student queries", "Update courses periodically", "Maintain completion rates", "Participate in webinars"],
-    incomeModel: ["70% revenue share on course sales", "Bonus for high ratings", "Affiliate commission for referred courses", "Subscription model for premium content"],
-    trainingProcess: ["Course creation workshop", "Recording & editing tips", "Platform upload walkthrough", "Marketing your course"],
-    faqs: [
-      { q: "What subjects can I teach?", a: "Business, technology, finance, design, marketing, languages, and more." },
-      { q: "Do I need professional recording?", a: "Good quality phone recording is sufficient to start." },
-    ],
-  },
-  {
-    id: "trainer",
-    role: "Become a Trainer",
-    emoji: "🎤",
-    tagline: "Train entrepreneurs, vendors & partners",
-    incomePotential: "₹25,000 – ₹1,00,000/month",
-    color: "#EC4899",
-    gradient: "from-pink-500 to-rose-500",
-    requirements: ["Training/coaching experience", "Domain expertise", "Presentation skills", "Availability for sessions"],
-    benefits: ["Paid training sessions", "Corporate-backed programs", "Growing audience", "Recognition & awards", "Career growth into leadership"],
-    overview: "Become an official ApexBee trainer and conduct training sessions for vendors, entrepreneurs, and business partners across the ecosystem.",
-    responsibilities: ["Conduct training sessions", "Prepare training materials", "Evaluate participant progress", "Provide actionable feedback", "Stay updated with platform changes"],
-    incomeModel: ["₹2000-₹5000 per session", "Monthly retainer for top trainers", "Bonus for trainer ratings", "Travel allowance for offline sessions"],
-    trainingProcess: ["Train-the-trainer certification", "Content creation workshop", "Public speaking bootcamp", "ApexBee ecosystem deep dive"],
-    faqs: [
-      { q: "Are sessions online or offline?", a: "Both! We offer hybrid training programs." },
-      { q: "How are trainers evaluated?", a: "Based on participant feedback, completion rates, and content quality." },
-    ],
-  },
+    investment: "Zero",
+    difficulty: "Easy",
+    timeCommitment: "Flexible"
+  }
 ];
 
 const SUCCESS_STORIES: SuccessStory[] = [
-  { name: "Rajesh Kumar", role: "Top Vendor", location: "Bangalore", earnings: "₹1,80,000/month", quote: "ApexBee gave me a platform to reach 10x more customers than my physical store!", avatar: "🏆" },
-  { name: "Priya Sharma", role: "Top Entrepreneur", location: "Hyderabad", earnings: "₹95,000/month", quote: "I onboarded 45 vendors in 6 months. The commissions are life-changing.", avatar: "🚀" },
-  { name: "Amit Patel", role: "Top Franchise Partner", location: "Ahmedabad", earnings: "₹4,50,000/month", quote: "Managing the district franchise is the best business decision I ever made.", avatar: "🏢" },
-  { name: "Sunita Devi", role: "Top Service Provider", location: "Delhi", earnings: "₹65,000/month", quote: "From 2-3 jobs a week to 5+ daily! ApexBee transformed my service business.", avatar: "🔧" },
+  { name: "Rajesh Kumar", role: "Top Vendor", location: "Nellore", earnings: "₹1,80,000/month", quote: "ApexBee gave me a platform to reach B2B retailers and local households securely. Absolute game changer!", avatar: "👨‍💼", videoLink: "https://www.w3schools.com/html/mov_bbb.mp4" },
+  { name: "Priya Sharma", role: "Top Entrepreneur", location: "Vijayawada", earnings: "₹95,000/month", quote: "Onboarded 40+ vendors in Nellore and Vijayawada. Lifetime earnings split are amazing.", avatar: "👩‍💼" },
+  { name: "Amit Patel", role: "Top Franchise Partner", location: "Tirupati", earnings: "₹4,50,000/month", quote: "Territory exclusivity in Tirupati gives high return. Support from corporate team is solid.", avatar: "👨‍💻" },
+  { name: "Sunita Devi", role: "Top Service Provider", location: "Hyderabad", earnings: "₹65,000/month", quote: "Jobs keep coming daily on my schedule. Weekly payouts verified.", avatar: "🔧" },
 ];
 
 const APPLICATION_STATUS: Record<string, { label: string; color: string }> = {
@@ -292,9 +278,6 @@ const APPLICATION_STATUS: Record<string, { label: string; color: string }> = {
   rejected: { label: "Not Approved", color: "bg-red-100 text-red-700 border-red-200" },
 };
 
-// ─────────────────────────────────────────────
-// Helper Utilities & Components
-// ─────────────────────────────────────────────
 const getAuth = () => {
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const token = localStorage.getItem("token");
@@ -303,7 +286,7 @@ const getAuth = () => {
 
 const getRequiredDocs = (roleId: string) => {
   const r = roleId.toLowerCase().trim();
-  if (r === "vendor" || r === "wholesaler" || r === "manufacturer") {
+  if (r === "vendor" || r === "wholesaler" || r === "manufacturer" || r === "franchise") {
     return [
       { key: "aadhaar", label: "Aadhaar Card (Front & Back)" },
       { key: "pan", label: "PAN Card" },
@@ -329,6 +312,7 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
   const [statusMsg, setStatusMsg] = useState("");
   const [isError, setIsError] = useState(false);
   const [editFields, setEditFields] = useState<Record<string, boolean>>({});
+
   const handleFileChange = (key: string, file: File | null) => {
     if (!file) {
       const updated = { ...selectedFiles };
@@ -423,9 +407,9 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 border rounded-xl bg-gray-50/50 space-y-4 w-full">
+    <form onSubmit={handleSubmit} className="mt-4 p-4 border rounded-xl bg-gray-50/50 space-y-4 w-full text-left">
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-sm text-navy">KYC Document Upload</h4>
+        <h4 className="font-semibold text-sm text-navy font-sans">KYC Document Upload</h4>
         <span className="text-xs text-muted-foreground font-medium">Supported formats: PDF, JPG, PNG (Max 5MB)</span>
       </div>
 
@@ -456,7 +440,7 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
                   <button
                     type="button"
                     onClick={() => setEditFields({ ...editFields, [doc.key]: true })}
-                    className="text-xs text-navy font-medium hover:underline block"
+                    className="text-xs text-navy font-medium hover:underline block bg-transparent border-none cursor-pointer"
                   >
                     Re-upload Document
                   </button>
@@ -484,7 +468,7 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
                         setEditFields(updatedEdit);
                         handleFileChange(doc.key, null);
                       }}
-                      className="text-xs text-red-600 font-medium hover:underline block"
+                      className="text-xs text-red-600 font-medium hover:underline block bg-transparent border-none cursor-pointer"
                     >
                       Cancel Re-upload
                     </button>
@@ -523,19 +507,30 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
   );
 };
 
-// ─────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────
 const EarnWithApexBee = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<"home" | "detail" | "apply" | "applications">("home");
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [appLoading, setAppLoading] = useState(false);
   const [selectedState, setSelectedState] = useState("Telangana");
   const [selectedDistrict, setSelectedDistrict] = useState("Hyderabad");
   const [selectedMandal, setSelectedMandal] = useState("Ameerpet");
   const [locationData, setLocationData] = useState<Record<string, Record<string, string[]>>>({});
+
+  // Quiz Finder State
+  const [quizStep, setQuizStep] = useState<number>(0);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+  const [quizRecommendation, setQuizRecommendation] = useState<Opportunity | null>(null);
+
+  // Profit Calculator State
+  const [calcRole, setCalcRole] = useState<string>("vendor");
+  const [calcOrders, setCalcOrders] = useState<number>(150);
+  const [calcAvgValue, setCalcAvgValue] = useState<number>(1000);
+
+  // Video Success Modal
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+
   // Form state
   const [formName, setFormName] = useState("");
   const [formMobile, setFormMobile] = useState("");
@@ -586,7 +581,6 @@ const EarnWithApexBee = () => {
             }
           });
 
-          // Convert Sets to arrays
           const finalData: Record<string, Record<string, string[]>> = {};
           Object.keys(formatted).forEach(s => {
             finalData[s] = {};
@@ -645,6 +639,7 @@ const EarnWithApexBee = () => {
       setSelectedMandal(mandals[0] || "");
     }
   }, [selectedDistrict, selectedState, locationData]);
+
   const handleGoToPortal = (oppId: string) => {
     const { user } = getAuth();
     const userRoles = Array.isArray(user?.roles) ? user.roles : [];
@@ -684,7 +679,6 @@ const EarnWithApexBee = () => {
     setFormLocation("");
     setFormExperience("");
     setFormRemarks("");
-    // Reset role-specific states
     setBusinessName("");
     setGstNumber("");
     setPanNumber("");
@@ -709,7 +703,6 @@ const EarnWithApexBee = () => {
 
     const type = selectedOpp?.id || "";
 
-    // Role-specific frontend validation
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
       if (!businessName.trim() || !gstNumber.trim() || !panNumber.trim()) {
         alert("Please fill in Business Name, GST Number, and PAN Number.");
@@ -796,25 +789,177 @@ const EarnWithApexBee = () => {
     }
   };
 
+  // Quiz Handling
+  const quizQuestions = [
+    {
+      key: "investment",
+      question: "What is your initial investment capacity?",
+      options: [
+        { label: "Zero Investment (Only time & effort)", value: "zero" },
+        { label: "Low (Under ₹10,000 for tools/equipments)", value: "low" },
+        { label: "Medium (₹10,000 - ₹50,000 for stocks)", value: "medium" },
+        { label: "High (Over ₹1,00,000 for inventory/setup)", value: "high" }
+      ]
+    },
+    {
+      key: "skills",
+      question: "Which skill set describes you best?",
+      options: [
+        { label: "Sales, marketing, and business relationship building", value: "sales" },
+        { label: "Providing professional physical services (AC repair, salons, plumbing)", value: "service" },
+        { label: "Logistics, delivery, and driving capabilities", value: "logistics" },
+        { label: "Sourcing inventory or manufacturing items", value: "retail" }
+      ]
+    },
+    {
+      key: "time",
+      question: "What is your time availability?",
+      options: [
+        { label: "Flexible part-time hours", value: "flexible" },
+        { label: "Full-time business dedication", value: "full" }
+      ]
+    }
+  ];
+
+  const handleQuizAnswer = (key: string, value: string) => {
+    const updated = { ...quizAnswers, [key]: value };
+    setQuizAnswers(updated);
+
+    if (quizStep < quizQuestions.length - 1) {
+      setQuizStep(quizStep + 1);
+    } else {
+      // Recommend Opportunity based on parameters
+      let recommendedId = "entrepreneur";
+      if (updated.investment === "high") {
+        recommendedId = updated.skills === "retail" ? "manufacturer" : "franchise";
+      } else if (updated.investment === "medium") {
+        recommendedId = "wholesaler";
+      } else if (updated.investment === "low") {
+        recommendedId = updated.skills === "service" ? "service_provider" : "vendor";
+      } else {
+        recommendedId = updated.skills === "logistics" ? "delivery_partner" : "entrepreneur";
+      }
+
+      const opp = OPPORTUNITIES.find(o => o.id === recommendedId) || OPPORTUNITIES[3];
+      setQuizRecommendation(opp);
+      setQuizStep(quizQuestions.length);
+    }
+  };
+
+  const resetQuiz = () => {
+    setQuizStep(0);
+    setQuizAnswers({});
+    setQuizRecommendation(null);
+  };
+
+  // Calculator Outputs
+  const calculatorOutputs = useMemo(() => {
+    let margin = 0.15; // default 15% margin
+    if (calcRole === "vendor") margin = 0.20;
+    else if (calcRole === "manufacturer") margin = 0.30;
+    else if (calcRole === "wholesaler") margin = 0.10;
+    else if (calcRole === "franchise") margin = 0.05;
+    else if (calcRole === "entrepreneur") margin = 0.03;
+    else if (calcRole === "service_provider") margin = 0.70;
+    else if (calcRole === "delivery_partner") margin = 0.85;
+
+    const totalRevenue = calcOrders * calcAvgValue;
+    const netProfit = totalRevenue * margin;
+    return {
+      totalRevenue,
+      netProfit,
+      yearlyProfit: netProfit * 12
+    };
+  }, [calcRole, calcOrders, calcAvgValue]);
+
+  const activeLocationsList = ["Tirupati", "Nellore", "Vijayawada", "Hyderabad"];
+
   // ─── HOME VIEW ────────────────────────────────────────────────────
   const renderHome = () => (
-    <div className="space-y-8">
+    <div className="space-y-10 text-left">
       {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-r from-navy to-blue-800 text-white p-8 text-center">
-        <span className="text-5xl block mb-3">🐝</span>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Earn With ApexBee</h1>
-        <p className="text-lg opacity-80 max-w-2xl mx-auto">Discover business opportunities. Turn your skills, network, and passion into income.</p>
-        <div className="flex justify-center gap-3 mt-5">
-          <Button className="bg-white text-navy hover:bg-white/90 font-semibold" onClick={() => setActiveView("applications")}>
-            <FileText className="w-4 h-4 mr-2" /> My Applications
-          </Button>
+      <div className="rounded-3xl bg-gradient-to-r from-navy via-slate-900 to-indigo-950 text-white p-8 md:p-12 relative overflow-hidden shadow-xl border border-indigo-900">
+        <div className="absolute right-0 top-0 opacity-10 pointer-events-none translate-x-12 -translate-y-12">
+          <Briefcase className="h-96 w-96 text-white" />
+        </div>
+
+        <div className="max-w-2xl text-left relative z-10 space-y-4">
+          <Badge className="bg-emerald-500/20 text-emerald-400 font-bold px-3 py-1 border border-emerald-400/30 text-[10px] tracking-wider uppercase">
+            Business Partnerships
+          </Badge>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-none text-white">
+            Build Your Local Business with Zero or Low Investment.
+          </h1>
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+            ApexBee provides the logistics, tech stack, and customer leads. Apply as a Vendor, Manufacturer, Wholesaler, Delivery Partner, or Franchise.
+          </p>
+
+          <div className="flex flex-wrap gap-3 pt-3">
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md border-none" onClick={() => setActiveView("applications")}>
+              <FileText className="w-4 h-4 mr-2" /> View My Applications
+            </Button>
+            <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 text-xs font-bold px-6 py-2.5 rounded-xl" onClick={() => {
+              const el = document.getElementById("quiz-finder-section");
+              el?.scrollIntoView({ behavior: "smooth" });
+            }}>
+              Find Best Fit Role
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Interactive Quiz Finder Widget */}
+      <Card id="quiz-finder-section" className="border border-purple-200 bg-purple-50/10 shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-purple-100 to-indigo-50 border-b border-purple-200 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">⚡</span>
+            <div>
+              <CardTitle className="text-navy text-base font-extrabold font-sans">Business Fit Opportunity Quiz</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Unsure which partnership fits you? Answer 3 questions to locate your perfect role.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          {quizStep < quizQuestions.length ? (
+            <div className="space-y-4">
+              <p className="text-xs font-extrabold text-purple-700">Question {quizStep + 1} of {quizQuestions.length}</p>
+              <h4 className="font-extrabold text-navy text-sm">{quizQuestions[quizStep].question}</h4>
+              <div className="grid md:grid-cols-2 gap-3 pt-2">
+                {quizQuestions[quizStep].options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleQuizAnswer(quizQuestions[quizStep].key, opt.value)}
+                    className="border border-slate-200 rounded-xl p-3 text-left hover:border-purple-500 hover:bg-purple-50/50 transition-all font-semibold text-xs text-slate-700 bg-white shadow-sm cursor-pointer"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center space-y-4 max-w-md mx-auto py-4">
+              <span className="text-4xl block">🎉</span>
+              <h4 className="font-extrabold text-navy text-base">Perfect Partnership: {quizRecommendation?.role}</h4>
+              <p className="text-xs text-slate-500">Based on your capital, skills and time preference, we recommend onboarding as a {quizRecommendation?.role.toLowerCase()}.</p>
+              <div className="flex gap-2 justify-center pt-2">
+                <Button className="bg-navy hover:bg-navy/95 text-white font-bold text-xs py-2 rounded-xl" onClick={() => quizRecommendation && openDetail(quizRecommendation)}>
+                  Learn About Role
+                </Button>
+                <Button variant="outline" className="text-xs border-slate-200 font-bold rounded-xl" onClick={resetQuiz}>
+                  Retake Quiz
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Opportunity Cards Grid */}
       <div>
-        <h2 className="text-xl font-bold text-navy mb-4">🚀 Business Opportunities</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
+          <span>🚀</span> Available Business Opportunities
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {OPPORTUNITIES.map((opp) => {
             const { user } = getAuth();
             const userRoles = Array.isArray(user?.roles) ? user.roles : [];
@@ -831,118 +976,299 @@ const EarnWithApexBee = () => {
             const isPending = matchingApp && (matchingApp.status === "pending" || matchingApp.status === "under_review");
 
             return (
-              <Card key={opp.id} className="hover:shadow-lg transition-shadow overflow-hidden group cursor-pointer" onClick={() => openDetail(opp)}>
-                <div className={`h-2 bg-gradient-to-r ${opp.gradient}`} />
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="text-3xl">{opp.emoji}</span>
-                    <div>
-                      <h3 className="font-bold text-navy group-hover:text-blue-700 transition-colors">{opp.role}</h3>
-                      <p className="text-xs text-muted-foreground">{opp.tagline}</p>
+              <Card key={opp.id} className="hover:shadow-md transition-all overflow-hidden border border-slate-200 bg-white rounded-2xl flex flex-col justify-between group">
+                <div>
+                  <div className={`h-2 bg-gradient-to-r ${opp.gradient}`} />
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-3xl p-1 bg-slate-50 rounded-xl">{opp.emoji}</span>
+                        <div>
+                          <h3 className="font-extrabold text-navy group-hover:text-indigo-600 transition-colors text-sm">{opp.role}</h3>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{opp.tagline}</p>
+                        </div>
+                      </div>
+                      {opp.id === "vendor" && <Badge className="bg-red-50 text-red-700 border border-red-200 text-[9px] font-black uppercase">🔥 Hot</Badge>}
                     </div>
-                  </div>
 
-                  <div className="bg-green-50 rounded-lg p-2.5 mb-3">
-                    <p className="text-xs text-muted-foreground">Monthly Income Potential</p>
-                    <p className="font-bold text-green-700 text-sm">{opp.incomePotential}</p>
-                  </div>
-
-                  <div className="mb-3">
-                    <p className="text-xs font-medium text-navy mb-1.5">Key Benefits:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {opp.benefits.slice(0, 3).map((b, i) => (
-                        <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{b}</span>
-                      ))}
-                      {opp.benefits.length > 3 && <span className="text-xs text-muted-foreground">+{opp.benefits.length - 3} more</span>}
+                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 mb-4">
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Income Potential</p>
+                      <p className="font-extrabold text-emerald-700 text-sm mt-0.5">{opp.incomePotential}</p>
                     </div>
-                  </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => { e.stopPropagation(); openDetail(opp); }}>
-                      Learn More <ChevronRight className="w-3 h-3 ml-1" />
+                    <div className="mb-4">
+                      <p className="text-[10px] font-extrabold text-navy uppercase tracking-wider mb-1.5">Benefits Highlights</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {opp.benefits.slice(0, 3).map((b, i) => (
+                          <span key={i} className="text-[10px] bg-slate-100 border text-slate-600 px-2 py-0.5 rounded-lg">{b}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+
+                <div className="p-5 pt-0 border-t border-slate-50 flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold h-9 rounded-xl border-slate-200 text-slate-700" onClick={() => openDetail(opp)}>
+                    Details
+                  </Button>
+                  {isApproved ? (
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold h-9 rounded-xl border-none"
+                      onClick={() => handleGoToPortal(opp.id)}
+                    >
+                      Enter Portal
                     </Button>
-                    {isApproved ? (
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleGoToPortal(opp.id);
-                        }}
-                      >
-                        Go To Portal <ExternalLink className="w-3 h-3 ml-1" />
-                      </Button>
-                    ) : isPending ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs border-orange-200 bg-orange-50 text-orange-700 font-semibold"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveView("applications");
-                        }}
-                      >
-                        Under Review
-                      </Button>
-                    ) : (
-                      <Button size="sm" className="flex-1 bg-navy hover:bg-navy/90 text-white text-xs" onClick={(e) => { e.stopPropagation(); openApply(opp); }}>
-                        Apply Now
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
+                  ) : isPending ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-[10px] border-orange-200 bg-orange-50 text-orange-700 font-bold h-9 rounded-xl"
+                      onClick={() => setActiveView("applications")}
+                    >
+                      Under Review
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="flex-1 bg-navy hover:bg-navy/95 text-white text-[10px] font-bold h-9 rounded-xl" onClick={() => openApply(opp)}>
+                      Apply Now
+                    </Button>
+                  )}
+                </div>
               </Card>
             );
           })}
         </div>
       </div>
 
-      {/* Success Stories */}
+      {/* Success Stories video section */}
       <div>
-        <h2 className="text-xl font-bold text-navy mb-4">🌟 Success Stories</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
+          <span>🎥</span> Success Stories & Video Testimonials
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {SUCCESS_STORIES.map((story, i) => (
-            <Card key={i} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-5 text-center">
-                <span className="text-4xl block mb-2">{story.avatar}</span>
-                <p className="font-bold text-navy">{story.name}</p>
-                <Badge className="bg-navy/10 text-navy text-xs mb-2">{story.role}</Badge>
-                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
-                  <MapPin className="w-3 h-3" /> {story.location}
-                </p>
-                <p className="text-green-700 font-bold text-sm mb-2">{story.earnings}</p>
-                <p className="text-xs text-muted-foreground italic">"{story.quote}"</p>
+            <Card key={i} className="hover:shadow-md transition-all border border-slate-200 bg-white rounded-2xl overflow-hidden flex flex-col justify-between">
+              <CardContent className="p-5 text-center relative flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="text-4xl block mb-2">{story.avatar}</span>
+                  <p className="font-bold text-navy text-sm">{story.name}</p>
+                  <Badge variant="outline" className="bg-slate-100 text-slate-600 text-[10px] mt-1 border-slate-200">{story.role}</Badge>
+                  <p className="text-[10px] text-slate-400 mt-2 flex items-center justify-center gap-0.5">
+                    <MapPin className="w-3 h-3 text-slate-400" /> {story.location}
+                  </p>
+                  <p className="text-emerald-700 font-extrabold text-sm mt-1">{story.earnings}</p>
+                  <p className="text-xs text-slate-500 italic mt-3 leading-relaxed">"{story.quote}"</p>
+                </div>
+
+                {story.videoLink && (
+                  <Button
+                    size="sm"
+                    className="mt-4 w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold rounded-xl border border-indigo-200"
+                    onClick={() => {
+                      setVideoUrl(story.videoLink || "");
+                      setShowVideoModal(true);
+                    }}
+                  >
+                    <Play className="w-3.5 h-3.5 mr-1 text-indigo-600" /> Play Video
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Training Resources */}
-      <Card className="border-2 border-dashed border-navy/20">
+      {/* Earnings calculator slider card */}
+      <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+          <CardTitle className="text-navy text-base font-extrabold flex items-center gap-1.5">
+            <span>🧮</span> Income & Profit Estimator
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500">Calculate dynamic earnings based on expected orders volume and average transaction size.</CardDescription>
+        </CardHeader>
         <CardContent className="p-6">
-          <h2 className="text-xl font-bold text-navy mb-3 flex items-center gap-2">
-            <GraduationCap className="w-5 h-5" /> Training & Resources
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">Before applying, explore our training materials to understand each opportunity better.</p>
-          <div className="grid sm:grid-cols-3 gap-3">
-            {[
-              { title: "Video Guides", desc: "Watch step-by-step tutorials", icon: <Play className="w-5 h-5" />, count: "12 videos" },
-              { title: "Documentation", desc: "Read detailed opportunity guides", icon: <BookOpen className="w-5 h-5" />, count: "9 guides" },
-              { title: "FAQs", desc: "Get answers to common questions", icon: <FileText className="w-5 h-5" />, count: "50+ FAQs" },
-            ].map((res, i) => (
-              <div key={i} className="p-4 border rounded-lg flex items-start gap-3 hover:bg-navy/5 transition-colors cursor-pointer">
-                <div className="w-10 h-10 rounded-lg bg-navy/10 text-navy flex items-center justify-center flex-shrink-0">{res.icon}</div>
-                <div>
-                  <p className="font-medium text-sm text-navy">{res.title}</p>
-                  <p className="text-xs text-muted-foreground">{res.desc}</p>
-                  <p className="text-xs font-medium text-navy mt-1">{res.count}</p>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-4 text-left">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Select Partnership Role</label>
+                <select
+                  value={calcRole}
+                  onChange={(e) => setCalcRole(e.target.value)}
+                  className="w-full border rounded-xl px-3 py-2 text-xs bg-white font-semibold text-slate-700 h-9"
+                >
+                  <option value="vendor">Become a Vendor</option>
+                  <option value="manufacturer">Become a Manufacturer</option>
+                  <option value="wholesaler">Become a Wholesaler</option>
+                  <option value="entrepreneur">Become an Entrepreneur</option>
+                  <option value="franchise">Become a Franchise Partner</option>
+                  <option value="service_provider">Become a Service Provider</option>
+                  <option value="delivery_partner">Become a Delivery Partner</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-bold text-slate-600">
+                  <span>Expected monthly volume</span>
+                  <span>{calcOrders} orders</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="1000"
+                  value={calcOrders}
+                  onChange={(e) => setCalcOrders(Number(e.target.value))}
+                  className="w-full accent-navy cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-bold text-slate-600">
+                  <span>Average order size</span>
+                  <span>₹{calcAvgValue}</span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="5000"
+                  value={calcAvgValue}
+                  onChange={(e) => setCalcAvgValue(Number(e.target.value))}
+                  className="w-full accent-navy cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 bg-slate-50 border rounded-2xl p-6 flex flex-col justify-center space-y-4">
+              <div className="grid sm:grid-cols-3 gap-4 text-center">
+                <div className="p-3 bg-white border border-slate-100 rounded-xl shadow-inner">
+                  <span className="text-[10px] text-slate-400 font-bold block">Gross Revenue</span>
+                  <span className="text-base font-extrabold text-navy mt-1 block">₹{calculatorOutputs.totalRevenue.toLocaleString()}</span>
+                </div>
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl shadow-inner">
+                  <span className="text-[10px] text-slate-400 font-bold block">Net Profit Share</span>
+                  <span className="text-base font-extrabold text-emerald-700 mt-1 block">₹{Math.round(calculatorOutputs.netProfit).toLocaleString()}</span>
+                </div>
+                <div className="p-3 bg-indigo-50 border border-indigo-150 rounded-xl shadow-inner">
+                  <span className="text-[10px] text-indigo-400 font-bold block">Yearly Projection</span>
+                  <span className="text-base font-extrabold text-indigo-800 mt-1 block">₹{Math.round(calculatorOutputs.yearlyProfit).toLocaleString()}</span>
                 </div>
               </div>
-            ))}
+              <p className="text-[10px] text-slate-400 leading-normal text-center">
+                *Calculation is based on category average commission margins. Actual profits vary with product categories.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Compare table */}
+      <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="border-b border-slate-100 pb-3">
+          <CardTitle className="text-navy text-base font-extrabold">Compare Opportunities Tiers</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto text-xs">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                <tr>
+                  <th className="p-3">Opportunity</th>
+                  <th className="p-3">Investment Level</th>
+                  <th className="p-3">Time Commitment</th>
+                  <th className="p-3">Potential Income</th>
+                  <th className="p-3">Difficulty Level</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {OPPORTUNITIES.map((opp) => (
+                  <tr key={opp.id} className="hover:bg-slate-50/50">
+                    <td className="p-3 font-bold text-navy flex items-center gap-1.5">
+                      <span>{opp.emoji}</span> {opp.role}
+                    </td>
+                    <td className="p-3 text-slate-600 font-semibold">{opp.investment}</td>
+                    <td className="p-3 text-slate-600">{opp.timeCommitment}</td>
+                    <td className="p-3 text-emerald-700 font-bold">{opp.incomePotential}</td>
+                    <td className="p-3"><Badge variant="outline" className="bg-slate-100 border-slate-200 text-[10px] font-bold text-slate-600">{opp.difficulty}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Local Expansion Map and Timeline checklist */}
+      <div className="grid md:grid-cols-2 gap-6 text-left">
+        {/* Available Areas Map Roadmap */}
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 pb-3 bg-slate-50/50">
+            <CardTitle className="text-base font-extrabold text-navy">📍 Territory Roadmap & Pincodes</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-xs text-slate-500">Territories actively onboarding vendors and franchise operations:</p>
+            <div className="grid grid-cols-2 gap-3">
+              {activeLocationsList.map((loc) => (
+                <div key={loc} className="bg-white border rounded-xl p-3 shadow-inner flex items-center gap-2">
+                  <span className="text-indigo-600 text-lg">📍</span>
+                  <div>
+                    <h5 className="font-extrabold text-navy text-xs leading-none">{loc}</h5>
+                    <span className="text-[9px] text-emerald-600 font-bold">Active Onboarding</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border bg-yellow-50/30 border-yellow-100 p-3 text-xs text-yellow-800 font-semibold">
+              ⚠️ Slots are locked mandal-wise. Apply early to ensure territory exclusivity.
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Training Timeline Steps */}
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 pb-3 bg-slate-50/50">
+            <CardTitle className="text-base font-extrabold text-navy">📋 Onboarding Checklist</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4 text-xs font-semibold text-slate-700">
+              {[
+                { step: "1. Basic Application", desc: "Submit KYC docs (PAN, GST / License)." },
+                { step: "2. Documents Audit", desc: "Our team verifies credentials within 48 hours." },
+                { step: "3. Onboarding & Training", desc: "Watch training guides & configure catalog / slot." },
+                { step: "4. Business Launch!", desc: "Start receiving leads and splits to wallet." }
+              ].map((timeline, idx) => (
+                <div key={idx} className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-navy text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <h5 className="font-bold text-navy text-xs leading-none">{timeline.step}</h5>
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">{timeline.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Video Success modal container */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-xl rounded-3xl bg-white border border-slate-200 p-6 text-center">
+          <DialogHeader>
+            <DialogTitle className="font-extrabold text-navy text-base">📹 Rajesh Kumar Success Story Video</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 border mt-4">
+            {videoUrl ? (
+              <video src={videoUrl} controls autoPlay className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white">Loading Testimonial Video...</div>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button className="w-full bg-navy text-white hover:bg-navy/95 rounded-xl font-bold text-xs" onClick={() => setShowVideoModal(false)}>
+              Close Video Player
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
@@ -952,51 +1278,51 @@ const EarnWithApexBee = () => {
     const opp = selectedOpp;
     return (
       <div className="space-y-6">
-        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline">
+        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline bg-transparent border-none cursor-pointer">
           <ChevronLeft className="w-4 h-4" /> Back to Opportunities
         </button>
 
         {/* Hero */}
-        <div className={`rounded-2xl bg-gradient-to-r ${opp.gradient} text-white p-8`}>
+        <div className={`rounded-3xl bg-gradient-to-r ${opp.gradient} text-white p-8 border border-white/5`}>
           <div className="flex items-center gap-4 mb-4">
             <span className="text-5xl">{opp.emoji}</span>
             <div>
-              <h1 className="text-3xl font-bold">{opp.role}</h1>
-              <p className="opacity-80">{opp.tagline}</p>
+              <h1 className="text-3xl font-extrabold tracking-tight">{opp.role}</h1>
+              <p className="opacity-80 text-sm mt-1">{opp.tagline}</p>
             </div>
           </div>
-          <div className="bg-white/10 rounded-xl p-4 inline-block">
-            <p className="text-sm opacity-80">Income Potential</p>
-            <p className="text-2xl font-bold">{opp.incomePotential}</p>
+          <div className="bg-white/10 rounded-xl p-4 inline-block border border-white/10 text-left">
+            <p className="text-xs opacity-80">Income Potential</p>
+            <p className="text-2xl font-black mt-0.5">{opp.incomePotential}</p>
           </div>
         </div>
 
         {/* Overview */}
-        <Card>
+        <Card className="border border-slate-200 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="font-bold text-navy text-lg mb-2">📋 Overview</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{opp.overview}</p>
+            <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-2">📋 Overview</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{opp.overview}</p>
           </CardContent>
         </Card>
 
         {/* Responsibilities + Benefits */}
         <div className="grid md:grid-cols-2 gap-4">
-          <Card>
+          <Card className="border border-slate-200 rounded-2xl">
             <CardContent className="p-5">
-              <h3 className="font-bold text-navy mb-3">📌 Responsibilities</h3>
+              <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">📌 Responsibilities</h3>
               <ul className="space-y-2">
                 {opp.responsibilities.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm"><CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" /> {r}</li>
+                  <li key={i} className="flex items-start gap-2 text-xs text-slate-600"><CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" /> {r}</li>
                 ))}
               </ul>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-slate-200 rounded-2xl">
             <CardContent className="p-5">
-              <h3 className="font-bold text-navy mb-3">🎁 Benefits</h3>
+              <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">🎁 Benefits</h3>
               <ul className="space-y-2">
                 {opp.benefits.map((b, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm"><Star className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" /> {b}</li>
+                  <li key={i} className="flex items-start gap-2 text-xs text-slate-600"><Star className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" /> {b}</li>
                 ))}
               </ul>
             </CardContent>
@@ -1004,12 +1330,12 @@ const EarnWithApexBee = () => {
         </div>
 
         {/* Income Model */}
-        <Card>
+        <Card className="border border-slate-200 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="font-bold text-navy text-lg mb-3">💰 Income Model</h3>
+            <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">💰 Income Model</h3>
             <div className="grid sm:grid-cols-2 gap-2">
               {opp.incomeModel.map((item, i) => (
-                <div key={i} className="p-3 bg-green-50 rounded-lg text-sm flex items-center gap-2">
+                <div key={i} className="p-3 bg-green-50/50 border border-green-100 rounded-xl text-xs flex items-center gap-2 text-slate-700">
                   <TrendingUp className="w-4 h-4 text-green-600 flex-shrink-0" /> {item}
                 </div>
               ))}
@@ -1018,12 +1344,12 @@ const EarnWithApexBee = () => {
         </Card>
 
         {/* Requirements */}
-        <Card>
+        <Card className="border border-slate-200 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="font-bold text-navy text-lg mb-3">📝 Requirements</h3>
+            <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">📝 Requirements</h3>
             <div className="grid sm:grid-cols-2 gap-2">
               {opp.requirements.map((req, i) => (
-                <div key={i} className="p-3 border rounded-lg text-sm flex items-center gap-2">
+                <div key={i} className="p-3 border rounded-xl text-xs flex items-center gap-2 text-slate-600">
                   <AlertCircle className="w-4 h-4 text-navy flex-shrink-0" /> {req}
                 </div>
               ))}
@@ -1032,14 +1358,14 @@ const EarnWithApexBee = () => {
         </Card>
 
         {/* Training */}
-        <Card>
+        <Card className="border border-slate-200 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="font-bold text-navy text-lg mb-3">🎓 Training Process</h3>
+            <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">🎓 Training Process</h3>
             <div className="space-y-3">
               {opp.trainingProcess.map((step, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold flex-shrink-0">{i + 1}</div>
-                  <p className="text-sm">{step}</p>
+                  <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</div>
+                  <p className="text-xs text-slate-600 font-semibold">{step}</p>
                 </div>
               ))}
             </div>
@@ -1047,14 +1373,14 @@ const EarnWithApexBee = () => {
         </Card>
 
         {/* FAQs */}
-        <Card>
+        <Card className="border border-slate-200 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="font-bold text-navy text-lg mb-3">❓ Frequently Asked Questions</h3>
+            <h3 className="font-bold text-navy text-sm uppercase tracking-wider mb-3">❓ Frequently Asked Questions</h3>
             <div className="space-y-3">
               {opp.faqs.map((faq, i) => (
-                <div key={i} className="p-3 border rounded-lg">
-                  <p className="font-medium text-sm text-navy">{faq.q}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{faq.a}</p>
+                <div key={i} className="p-3 border rounded-xl text-xs">
+                  <p className="font-bold text-navy">{faq.q}</p>
+                  <p className="text-slate-500 mt-1">{faq.a}</p>
                 </div>
               ))}
             </div>
@@ -1082,7 +1408,7 @@ const EarnWithApexBee = () => {
               {isApproved ? (
                 <Button
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700 text-white px-8"
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 rounded-xl font-bold text-xs h-10 shadow-sm"
                   onClick={() => handleGoToPortal(opp.id)}
                 >
                   Go To Portal <ExternalLink className="w-4 h-4 ml-2" />
@@ -1091,17 +1417,17 @@ const EarnWithApexBee = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-orange-200 bg-orange-50 text-orange-700 px-8 font-semibold animate-pulse"
+                  className="border-orange-200 bg-orange-50 text-orange-700 px-8 font-bold text-xs h-10 rounded-xl animate-pulse"
                   onClick={() => setActiveView("applications")}
                 >
                   Under Review / View Application
                 </Button>
               ) : (
-                <Button size="lg" className="bg-navy hover:bg-navy/90 text-white px-8" onClick={() => openApply(opp)}>
+                <Button size="lg" className="bg-navy hover:bg-navy/90 text-white px-8 rounded-xl font-bold text-xs h-10" onClick={() => openApply(opp)}>
                   Apply Now <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               )}
-              <Button size="lg" variant="outline" onClick={() => setActiveView("home")}>Back</Button>
+              <Button size="lg" variant="outline" className="rounded-xl font-bold text-xs h-10" onClick={() => setActiveView("home")}>Back</Button>
             </div>
           );
         })()}
@@ -1114,7 +1440,7 @@ const EarnWithApexBee = () => {
     if (!selectedOpp) return null;
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline">
+        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline bg-transparent border-none cursor-pointer">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
 
@@ -1128,7 +1454,7 @@ const EarnWithApexBee = () => {
 
         <Card>
           <CardContent className="p-6 space-y-4">
-            <h3 className="font-bold text-navy text-lg">Application Form</h3>
+            <h3 className="font-bold text-navy text-lg text-left">Application Form</h3>
 
             {[
               { label: "Full Name *", value: formName, set: setFormName, placeholder: "Enter your full name", type: "text" },
@@ -1137,51 +1463,51 @@ const EarnWithApexBee = () => {
               { label: "Location / City *", value: formLocation, set: setFormLocation, placeholder: "Your city or district", type: "text" },
               { label: "Relevant Experience", value: formExperience, set: setFormExperience, placeholder: "Brief summary of your experience", type: "text" },
             ].map((field, i) => (
-              <div key={i}>
-                <label className="text-sm font-medium block mb-1">{field.label}</label>
+              <div key={i} className="text-left">
+                <label className="text-xs font-bold text-slate-600 block mb-1">{field.label}</label>
                 <input
                   type={field.type}
                   value={field.value}
                   onChange={(e) => field.set(e.target.value)}
                   placeholder={field.placeholder}
-                  className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                  className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                 />
               </div>
             ))}
 
             {/* Role-Specific Inputs Section */}
             {selectedOpp.id === "vendor" || selectedOpp.id === "wholesaler" || selectedOpp.id === "manufacturer" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Business Information</h4>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Business Name *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Business Name *</label>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Enter legal business name"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                    className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium block mb-1">GST Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">GST Number *</label>
                     <input
                       type="text"
                       value={gstNumber}
                       onChange={(e) => setGstNumber(e.target.value)}
                       placeholder="e.g. 22AAAAA0000A1Z5"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
                     <input
                       type="text"
                       value={panNumber}
                       onChange={(e) => setPanNumber(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
                 </div>
@@ -1189,302 +1515,192 @@ const EarnWithApexBee = () => {
             ) : null}
 
             {selectedOpp.id === "franchise" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Franchise Details</h4>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Proposed Franchise Hub Name *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Proposed Franchise Hub Name *</label>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="E.g. Pune City Central Hub"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                    className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-sm font-medium block mb-1">Franchise Tier Level *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Franchise Tier *</label>
                     <select
                       value={franchiseLevel}
                       onChange={(e) => setFranchiseLevel(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
                     >
-                      <option value="mandal">Mandal Franchise</option>
-                      <option value="district">District Franchise</option>
-                      <option value="state">State Franchise</option>
+                      <option value="mandal">Mandal Hub</option>
+                      <option value="district">District Hub</option>
+                      <option value="state">State HQ Hub</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1">Investment Capacity (INR Lakhs) *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Capital Investment *</label>
                     <input
                       type="text"
                       value={investmentCapacity}
                       onChange={(e) => setInvestmentCapacity(e.target.value)}
-                      placeholder="E.g. 5 Lakhs"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">PAN Number *</label>
-                  <input
-                    type="text"
-                    value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value)}
-                    placeholder="e.g. ABCDE1234F"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {selectedOpp.id === "entrepreneur" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
-                <h4 className="text-sm font-semibold text-navy">Entrepreneur KYC</h4>
-                <div>
-                  <label className="text-sm font-medium block mb-1">PAN Number *</label>
-                  <input
-                    type="text"
-                    value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value)}
-                    placeholder="e.g. ABCDE1234F"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {selectedOpp.id === "service_provider" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
-                <h4 className="text-sm font-semibold text-navy">Service Provider Information</h4>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Business or Service Name *</label>
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="E.g. Apex Cleaning Experts"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium block mb-1">Service Specialty Type *</label>
-                    <input
-                      type="text"
-                      value={serviceType}
-                      onChange={(e) => setServiceType(e.target.value)}
-                      placeholder="E.g. Electrician, Plumbing, Salon"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                      placeholder="E.g. ₹2-₹5 Lakhs"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN *</label>
                     <input
                       type="text"
                       value={panNumber}
                       onChange={(e) => setPanNumber(e.target.value)}
-                      placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                      placeholder="PAN code"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
                 </div>
               </div>
             ) : null}
 
-            {selectedOpp.id === "course_provider" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
-                <h4 className="text-sm font-semibold text-navy">Course Provider Academy Info</h4>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Academy or Instructor Name *</label>
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="E.g. Apex Coding Academy"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Teaching Domain Specialty *</label>
-                  <input
-                    type="text"
-                    value={serviceType}
-                    onChange={(e) => setServiceType(e.target.value)}
-                    placeholder="E.g. Web Development, Digital Marketing"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Sample Lecture Video Link *</label>
-                  <input
-                    type="url"
-                    value={sampleVideoLink}
-                    onChange={(e) => setSampleVideoLink(e.target.value)}
-                    placeholder="E.g. https://www.youtube.com/watch?v=..."
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
+            {/* General form remarks and location lists */}
+            <div className="grid grid-cols-3 gap-3 pt-4 border-t text-left">
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">State *</label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
+                >
+                  {Object.keys(locationData).length > 0 ? (
+                    Object.keys(locationData).map(s => <option key={s} value={s}>{s}</option>)
+                  ) : (
+                    <option value="Telangana">Telangana</option>
+                  )}
+                </select>
               </div>
-            ) : null}
 
-            {selectedOpp.id === "delivery_partner" ? (
-              <div className="space-y-4 pt-2 border-t border-gray-100">
-                <h4 className="text-sm font-semibold text-navy">Logistics & Identity details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium block mb-1">Vehicle Type *</label>
-                    <select
-                      value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
-                    >
-                      <option value="Bicycle">Bicycle</option>
-                      <option value="Two-Wheeler">Two-Wheeler (Motorcycle/Scooter)</option>
-                      <option value="Three-Wheeler">Three-Wheeler (Auto/Electric Cart)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium block mb-1">Driving License Number *</label>
-                    <input
-                      type="text"
-                      value={licenseNumber}
-                      onChange={(e) => setLicenseNumber(e.target.value)}
-                      placeholder="e.g. MH1220201234567"
-                      className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Aadhaar Card Number *</label>
-                  <input
-                    type="text"
-                    value={aadhaarNumber}
-                    onChange={(e) => setAadhaarNumber(e.target.value)}
-                    placeholder="e.g. 1234 5678 9012"
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
+                >
+                  {locationData[selectedState] ? (
+                    Object.keys(locationData[selectedState]).map(d => <option key={d} value={d}>{d}</option>)
+                  ) : (
+                    <option value="Hyderabad">Hyderabad</option>
+                  )}
+                </select>
               </div>
-            ) : null}
-            <div className="space-y-4 pt-2 border-t border-gray-100">
-              <h4 className="text-sm font-semibold text-navy">Territory Details</h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1">State Territory *</label>
-                  <select
-                    value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
-                  >
-                    {Object.keys(locationData).map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium block mb-1">District Territory *</label>
-                  <select
-                    value={selectedDistrict}
-                    onChange={(e) => setSelectedDistrict(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
-                  >
-                    {Object.keys(locationData[selectedState] || {}).map((district) => (
-                      <option key={district} value={district}>
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium block mb-1">Mandal Territory *</label>
-                  <select
-                    value={selectedMandal}
-                    onChange={(e) => setSelectedMandal(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
-                  >
-                    {(locationData[selectedState]?.[selectedDistrict] || []).map((mandal) => (
-                      <option key={mandal} value={mandal}>
-                        {mandal}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
+                <select
+                  value={selectedMandal}
+                  onChange={(e) => setSelectedMandal(e.target.value)}
+                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
+                >
+                  {locationData[selectedState]?.[selectedDistrict] ? (
+                    locationData[selectedState][selectedDistrict].map(m => <option key={m} value={m}>{m}</option>)
+                  ) : (
+                    <option value="Ameerpet">Ameerpet</option>
+                  )}
+                </select>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1">Additional Remarks</label>
+
+            <div className="text-left">
+              <label className="text-xs font-bold text-slate-600 block mb-1">Additional Remarks</label>
               <textarea
                 value={formRemarks}
                 onChange={(e) => setFormRemarks(e.target.value)}
-                placeholder="Any additional information..."
-                className="w-full border rounded-lg px-3 py-2.5 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-navy/30"
+                placeholder="Any special remarks or details..."
+                className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-16 bg-white text-slate-700"
               />
             </div>
 
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-muted-foreground">
-              📎 Document upload will be available after initial review
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setActiveView("home")}>Cancel</Button>
-              <Button className="flex-1 bg-navy hover:bg-navy/90 text-white" onClick={handleSubmitApplication} disabled={submitting}>
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                Submit Application
-              </Button>
-            </div>
+            <Button
+              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-2.5 rounded-xl text-xs"
+              onClick={handleSubmitApplication}
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Submit Business Application
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   };
 
-  // ─── MY APPLICATIONS ──────────────────────────────────────────────
+  // ─── APPLICATIONS LIST VIEW ─────────────────────────────────────────
   const renderApplications = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline">
-          <ChevronLeft className="w-4 h-4" /> Back
-        </button>
-        <h2 className="text-xl font-bold text-navy">My Applications</h2>
-        <div />
+    <div className="space-y-6 text-left">
+      <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline bg-transparent border-none cursor-pointer">
+        <ChevronLeft className="w-4 h-4" /> Back to Opportunities
+      </button>
+
+      <div className="flex justify-between items-center pb-2 border-b">
+        <h2 className="text-2xl font-black text-navy">My Applications</h2>
+        <Button variant="outline" size="sm" onClick={fetchApplications} className="rounded-xl border-slate-200 font-bold text-xs h-9">
+          Refresh List
+        </Button>
       </div>
 
       {applications.length === 0 ? (
-        <div className="text-center py-16">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-3 opacity-30" />
-          <p className="text-muted-foreground mb-4">You haven't applied to any opportunities yet.</p>
-          <Button className="bg-navy hover:bg-navy/90 text-white" onClick={() => setActiveView("home")}>
-            Explore Opportunities
+        <div className="text-center py-12 border border-dashed rounded-2xl bg-white max-w-md mx-auto space-y-4">
+          <span className="text-4xl block">📋</span>
+          <h4 className="font-extrabold text-navy text-sm">No applications found</h4>
+          <p className="text-xs text-slate-400">You haven't applied for any partnership roles yet.</p>
+          <Button className="bg-navy text-white text-xs font-bold py-2 rounded-xl" onClick={() => setActiveView("home")}>
+            Browse Opportunities
           </Button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid md:grid-cols-2 gap-6">
           {applications.map((app) => {
-            const status = APPLICATION_STATUS[app.status] || APPLICATION_STATUS.pending;
-            const niceRoleName = OPPORTUNITIES.find(o => o.id === app.role)?.role || app.role;
+            const statusInfo = APPLICATION_STATUS[app.status] || { label: app.status, color: "bg-gray-100 text-gray-700" };
             return (
-              <Card key={app._id} className="overflow-hidden">
-                <CardContent className="p-4 flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-navy/10 text-navy flex items-center justify-center flex-shrink-0">
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-navy">{niceRoleName}</p>
-                      <p className="text-xs text-muted-foreground">Applied: {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                    </div>
-                    <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
+              <Card key={app._id} className="border border-slate-200 bg-white rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-extrabold text-navy text-sm">{app.role}</h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
                   </div>
-                  {app.status === "approved" && (
-                    <KycUploadSection application={app} onSuccess={fetchApplications} />
+                  <Badge className={`${statusInfo.color} font-bold text-[10px] px-2.5 py-0.5 border`}>
+                    {statusInfo.label}
+                  </Badge>
+                </div>
+
+                <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                  {app.status === "approved" ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-xl font-bold">
+                        🎉 Approved! Go to matching provider portal to start business.
+                      </div>
+                      <Button
+                        onClick={() => handleGoToPortal(app.role.replace("Become a ", "").replace("Partner", "").replace("Provider", "").replace(" ", "_").toLowerCase())}
+                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl"
+                      >
+                        Enter Business Dashboard
+                      </Button>
+                    </div>
+                  ) : app.status === "pending" || app.status === "under_review" ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-bold">
+                        ⏳ Please complete KYC documentation below to process verification details.
+                      </div>
+                      <KycUploadSection application={app} onSuccess={fetchApplications} />
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-medium">
+                      Status: Rejected. Please contact support@apexbee.com to check reasons.
+                    </div>
                   )}
-                </CardContent>
+                </div>
               </Card>
             );
           })}
@@ -1493,16 +1709,17 @@ const EarnWithApexBee = () => {
     </div>
   );
 
-  // ─── MAIN RENDER ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <Navbar />
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {activeView === "home" && renderHome()}
         {activeView === "detail" && renderDetail()}
         {activeView === "apply" && renderApplyForm()}
         {activeView === "applications" && renderApplications()}
       </div>
+
       <Footer />
     </div>
   );

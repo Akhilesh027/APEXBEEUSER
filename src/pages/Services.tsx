@@ -13,7 +13,7 @@ import {
   Sparkles, Bug
 } from "lucide-react";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -382,8 +382,8 @@ const ProviderDetailModal = ({
                             </span>
                           )}
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0 ${svc.type === 'Fixed Price' ? 'bg-emerald-100 text-emerald-700' :
-                              svc.type === 'Quote Based' ? 'bg-indigo-100 text-indigo-700' :
-                                'bg-amber-100 text-amber-700'
+                            svc.type === 'Quote Based' ? 'bg-indigo-100 text-indigo-700' :
+                              'bg-amber-100 text-amber-700'
                             }`}>{svc.type}</span>
                         </div>
                       </div>
@@ -461,8 +461,8 @@ const ProviderDetailModal = ({
                   const isToday = day.day.startsWith(todayName.slice(0, 3));
                   return (
                     <div key={day.day} className={`text-center p-2 rounded-xl text-[10px] font-semibold transition-colors ${!day.active ? 'bg-gray-50 text-gray-400 border border-dashed border-gray-200' :
-                        isToday ? 'bg-navy text-white shadow-md' :
-                          'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      isToday ? 'bg-navy text-white shadow-md' :
+                        'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       }`}>
                       <p>{day.day.slice(0, 3)}</p>
                       {day.active ? (
@@ -552,7 +552,7 @@ const Services = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch("https://server.apexbee.in/api/service/bookings", {
+      const res = await fetch("http://localhost:5500/api/service/bookings", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -574,7 +574,7 @@ const Services = () => {
       const userId = user?.id || user?._id;
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`https://server.apexbee.in/api/service/bookings/${payingBooking._id || payingBooking.id}/pay`, {
+      const res = await fetch(`http://localhost:5500/api/service/bookings/${payingBooking._id || payingBooking.id}/pay`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -617,7 +617,7 @@ const Services = () => {
       } else if (dtVal === "This Week") {
         formattedDate = new Date().toISOString().split("T")[0];
       }
-      const res = await fetch(`https://server.apexbee.in/api/service/availability/slots?providerId=${provId}&date=${formattedDate}`);
+      const res = await fetch(`http://localhost:5500/api/service/availability/slots?providerId=${provId}&date=${formattedDate}`);
       if (res.ok) {
         const data = await res.json();
         setAvailableSlots(data.slots || []);
@@ -644,7 +644,7 @@ const Services = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch(`https://server.apexbee.in/api/service/bookings/${bookingId}/review`, {
+      const res = await fetch(`http://localhost:5500/api/service/bookings/${bookingId}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -751,7 +751,7 @@ const Services = () => {
         formattedDate = new Date().toISOString().split("T")[0];
       }
 
-      const res = await fetch("https://server.apexbee.in/api/service/bookings", {
+      const res = await fetch("http://localhost:5500/api/service/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -857,8 +857,8 @@ const Services = () => {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 min-w-[80px] ${selectedCategory === cat.id
-                  ? "border-blue-500 bg-blue-50 shadow-md"
-                  : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-sm"
+                ? "border-blue-500 bg-blue-50 shadow-md"
+                : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-sm"
                 }`}
             >
               <div
@@ -1175,8 +1175,8 @@ const Services = () => {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key
-                  ? "border-navy text-navy"
-                  : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
+                ? "border-navy text-navy"
+                : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
                 }`}
             >
               {tab.label}
@@ -1280,8 +1280,8 @@ const Services = () => {
                             key={s.id || s.name}
                             onClick={() => setSelectedService(s)}
                             className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${selectedService?.name === s.name
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                : "border-gray-200 hover:border-gray-300"
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-gray-200 hover:border-gray-300"
                               }`}
                           >
                             <div className="flex justify-between items-center">
@@ -1308,8 +1308,8 @@ const Services = () => {
                             key={cat}
                             onClick={() => setSelectedService({ name: cat, category: cat, type: "general", price: 0, duration: "", active: true })}
                             className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${selectedService?.name === cat
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                : "border-gray-200 hover:border-gray-300"
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-gray-200 hover:border-gray-300"
                               }`}
                           >
                             <span className="font-medium">{cat}</span>
@@ -1348,8 +1348,8 @@ const Services = () => {
                             key={t}
                             onClick={() => setSelectedTime(t)}
                             className={`py-2 px-1 text-xs font-medium rounded-lg border transition-colors ${selectedTime === t
-                                ? "bg-blue-50 border-blue-400 text-blue-700 font-bold"
-                                : "bg-white text-gray-600 hover:border-gray-400"
+                              ? "bg-blue-50 border-blue-400 text-blue-700 font-bold"
+                              : "bg-white text-gray-600 hover:border-gray-400"
                               }`}
                           >
                             {t}

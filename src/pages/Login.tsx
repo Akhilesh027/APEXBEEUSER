@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ShieldCheck, Mail, Store, Users, BookOpen, Gift, TrendingUp, Award, Lock, CreditCard, CheckCircle } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 // Animated Counter Component
 const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
@@ -55,9 +55,58 @@ const Login = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const saveSession = (data: any) => {
+  const saveSession = async (data: any) => {
     localStorage.setItem("user", JSON.stringify(data.user));
     localStorage.setItem("token", data.token);
+
+    const userId = data.user?._id || data.user?.id;
+    const token = data.token;
+
+    // Sync local wishlist
+    const localWish = localStorage.getItem("local_wishlist");
+    if (localWish && userId) {
+      try {
+        const productIds = JSON.parse(localWish);
+        if (Array.isArray(productIds) && productIds.length > 0) {
+          await fetch(`${API_BASE}/wishlist/sync`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ userId, productIds }),
+          });
+          localStorage.removeItem("local_wishlist");
+        }
+      } catch (err) {
+        console.error("Failed to sync local wishlist:", err);
+      }
+    }
+
+    // Sync local cart
+    const localCart = localStorage.getItem("local_cart");
+    if (localCart && userId) {
+      try {
+        const items = JSON.parse(localCart);
+        if (Array.isArray(items) && items.length > 0) {
+          for (const item of items) {
+            await fetch(`${API_BASE}/cart/add`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ ...item, userId }),
+            });
+          }
+          localStorage.removeItem("local_cart");
+        }
+      } catch (err) {
+        console.error("Failed to sync local cart:", err);
+      }
+    }
+
+    window.dispatchEvent(new Event("storage"));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

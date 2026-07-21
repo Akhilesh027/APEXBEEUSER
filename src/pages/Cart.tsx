@@ -23,7 +23,7 @@ const readItemFlags = (item) => {
   return { allowPickup, isPreOrder, availableOn };
 };
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -31,12 +31,109 @@ const Cart = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Guest Checkout states
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  // Countdown timer logic
+  useEffect(() => {
+    let timer;
+    if (otpSent && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((c) => c - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpSent, countdown]);
+
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = "sine";
+      oscillator.frequency.value = 820;
+      gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.12);
+    } catch (e) {
+      console.warn("Beep audio context failure", e);
+    }
+  };
+
+  const handleSendOtp = () => {
+    if (phone.length !== 10) return;
+    setOtpLoading(true);
+    setTimeout(() => {
+      setOtpLoading(false);
+      setOtpSent(true);
+      setCountdown(60);
+      playBeep();
+      alert("Simulated OTP '1234' sent to your phone number!");
+    }, 600);
+  };
+
+  const handleVerifyOtp = () => {
+    if (otp !== "1234") {
+      alert("Incorrect OTP code. Please enter '1234' for guest verification.");
+      return;
+    }
+    setOtpLoading(true);
+    setTimeout(() => {
+      setOtpLoading(false);
+      // Register guest customer
+      const guestUser = {
+        id: `guest-${Date.now()}`,
+        name: "Guest Customer",
+        phone: phone,
+        role: "customer",
+        email: `guest-${phone}@apexbee.in`,
+        isGuest: true
+      };
+      localStorage.setItem("user", JSON.stringify(guestUser));
+      localStorage.setItem("token", "mock-guest-token-12345");
+      setShowGuestModal(false);
+
+      // Navigate to checkout directly
+      navigate("/checkout", {
+        state: {
+          cartItems,
+          subtotal,
+          discount,
+          deliveryFee: totalDeliveryFee,
+          total,
+          pickupPossible,
+          preOrderInfo,
+        },
+      });
+      window.dispatchEvent(new Event("storage"));
+    }, 600);
+  };
+
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const userId = user?.id || user?._id;
 
   // Fetch cart items from backend
   const fetchCart = async () => {
-    if (!userId) return;
+    if (!userId) {
+      const local = localStorage.getItem("local_cart");
+      if (local) {
+        try {
+          setCartItems(JSON.parse(local));
+        } catch {
+          setCartItems([]);
+        }
+      } else {
+        setCartItems([]);
+      }
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/cart/${userId}`);
       const data = await res.json();
@@ -58,7 +155,25 @@ const Cart = () => {
 
   // Update quantity
   const updateQuantity = async (itemId, delta) => {
-    if (!userId) return;
+    if (!userId) {
+      const local = localStorage.getItem("local_cart");
+      let list = [];
+      if (local) {
+        try { list = JSON.parse(local); } catch { list = []; }
+      }
+      if (!Array.isArray(list)) list = [];
+
+      const itemIdx = list.findIndex((i) => i._id === itemId || i.productId === itemId);
+      if (itemIdx > -1) {
+        const newQty = list[itemIdx].quantity + delta;
+        if (newQty < 1) return;
+        list[itemIdx].quantity = newQty;
+        localStorage.setItem("local_cart", JSON.stringify(list));
+        setCartItems(list);
+        window.dispatchEvent(new Event("storage"));
+      }
+      return;
+    }
     const item = cartItems.find((i) => i._id === itemId || i.productId === itemId);
     if (!item) return;
 
@@ -99,7 +214,20 @@ const Cart = () => {
 
   // Remove item
   const removeItem = async (itemId) => {
-    if (!userId) return;
+    if (!userId) {
+      const local = localStorage.getItem("local_cart");
+      let list = [];
+      if (local) {
+        try { list = JSON.parse(local); } catch { list = []; }
+      }
+      if (!Array.isArray(list)) list = [];
+
+      const updated = list.filter((i) => i._id !== itemId && i.productId !== itemId);
+      localStorage.setItem("local_cart", JSON.stringify(updated));
+      setCartItems(updated);
+      window.dispatchEvent(new Event("storage"));
+      return;
+    }
     const item = cartItems.find((i) => i._id === itemId || i.productId === itemId);
     if (!item) return;
 
@@ -161,9 +289,13 @@ const Cart = () => {
     }
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/cart/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({
           userId,
           productId: item.productId || item._id,
@@ -299,6 +431,11 @@ const Cart = () => {
       return;
     }
 
+    if (!userId) {
+      setShowGuestModal(true);
+      return;
+    }
+
     navigate("/checkout", {
       state: {
         cartItems,
@@ -358,7 +495,7 @@ const Cart = () => {
                     </span>
                     {group.vendorName}
                   </h2>
-                  
+
                   <div className="space-y-6">
                     {group.items.map((item) => {
                       const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
@@ -593,6 +730,86 @@ const Cart = () => {
       </div>
 
       <Footer />
+
+      {/* Guest Checkout Dialog */}
+      {showGuestModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-sans">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative border border-slate-100 text-left space-y-4">
+            <button
+              onClick={() => setShowGuestModal(false)}
+              className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 p-1.5 rounded-full transition cursor-pointer border-none"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 border border-indigo-100 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+              <span>🚀</span> Guest Checkout
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-navy leading-none">Instant Verification</h3>
+              <p className="text-xs text-muted-foreground mt-1.5 leading-snug">Verify your mobile number to checkout securely as a guest without creating an account.</p>
+            </div>
+
+            {!otpSent ? (
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-navy">Enter Mobile Number</label>
+                  <div className="flex gap-2">
+                    <span className="bg-slate-100 border rounded-xl px-3 py-2.5 text-sm text-navy font-bold flex items-center shrink-0">+91</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="9876543210"
+                      className="flex-1 border rounded-xl px-3.5 py-2.5 text-sm font-bold text-navy bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+                    />
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-navy hover:bg-navy/90 text-white font-bold"
+                  onClick={handleSendOtp}
+                  disabled={phone.length !== 10 || otpLoading}
+                >
+                  {otpLoading ? "Sending OTP..." : "Get OTP Verification Code"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-navy">Enter 4-Digit OTP Code</label>
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="Enter 4-digit code (Use 1234)"
+                    className="w-full text-center tracking-widest text-lg font-bold border rounded-xl py-2.5 text-navy bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold pt-1.5">
+                    <span>Code sent to +91 {phone}</span>
+                    <span>Resend OTP in: <strong className="text-red-500">{countdown}s</strong></span>
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-accent hover:bg-accent/90 text-white font-bold"
+                  onClick={handleVerifyOtp}
+                  disabled={otp.length !== 4 || otpLoading}
+                >
+                  {otpLoading ? "Verifying..." : "Verify & Complete Checkout"}
+                </Button>
+                <button
+                  onClick={() => setOtpSent(false)}
+                  className="w-full text-center text-xs font-semibold text-slate-500 hover:underline bg-transparent border-none cursor-pointer mt-1"
+                >
+                  ← Edit Phone Number
+                </button>
+              </div>
+            )}
+
+            <div className="text-[10px] text-muted-foreground text-center border-t pt-3">
+              By checking out, you agree to our Terms and receive order notifications.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

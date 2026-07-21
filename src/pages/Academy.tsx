@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -255,7 +255,7 @@ const Academy = () => {
         <div className="text-xs text-navy font-medium mb-1 uppercase tracking-wider">{course.category}</div>
         <h3 className="font-bold text-navy line-clamp-2 leading-snug mb-2">{course.title}</h3>
         <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1"><Users className="w-3 h-3" /> {course.instructor}</p>
-        
+
         <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground mb-4">
           <span className="flex items-center gap-1 text-yellow-500"><Star className="w-3 h-3 fill-current" /> {course.rating}</span>
           <span>•</span>
@@ -274,7 +274,7 @@ const Academy = () => {
 
   const renderHome = () => {
     const filteredCourses = activeCategory === "All" ? courses : courses.filter((c) => c.category === activeCategory);
-    
+
     return (
       <div className="space-y-10">
         {/* Hero Section */}
@@ -391,7 +391,7 @@ const Academy = () => {
                     <h4 className="font-bold text-navy text-lg">{course.title}</h4>
                     {course.completed && <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0"><CheckCircle className="w-3 h-3 mr-1" /> Completed</Badge>}
                   </div>
-                  
+
                   <div className="mb-4 mt-2">
                     <div className="flex justify-between text-xs mb-1 font-medium">
                       <span className="text-navy">{course.progress}% Complete</span>
@@ -468,9 +468,8 @@ const Academy = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.key ? "border-navy text-navy" : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
-              }`}
+              className={`px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key ? "border-navy text-navy" : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
+                }`}
             >
               {tab.label}
             </button>
@@ -504,7 +503,7 @@ const Academy = () => {
                 <h2 className="text-2xl sm:text-3xl font-bold leading-tight">{selectedCourse.title}</h2>
               </div>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1">
               <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-600 mb-6 border-b pb-4">
                 <span className="flex items-center gap-1"><Users className="w-4 h-4 text-navy" /> {selectedCourse.instructor}</span>

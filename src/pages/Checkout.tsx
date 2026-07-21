@@ -33,7 +33,7 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import upi from "../Web images/Web images/upi.jpeg";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 type CartItem = any;
 
@@ -200,6 +200,16 @@ const Checkout = () => {
   const [pinError, setPinError] = useState<string>("");
   const [pinMeta, setPinMeta] = useState<{ charge: number; etaDays: number } | null>(
     null
+  );
+
+  // Delivery Instructions & Gift Wrap
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+  const [deliveryMode, setDeliveryMode] = useState<"express" | "same_day" | "next_day" | "scheduled">("next_day");
+  const [deliverySlot, setDeliverySlot] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [deliveryScheduledDate, setDeliveryScheduledDate] = useState<string>(
+    new Date(Date.now() + 86400000).toISOString().split("T")[0]
   );
 
   // Calculate initial delivery fee
@@ -500,7 +510,7 @@ const Checkout = () => {
         deliveryFee = calculateDeliveryFee(orderDetails.items);
       }
       const finalDeliveryFee = deliveryFee || 0;
-      
+
       setPinValid(true);
       setPinError("");
       setPinMeta({ charge: finalDeliveryFee, etaDays: 2 });
@@ -727,8 +737,8 @@ const Checkout = () => {
         addressForm.type === "Office"
           ? "work"
           : addressForm.type === "Other"
-          ? "other"
-          : "home";
+            ? "other"
+            : "home";
 
       const payload: any = {
         ...addressForm,
@@ -879,12 +889,15 @@ const Checkout = () => {
   /** ✅ realtime totals */
   useEffect(() => {
     const calculatedSubtotal = calcItemsSubtotal(orderDetails.items);
-    
+
     // Recalculate delivery fee from items if needed for delivery
     let currentShipping = orderDetails.shipping;
     if (fulfillmentType === "delivery" && !preOrderInfo.hasPreOrder) {
       const calculatedDeliveryFee = calculateDeliveryFee(orderDetails.items);
-      currentShipping = calculatedDeliveryFee;
+      let addOn = 0;
+      if (deliveryMode === "express") addOn = 49;
+      else if (deliveryMode === "same_day") addOn = 19;
+      currentShipping = calculatedDeliveryFee + addOn;
     } else {
       currentShipping = 0;
     }
@@ -917,7 +930,7 @@ const Checkout = () => {
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + ((item.packingCharge || 0) * (item.quantity || 1)), 0);
     const taxableAmount = discountedPrice + totalPacking + currentShipping;
     const gstAmount = Math.round(taxableAmount * 0.05);
- 
+
     // Base Total = Taxable Amount + GST
     const baseTotal = taxableAmount + gstAmount;
 
@@ -1016,7 +1029,7 @@ const Checkout = () => {
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + ((item.packingCharge || 0) * (item.quantity || 1)), 0);
     const taxableAmount = discountedPrice + totalPacking + finalShipping;
     const gstAmount = Math.round(taxableAmount * 0.05);
- 
+
     // Grand total = taxableAmount + GST
     const baseTotal = taxableAmount + gstAmount;
 
@@ -1047,6 +1060,7 @@ const Checkout = () => {
     }
 
     setIsLoading(true);
+    let hasServerResponded = false;
 
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -1100,7 +1114,13 @@ const Checkout = () => {
       const fulfillment =
         fulfillmentType === "pickup"
           ? { type: "pickup", pickupLocationId, pickupSlot, userPincode }
-          : { type: "delivery", deliveryFee: finalShipping };
+          : {
+              type: "delivery",
+              deliveryFee: finalShipping,
+              deliveryMode,
+              deliverySlot,
+              scheduledDate: deliveryMode === "scheduled" ? deliveryScheduledDate : null
+            };
 
       const orderData: any = {
         userId: user.id || user._id,
@@ -1131,8 +1151,8 @@ const Checkout = () => {
             finalPaymentMethod === "wallet"
               ? `WALLET_${Date.now()}`
               : finalPaymentMethod === "cod"
-              ? `COD_${Date.now()}`
-              : upiTransactionId || `TXN_${Date.now()}`,
+                ? `COD_${Date.now()}`
+                : upiTransactionId || `TXN_${Date.now()}`,
           upiDetails,
         },
 
@@ -1140,11 +1160,11 @@ const Checkout = () => {
 
         coupon: appliedCoupon
           ? {
-              code: appliedCoupon.code,
-              type: appliedCoupon.type,
-              value: appliedCoupon.value,
-              discount: finalCouponDiscount,
-            }
+            code: appliedCoupon.code,
+            type: appliedCoupon.type,
+            value: appliedCoupon.value,
+            discount: finalCouponDiscount,
+          }
           : null,
 
         orderSummary: {
@@ -1174,7 +1194,6 @@ const Checkout = () => {
       };
 
       let response: Response;
-      let hasServerResponded = false;
 
       if (finalPaymentMethod === "upi" && paymentProof) {
         const formData = new FormData();
@@ -1184,7 +1203,7 @@ const Checkout = () => {
 
         response = await fetch(`${API_BASE}/orders/with-proof`, {
           method: "POST",
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
             "idempotency-key": checkoutIdempotencyKey
           },
@@ -1301,8 +1320,8 @@ const Checkout = () => {
       addr.type === "work" || addr.type === "Office"
         ? "Office"
         : addr.type === "other" || addr.type === "Other"
-        ? "Other"
-        : "Home";
+          ? "Other"
+          : "Home";
     setAddressForm({
       name: String(addr.name || ""),
       phone: onlyDigits(String(addr.phone || "")).slice(0, 10),
@@ -1352,14 +1371,14 @@ const Checkout = () => {
     if (!allMatch) return "Your pincode doesn't match the shop pincode";
     return "";
   }, [orderDetails.items, userPincode]);
- 
+
   const totalPackageCharges = useMemo(() => {
     return orderDetails.items.reduce((sum: number, item: any) => {
       const packing = item.packingCharge ?? 0;
       return sum + (packing * (item.quantity || 1));
     }, 0);
   }, [orderDetails.items]);
- 
+
   const totalGstAmount = useMemo(() => {
     const discountedPrice = Math.max(0, orderDetails.subtotal - couponDiscount);
     const taxableAmount = discountedPrice + totalPackageCharges + orderDetails.shipping;
@@ -1434,14 +1453,14 @@ const Checkout = () => {
                       <div className="space-y-2">
                         <Label>Pickup Location</Label>
                         <select
-                           value={pickupLocationId}
-                           onChange={(e) => {
-                             const id = e.target.value;
-                             setPickupLocationId(id);
-                             const loc = pickupLocations.find((l) => l._id === id);
-                             setPickupSlot(loc?.slots?.[0] || null);
-                           }}
-                           className="w-full border rounded-md px-3 py-2 bg-white"
+                          value={pickupLocationId}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setPickupLocationId(id);
+                            const loc = pickupLocations.find((l) => l._id === id);
+                            setPickupSlot(loc?.slots?.[0] || null);
+                          }}
+                          className="w-full border rounded-md px-3 py-2 bg-white"
                         >
                           {pickupLocations.map((loc) => (
                             <option key={loc._id} value={loc._id}>
@@ -1504,7 +1523,7 @@ const Checkout = () => {
                       <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
-                  
+
                   {isScheduled && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-yellow-100">
                       <div className="space-y-1">
@@ -1566,11 +1585,10 @@ const Checkout = () => {
                     addresses.map((addr) => (
                       <div
                         key={addr._id}
-                        className={`border p-3 sm:p-4 rounded-lg cursor-pointer transition-colors ${
-                          selectedAddress?._id === addr._id
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                        className={`border p-3 sm:p-4 rounded-lg cursor-pointer transition-colors ${selectedAddress?._id === addr._id
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
                         onClick={() => setSelectedAddress(addr)}
                       >
                         <div className="flex justify-between items-start gap-3">
@@ -1701,6 +1719,124 @@ const Checkout = () => {
               )}
             </div>
 
+            {/* Delivery Instructions */}
+            {fulfillmentType === "delivery" && (
+              <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  📝 Delivery Preferences
+                </h2>
+
+                {/* Delivery Instructions */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-navy">Delivery Instructions (optional)</Label>
+                  <Textarea
+                    value={deliveryInstructions}
+                    onChange={(e) => setDeliveryInstructions(e.target.value)}
+                    placeholder="E.g., Leave at door, Ring bell twice, Call before delivery..."
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+
+                {/* Fulfillment Speed selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-navy">Fulfillment Mode / Speed</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { key: "express", label: "Express ⚡", desc: "30-45 mins (+₹49)" },
+                      { key: "same_day", label: "Same Day 🛵", desc: "Delivered today (+₹19)" },
+                      { key: "next_day", label: "Next Day 📅", desc: "Delivered tomorrow (FREE)" },
+                      { key: "scheduled", label: "Scheduled ⏰", desc: "Select future date (FREE)" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.key}
+                        type="button"
+                        onClick={() => setDeliveryMode(mode.key as any)}
+                        className={`border rounded-xl p-3 text-left transition-all ${deliveryMode === mode.key
+                          ? "border-accent bg-accent/5 shadow-sm"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
+                      >
+                        <p className={`text-xs font-bold ${deliveryMode === mode.key ? "text-accent" : "text-navy"}`}>{mode.label}</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-normal">{mode.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scheduled Delivery Date Picker */}
+                {deliveryMode === "scheduled" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-navy">Select Delivery Date</Label>
+                    <input
+                      type="date"
+                      value={deliveryScheduledDate}
+                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                      onChange={(e) => setDeliveryScheduledDate(e.target.value)}
+                      className="w-full border rounded-xl text-xs px-3 py-2 bg-white font-medium text-navy focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Delivery Time Slot Selector */}
+                {deliveryMode !== "express" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-navy">Select Delivery Slot Time</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { key: "morning", label: "Morning", desc: "9 AM - 12 PM" },
+                        { key: "afternoon", label: "Afternoon", desc: "12 PM - 4 PM" },
+                        { key: "evening", label: "Evening", desc: "4 PM - 8 PM" },
+                      ].map((slot) => (
+                        <button
+                          key={slot.key}
+                          type="button"
+                          onClick={() => setDeliverySlot(slot.key as any)}
+                          className={`border rounded-xl p-3 text-left transition-all ${deliverySlot === slot.key
+                            ? "border-accent bg-accent/5 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300"
+                            }`}
+                        >
+                          <p className={`text-xs font-bold ${deliverySlot === slot.key ? "text-accent" : "text-navy"}`}>{slot.label}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">{slot.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Gift Wrap */}
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-navy flex items-center gap-1.5">🎁 Gift Wrap (+₹29)</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Add a premium gift wrap with a personal message card</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={giftWrap}
+                        onChange={(e) => setGiftWrap(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                    </label>
+                  </div>
+                  {giftWrap && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-navy">Gift Message (optional)</Label>
+                      <Input
+                        value={giftMessage}
+                        onChange={(e) => setGiftMessage(e.target.value)}
+                        placeholder="Happy Birthday! 🎉 With love..."
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Coupon */}
             <div className="bg-white rounded-lg border p-4 sm:p-6">
               <div className="flex items-center justify-between gap-3">
@@ -1778,9 +1914,8 @@ const Checkout = () => {
                         key={c.code}
                         type="button"
                         onClick={() => !appliedCoupon && applyCoupon(c.code)}
-                        className={`text-left rounded-lg border p-3 transition ${
-                          ok ? "hover:border-primary" : "opacity-60 cursor-not-allowed"
-                        }`}
+                        className={`text-left rounded-lg border p-3 transition ${ok ? "hover:border-primary" : "opacity-60 cursor-not-allowed"
+                          }`}
                         disabled={!ok || !!appliedCoupon || couponLoading}
                       >
                         <div className="flex items-center justify-between">
@@ -1846,7 +1981,7 @@ const Checkout = () => {
 
                             <p className="font-semibold text-sm">₹{itemTotal.toFixed(2)}</p>
                             <p className="text-xs text-muted-foreground">₹{price.toFixed(2)} each</p>
-                            
+
                             {/* Show delivery fee per item if applicable */}
                             {(item.deliveryFee ?? 0) > 0 && (
                               <p className="text-xs text-muted-foreground mt-1">
@@ -1867,42 +2002,49 @@ const Checkout = () => {
                   <span className="text-muted-foreground text-sm">Total MRP</span>
                   <span>₹{totalMrp.toFixed(2)}</span>
                 </div>
- 
+
                 {mrpDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span className="text-sm">Discount on MRP</span>
                     <span>-₹{mrpDiscount.toFixed(2)}</span>
                   </div>
                 )}
- 
+
                 <div className="flex justify-between font-semibold text-navy">
                   <span className="text-sm">Price After Discount</span>
                   <span>₹{Math.max(0, orderDetails.subtotal).toFixed(2)}</span>
                 </div>
- 
+
                 {appliedCoupon && couponDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Coupon ({appliedCoupon.code})</span>
                     <span>-₹{couponDiscount.toFixed(2)}</span>
                   </div>
                 )}
- 
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground text-sm">Package Charges</span>
                   <span>₹{totalPackageCharges.toFixed(2)}</span>
                 </div>
- 
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground text-sm">Shipping Charges</span>
                   <span>
                     {orderDetails.shipping > 0 ? `₹${orderDetails.shipping.toFixed(2)}` : "FREE"}
                   </span>
                 </div>
- 
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground text-sm">GST (5%)</span>
                   <span>₹{totalGstAmount.toFixed(2)}</span>
                 </div>
+
+                {giftWrap && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">🎁 Gift Wrap</span>
+                    <span>₹29.00</span>
+                  </div>
+                )}
 
                 {orderDetails.rewardsDeduction > 0 && (
                   <div className="flex justify-between text-green-600">

@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -147,6 +147,18 @@ const WalletPage = () => {
   const [lifetimeEarnings, setLifetimeEarnings] = useState(0);
   const [cashbackBalance, setCashbackBalance] = useState(0);
 
+  const [challenges, setChallenges] = useState([
+    { id: "chal-1", title: "🏪 Local Store Supporter", desc: "Order 3 times from local merchants", progress: 2, target: 3, reward: 150, claimed: false },
+    { id: "chal-2", title: "👥 Network Builder", desc: "Invite 2 new users using your referral code", progress: 0, target: 2, reward: 300, claimed: false },
+    { id: "chal-3", title: "🎟️ Smart Shopper", desc: "Apply dynamic coupon codes on checkout", progress: 1, target: 1, reward: 100, claimed: false }
+  ]);
+
+  const handleClaimChallenge = (id: string, reward: number) => {
+    setChallenges(prev => prev.map(c => c.id === id ? { ...c, claimed: true } : c));
+    setRewardPoints(pts => pts + reward);
+    alert(`Congratulations! You earned ${reward} Loyalty Points!`);
+  };
+
   // Transaction
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txnFilter, setTxnFilter] = useState("all");
@@ -176,7 +188,7 @@ const WalletPage = () => {
     setDepositError("");
     const { user, token } = getAuth();
     if (!user || !token) { navigate("/login"); return; }
-    
+
     try {
       const res = await fetch(`${API_BASE}/wallet/add-funds`, {
         method: "POST",
@@ -309,9 +321,8 @@ const WalletPage = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                activeTab === tab.key ? "bg-navy text-white" : "text-muted-foreground hover:text-navy hover:bg-navy/5"
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === tab.key ? "bg-navy text-white" : "text-muted-foreground hover:text-navy hover:bg-navy/5"
+                }`}
             >
               <span>{tab.icon}</span> {tab.label}
             </button>
@@ -405,6 +416,72 @@ const WalletPage = () => {
                       </div>
                     );
                   })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Gift Card Redemption */}
+            <Card className="border-2 border-dashed border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-navy text-lg">Gift Cards</h3>
+                    <p className="text-xs text-muted-foreground">Redeem or purchase gift cards</p>
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl p-4 border shadow-sm">
+                    <p className="text-xs font-bold text-navy mb-2">🎁 Redeem Gift Card</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter gift card code"
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-300 focus:border-pink-400 outline-none"
+                      />
+                      <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white text-xs px-4">
+                        Redeem
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border shadow-sm">
+                    <p className="text-xs font-bold text-navy mb-2">🛍 Buy Gift Card</p>
+                    <div className="flex gap-2">
+                      {[250, 500, 1000, 2000].map(amt => (
+                        <button key={amt} className="flex-1 border rounded-lg py-2 text-xs font-bold text-navy hover:bg-pink-50 hover:border-pink-300 transition-colors">
+                          ₹{amt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cashback Ledger Summary */}
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-green-600" /> Cashback Ledger
+                </h3>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <p className="text-2xl font-bold text-green-600">{formatCurrency(cashbackBalance)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Available Cashback</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(pendingEarnings)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Pending Credits</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <p className="text-2xl font-bold text-purple-600">{formatCurrency(lifetimeEarnings)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total Earned</p>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-xs font-medium text-yellow-800">💡 <strong>Tip:</strong> Earn up to 10% cashback on every order when you reach Diamond tier!</p>
                 </div>
               </CardContent>
             </Card>
@@ -631,35 +708,127 @@ const WalletPage = () => {
         {/* ACHIEVEMENTS TAB */}
         {/* ════════════════════════════════════════════ */}
         {activeTab === "achievements" && (
-          <div className="space-y-4">
-            <p className="text-muted-foreground text-sm mb-2">Unlock tiers with purchases, referrals, and activity.</p>
-            {ACHIEVEMENTS.map((ach, i) => {
-              const unlocked = lifetimeEarnings >= ach.min;
-              const isCurrent = ach.tier === currentTier.tier;
-              return (
-                <Card key={i} className={`${isCurrent ? "border-2 border-yellow-400 shadow-md" : unlocked ? "border-green-200" : "opacity-60"}`}>
-                  <CardContent className="p-5 flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${ach.color} flex items-center justify-center text-2xl flex-shrink-0`}>
-                      {ach.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-navy">{ach.tier} Member</h4>
-                        {isCurrent && <Badge className="bg-yellow-100 text-yellow-700 text-xs">Current</Badge>}
-                        {unlocked && !isCurrent && <Badge className="bg-green-100 text-green-700 text-xs">Unlocked</Badge>}
-                        {!unlocked && <Badge className="bg-gray-100 text-gray-500 text-xs">Locked</Badge>}
+          <div className="space-y-6 text-left">
+            {/* Loyalty Levels Progress Card */}
+            <Card className="bg-gradient-to-r from-navy to-blue-900 text-white border-0 overflow-hidden relative shadow-premium">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-bold text-accent uppercase tracking-wider">ApexBee Loyalty Club</span>
+                    <h3 className="text-xl font-extrabold mt-1">Level 4: {currentTier.tier} Member</h3>
+                    <p className="text-xs text-white/80 mt-1">Earn points through shopping, services, and downline MLM referrals.</p>
+                  </div>
+                  <span className="text-3xl animate-bounce">🏆</span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mt-6 space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>2,450 XP Points</span>
+                    <span className="opacity-90">5,000 XP to Platinum</span>
+                  </div>
+                  <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: "49%" }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-6 text-center border-t border-white/10 pt-4 text-xs">
+                  <div>
+                    <p className="opacity-75 text-[9px] uppercase">Cashback Rate</p>
+                    <p className="font-extrabold text-sm mt-0.5">5% Direct</p>
+                  </div>
+                  <div>
+                    <p className="opacity-75 text-[9px] uppercase">Active Referrals</p>
+                    <p className="font-extrabold text-sm mt-0.5">14 Members</p>
+                  </div>
+                  <div>
+                    <p className="opacity-75 text-[9px] uppercase">Tier Reward</p>
+                    <p className="font-extrabold text-sm mt-0.5">Free Delivery</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Monthly Challenges Checklist */}
+            <Card className="border border-slate-100 shadow-premium">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <h4 className="font-extrabold text-navy text-sm">🎯 Monthly Challenges</h4>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Complete goals to unlock bonus wallet points.</p>
+                  </div>
+                  <Badge className="bg-amber-100 text-amber-800 font-bold text-[10px] border-none">July Goals</Badge>
+                </div>
+
+                <div className="space-y-4">
+                  {challenges.map((c) => {
+                    const isCompleted = c.progress >= c.target;
+                    const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
+                    return (
+                      <div key={c.id} className="p-3 bg-slate-50 border rounded-xl flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-bold text-navy text-xs leading-none">{c.title}</h5>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-normal">{c.desc}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-navy rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-[9px] font-black text-slate-500 shrink-0">{c.progress}/{c.target}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                          <span className="text-[10px] text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full font-bold">+{c.reward} pts</span>
+                          {c.claimed ? (
+                            <span className="text-[9px] font-bold text-slate-400">✓ Claimed</span>
+                          ) : isCompleted ? (
+                            <button
+                              onClick={() => handleClaimChallenge(c.id, c.reward)}
+                              className="text-[9px] font-black bg-accent hover:bg-accent/95 text-white px-3 py-1 rounded-lg border-none cursor-pointer shadow-sm animate-pulse transition active:scale-95"
+                            >
+                              Claim
+                            </button>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">In Progress</span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">Requires ₹{ach.min.toLocaleString()} lifetime activity</p>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {ach.benefits.map((b, j) => (
-                          <span key={j} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{b}</span>
-                        ))}
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Achievements details */}
+            <div className="space-y-3.5">
+              <h4 className="font-extrabold text-navy text-sm">Achievements Milestone Tiers</h4>
+              {ACHIEVEMENTS.map((ach, i) => {
+                const unlocked = lifetimeEarnings >= ach.min;
+                const isCurrent = ach.tier === currentTier.tier;
+                return (
+                  <Card key={i} className={`${isCurrent ? "border-2 border-yellow-400 shadow-md" : unlocked ? "border-green-200" : "opacity-60"}`}>
+                    <CardContent className="p-5 flex items-start gap-4">
+                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${ach.color} flex items-center justify-center text-2xl flex-shrink-0`}>
+                        {ach.icon}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-navy text-xs">{ach.tier} Member</h4>
+                          {isCurrent && <Badge className="bg-yellow-100 text-yellow-700 text-[10px] font-bold border-none">Current</Badge>}
+                          {unlocked && !isCurrent && <Badge className="bg-green-100 text-green-700 text-[10px] font-bold border-none">Unlocked</Badge>}
+                          {!unlocked && <Badge className="bg-gray-100 text-gray-500 text-[10px] font-bold border-none">Locked</Badge>}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Requires ₹{ach.min.toLocaleString()} lifetime activity</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {ach.benefits.map((b, j) => (
+                            <span key={j} className="text-[9px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{b}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 

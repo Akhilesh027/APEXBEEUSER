@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const getStatusDisplay = (status: string) => {
   switch (status) {
@@ -323,10 +323,14 @@ const StorePage = () => {
       deliveryFee: product.deliveryFee ?? 0,
     };
 
+    const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_BASE}/cart/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(item),
       });
       const data = await res.json();
@@ -670,11 +674,10 @@ const StorePage = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
-                className={`px-5 py-3 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap ${
-                  activeTab === tab.key 
-                    ? 'border-accent text-accent' 
-                    : 'border-transparent text-muted-foreground hover:text-navy'
-                }`}
+                className={`px-5 py-3 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap ${activeTab === tab.key
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted-foreground hover:text-navy'
+                  }`}
               >
                 {tab.icon} {tab.label}
               </button>
@@ -718,11 +721,10 @@ const StorePage = () => {
               <div className="mt-5 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                 <button
                   onClick={() => setSelectedCategoryId("ALL")}
-                  className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${
-                    selectedCategoryId === "ALL"
-                      ? "bg-accent text-white border-accent"
-                      : "bg-white text-navy border-slate-200 hover:bg-slate-50"
-                  }`}
+                  className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${selectedCategoryId === "ALL"
+                    ? "bg-accent text-white border-accent"
+                    : "bg-white text-navy border-slate-200 hover:bg-slate-50"
+                    }`}
                 >
                   🛍️ All Products
                 </button>
@@ -731,11 +733,10 @@ const StorePage = () => {
                   <button
                     key={c._id}
                     onClick={() => setSelectedCategoryId(c._id)}
-                    className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${
-                      selectedCategoryId === c._id
-                        ? "bg-accent text-white border-accent"
-                        : "bg-white text-navy border-slate-200 hover:bg-slate-50"
-                    }`}
+                    className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${selectedCategoryId === c._id
+                      ? "bg-accent text-white border-accent"
+                      : "bg-white text-navy border-slate-200 hover:bg-slate-50"
+                      }`}
                   >
                     📦 {c.name}
                   </button>
@@ -998,9 +999,8 @@ const StorePage = () => {
                       <div key={day} className="grid grid-cols-3 p-3 items-center border-b border-slate-50 last:border-none">
                         <span className="font-bold capitalize">{day}</span>
                         <div>
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                            settings.enabled ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${settings.enabled ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-700'
+                            }`}>
                             {settings.enabled ? 'Open' : 'Closed'}
                           </span>
                         </div>
@@ -1116,7 +1116,7 @@ const StorePage = () => {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl text-left border border-gray-150">
             <h3 className="text-lg font-black text-navy mb-4">Edit Customer Review</h3>
-            
+
             <div className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Rating</label>
@@ -1126,11 +1126,10 @@ const StorePage = () => {
                       key={num}
                       type="button"
                       onClick={() => setEditRating(num)}
-                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${
-                        editRating === num
-                          ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
-                          : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
-                      }`}
+                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${editRating === num
+                        ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
+                        : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
+                        }`}
                     >
                       {num}★
                     </button>
@@ -1256,11 +1255,10 @@ const StorePage = () => {
                         key={f.key}
                         type="button"
                         onClick={() => setSubFrequency(f.key as any)}
-                        className={`py-2 px-1 rounded-xl text-xs font-bold border transition ${
-                          subFrequency === f.key
-                            ? "bg-accent border-accent text-white shadow-sm"
-                            : "bg-white border-slate-200 text-navy hover:bg-slate-50"
-                        }`}
+                        className={`py-2 px-1 rounded-xl text-xs font-bold border transition ${subFrequency === f.key
+                          ? "bg-accent border-accent text-white shadow-sm"
+                          : "bg-white border-slate-200 text-navy hover:bg-slate-50"
+                          }`}
                       >
                         {f.label}
                       </button>
@@ -1279,11 +1277,10 @@ const StorePage = () => {
                               key={day}
                               type="button"
                               onClick={() => toggleCustomDay(day)}
-                              className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition ${
-                                active
-                                  ? "bg-navy border-navy text-white shadow-sm"
-                                  : "bg-white border-slate-200 text-navy hover:bg-slate-50"
-                              }`}
+                              className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition ${active
+                                ? "bg-navy border-navy text-white shadow-sm"
+                                : "bg-white border-slate-200 text-navy hover:bg-slate-50"
+                                }`}
                             >
                               {day}
                             </button>
@@ -1308,11 +1305,10 @@ const StorePage = () => {
                         key={slot.key}
                         type="button"
                         onClick={() => setSubSlot(slot.key)}
-                        className={`p-3 rounded-2xl text-left border transition flex flex-col gap-0.5 ${
-                          subSlot === slot.key
-                            ? "bg-navy/5 border-navy text-navy font-extrabold ring-2 ring-navy/20"
-                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                        }`}
+                        className={`p-3 rounded-2xl text-left border transition flex flex-col gap-0.5 ${subSlot === slot.key
+                          ? "bg-navy/5 border-navy text-navy font-extrabold ring-2 ring-navy/20"
+                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                          }`}
                       >
                         <span className="text-xs font-extrabold">{slot.key}</span>
                         <span className="text-[10px] text-muted-foreground font-normal">{slot.desc}</span>

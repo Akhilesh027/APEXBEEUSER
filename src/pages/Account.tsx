@@ -18,7 +18,7 @@ const Account = () => {
       try {
         const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-        const res = await fetch(`https://server.apexbee.in/api/user/wallet/${userId}`, { headers });
+        const res = await fetch(`http://localhost:5500/api/user/wallet/${userId}`, { headers });
         const data = await res.json();
         if (res.ok && data?.wallet) {
           setWalletBalance(data.wallet.balance || 0);

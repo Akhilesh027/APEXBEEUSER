@@ -9,7 +9,7 @@ import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Bri
 import { GoogleLogin } from "@react-oauth/google";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 type AccountType = "guest" | "customer" | "business";
 
@@ -186,6 +186,55 @@ const Register = () => {
       // 3. Registration Success!
       localStorage.setItem("user", JSON.stringify(registerData.user));
       localStorage.setItem("token", registerData.token);
+
+      const userId = registerData.user?._id || registerData.user?.id;
+      const token = registerData.token;
+
+      // Sync local wishlist
+      const localWish = localStorage.getItem("local_wishlist");
+      if (localWish && userId) {
+        try {
+          const productIds = JSON.parse(localWish);
+          if (Array.isArray(productIds) && productIds.length > 0) {
+            await fetch(`${API_BASE}/wishlist/sync`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ userId, productIds }),
+            });
+            localStorage.removeItem("local_wishlist");
+          }
+        } catch (err) {
+          console.error("Failed to sync local wishlist:", err);
+        }
+      }
+
+      // Sync local cart
+      const localCart = localStorage.getItem("local_cart");
+      if (localCart && userId) {
+        try {
+          const items = JSON.parse(localCart);
+          if (Array.isArray(items) && items.length > 0) {
+            for (const item of items) {
+              await fetch(`${API_BASE}/cart/add`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ ...item, userId }),
+              });
+            }
+            localStorage.removeItem("local_cart");
+          }
+        } catch (err) {
+          console.error("Failed to sync local cart:", err);
+        }
+      }
+
+      window.dispatchEvent(new Event("storage"));
       toast({ title: "Account created!", description: "Your account has been created successfully." });
       setShowOtpDialog(false);
 
@@ -273,8 +322,11 @@ const Register = () => {
                   <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Training Programs</li>
                   <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Business Growth Support</li>
                 </ul>
-                <Button onClick={() => setAccountType("business")} className="w-full mt-5 bg-accent hover:bg-accent/90 text-white">
-                  Register as Business Partner
+                <Button 
+                  onClick={() => setAccountType("business")} 
+                  className="w-full mt-5 bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white shadow-xl hover:shadow-indigo-500/20 font-black tracking-wider uppercase text-xs py-2.5 rounded-xl border-none animate-pulse"
+                >
+                  🚀 Start Free (Business Partner)
                 </Button>
               </div>
             </div>
@@ -399,7 +451,7 @@ const Register = () => {
                     <Input type="text" name="referralCode" placeholder="Referral code (optional)" value={formData.referralCode} onChange={handleInputChange} />
                   </div>
                   <Button type="submit" className="w-full mt-5 bg-accent hover:bg-accent/90 text-white" disabled={loading}>
-                    {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...</> : (isBusiness ? "Register as Business Partner" : "Register as Customer")}
+                    {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...</> : (isBusiness ? "🚀 Start Free (Register Now)" : "Register as Customer")}
                   </Button>
                 </form>
               </div>

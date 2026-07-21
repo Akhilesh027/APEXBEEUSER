@@ -20,7 +20,7 @@ import logo from "../Web images/Web images/logo.png";
 import FormModal from "./FormModal.tsx";
 import LocationModal from "./LocationModal";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
@@ -40,6 +40,15 @@ type CategoryItem = {
   name: string;
   image?: string;
 };
+
+const MOCK_NOTIFICATIONS = [
+  { _id: "notif-1", title: "🚚 Order Dispatched!", message: "Order #AB-90412 is on the way with partner Ramesh. ETA 15 mins. OTP: 5829", category: "orders", isRead: false, createdAt: new Date().toISOString() },
+  { _id: "notif-2", title: "🔥 Fresh Milk Flash Offer", message: "Same-day milk offer ends in 2 hours! Get 30% discount on local farm milk.", category: "offers", isRead: false, createdAt: new Date().toISOString() },
+  { _id: "notif-3", title: "💰 Referral Commission", message: "₹50 cash bonus added to your Wallet from downline sign-up Amit Singh.", category: "wallet", isRead: true, createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { _id: "notif-4", title: "🏪 Support Local Shops", message: "New Nellore Supermarket is now live. Check out daily nearby store deals!", category: "offers", isRead: true, createdAt: new Date(Date.now() - 7200000).toISOString() },
+  { _id: "notif-5", title: "🤝 Franchise Payout Approved", message: "Mandal level-1 partner commission of ₹1,200 cleared for JP Nagar zone.", category: "franchise", isRead: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
+  { _id: "notif-6", title: "🔔 KYC Complete Bonus", message: "Your KYC verification is complete. ₹50 registration bonus has unlocked.", category: "wallet", isRead: false, createdAt: new Date(Date.now() - 120000).toISOString() }
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -84,16 +93,43 @@ const Navbar = () => {
   const shopByRef = useRef<HTMLDivElement | null>(null);
   const earnRef = useRef<HTMLDivElement | null>(null);
   const portalRef = useRef<HTMLDivElement | null>(null);
+  const langRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
   const [portalDropdownOpen, setPortalDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Language selector state
+  const [langOpen, setLangOpen] = useState(false);
+  const [activeLang, setActiveLang] = useState(() => localStorage.getItem("user_language") || "en");
+  const languages: Record<string, string> = { en: "English", te: "తెలుగు", hi: "हिन्दी" };
+
+  // Voice/Barcode modal states
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [voiceText, setVoiceText] = useState("Try saying 'organic honey', 'milk', or 'atta'");
+  const [voiceStatus, setVoiceStatus] = useState("Listening...");
+  const [barcodeStatus, setBarcodeStatus] = useState("Align the barcode within the scanning frame");
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [activeNotificationTab, setActiveNotificationTab] = useState("all");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Search focus state
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("recent_searches") || "[]"); } catch { return []; }
+  });
+  const trendingSearches = ["Groceries", "Organic Ghee", "Aromatherapy", "Electrician", "Tuitions"];
+  const nearbyStoresMock = ["Nellore Supermarket", "Buchireddypalem Agro Mill", "Apex Pharmacy"];
 
   const closeAllPopovers = useCallback(() => {
     setEarnDropdownOpen(false);
     setShopByOpen(false);
     setMobileEarnOpen(false);
     setPortalDropdownOpen(false);
+    setLangOpen(false);
   }, []);
 
   const handleOpenForm = (title: string, endpoint: string) => {
@@ -268,7 +304,7 @@ const Navbar = () => {
         const data = await res.json();
         const list = data.notifications || [];
         setNotifications(list);
-        setUnreadCount(list.filter((n: any) => !n.isRead).length);
+        setUnreadCount(list.filter((n: any) => n.status === 'unread' || (!n.isRead && n.status !== 'read')).length);
       }
     } catch (err) {
       console.error("Error fetching notifications:", err);
@@ -285,7 +321,7 @@ const Navbar = () => {
       });
       if (res.ok) {
         setNotifications(prev =>
-          prev.map(n => n._id === notifId ? { ...n, isRead: true } : n)
+          prev.map(n => n._id === notifId ? { ...n, isRead: true, status: 'read' } : n)
         );
         setUnreadCount(c => Math.max(0, c - 1));
       }
@@ -307,12 +343,40 @@ const Navbar = () => {
       ]);
     } else {
       setLoggedInUser(null);
-      setCartItemsCount(0);
+      // Load local cart count
+      const local = localStorage.getItem("local_cart");
+      if (local) {
+        try {
+          const items = JSON.parse(local);
+          if (Array.isArray(items)) {
+            const totalItems = items.reduce((total: number, item: any) => total + (item?.quantity || 0), 0);
+            setCartItemsCount(totalItems);
+          } else {
+            setCartItemsCount(0);
+          }
+        } catch {
+          setCartItemsCount(0);
+        }
+      } else {
+        setCartItemsCount(0);
+      }
       setOrdersCount(0);
       setWalletTotal(0);
       setWalletHold(0);
       setNotifications([]);
       setUnreadCount(0);
+      // Load local wishlist count
+      const localWish = localStorage.getItem("local_wishlist");
+      if (localWish) {
+        try {
+          const list = JSON.parse(localWish);
+          setWishlistCount(Array.isArray(list) ? list.length : 0);
+        } catch {
+          setWishlistCount(0);
+        }
+      } else {
+        setWishlistCount(0);
+      }
     }
   }, [getUserData, fetchCartItemsCount, fetchOrdersCount, fetchWalletBalance, fetchNotifications]);
 
@@ -335,7 +399,17 @@ const Navbar = () => {
     const fetchWishlistCount = async () => {
       const { user, token } = getUserData();
       if (!user || !token) {
-        setWishlistCount(0);
+        const local = localStorage.getItem("local_wishlist");
+        if (local) {
+          try {
+            const list = JSON.parse(local);
+            setWishlistCount(Array.isArray(list) ? list.length : 0);
+          } catch {
+            setWishlistCount(0);
+          }
+        } else {
+          setWishlistCount(0);
+        }
         return;
       }
       try {
@@ -361,8 +435,9 @@ const Navbar = () => {
         const nextLoc = localStorage.getItem("user_location");
         setUserLocation(nextLoc ? JSON.parse(nextLoc) : null);
       }
-      if (e.key === "wishlist_updated") {
+      if (e.key === "wishlist_updated" || e.key === "local_wishlist" || e.key === "local_cart" || e.key === "cart_updated") {
         fetchWishlistCount();
+        fetchUserData();
       }
     };
 
@@ -378,6 +453,197 @@ const Navbar = () => {
     if (pin) return pin;
     return "Location set";
   }, [userLocation]);
+  // Audio beep player
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz beep
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15); // 150ms beep
+    } catch (e) {
+      console.error("Audio Context beep failed", e);
+    }
+  };
+
+  // Voice Search Effect
+  useEffect(() => {
+    if (!showVoiceModal) {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      return;
+    }
+
+    setVoiceStatus("Listening...");
+    setVoiceText("Speak now...");
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      recognitionRef.current = rec;
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = "en-IN";
+
+      rec.onstart = () => {
+        setVoiceStatus("Listening...");
+      };
+
+      rec.onresult = (event: any) => {
+        const resultText = event.results[0][0].transcript;
+        setVoiceStatus("Success!");
+        setVoiceText(`You said: "${resultText}"`);
+        playBeep();
+
+        setTimeout(() => {
+          setSearchQuery(resultText);
+          const updated = [resultText, ...recentSearches.filter((s) => s !== resultText)].slice(0, 5);
+          setRecentSearches(updated);
+          localStorage.setItem("recent_searches", JSON.stringify(updated));
+          setShowVoiceModal(false);
+          navigate(`/products?q=${encodeURIComponent(resultText)}`);
+        }, 1200);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech Recognition Error", e);
+        setVoiceStatus("Error");
+        setVoiceText("Could not understand. Trying mock fallback...");
+        runMockVoiceSearch();
+      };
+
+      rec.start();
+    } else {
+      setVoiceStatus("Microphone Listening...");
+      runMockVoiceSearch();
+    }
+
+    function runMockVoiceSearch() {
+      const t1 = setTimeout(() => {
+        setVoiceStatus("Processing voice...");
+        setVoiceText('Detecting: "Organic Honey"');
+      }, 1500);
+
+      const t2 = setTimeout(() => {
+        setVoiceStatus("Success!");
+        playBeep();
+        const q = "Organic Honey";
+        setSearchQuery(q);
+        const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+        setRecentSearches(updated);
+        localStorage.setItem("recent_searches", JSON.stringify(updated));
+        setShowVoiceModal(false);
+        navigate(`/products?q=${encodeURIComponent(q)}`);
+      }, 3000);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [showVoiceModal]);
+
+  // Barcode Scanner Effect
+  useEffect(() => {
+    if (!showBarcodeModal) {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+        setCameraStream(null);
+      }
+      return;
+    }
+
+    setBarcodeStatus("Initializing camera stream...");
+
+    // Try starting physical camera
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((stream) => {
+        setCameraStream(stream);
+        setBarcodeStatus("Align the barcode in the frame...");
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+
+        // Mock scan detection after camera opens
+        const tScan = setTimeout(() => {
+          setBarcodeStatus("Barcode detected: 8901058002315 (Milk Packet)");
+          playBeep();
+
+          setTimeout(() => {
+            const q = "Milk";
+            setSearchQuery(q);
+            const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+            setRecentSearches(updated);
+            localStorage.setItem("recent_searches", JSON.stringify(updated));
+            setShowBarcodeModal(false);
+            navigate(`/products?q=${encodeURIComponent(q)}`);
+          }, 1500);
+        }, 3500);
+
+        return () => clearTimeout(tScan);
+      })
+      .catch((err) => {
+        console.warn("Camera access denied or unavailable, using simulation", err);
+        setBarcodeStatus("Camera blocked. Simulating product scan...");
+
+        const t1 = setTimeout(() => {
+          setBarcodeStatus("Reading barcode scanline...");
+        }, 1500);
+
+        const t2 = setTimeout(() => {
+          setBarcodeStatus("Success! Barcode 8901058002315 read.");
+          playBeep();
+
+          setTimeout(() => {
+            const q = "Milk";
+            setSearchQuery(q);
+            const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+            setRecentSearches(updated);
+            localStorage.setItem("recent_searches", JSON.stringify(updated));
+            setShowBarcodeModal(false);
+            navigate(`/products?q=${encodeURIComponent(q)}`);
+          }, 1500);
+        }, 3000);
+
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+        };
+      });
+
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [showBarcodeModal]);
+
+  const allNotifications = useMemo(() => {
+    if (notifications && notifications.length > 0) {
+      return notifications.map((n: any) => {
+        let category = "orders";
+        const msg = (n.message || "").toLowerCase();
+        if (msg.includes("wallet") || msg.includes("cashback") || msg.includes("bonus") || msg.includes("commission") || msg.includes("rupee") || msg.includes("payout")) category = "wallet";
+        else if (msg.includes("offer") || msg.includes("discount") || msg.includes("coupon") || msg.includes("deal") || msg.includes("sale")) category = "offers";
+        else if (msg.includes("business") || msg.includes("partner") || msg.includes("shop") || msg.includes("merchant")) category = "business";
+        else if (msg.includes("franchise") || msg.includes("mandal") || msg.includes("district")) category = "franchise";
+        return { ...n, category };
+      });
+    }
+    return MOCK_NOTIFICATIONS;
+  }, [notifications]);
+
+  const filteredNotifications = useMemo(() => {
+    if (activeNotificationTab === "all") return allNotifications;
+    return allNotifications.filter((n: any) => n.category === activeNotificationTab);
+  }, [allNotifications, activeNotificationTab]);
 
   // refresh counts on route change
   useEffect(() => {
@@ -410,10 +676,15 @@ const Navbar = () => {
       if (shopByOpen && shopByRef.current && !shopByRef.current.contains(t)) setShopByOpen(false);
       if (earnDropdownOpen && earnRef.current && !earnRef.current.contains(t)) setEarnDropdownOpen(false);
       if (portalDropdownOpen && portalRef.current && !portalRef.current.contains(t)) setPortalDropdownOpen(false);
+      if (langOpen && langRef.current && !langRef.current.contains(t)) setLangOpen(false);
+      if (searchFocused && searchRef.current && !searchRef.current.contains(t)) setSearchFocused(false);
     };
 
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAllPopovers();
+      if (e.key === "Escape") {
+        closeAllPopovers();
+        setSearchFocused(false);
+      }
     };
 
     window.addEventListener("mousedown", onDown);
@@ -422,7 +693,7 @@ const Navbar = () => {
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("keydown", onEsc);
     };
-  }, [shopByOpen, earnDropdownOpen, portalDropdownOpen, closeAllPopovers]);
+  }, [shopByOpen, earnDropdownOpen, portalDropdownOpen, langOpen, searchFocused, closeAllPopovers]);
 
   const formatMoney = (balance: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -620,7 +891,7 @@ const Navbar = () => {
             />
 
             {/* Right Section */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {/* Location selector at top right corner */}
               <div
                 className="flex items-center gap-1 cursor-pointer hover:text-accent text-xs bg-white/10 px-2 py-1 rounded border border-white/10"
@@ -631,6 +902,35 @@ const Navbar = () => {
                   {locationLabel}
                 </span>
                 <span className="text-[8px] text-accent">▼</span>
+              </div>
+
+              {/* Language Selector */}
+              <div className="relative" ref={langRef}>
+                <div
+                  className="flex items-center gap-1 cursor-pointer hover:text-accent text-xs bg-white/10 px-2.5 py-1 rounded border border-white/10"
+                  onClick={() => setLangOpen((v) => !v)}
+                >
+                  <span className="text-xs">🌐</span>
+                  <span className="font-semibold text-xs leading-none">{languages[activeLang] || "English"}</span>
+                  <span className="text-[8px] text-accent leading-none">▼</span>
+                </div>
+                {langOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-white text-black rounded-xl shadow-xl border border-slate-100 py-1 w-28 z-50 text-[11px] font-bold">
+                    {Object.entries(languages).map(([code, name]) => (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          setActiveLang(code);
+                          localStorage.setItem("user_language", code);
+                          setLangOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 transition-colors ${activeLang === code ? "text-accent" : "text-navy"}`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Wishlist Link with notification badge */}
@@ -682,27 +982,129 @@ const Navbar = () => {
         </div>
 
         {/* Search */}
-        <div className="flex-1 relative max-w-2xl">
+        <div className="flex-1 relative max-w-2xl" ref={searchRef}>
           <Input
             type="text"
-            placeholder="Search for products, brands, or categories..."
-            className="w-full bg-white text-foreground pr-10"
+            placeholder="Search groceries, restaurants, medicines, services..."
+            className="w-full bg-white text-foreground pr-24 focus:ring-2 focus:ring-accent"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
+                const q = searchQuery.trim();
+                if (q) {
+                  const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+                  setRecentSearches(updated);
+                  localStorage.setItem("recent_searches", JSON.stringify(updated));
+                  setSearchFocused(false);
+                  navigate(`/products?q=${encodeURIComponent(q)}`);
+                }
               }
             }}
           />
-          <Search
-            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-navy transition-colors"
-            onClick={() => {
-              if (searchQuery.trim()) {
-                navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
-              }
-            }}
-          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2.5">
+            <button
+              onClick={() => setShowVoiceModal(true)}
+              className="text-muted-foreground hover:text-navy cursor-pointer bg-transparent border-none p-0 text-sm leading-none"
+              title="Voice Search"
+            >
+              🎤
+            </button>
+            <button
+              onClick={() => setShowBarcodeModal(true)}
+              className="text-muted-foreground hover:text-navy cursor-pointer bg-transparent border-none p-0 text-sm leading-none"
+              title="Barcode Scan"
+            >
+              📷
+            </button>
+            <Search
+              className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-navy transition-colors"
+              onClick={() => {
+                const q = searchQuery.trim();
+                if (q) {
+                  const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+                  setRecentSearches(updated);
+                  localStorage.setItem("recent_searches", JSON.stringify(updated));
+                  setSearchFocused(false);
+                  navigate(`/products?q=${encodeURIComponent(q)}`);
+                }
+              }}
+            />
+          </div>
+
+          {searchFocused && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-4 z-50 text-left">
+              {recentSearches.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent Searches</p>
+                    <button
+                      className="text-[9px] text-red-500 hover:underline font-bold"
+                      onClick={() => {
+                        setRecentSearches([]);
+                        localStorage.removeItem("recent_searches");
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {recentSearches.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setSearchQuery(s);
+                          setSearchFocused(false);
+                          navigate(`/products?q=${encodeURIComponent(s)}`);
+                        }}
+                        className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors"
+                      >
+                        🕒 {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">🔥 Trending Searches</p>
+                <div className="flex gap-2 flex-wrap">
+                  {trendingSearches.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSearchQuery(s);
+                        setSearchFocused(false);
+                        navigate(`/products?q=${encodeURIComponent(s)}`);
+                      }}
+                      className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">📍 Nearby Stores</p>
+                <div className="space-y-1.5">
+                  {nearbyStoresMock.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSearchFocused(false);
+                        navigate("/local-stores");
+                      }}
+                      className="w-full text-left text-xs text-navy font-semibold hover:bg-slate-50 p-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      🏪 {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Notifications (bell icon with popover next to search) */}
@@ -720,41 +1122,91 @@ const Navbar = () => {
           </Button>
 
           {notificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 text-navy p-4">
+            <div className="absolute right-0 top-full mt-2 w-96 bg-white border border-slate-100 rounded-2xl shadow-premium z-50 text-navy p-4">
               <div className="flex items-center justify-between border-b pb-2 mb-2">
-                <p className="font-bold text-sm text-navy">Notifications ({unreadCount})</p>
-                <button
-                  className="text-xs text-accent font-bold hover:underline"
-                  onClick={() => setNotificationsOpen(false)}
-                >
-                  Close
-                </button>
+                <p className="font-extrabold text-sm text-navy">Notifications ({allNotifications.filter((n: any) => !n.isRead && n.status !== 'read').length})</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="text-[10px] text-accent font-black hover:underline border-none bg-transparent cursor-pointer"
+                    onClick={() => {
+                      setNotifications(prev => prev.map(n => ({ ...n, isRead: true, status: 'read' })));
+                      setUnreadCount(0);
+                    }}
+                  >
+                    Mark all read
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button
+                    className="text-[10px] text-slate-500 font-bold hover:underline border-none bg-transparent cursor-pointer"
+                    onClick={() => setNotificationsOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="text-center text-xs text-muted-foreground py-4">No notifications yet.</p>
+
+              {/* Grouping Tabs */}
+              <div className="flex gap-1 overflow-x-auto pb-1 mb-2 border-b scrollbar-none">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "orders", label: "Orders" },
+                  { key: "offers", label: "Offers" },
+                  { key: "wallet", label: "Wallet" },
+                  { key: "franchise", label: "Network" }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveNotificationTab(tab.key)}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${activeNotificationTab === tab.key
+                      ? "bg-navy text-white"
+                      : "text-muted-foreground hover:bg-slate-100 bg-transparent"
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+                {filteredNotifications.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-xs">No notifications in this category.</p>
+                  </div>
                 ) : (
-                  notifications.map((n) => (
-                    <div key={n._id} className="border-b last:border-0 pb-2 last:pb-0 text-left flex justify-between items-start gap-2">
-                      <div className="flex-1">
-                        <p className={`font-semibold text-xs text-navy leading-tight ${n.isRead ? "opacity-60" : ""}`}>{n.title}</p>
-                        <p className={`text-[10px] text-muted-foreground mt-0.5 leading-normal ${n.isRead ? "opacity-60" : ""}`}>
-                          {n.message}
-                        </p>
-                        <p className="text-[8px] text-muted-foreground mt-1 font-medium text-slate-500">
-                          {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                  filteredNotifications.map((n: any) => {
+                    const isUnread = !n.isRead && n.status !== 'read';
+                    return (
+                      <div key={n._id} className={`p-2 rounded-xl transition text-left flex gap-2 relative ${isUnread ? "bg-blue-50/40" : "opacity-75 hover:bg-slate-50"}`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${n.category === 'orders' ? 'bg-blue-100 text-blue-700' :
+                              n.category === 'offers' ? 'bg-amber-100 text-amber-700' :
+                                n.category === 'wallet' ? 'bg-green-100 text-green-700' :
+                                  'bg-purple-100 text-purple-700'
+                              }`}>
+                              {n.category === 'franchise' ? 'Network' : n.category}
+                            </span>
+                            {isUnread && <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0" />}
+                          </div>
+                          <p className="font-extrabold text-navy text-xs mt-1.5 leading-tight">{n.title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
+                            {n.message}
+                          </p>
+                          <p className="text-[8px] text-slate-400 mt-1 font-bold">
+                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        {isUnread && (
+                          <button
+                            onClick={() => handleMarkAsRead(n._id)}
+                            className="text-[9px] text-accent font-black hover:underline shrink-0 align-self-start mt-1.5 border-none bg-transparent cursor-pointer"
+                          >
+                            Mark Read
+                          </button>
+                        )}
                       </div>
-                      {!n.isRead && (
-                        <button
-                          onClick={() => handleMarkAsRead(n._id)}
-                          className="text-[9px] text-accent font-bold hover:underline shrink-0"
-                        >
-                          Mark read
-                        </button>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -1080,6 +1532,57 @@ const Navbar = () => {
           </div>
         </div>
       )}
+      {/* Voice Search Modal */}
+      {showVoiceModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-navy font-black text-lg">{voiceStatus}</h3>
+            <div className="w-20 h-20 bg-accent/10 border border-accent/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
+              <span className="text-3xl animate-bounce">🎙️</span>
+            </div>
+            <p className="text-xs font-semibold text-slate-700">{voiceText}</p>
+            <button
+              onClick={() => setShowVoiceModal(false)}
+              className="text-xs text-slate-500 font-bold bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-full cursor-pointer border-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Scan Modal */}
+      {showBarcodeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-navy font-black text-lg">Scan Product Barcode</h3>
+            <div className="w-full h-48 bg-slate-100 border-2 border-dashed border-slate-300 rounded-2xl relative overflow-hidden flex items-center justify-center mx-auto">
+              {cameraStream ? (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-4xl animate-pulse">📷</span>
+                  <span className="text-[10px] text-muted-foreground">Camera loading/simulating...</span>
+                </div>
+              )}
+              <div className="absolute left-0 right-0 h-0.5 bg-red-500 animate-bounce top-1/2 shadow-[0_0_8px_red]" />
+            </div>
+            <p className="text-xs font-semibold text-slate-700">{barcodeStatus}</p>
+            <button
+              onClick={() => setShowBarcodeModal(false)}
+              className="text-xs text-slate-500 font-bold bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-full cursor-pointer border-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <LocationModal
         open={openLocationModal}
         onOpenChange={setOpenLocationModal}

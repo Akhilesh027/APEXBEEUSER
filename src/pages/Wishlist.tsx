@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const Wishlist = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const Wishlist = () => {
 
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [priceAlerts, setPriceAlerts] = useState<Record<string, boolean>>({});
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id;
@@ -80,14 +81,17 @@ const Wishlist = () => {
         vendorId: item.vendorId || null,
       };
 
-      const res = await axios.post(`${API_BASE}/cart/add`, payload);
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`${API_BASE}/cart/add`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (res.data.success) {
         toast({
           title: "Added to cart",
           description: `${item.name} has been added to your cart`,
         });
-        
+
         // Move item: remove from wishlist once added to cart successfully
         await removeFromWishlist(item._id);
 
@@ -111,7 +115,7 @@ const Wishlist = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <Navbar/>
+      <Navbar />
       <div className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -177,15 +181,35 @@ const Wishlist = () => {
                   <h3 className="font-semibold text-foreground text-lg mb-2 line-clamp-2">
                     {item.name}
                   </h3>
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl font-bold text-foreground">
-                      ₹{item.price.toFixed(2)}
+                      ₹{item.price.toFixed(0)}
                     </span>
                     {item.originalPrice && (
                       <span className="text-sm text-muted-foreground line-through">
-                        ₹{item.originalPrice.toFixed(2)}
+                        ₹{item.originalPrice.toFixed(0)}
                       </span>
                     )}
+                  </div>
+                  <div className="flex items-center justify-between mb-4 pt-2 border-t border-slate-100">
+                    <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      🔔 Notify when price drops
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={priceAlerts[item._id] || false}
+                      onChange={(e) => {
+                        const nextVal = e.target.checked;
+                        setPriceAlerts(prev => ({ ...prev, [item._id]: nextVal }));
+                        if (nextVal) {
+                          toast({
+                            title: "Price alerts enabled",
+                            description: `You will be notified if the price of ${item.name} drops!`,
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-accent border-slate-300 rounded focus:ring-accent cursor-pointer"
+                    />
                   </div>
                   <Button
                     className="w-full"

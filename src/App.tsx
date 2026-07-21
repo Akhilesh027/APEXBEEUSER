@@ -32,8 +32,11 @@ import Academy from "./pages/Academy";
 import Services from "./pages/Services";
 import Travel from "./pages/Travel";
 import Community from "./pages/Community";
+import TrackOrder from "./pages/TrackOrder";
 import AdminReviews from "./pages/AdminReviews";
-
+import AdminPersonalization from "./pages/AdminPersonalization";
+import AbhiAssistant from "./components/AbhiAssistant";
+import LocalStores from "./pages/LocalStores";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -85,7 +88,7 @@ const App = () => (
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/business/:id" element={<StorePage />} />
-          <Route path="/local-stores" element={<SuperVendor />} />
+          <Route path="/local-stores" element={<LocalStores />} />
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:categoryName" element={<CategoryPage />} />
@@ -102,14 +105,17 @@ const App = () => (
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
           <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+          <Route path="/track-order/:orderId" element={<ProtectedRoute><TrackOrder /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
           <Route path="/admin/reviews" element={<ProtectedRoute><AdminReviews /></ProtectedRoute>} />
+          <Route path="/admin/personalization" element={<ProtectedRoute><AdminPersonalization /></ProtectedRoute>} />
 
           {/* ===== Catch-all ===== */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AbhiAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

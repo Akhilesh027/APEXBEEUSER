@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-    User, Package, MapPin, Gift, Edit, ChevronRight, Loader2, X, Truck, CheckCircle, Clock, AlertCircle, CreditCard, Calendar, Save, Camera, Plus, Trash2, Copy, Share2, Users
+    User, Package, MapPin, Gift, Edit, ChevronRight, Loader2, X, Truck, CheckCircle, Clock, AlertCircle, CreditCard, Calendar, Save, Camera, Plus, Trash2, Copy, Share2, Users, Settings, Shield, Star, Moon, Eye, FileText
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -39,19 +39,19 @@ interface ReferralHistory {
 
 // --- API Configuration ---
 // NOTE: Use environment variable in production (e.g., import.meta.env.VITE_API_URL)
-const API_BASE_URL = "https://server.apexbee.in"; 
+const API_BASE_URL = "http://localhost:5500";
 
 
 const Profile = () => {
     const navigate = useNavigate();
     // const { toast } = useToast(); // Assuming toast hook is available, mocking if not
-    const toast = (config) => console.log('Toast:', config.title, config.description); 
-    
+    const toast = (config) => console.log('Toast:', config.title, config.description);
+
     const [activeTab, setActiveTab] = useState("profile");
     const [userData, setUserData] = useState(null);
     const [orders, setOrders] = useState([]);
     const [addresses, setAddresses] = useState([]);
-    
+
     // --- Referral States ---
     const [referralCode, setReferralCode] = useState("");
     const [referralLink, setReferralLink] = useState("");
@@ -62,7 +62,7 @@ const Profile = () => {
     const [referralHistory, setReferralHistory] = useState<ReferralHistory[]>([]);
     const [referralLoaded, setReferralLoaded] = useState(false);
     // --- End Referral States ---
-    
+
     const [loading, setLoading] = useState({
         user: true,
         orders: false,
@@ -79,7 +79,7 @@ const Profile = () => {
     const [showEditProfile, setShowEditProfile] = useState(false);
     const [showAddAddress, setShowAddAddress] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
-    const [copyLoading, setCopyLoading] = useState(false); 
+    const [copyLoading, setCopyLoading] = useState(false);
 
     const [editFormData, setEditFormData] = useState({
         name: "", email: "", phone: "", dateOfBirth: "", gender: "", bio: ""
@@ -284,7 +284,7 @@ const Profile = () => {
             copyToClipboard(referralLink, 'link');
         }
     };
-    
+
     const getReferralStatusColor = (status: string) => {
         switch (status) {
             case 'credited': return 'text-green-600';
@@ -678,11 +678,12 @@ const Profile = () => {
 
                     {/* Tabs */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                        <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+                        <TabsList className="grid w-full grid-cols-5 bg-muted/50">
                             <TabsTrigger value="profile" className="gap-2"> <User className="h-4 w-4" /> Profile </TabsTrigger>
                             <TabsTrigger value="orders" className="gap-2"> <Package className="h-4 w-4" /> My Orders </TabsTrigger>
                             <TabsTrigger value="addresses" className="gap-2"> <MapPin className="h-4 w-4" /> Addresses </TabsTrigger>
                             <TabsTrigger value="referrals" className="gap-2"> <Gift className="h-4 w-4" /> Referrals </TabsTrigger>
+                            <TabsTrigger value="settings" className="gap-2"> <Settings className="h-4 w-4" /> Settings </TabsTrigger>
                         </TabsList>
 
                         {/* Profile Details Tab */}
@@ -893,8 +894,15 @@ const Profile = () => {
                                                 <div key={address._id || address.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="flex items-center gap-2">
-                                                            <Badge variant="outline">{address.type || 'Address'}</Badge>
-                                                            {address.isDefault && (<Badge className="bg-yellow text-navy">Default</Badge>)}
+                                                            <Badge className={
+                                                                address.type === 'home' ? 'bg-green-600 text-white font-bold' :
+                                                                    address.type === 'office' ? 'bg-blue-600 text-white font-bold' :
+                                                                        address.type === 'parents' ? 'bg-purple-600 text-white font-bold' :
+                                                                            'bg-slate-600 text-white font-bold'
+                                                            }>
+                                                                {(address.type || 'HOME').toUpperCase()}
+                                                            </Badge>
+                                                            {address.isDefault && (<Badge className="bg-amber-600 text-white font-black">DEFAULT</Badge>)}
                                                         </div>
                                                         <div className="flex gap-2">
                                                             {!address.isDefault && (
@@ -924,7 +932,7 @@ const Profile = () => {
                                 <CardHeader>
                                     <CardTitle>Refer & Earn Rewards</CardTitle>
                                 </CardHeader>
-                                
+
                                 {loading.referrals ? (
                                     <CardContent>
                                         <div className="flex justify-center items-center min-h-64"> <Loader2 className="h-8 w-8 animate-spin text-navy" /> </div>
@@ -961,7 +969,7 @@ const Profile = () => {
                                         {/* Referral Code & Link */}
                                         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
                                             <h3 className="text-xl font-bold text-navy mb-4">Your Referral Code & Link</h3>
-                                            
+
                                             {/* Referral Code */}
                                             <div className="mb-6">
                                                 <label className="block text-sm font-medium text-navy mb-2">Referral Code</label>
@@ -1082,6 +1090,177 @@ const Profile = () => {
                                 )}
                             </Card>
                         </TabsContent>
+
+                        {/* ══════════════════════════════════ */}
+                        {/* Settings Tab */}
+                        {/* ══════════════════════════════════ */}
+                        <TabsContent value="settings">
+                            <div className="space-y-6">
+
+                                {/* Reviews History */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> My Reviews</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            {[
+                                                { product: "Aashirvaad Atta 5kg", rating: 5, date: "2024-12-15", comment: "Excellent quality! Fresh and soft rotis every time." },
+                                                { product: "Amul Butter 500g", rating: 4, date: "2024-11-28", comment: "Good taste, delivery was a bit delayed though." },
+                                                { product: "Tata Salt 1kg", rating: 5, date: "2024-10-10", comment: "Best salt for everyday use. Always buy from ApexBee!" },
+                                            ].map((review, i) => (
+                                                <div key={i} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="font-semibold text-navy">{review.product}</p>
+                                                            <div className="flex items-center gap-1 mt-1">
+                                                                {Array.from({ length: 5 }, (_, idx) => (
+                                                                    <Star key={idx} className={`h-4 w-4 ${idx < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">{formatDate(review.date)}</span>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {/* No reviews empty state */}
+                                        <p className="text-center text-xs text-muted-foreground mt-4">Showing your most recent reviews</p>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Saved Payment Cards */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-500" /> Saved Payment Methods</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-3">
+                                            {[
+                                                { type: "VISA", last4: "4242", expiry: "12/26", isDefault: true },
+                                                { type: "Mastercard", last4: "8888", expiry: "06/25", isDefault: false },
+                                            ].map((card, i) => (
+                                                <div key={i} className="flex items-center justify-between border rounded-lg p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-8 bg-gradient-to-br from-navy to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">{card.type}</div>
+                                                        <div>
+                                                            <p className="text-sm font-medium">•••• •••• •••• {card.last4}</p>
+                                                            <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {card.isDefault && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Default</Badge>}
+                                                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <Button variant="outline" className="mt-4 w-full gap-2"><Plus className="h-4 w-4" /> Add New Payment Method</Button>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Preferences */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-gray-500" /> Preferences</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Dark Mode Toggle */}
+                                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                                            <div className="flex items-center gap-3">
+                                                <Moon className="h-5 w-5 text-indigo-500" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Dark Mode</p>
+                                                    <p className="text-xs text-muted-foreground">Switch to dark theme</p>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" />
+                                                <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                                            </label>
+                                        </div>
+
+                                        {/* Notifications */}
+                                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                                            <div className="flex items-center gap-3">
+                                                <Eye className="h-5 w-5 text-green-500" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Push Notifications</p>
+                                                    <p className="text-xs text-muted-foreground">Get order & offer updates</p>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" defaultChecked className="sr-only peer" />
+                                                <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                            </label>
+                                        </div>
+
+                                        {/* Language */}
+                                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-lg">🌍</span>
+                                                <div>
+                                                    <p className="text-sm font-medium">Language</p>
+                                                    <p className="text-xs text-muted-foreground">Choose your preferred language</p>
+                                                </div>
+                                            </div>
+                                            <select className="text-sm border rounded-lg px-3 py-1.5 bg-white">
+                                                <option>English</option>
+                                                <option>Telugu</option>
+                                                <option>Hindi</option>
+                                                <option>Tamil</option>
+                                            </select>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Privacy & Security */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-red-500" /> Privacy & Security</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <FileText className="h-5 w-5 text-navy" />
+                                                <span className="text-sm font-medium">Privacy Policy</span>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                        </button>
+                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <FileText className="h-5 w-5 text-navy" />
+                                                <span className="text-sm font-medium">Terms of Service</span>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                        </button>
+                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <Shield className="h-5 w-5 text-navy" />
+                                                <span className="text-sm font-medium">Change Password</span>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                        </button>
+                                        <div className="border-t pt-4 mt-4">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                onClick={() => {
+                                                    if (window.confirm("Are you sure you want to delete your account? This action is irreversible and all your data will be permanently removed.")) {
+                                                        alert("Account deletion request submitted. You will receive a confirmation email within 24 hours.");
+                                                    }
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" /> Delete Account
+                                            </Button>
+                                            <p className="text-xs text-muted-foreground text-center mt-2">This action cannot be undone. Your data will be permanently deleted.</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                            </div>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
@@ -1120,6 +1299,37 @@ const Profile = () => {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader> <DialogTitle> {editingAddress ? 'Edit Address' : 'Add New Address'} </DialogTitle> </DialogHeader>
                     <div className="space-y-4">
+                        {/* Mock Map Pin Drag */}
+                        <div className="p-3 border border-slate-100 bg-slate-50 rounded-2xl space-y-2 text-left">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-navy">📍 Locate on Map (Draggable Pin)</span>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-[10px] h-7 px-2 text-accent border-accent hover:bg-accent hover:text-white"
+                                    onClick={() => {
+                                        setAddressFormData(prev => ({
+                                            ...prev,
+                                            address: "Ward No. 8, Buchireddypalem",
+                                            city: "Buchireddypalem",
+                                            state: "Andhra Pradesh",
+                                            pincode: "524305"
+                                        }));
+                                        alert("GPS auto-detected: Buchireddypalem, Andhra Pradesh!");
+                                    }}
+                                >
+                                    🛰️ Auto GPS Location
+                                </Button>
+                            </div>
+                            <div className="h-28 bg-blue-50 rounded-xl relative overflow-hidden flex items-center justify-center border border-blue-200">
+                                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:16px_16px]" />
+                                <div className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute" />
+                                <span className="text-2xl z-10 animate-bounce">📍</span>
+                                <span className="absolute bottom-1 right-2 text-[8px] bg-navy/80 text-white px-1.5 py-0.5 rounded">Drag pin to adjust</span>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2"> <Label htmlFor="address-name">Full Name</Label> <Input id="address-name" value={addressFormData.name} onChange={(e) => setAddressFormData(prev => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" /> </div>
                             <div className="space-y-2"> <Label htmlFor="address-phone">Phone Number</Label> <Input id="address-phone" value={addressFormData.phone} onChange={(e) => setAddressFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="Enter your phone number" /> </div>
@@ -1127,7 +1337,12 @@ const Profile = () => {
                                 <Label htmlFor="address-type">Address Type</Label>
                                 <Select value={addressFormData.type} onValueChange={(value) => setAddressFormData(prev => ({ ...prev, type: value }))}>
                                     <SelectTrigger> <SelectValue placeholder="Select address type" /> </SelectTrigger>
-                                    <SelectContent> <SelectItem value="home">Home</SelectItem> <SelectItem value="work">Work</SelectItem> <SelectItem value="other">Other</SelectItem> </SelectContent>
+                                    <SelectContent>
+                                        <SelectItem value="home">Home</SelectItem>
+                                        <SelectItem value="office">Office</SelectItem>
+                                        <SelectItem value="parents">Parents</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2"> <Label htmlFor="address-pincode">Pincode</Label> <Input id="address-pincode" value={addressFormData.pincode} onChange={(e) => setAddressFormData(prev => ({ ...prev, pincode: e.target.value }))} placeholder="Enter pincode" /> </div>

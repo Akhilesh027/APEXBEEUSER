@@ -16,7 +16,7 @@ const formatCurrency = (amount: any) => {
   }).format(value);
 };
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const initialProduct: any = {
   _id: null,
@@ -110,7 +110,7 @@ const ProductDetail = () => {
   const shippingCharge = product.adminPricing?.shippingCharge ?? product.deliveryFee ?? 0;
   const packingCharge = product.adminPricing?.packingCharge ?? 0;
 
-  const afterDiscount = selectedVariant 
+  const afterDiscount = selectedVariant
     ? (selectedVariant.sellingPrice + shippingCharge + packingCharge)
     : customerSellingPrice;
 
@@ -340,12 +340,7 @@ const ProductDetail = () => {
 
   // ✅ Add to Cart – now includes deliveryFee
   const handleAddToCart = async () => {
-    if (!user?.id && !user?._id) return alert("Please login first.");
-
-    const userId = user?.id || user?._id;
-
     const item = {
-      userId,
       productId: product._id,
       name: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
       price: afterDiscount,
@@ -356,21 +351,47 @@ const ProductDetail = () => {
       selectedAttributes: selectedAttrs,
       sku: selectedVariant?.sku || product.sku,
       vendorId: product.vendorId || product.sellerId?._id || product.sellerId,
-      deliveryFee: deliveryFee, // ✅ send delivery fee
+      deliveryFee: deliveryFee,
     };
 
+    if (!user?.id && !user?._id) {
+      const local = localStorage.getItem("local_cart");
+      let list = [];
+      if (local) {
+        try { list = JSON.parse(local); } catch { list = []; }
+      }
+      if (!Array.isArray(list)) list = [];
+
+      const existingIdx = list.findIndex((x) => x.productId === product._id);
+      if (existingIdx > -1) {
+        list[existingIdx].quantity += quantity;
+      } else {
+        list.push(item);
+      }
+      localStorage.setItem("local_cart", JSON.stringify(list));
+      localStorage.setItem("cart_updated", Date.now().toString());
+      window.dispatchEvent(new Event("storage"));
+      alert("Added to guest cart successfully!");
+      return;
+    }
+
+    const userId = user?.id || user?._id;
+    const dbItem = { ...item, userId };
+
+    const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_BASE}/cart/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(dbItem),
       });
       const data = await res.json();
       if (!res.ok) return alert(data.error || "Failed to add to cart.");
-      
-      // Dispatch storage event to sync Navbar cart count
-      window.dispatchEvent(new Event("storage"));
 
+      window.dispatchEvent(new Event("storage"));
       alert("Added to cart successfully!");
     } catch {
       alert("Server error");
@@ -385,8 +406,8 @@ const ProductDetail = () => {
       return;
     }
 
-    const baseSellingPrice = selectedVariant 
-      ? selectedVariant.sellingPrice 
+    const baseSellingPrice = selectedVariant
+      ? selectedVariant.sellingPrice
       : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0);
 
     const subtotal = baseSellingPrice * quantity;
@@ -477,9 +498,8 @@ const ProductDetail = () => {
                 <div
                   key={index}
                   onClick={() => setMainImageIndex(index)}
-                  className={`w-20 h-20 rounded-lg cursor-pointer p-1 border ${
-                    index === mainImageIndex ? "border-accent" : "border-gray-300"
-                  }`}
+                  className={`w-20 h-20 rounded-lg cursor-pointer p-1 border ${index === mainImageIndex ? "border-accent" : "border-gray-300"
+                    }`}
                 >
                   <img src={img} alt="thumb" className="w-full h-full object-cover rounded-lg" />
                 </div>
@@ -556,11 +576,10 @@ const ProductDetail = () => {
                               key={val}
                               type="button"
                               onClick={() => setSelectedAttrs((prev) => ({ ...prev, [attrName]: val }))}
-                              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${
-                                isSelected
-                                  ? "bg-accent text-white border-transparent shadow-sm shadow-accent/50 scale-105"
-                                  : "bg-white text-navy border-gray-300 hover:border-gray-400"
-                              }`}
+                              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${isSelected
+                                ? "bg-accent text-white border-transparent shadow-sm shadow-accent/50 scale-105"
+                                : "bg-white text-navy border-gray-300 hover:border-gray-400"
+                                }`}
                             >
                               {val}
                             </button>
@@ -745,7 +764,7 @@ const ProductDetail = () => {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl text-left border border-gray-150">
             <h3 className="text-lg font-black text-navy mb-4">Edit Customer Review</h3>
-            
+
             <div className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Rating</label>
@@ -755,11 +774,10 @@ const ProductDetail = () => {
                       key={num}
                       type="button"
                       onClick={() => setEditRating(num)}
-                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${
-                        editRating === num
-                          ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
-                          : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
-                      }`}
+                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${editRating === num
+                        ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
+                        : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
+                        }`}
                     >
                       {num}★
                     </button>

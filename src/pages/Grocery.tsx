@@ -23,7 +23,7 @@ const Grocery = () => {
     const fetchGroceryProducts = async () => {
       try {
         const res = await axios.get(
-          "https://server.apexbee.in/api/products?category=grocery"
+          "http://localhost:5500/api/products?category=grocery"
         );
 
         setProducts(res.data.products || res.data);
@@ -42,7 +42,7 @@ const Grocery = () => {
       <Navbar />
 
       {/* Hero Banner */}
-                           <img src={grocary} alt="Fashion" />
+      <img src={grocary} alt="Fashion" />
 
 
       {/* Categories */}

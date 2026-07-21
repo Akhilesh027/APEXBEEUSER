@@ -4,7 +4,7 @@ import { Star, ArrowLeft, Search, Trash2, Edit2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = "http://localhost:5500/api";
 
 const AdminReviews = () => {
   const navigate = useNavigate();
@@ -275,7 +275,7 @@ const AdminReviews = () => {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl text-left border border-gray-150">
             <h3 className="text-lg font-black text-navy mb-4">Edit Customer Review</h3>
-            
+
             <div className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Rating</label>
@@ -285,11 +285,10 @@ const AdminReviews = () => {
                       key={num}
                       type="button"
                       onClick={() => setEditRating(num)}
-                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${
-                        editRating === num
-                          ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
-                          : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
-                      }`}
+                      className={`w-10 h-10 rounded-xl border text-sm font-black transition ${editRating === num
+                        ? "bg-[#F3BA12] text-[#0A1128] border-[#F3BA12]"
+                        : "bg-slate-50 text-gray-400 border-gray-200 hover:bg-slate-100"
+                        }`}
                     >
                       {num}★
                     </button>

@@ -30,6 +30,48 @@ export const IntroText: React.FC<IntroTextProps> = ({ stage }) => {
               </h2>
             </motion.div>
           )}
+          {stage === "bee-entering" && (
+            <motion.div
+              key="entering-text"
+              variants={slideUpFadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-2"
+            >
+              <h2 className="text-xl md:text-2xl font-light text-[#F5B82E] tracking-[0.15em] leading-relaxed drop-shadow-sm font-sans">
+                Gathering local strengths…
+              </h2>
+            </motion.div>
+          )}
+          {stage === "bee-hovering" && (
+            <motion.div
+              key="hovering-text"
+              variants={slideUpFadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-2"
+            >
+              <h2 className="text-xl md:text-2xl font-medium text-[#FFF4D6] tracking-[0.15em] leading-relaxed drop-shadow-sm font-sans">
+                Connecting vendors & communities…
+              </h2>
+            </motion.div>
+          )}
+          {stage === "wings-spreading" && (
+            <motion.div
+              key="spreading-text"
+              variants={slideUpFadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-2"
+            >
+              <h2 className="text-xl md:text-2xl font-bold text-[#FF9D24] tracking-[0.15em] leading-relaxed drop-shadow-sm font-sans">
+                Empowering the ecosystem!
+              </h2>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
