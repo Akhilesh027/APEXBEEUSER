@@ -33,7 +33,7 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import upi from "../Web images/Web images/upi.jpeg";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 type CartItem = any;
 
@@ -1115,12 +1115,12 @@ const Checkout = () => {
         fulfillmentType === "pickup"
           ? { type: "pickup", pickupLocationId, pickupSlot, userPincode }
           : {
-              type: "delivery",
-              deliveryFee: finalShipping,
-              deliveryMode,
-              deliverySlot,
-              scheduledDate: deliveryMode === "scheduled" ? deliveryScheduledDate : null
-            };
+            type: "delivery",
+            deliveryFee: finalShipping,
+            deliveryMode,
+            deliverySlot,
+            scheduledDate: deliveryMode === "scheduled" ? deliveryScheduledDate : null
+          };
 
       const orderData: any = {
         userId: user.id || user._id,

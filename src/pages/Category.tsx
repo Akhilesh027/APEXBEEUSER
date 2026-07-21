@@ -6,7 +6,7 @@ import axios from "axios";
 import { ShoppingCart, Search, Filter, Star, Sparkles, MapPin, Tag, Compass, Calendar, RefreshCw, ChevronRight, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 // ═══════════════════════════════════════════════════════
 // Types

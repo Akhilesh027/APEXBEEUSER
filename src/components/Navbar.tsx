@@ -20,7 +20,7 @@ import logo from "../Web images/Web images/logo.png";
 import FormModal from "./FormModal.tsx";
 import LocationModal from "./LocationModal";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 

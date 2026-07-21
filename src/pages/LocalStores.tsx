@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 const LOCATION_KEY = "user_location";
 
 const getStatusDisplay = (status: string) => {
@@ -571,7 +571,7 @@ const LocalStores = () => {
           <div className="bg-gradient-to-r from-navy via-navy-dark to-slate-900 text-white rounded-3xl p-5 md:p-6 shadow-xl relative overflow-hidden mb-6 text-left">
             <div className="absolute -right-16 -top-16 w-48 h-48 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -left-16 -bottom-16 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-            
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 relative">
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase tracking-wider text-accent bg-accent/15 px-2.5 py-0.5 rounded-full font-mono">📍 Delivering to {userLocation?.colony || "Buchireddypalem"}</span>
@@ -614,49 +614,43 @@ const LocalStores = () => {
           <div className="flex gap-2 overflow-x-auto pb-4 mb-4 text-xs font-bold scrollbar-none text-left font-sans">
             <button
               onClick={() => setFilterOpenNow(!filterOpenNow)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterOpenNow ? "bg-green-600 text-white border-green-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterOpenNow ? "bg-green-600 text-white border-green-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterOpenNow ? "opacity-100" : "opacity-30"}`} /> Open Now
             </button>
             <button
               onClick={() => setFilterFreeDelivery(!filterFreeDelivery)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterFreeDelivery ? "bg-blue-600 text-white border-blue-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterFreeDelivery ? "bg-blue-600 text-white border-blue-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterFreeDelivery ? "opacity-100" : "opacity-30"}`} /> Free Delivery
             </button>
             <button
               onClick={() => setFilterScheduledDelivery(!filterScheduledDelivery)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterScheduledDelivery ? "bg-indigo-600 text-white border-indigo-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterScheduledDelivery ? "bg-indigo-600 text-white border-indigo-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterScheduledDelivery ? "opacity-100" : "opacity-30"}`} /> Scheduled Delivery
             </button>
             <button
               onClick={() => setFilterSubscription(!filterSubscription)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterSubscription ? "bg-orange-500 text-white border-orange-500 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterSubscription ? "bg-orange-500 text-white border-orange-500 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterSubscription ? "opacity-100" : "opacity-30"}`} /> Subscriptions
             </button>
             <button
               onClick={() => setFilterOffers(!filterOffers)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterOffers ? "bg-rose-500 text-white border-rose-500 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterOffers ? "bg-rose-500 text-white border-rose-500 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterOffers ? "opacity-100" : "opacity-30"}`} /> Offers
             </button>
             <button
               onClick={() => setFilterVerified(!filterVerified)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${
-                filterVerified ? "bg-cyan-600 text-white border-cyan-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition ${filterVerified ? "bg-cyan-600 text-white border-cyan-600 shadow" : "bg-white text-navy border-slate-100 hover:bg-slate-50"
+                }`}
             >
               <Check className={`h-3 w-3 ${filterVerified ? "opacity-100" : "opacity-30"}`} /> Verified Stores
             </button>
@@ -667,15 +661,13 @@ const LocalStores = () => {
             {/* Daily Needs */}
             <div
               onClick={() => setCategoryFilter("ALL")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${
-                categoryFilter === "ALL" ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-              }`}
+              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "ALL" ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
+                }`}
             >
               <div className="flex items-center justify-between mb-2 font-sans">
                 <span className="text-2xl">🛒</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  categoryFilter === "ALL" ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"
-                }`}>Daily Needs</span>
+                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "ALL" ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"
+                  }`}>Daily Needs</span>
               </div>
               <h4 className={`text-sm font-extrabold ${categoryFilter === "ALL" ? "text-white" : "text-navy"}`}>Groceries & Milk</h4>
               <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
@@ -713,15 +705,13 @@ const LocalStores = () => {
             {/* Food & Dining */}
             <div
               onClick={() => setCategoryFilter("Bakery")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${
-                categoryFilter === "Bakery" ? "bg-gradient-to-br from-rose-500 to-pink-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-              }`}
+              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "Bakery" ? "bg-gradient-to-br from-rose-500 to-pink-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
+                }`}
             >
               <div className="flex items-center justify-between mb-2 font-sans">
                 <span className="text-2xl">🍕</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  categoryFilter === "Bakery" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-800"
-                }`}>Food & Dining</span>
+                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "Bakery" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-800"
+                  }`}>Food & Dining</span>
               </div>
               <h4 className={`text-sm font-extrabold ${categoryFilter === "Bakery" ? "text-white" : "text-navy"}`}>Restaurants & Bakers</h4>
               <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
@@ -738,15 +728,13 @@ const LocalStores = () => {
             {/* Health */}
             <div
               onClick={() => setCategoryFilter("Medical")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${
-                categoryFilter === "Medical" ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-              }`}
+              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "Medical" ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
+                }`}
             >
               <div className="flex items-center justify-between mb-2 font-sans">
                 <span className="text-2xl">🏥</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  categoryFilter === "Medical" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-800"
-                }`}>Health</span>
+                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "Medical" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-800"
+                  }`}>Health</span>
               </div>
               <h4 className={`text-sm font-extrabold ${categoryFilter === "Medical" ? "text-white" : "text-navy"}`}>Pharmacy & Clinic</h4>
               <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
@@ -854,7 +842,7 @@ const LocalStores = () => {
               onClick={() => setExploreSubTab("recent")}
               className={`px-4 py-2 rounded-xl transition ${exploreSubTab === "recent" ? "bg-navy text-white" : "bg-white text-muted-foreground hover:text-navy border"}`}
             >
-               Your Previous Stores
+              Your Previous Stores
             </button>
             <button
               onClick={() => setExploreSubTab("deals")}
@@ -988,10 +976,10 @@ const LocalStores = () => {
             <div className="bg-slate-100 rounded-3xl border border-slate-200 p-6 relative overflow-hidden h-[500px] flex flex-col justify-between font-sans font-sans font-sans font-sans font-sans font-sans font-sans">
               {/* Mock map background */}
               <div className="absolute inset-0 bg-[radial-gradient(#c5cdd6_1px,transparent_1px)] [background-size:16px_16px] bg-slate-50 pointer-events-none" />
-              
+
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] border-4 border-indigo-500/20 rounded-full bg-indigo-500/5 animate-pulse" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] border-2 border-indigo-500/30 rounded-full bg-indigo-500/5" />
-              
+
               {/* User location pin */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 text-center font-sans font-sans font-sans">
                 <div className="w-10 h-10 bg-indigo-600 border-4 border-white text-white rounded-full flex items-center justify-center shadow-xl animate-bounce select-none">
@@ -1107,7 +1095,7 @@ const LocalStores = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-sans">
                 <div className="p-3 border rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition">
                   <p className="font-extrabold text-navy font-sans">1. Increase Range</p>
@@ -1174,7 +1162,7 @@ const LocalStores = () => {
                           <Store className="h-10 w-10 text-muted-foreground/30" />
                         </div>
                       )}
-                      
+
                       {/* Availability status badge */}
                       <span className={`absolute top-3 left-3 text-[10px] px-2 py-0.5 rounded-full font-bold border shadow-sm ${availability.classes}`}>
                         {availability.label}

@@ -9,7 +9,7 @@ import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Bri
 import { GoogleLogin } from "@react-oauth/google";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 type AccountType = "guest" | "customer" | "business";
 
@@ -322,8 +322,8 @@ const Register = () => {
                   <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Training Programs</li>
                   <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Business Growth Support</li>
                 </ul>
-                <Button 
-                  onClick={() => setAccountType("business")} 
+                <Button
+                  onClick={() => setAccountType("business")}
                   className="w-full mt-5 bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white shadow-xl hover:shadow-indigo-500/20 font-black tracking-wider uppercase text-xs py-2.5 rounded-xl border-none animate-pulse"
                 >
                   🚀 Start Free (Business Partner)

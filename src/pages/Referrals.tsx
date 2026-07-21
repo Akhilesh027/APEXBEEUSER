@@ -217,7 +217,7 @@ type WithdrawalRequest = {
   netAmount?: number;
 };
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 const Referrals = () => {
   const { toast } = useToast();
@@ -1777,8 +1777,8 @@ const Referrals = () => {
                     <AreaChart data={dailyEarningsTrend}>
                       <defs>
                         <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1958,8 +1958,8 @@ const Referrals = () => {
                             <td className="p-3 text-center">
                               <Badge className={
                                 w.status === "paid" ? "bg-green-100 text-green-800 border-green-200" :
-                                w.status === "pending" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                "bg-red-100 text-red-800 border-red-200"
+                                  w.status === "pending" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                    "bg-red-100 text-red-800 border-red-200"
                               }>
                                 {w.status.toUpperCase()}
                               </Badge>

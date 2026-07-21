@@ -34,7 +34,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
       try {
         const res = await axios.get(
-          `http://localhost:5500/api/wishlist/status?userId=${user._id}&productId=${product._id}`
+          `https://server.apexbee.in/api/wishlist/status?userId=${user._id}&productId=${product._id}`
         );
         setIsWishlisted(res.data.isWishlisted);
       } catch (err) {
@@ -55,7 +55,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5500/api/wishlist/toggle", {
+      const res = await axios.post("https://server.apexbee.in/api/wishlist/toggle", {
         userId: user._id,
         productId: product._id,
       });
@@ -91,7 +91,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       };
 
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5500/api/cart/add", item, {
+      const res = await axios.post("https://server.apexbee.in/api/cart/add", item, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -198,8 +198,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
         disabled={product.stock === 0}
         onClick={handleAddToCart}
         className={`w-full py-2.5 text-xs font-black rounded-b-2xl transition-colors border-t cursor-pointer ${product.stock === 0
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
-            : "bg-navy hover:bg-accent text-white border-navy hover:border-accent"
+          ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
+          : "bg-navy hover:bg-accent text-white border-navy hover:border-accent"
           }`}
       >
         {product.stock === 0 ? "Out of Stock" : "Add to Cart"}

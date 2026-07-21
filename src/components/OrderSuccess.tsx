@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
-const API_ORIGIN = "http://localhost:5500";
+const API_ORIGIN = "https://server.apexbee.in";
 
 // ─────────────────────────────────────────────
 // Types

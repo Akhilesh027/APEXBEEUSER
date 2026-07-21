@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ShieldCheck, Mail, Store, Users, BookOpen, Gift, TrendingUp, Award, Lock, CreditCard, CheckCircle } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 // Animated Counter Component
 const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {

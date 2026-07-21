@@ -13,7 +13,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 const RECENTLY_VIEWED_KEY = "apexbee_recently_viewed_products";
 
 // ═══════════════════════════════════════════════════════

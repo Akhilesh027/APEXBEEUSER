@@ -12,7 +12,7 @@ const generateUUID = (): string => {
 };
 
 export const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5500/api') as string,
+  baseURL: (import.meta.env.VITE_API_URL || 'https://server.apexbee.in/api') as string,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -32,8 +32,8 @@ import logo from "../Web images/Web images/logo.png";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5500/api";
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "http://localhost:5500";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "https://server.apexbee.in";
 const LOCATION_KEY = "user_location";
 
 /** ---------------------------
@@ -425,10 +425,10 @@ const Home = () => {
           if (matchingGreeting) {
             setTimeGreeting(matchingGreeting.title);
             setGreetingOffer(matchingGreeting.description);
-            
+
             // Set dynamic offer details based on matchingGreeting
             setOfferTitle(matchingGreeting.discount ? `${matchingGreeting.discount} Offer` : "Special Flash Deal");
-            
+
             if (currentType === "morning") setOfferEmoji("🥛");
             else if (currentType === "afternoon") setOfferEmoji("🍱");
             else if (currentType === "evening") setOfferEmoji("🍕");
@@ -664,7 +664,7 @@ const Home = () => {
     };
 
     try {
-      const res = await fetch(`http://localhost:5500/api/cart/add`, {
+      const res = await fetch(`https://server.apexbee.in/api/cart/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

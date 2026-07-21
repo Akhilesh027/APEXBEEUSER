@@ -16,7 +16,7 @@ const formatCurrency = (amount: any) => {
   }).format(value);
 };
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 const initialProduct: any = {
   _id: null,

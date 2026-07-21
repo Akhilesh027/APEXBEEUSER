@@ -13,7 +13,7 @@ import {
   Sparkles, Bug
 } from "lucide-react";
 
-const API_BASE = "http://localhost:5500/api";
+const API_BASE = "https://server.apexbee.in/api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -552,7 +552,7 @@ const Services = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch("http://localhost:5500/api/service/bookings", {
+      const res = await fetch("https://server.apexbee.in/api/service/bookings", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -574,7 +574,7 @@ const Services = () => {
       const userId = user?.id || user?._id;
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`http://localhost:5500/api/service/bookings/${payingBooking._id || payingBooking.id}/pay`, {
+      const res = await fetch(`https://server.apexbee.in/api/service/bookings/${payingBooking._id || payingBooking.id}/pay`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -617,7 +617,7 @@ const Services = () => {
       } else if (dtVal === "This Week") {
         formattedDate = new Date().toISOString().split("T")[0];
       }
-      const res = await fetch(`http://localhost:5500/api/service/availability/slots?providerId=${provId}&date=${formattedDate}`);
+      const res = await fetch(`https://server.apexbee.in/api/service/availability/slots?providerId=${provId}&date=${formattedDate}`);
       if (res.ok) {
         const data = await res.json();
         setAvailableSlots(data.slots || []);
@@ -644,7 +644,7 @@ const Services = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:5500/api/service/bookings/${bookingId}/review`, {
+      const res = await fetch(`https://server.apexbee.in/api/service/bookings/${bookingId}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -751,7 +751,7 @@ const Services = () => {
         formattedDate = new Date().toISOString().split("T")[0];
       }
 
-      const res = await fetch("http://localhost:5500/api/service/bookings", {
+      const res = await fetch("https://server.apexbee.in/api/service/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

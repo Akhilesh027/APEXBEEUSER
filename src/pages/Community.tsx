@@ -1,7 +1,7 @@
 // src/pages/Community.tsx — Module 13: Community, Support & Engagement
 import { useState, useEffect, useCallback } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5500/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
