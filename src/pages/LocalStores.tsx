@@ -1303,7 +1303,7 @@ const LocalStores = () => {
           </div>
 
           {/* Floating CTA Ask AI */}
-          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 font-sans text-xs items-end mr-16 md:mr-0 font-sans font-sans">
+          <div className="hidden lg:flex fixed bottom-6 right-6 z-50 flex-col gap-2 font-sans text-xs items-end mr-16 md:mr-0 font-sans font-sans">
             {showAiFloatingOptions && (
               <div className="bg-white border rounded-2xl p-3 shadow-2xl flex flex-col gap-1.5 text-left border-indigo-100/60 animate-fade-in w-44 font-sans font-sans">
                 <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 font-sans">🤖 Abhi AI Shortcuts</p>

@@ -407,12 +407,12 @@ export const AbhiAssistant = () => {
           setIsOpen(!isOpen);
           setMode("hub");
         }}
-        className="hidden lg:flex w-14 h-14 rounded-full bg-[#0A1128] text-white hover:bg-navy/90 items-center justify-center shadow-2xl shadow-navy/30 hover:scale-105 transition-all fixed bottom-6 right-6 z-40 border-none cursor-pointer group"
+        className="hidden lg:flex w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:opacity-95 items-center justify-center shadow-2xl shadow-blue-600/40 hover:scale-110 transition-all fixed bottom-6 right-6 z-40 border-2 border-white cursor-pointer group"
         title="Open Abhi AI Assistant & Help Center"
       >
-        <div className="absolute inset-0 rounded-full bg-[#0A1128] opacity-30 group-hover:animate-ping" />
-        <MessageSquare className="w-6 h-6 z-10 text-white" />
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 text-[#0A1128] rounded-full border border-white flex items-center justify-center text-[10px] font-black z-15 shadow-sm">
+        <div className="absolute inset-0 rounded-full bg-blue-500 opacity-25 group-hover:animate-ping" />
+        <Bot className="w-8 h-8 z-10 text-white" />
+        <span className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 text-[#0A1128] rounded-full border-2 border-white flex items-center justify-center text-xs font-black z-15 shadow-md">
           🐝
         </span>
       </button>

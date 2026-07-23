@@ -2180,26 +2180,6 @@ const Home = () => {
 
           <Footer />
 
-          {/* Floating Buttons */}
-          <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50 mr-16 md:mr-0">
-            <button
-              onClick={() => window.open("https://wa.me/919999999999?text=Hi%20ApexBee%2C%20I%20need%20assistance.")}
-              className="w-12 h-12 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer border-none"
-              title="Chat on WhatsApp"
-            >
-              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 2.68 1.48 4.74 1.48 5.48 0 9.94-4.46 9.94-9.94 0-5.48-4.46-9.94-9.94-9.94-5.48 0-9.94 4.46-9.94 9.94 0 2.02.5 3.08 1.43 4.69l-.95 3.47 3.47-.95z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setSupportOpen(true)}
-              className="w-12 h-12 bg-accent hover:bg-accent/90 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-200 text-lg font-bold cursor-pointer border-none"
-              title="Help Support Chat"
-            >
-              💬
-            </button>
-          </div>
-
           {/* Support Drawer */}
           <SupportDrawer isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
         </div>
