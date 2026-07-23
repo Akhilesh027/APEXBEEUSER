@@ -32,11 +32,18 @@ createRoot(document.getElementById("root")!).render(
   </GoogleOAuthProvider>
 );
 
-// Register PWA Service Worker
-if ("serviceWorker" in navigator) {
+// Register PWA Service Worker (Production only to prevent dev HMR MIME type caching errors)
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch((err) => {
       console.log("Service Worker registration failed:", err);
     });
+  });
+} else if ("serviceWorker" in navigator) {
+  // Automatically clear dev service workers to prevent MIME type fallback errors
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
   });
 }

@@ -32,8 +32,17 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only cache GET requests, skip API calls for live fresh data
-  if (event.request.method !== "GET" || event.request.url.includes("/api/")) {
+  const url = event.request.url;
+  // Skip dev server, API requests, and Vite modules
+  if (
+    event.request.method !== "GET" ||
+    url.includes("/api/") ||
+    url.includes("/@vite") ||
+    url.includes("/@fs") ||
+    url.includes("/src/") ||
+    url.includes("localhost") ||
+    url.includes("127.0.0.1")
+  ) {
     return;
   }
   event.respondWith(
