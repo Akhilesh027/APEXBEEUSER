@@ -797,7 +797,7 @@ const MyOrders = () => {
         <h1 className="text-3xl font-bold text-navy mb-6">My Orders</h1>
 
         {/* ── View Mode Selector (Orders vs Subscriptions) ── */}
-        <div className="flex gap-4 mb-8 border-b pb-4">
+        <div className="flex gap-2 sm:gap-4 mb-8 border-b pb-4 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setViewMode("orders")}
             className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all border ${viewMode === "orders"

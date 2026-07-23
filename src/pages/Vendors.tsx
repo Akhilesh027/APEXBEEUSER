@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   MapPin, Store, Filter, Loader2, Star, Phone, ShieldCheck, Tag, ShoppingBag,
   Clock, Percent, Calendar, Heart, ArrowLeft, Plus, Minus, Check, CalendarDays,
-  Sparkles, CheckCircle2, ChevronRight, X, AlertCircle, Truck
+  Sparkles, CheckCircle2, ChevronRight, ChevronLeft, X, AlertCircle, Truck
 } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
@@ -302,6 +302,22 @@ const StorePage = () => {
     }
     return list;
   }, [products, selectedCategoryId, searchQuery]);
+
+  // ✅ Pagination state for handling 200+ products
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  // Reset page when search or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategoryId, searchQuery]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   // Add to Cart handler
   const handleAddToCart = async (product: Product, e: React.MouseEvent) => {
@@ -747,24 +763,24 @@ const StorePage = () => {
             {/* PRODUCTS GRID */}
             <section className="container mx-auto px-4 pb-16">
               {loadingProducts ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="rounded-3xl border bg-white p-4 space-y-4 shadow-sm animate-pulse">
-                      <Skeleton className="h-48 w-full rounded-2xl bg-slate-100" />
-                      <Skeleton className="h-5 w-3/4 bg-slate-100" />
+                    <div key={i} className="rounded-2xl sm:rounded-3xl border bg-white p-3 sm:p-4 space-y-3 shadow-sm animate-pulse">
+                      <Skeleton className="h-36 sm:h-48 w-full rounded-xl sm:rounded-2xl bg-slate-100" />
+                      <Skeleton className="h-4 w-3/4 bg-slate-100" />
                       <Skeleton className="h-4 w-1/2 bg-slate-100" />
-                      <Skeleton className="h-10 w-full rounded-xl bg-slate-100" />
+                      <Skeleton className="h-8 w-full rounded-xl bg-slate-100" />
                     </div>
                   ))}
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <div className="rounded-3xl border bg-white p-12 text-center shadow-sm max-w-lg mx-auto">
-                  <ShoppingBag className="h-12 w-12 text-muted-foreground/60 mx-auto mb-3" />
-                  <h3 className="font-extrabold text-navy text-lg">No Matching Items</h3>
-                  <p className="text-sm text-muted-foreground mt-1">We couldn't find any products in this view. Try adjusting your query or category selection.</p>
+                <div className="rounded-3xl border bg-white p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
+                  <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/60 mx-auto mb-3" />
+                  <h3 className="font-extrabold text-navy text-base sm:text-lg">No Matching Items</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">We couldn't find any products in this view. Try adjusting your query or category selection.</p>
                   <Button
                     variant="outline"
-                    className="mt-5 rounded-xl border-navy/20 hover:bg-slate-50"
+                    className="mt-5 rounded-xl border-navy/20 hover:bg-slate-50 text-xs"
                     onClick={() => {
                       setSelectedCategoryId("ALL");
                       setSearchQuery("");
@@ -774,90 +790,162 @@ const StorePage = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                  {filteredProducts.map((p) => {
-                    const subAvailable =
-                      p.isSubscriptionAvailable === true &&
-                      (p.status === 'Live' || p.status === undefined) &&
-                      p.isStoreProduct !== false;
-                    return (
-                      <div
-                        key={p._id}
-                        className="group flex flex-col justify-between rounded-3xl border border-slate-100 bg-white overflow-hidden hover:shadow-xl transition duration-300 relative"
-                      >
-                        <div>
-                          {/* Image */}
-                          <div className="h-48 bg-slate-50 overflow-hidden relative border-b border-slate-100">
-                            <img
-                              src={p.images?.[0] || "/placeholder-product.png"}
-                              alt={p.itemName}
-                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
-                            />
-                            <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                              {subAvailable && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500 text-white text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
-                                  <Sparkles className="h-3 w-3 fill-white" />
-                                  Subscribe
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
+                    {paginatedProducts.map((p) => {
+                      const subAvailable =
+                        p.isSubscriptionAvailable === true &&
+                        (p.status === 'Live' || p.status === undefined) &&
+                        p.isStoreProduct !== false;
+                      return (
+                        <div
+                          key={p._id}
+                          className="group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-100 bg-white overflow-hidden hover:shadow-xl transition duration-300 relative"
+                        >
+                          <div>
+                            {/* Image */}
+                            <div className="h-36 sm:h-48 bg-slate-50 overflow-hidden relative border-b border-slate-100">
+                              <img
+                                src={p.images?.[0] || "/placeholder-product.png"}
+                                alt={p.itemName}
+                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                              <div className="absolute top-2 left-2 flex flex-col gap-1">
+                                {subAvailable && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
+                                    <Sparkles className="h-2.5 w-2.5 fill-white" />
+                                    Subscribe
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy text-white text-[8px] sm:text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  Fast Delivery
                                 </span>
-                              )}
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-navy text-white text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
-                                <Clock className="h-3 w-3" />
-                                Fast Delivery
-                              </span>
+                              </div>
+                            </div>
+
+                            <div className="p-3 sm:p-5 text-left">
+                              <p className="text-[9px] sm:text-[10px] font-bold text-accent uppercase tracking-wider mb-1 hidden md:block">
+                                {p.brand || "Fresh & Local"}
+                              </p>
+                              <h3 className="font-extrabold text-navy line-clamp-2 min-h-[32px] sm:min-h-[44px] leading-tight text-xs sm:text-base hover:text-accent transition">
+                                {p.itemName}
+                              </h3>
+
+                              <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5">
+                                <span className="text-base sm:text-xl font-black text-navy">
+                                  {formatPrice(p.afterDiscount)}
+                                </span>
+                                {p.userPrice && p.userPrice > (p.afterDiscount || 0) ? (
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground line-through font-semibold">
+                                    {formatPrice(p.userPrice)}
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
 
-                          <div className="p-5 text-left">
-                            <p className="text-[10px] font-bold text-accent uppercase tracking-wider mb-1">
-                              {p.brand || "Fresh & Local"}
-                            </p>
-                            <h3 className="font-extrabold text-navy line-clamp-2 min-h-[44px] leading-tight text-base hover:text-accent transition">
-                              {p.itemName}
-                            </h3>
-
-                            <div className="mt-3 flex items-baseline gap-2">
-                              <span className="text-xl font-black text-navy">
-                                {formatPrice(p.afterDiscount)}
-                              </span>
-                              {p.userPrice && p.userPrice > (p.afterDiscount || 0) ? (
-                                <span className="text-xs text-muted-foreground line-through font-semibold">
-                                  {formatPrice(p.userPrice)}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-5 pb-5 pt-0 flex flex-col gap-2">
-                          <Button
-                            className="w-full bg-navy hover:bg-navy/90 text-white rounded-xl py-2 flex items-center justify-center gap-2 font-bold transition shadow-sm text-xs"
-                            disabled={cartAddingId === p._id}
-                            onClick={(e) => handleAddToCart(p, e)}
-                          >
-                            {cartAddingId === p._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <ShoppingBag className="h-3.5 w-3.5" />
-                            )}
-                            One-Time Buy
-                          </Button>
-
-                          {subAvailable && (
+                          <div className="px-3 pb-3 sm:px-5 sm:pb-5 pt-0 flex flex-col gap-1.5 sm:gap-2">
                             <Button
-                              variant="outline"
-                              className="w-full border-orange-500/30 bg-orange-50/20 text-accent hover:bg-orange-50 hover:text-accent-dark rounded-xl py-2 font-extrabold transition text-xs border flex items-center justify-center gap-1.5 shadow-sm"
-                              onClick={(e) => openSubscribeModal(p, e)}
+                              className="w-full bg-navy hover:bg-navy/90 text-white rounded-xl py-1.5 sm:py-2 flex items-center justify-center gap-1.5 font-bold transition shadow-sm text-[10px] sm:text-xs"
+                              disabled={cartAddingId === p._id}
+                              onClick={(e) => handleAddToCart(p, e)}
                             >
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              Subscribe Daily
+                              {cartAddingId === p._id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <ShoppingBag className="h-3 w-3" />
+                              )}
+                              Buy Now
                             </Button>
-                          )}
+
+                            {subAvailable && (
+                              <Button
+                                variant="outline"
+                                className="w-full border-orange-500/30 bg-orange-50/20 text-accent hover:bg-orange-50 hover:text-accent-dark rounded-xl py-1.5 sm:py-2 font-extrabold transition text-[10px] sm:text-xs border flex items-center justify-center gap-1 shadow-sm"
+                                onClick={(e) => openSubscribeModal(p, e)}
+                              >
+                                <CalendarDays className="h-3 w-3" />
+                                Subscribe
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* ✅ Pagination Controls Bar for 200+ products */}
+                  {totalPages > 1 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                      <div className="text-xs font-bold text-slate-500">
+                        Showing <span className="text-navy font-black">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="text-navy font-black">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> of <span className="text-accent font-black">{filteredProducts.length}</span> Products
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="flex items-center gap-1.5 font-sans">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() => {
+                            setCurrentPage((p) => Math.max(1, p - 1));
+                            window.scrollTo({ top: 400, behavior: "smooth" });
+                          }}
+                          className="rounded-xl text-xs font-bold text-navy"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                        </Button>
+
+                        {Array.from({ length: totalPages }).map((_, idx) => {
+                          const pageNum = idx + 1;
+                          if (
+                            pageNum === 1 ||
+                            pageNum === totalPages ||
+                            (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                          ) {
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => {
+                                  setCurrentPage(pageNum);
+                                  window.scrollTo({ top: 400, behavior: "smooth" });
+                                }}
+                                className={`w-8 h-8 rounded-xl text-xs font-black transition cursor-pointer border ${
+                                  currentPage === pageNum
+                                    ? "bg-[#0A1128] text-white border-[#0A1128] shadow-sm"
+                                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          }
+                          if (pageNum === 2 && currentPage > 3) {
+                            return <span key="dots-left" className="px-1 text-slate-400 font-bold">...</span>;
+                          }
+                          if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
+                            return <span key="dots-right" className="px-1 text-slate-400 font-bold">...</span>;
+                          }
+                          return null;
+                        })}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => {
+                            setCurrentPage((p) => Math.min(totalPages, p + 1));
+                            window.scrollTo({ top: 400, behavior: "smooth" });
+                          }}
+                          className="rounded-xl text-xs font-bold text-navy"
+                        >
+                          Next <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </>

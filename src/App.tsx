@@ -37,6 +37,9 @@ import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
 import AbhiAssistant from "./components/AbhiAssistant";
 import LocalStores from "./pages/LocalStores";
+import BottomNav from "./components/BottomNav";
+import InstallPwaBanner from "./components/InstallPwaBanner";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -116,6 +119,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AbhiAssistant />
+        <InstallPwaBanner />
+        <BottomNav />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -37,6 +37,15 @@ export const AbhiAssistant = () => {
   ];
 
   useEffect(() => {
+    const handleOpen = () => {
+      setIsOpen(true);
+      setMode("hub");
+    };
+    window.addEventListener("open_abhi_assistant", handleOpen);
+    return () => window.removeEventListener("open_abhi_assistant", handleOpen);
+  }, []);
+
+  useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -141,10 +150,10 @@ export const AbhiAssistant = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end max-w-[calc(100vw-2rem)]">
       {/* Expanded Dialog Box */}
       {isOpen && (
-        <div className="bg-white w-[350px] sm:w-[400px] h-[580px] rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-4 transition-all duration-300 transform translate-y-0 opacity-100 font-sans">
+        <div className="bg-white w-[calc(100vw-2rem)] sm:w-[400px] max-w-[400px] h-[80vh] max-h-[580px] rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-4 transition-all duration-300 transform translate-y-0 opacity-100 font-sans">
           
           {/* Header */}
           <div className="bg-navy p-4 text-white flex items-center justify-between shadow-md">
@@ -392,17 +401,18 @@ export const AbhiAssistant = () => {
         </div>
       )}
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button (Desktop View Only, Hidden on Mobile View) */}
       <button
         onClick={() => {
           setIsOpen(!isOpen);
-          setMode("hub"); // Reset to Quick Hub on open
+          setMode("hub");
         }}
-        className="w-14 h-14 rounded-full bg-navy text-white hover:bg-navy/90 flex items-center justify-center shadow-2xl shadow-navy/30 hover:scale-105 transition-all relative group border-none cursor-pointer"
+        className="hidden lg:flex w-14 h-14 rounded-full bg-[#0A1128] text-white hover:bg-navy/90 items-center justify-center shadow-2xl shadow-navy/30 hover:scale-105 transition-all fixed bottom-6 right-6 z-40 border-none cursor-pointer group"
+        title="Open Abhi AI Assistant & Help Center"
       >
-        <div className="absolute inset-0 rounded-full bg-navy opacity-30 group-hover:animate-ping" />
-        <MessageSquare className="w-6 h-6 z-10" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border border-navy flex items-center justify-center text-[9px] font-black z-15">
+        <div className="absolute inset-0 rounded-full bg-[#0A1128] opacity-30 group-hover:animate-ping" />
+        <MessageSquare className="w-6 h-6 z-10 text-white" />
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 text-[#0A1128] rounded-full border border-white flex items-center justify-center text-[10px] font-black z-15 shadow-sm">
           🐝
         </span>
       </button>

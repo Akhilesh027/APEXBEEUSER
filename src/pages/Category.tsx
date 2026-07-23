@@ -1077,7 +1077,7 @@ const Category = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredParents.map((cat, idx) => {
                   const gradient = GRADIENTS[idx % GRADIENTS.length];
                   const isExpanded = expandedId === cat._id;
@@ -1088,11 +1088,11 @@ const Category = () => {
                     <div
                       key={cat._id}
                       id={`cat-card-${cat._id}`}
-                      className="group rounded-3xl overflow-hidden border border-slate-150 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative flex flex-col justify-between"
+                      className="group rounded-3xl overflow-hidden border border-slate-150 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative flex flex-col justify-between w-full"
                     >
 
                       {/* Image section with hover Explore Overlay */}
-                      <div className="relative h-44 overflow-hidden cursor-pointer" onClick={() => navigate(`/category/${encodeURIComponent(cat.name)}`)}>
+                      <div className="relative h-32 sm:h-44 overflow-hidden cursor-pointer" onClick={() => navigate(`/category/${encodeURIComponent(cat.name)}`)}>
                         <img
                           src={cat.image || "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&h=300&q=80"}
                           alt={cat.name}
@@ -1104,34 +1104,31 @@ const Category = () => {
                         />
 
                         {/* DESKTOP HOVER EXPLORE OVERLAY PANEL */}
-                        <div className="absolute inset-0 bg-navy/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center p-4 text-center space-y-2">
+                        <div className="absolute inset-0 bg-navy/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center p-3 text-center space-y-1.5 hidden sm:flex">
                           <p className="text-yellow-300 text-xs font-black tracking-wider uppercase">Explore {cat.name}</p>
-                          <div className="flex flex-col gap-1.5 w-full max-w-[160px]">
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🛒 Explore Products</span>
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🔧 Popular Services</span>
+                          <div className="flex flex-col gap-1 w-full max-w-[150px]">
+                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🛒 Products</span>
+                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🔧 Services</span>
                             <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🔥 Direct Offers</span>
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🏪 View Local Stores</span>
                           </div>
                         </div>
 
                         {/* Top banner tag */}
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-navy font-bold text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur text-navy font-bold text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                           <span>{details.subs}</span>
-                          <span>•</span>
-                          <span>{details.prods}</span>
                         </div>
 
                         {/* Category Title bottom label */}
-                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                          <div className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-xl px-3 py-1.5 shadow">
-                            <span className="text-lg shrink-0">{getSubIcon(cat.name)}</span>
-                            <span className="font-extrabold text-navy text-xs leading-none capitalize truncate max-w-[120px]">{cat.name}</span>
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl px-2 sm:px-3 py-1 shadow">
+                            <span className="text-sm sm:text-lg shrink-0">{getSubIcon(cat.name)}</span>
+                            <span className="font-extrabold text-navy text-[10px] sm:text-xs leading-none capitalize truncate max-w-[85px] sm:max-w-[120px]">{cat.name}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Card Body */}
-                      <div className="p-4 flex flex-col flex-1 justify-between bg-white">
+                      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between bg-white">
 
                         {/* Popular subcategory tags list */}
                         <div className="mb-4">

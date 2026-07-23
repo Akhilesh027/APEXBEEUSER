@@ -269,7 +269,7 @@ const Login = () => {
             {/* Why ApexBee - Feature Cards */}
             <div className="mt-16 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-2xl font-bold text-navy text-center">Why ApexBee</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-8">
                 {["Shop Local Products", "Book Trusted Services", "Learn Through Digital Courses", "Earn Through Referrals", "Join Business Opportunities", "Access Exclusive Offers"].map((feature, idx) => (
                   <div key={idx} className="flex items-center gap-3 bg-secondary/20 p-3 rounded-lg"><CheckCircle className="w-5 h-5 text-accent" /><span className="text-sm font-medium">{feature}</span></div>
                 ))}

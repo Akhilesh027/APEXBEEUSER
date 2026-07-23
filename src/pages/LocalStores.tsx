@@ -588,19 +588,19 @@ const LocalStores = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-6 border-t border-white/10 pt-5 text-center font-sans">
               <div className="space-y-1 font-sans">
-                <p className="text-2xl font-black text-white">{liveStats.totalStores} Stores</p>
+                <p className="text-lg sm:text-2xl font-black text-white">{liveStats.totalStores} Stores</p>
                 <p className="text-[9px] font-extrabold text-white/60 uppercase tracking-wider">Nearby Partners</p>
               </div>
               <div className="space-y-1 font-sans">
-                <p className="text-2xl font-black text-green-400">{liveStats.openStores} Open</p>
+                <p className="text-lg sm:text-2xl font-black text-green-400">{liveStats.openStores} Open</p>
                 <p className="text-[9px] font-extrabold text-white/60 uppercase tracking-wider">Accepting Orders</p>
               </div>
               <div className="space-y-1 font-sans">
-                <p className="text-2xl font-black text-accent">{liveStats.avgDelivery}</p>
+                <p className="text-lg sm:text-2xl font-black text-accent">{liveStats.avgDelivery}</p>
                 <p className="text-[9px] font-extrabold text-white/60 uppercase tracking-wider">Average Speed</p>
               </div>
               <div className="space-y-1 font-sans">
-                <p className="text-2xl font-black text-cyan-400">12 Available</p>
+                <p className="text-lg sm:text-2xl font-black text-cyan-400">12 Available</p>
                 <p className="text-[9px] font-extrabold text-white/60 uppercase tracking-wider">Scheduled Slots</p>
               </div>
               <div className="hidden md:block space-y-1 font-sans">

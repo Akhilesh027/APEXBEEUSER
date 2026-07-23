@@ -678,12 +678,12 @@ const Profile = () => {
 
                     {/* Tabs */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                        <TabsList className="grid w-full grid-cols-5 bg-muted/50">
-                            <TabsTrigger value="profile" className="gap-2"> <User className="h-4 w-4" /> Profile </TabsTrigger>
-                            <TabsTrigger value="orders" className="gap-2"> <Package className="h-4 w-4" /> My Orders </TabsTrigger>
-                            <TabsTrigger value="addresses" className="gap-2"> <MapPin className="h-4 w-4" /> Addresses </TabsTrigger>
-                            <TabsTrigger value="referrals" className="gap-2"> <Gift className="h-4 w-4" /> Referrals </TabsTrigger>
-                            <TabsTrigger value="settings" className="gap-2"> <Settings className="h-4 w-4" /> Settings </TabsTrigger>
+                        <TabsList className="flex overflow-x-auto w-full bg-muted/50 scrollbar-none py-1 px-1 gap-1 border rounded-xl">
+                            <TabsTrigger value="profile" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <User className="h-4 w-4" /> Profile </TabsTrigger>
+                            <TabsTrigger value="orders" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Package className="h-4 w-4" /> My Orders </TabsTrigger>
+                            <TabsTrigger value="addresses" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <MapPin className="h-4 w-4" /> Addresses </TabsTrigger>
+                            <TabsTrigger value="referrals" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Gift className="h-4 w-4" /> Referrals </TabsTrigger>
+                            <TabsTrigger value="settings" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Settings className="h-4 w-4" /> Settings </TabsTrigger>
                         </TabsList>
 
                         {/* Profile Details Tab */}

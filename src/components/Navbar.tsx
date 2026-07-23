@@ -441,8 +441,13 @@ const Navbar = () => {
       }
     };
 
+    const handleOpenLocModal = () => setOpenLocationModal(true);
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("open_location_modal", handleOpenLocModal);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("open_location_modal", handleOpenLocModal);
+    };
   }, [fetchUserData, fetchCategories]);
 
   const locationLabel = useMemo(() => {
@@ -723,7 +728,7 @@ const Navbar = () => {
     if (!shopByOpen) return null;
 
     return (
-      <div className="absolute top-full left-0 mt-2 w-[320px] rounded-xl border bg-white text-black shadow-lg z-50 overflow-hidden">
+      <div className="absolute top-full left-0 mt-2 w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] rounded-xl border bg-white text-black shadow-lg z-50 overflow-hidden">
         <div className="p-3 border-b flex items-center justify-between">
           <p className="font-bold text-navy">Shop by Category</p>
           <button
@@ -797,14 +802,14 @@ const Navbar = () => {
     .filter(Boolean);
 
   return (
-    <nav className="bg-navy-dark text-white sticky top-0 z-50">
+    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md">
       {/* Row 1 */}
-      <div className="border-b border-navy-light">
+      <div className="border-b border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
-            <Link to="/" className="text-2xl font-bold" onClick={closeAllPopovers}>
-              <img src={logo} alt="logo" className="w-32 h-auto" />
+            <Link to="/" className="text-2xl font-bold shrink-0" onClick={closeAllPopovers}>
+              <img src={logo} alt="logo" className="w-28 sm:w-32 h-auto object-contain" />
             </Link>
 
             {/* Desktop Menu */}
@@ -892,20 +897,9 @@ const Navbar = () => {
 
             {/* Right Section */}
             <div className="flex items-center space-x-3">
-              {/* Location selector at top right corner */}
-              <div
-                className="flex items-center gap-1 cursor-pointer hover:text-accent text-xs bg-white/10 px-2 py-1 rounded border border-white/10"
-                onClick={() => setOpenLocationModal(true)}
-              >
-                <MapPin className="h-3.5 w-3.5 text-accent shrink-0" />
-                <span className="font-semibold truncate max-w-[120px]" title={locationLabel}>
-                  {locationLabel}
-                </span>
-                <span className="text-[8px] text-accent">▼</span>
-              </div>
 
-              {/* Language Selector */}
-              <div className="relative" ref={langRef}>
+              {/* Language Selector (hidden on mobile, visible on desktop) */}
+              <div className="hidden md:block relative" ref={langRef}>
                 <div
                   className="flex items-center gap-1 cursor-pointer hover:text-accent text-xs bg-white/10 px-2.5 py-1 rounded border border-white/10"
                   onClick={() => setLangOpen((v) => !v)}
@@ -933,6 +927,26 @@ const Navbar = () => {
                 )}
               </div>
 
+              {/* Notification icon (mobile & desktop visible) */}
+              <div className="relative cursor-pointer hover:text-accent flex items-center" onClick={() => setNotificationsOpen((v) => !v)}>
+                <Bell className="h-5 w-5 text-white" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold font-sans">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {/* Cart Icon (mobile & desktop visible) */}
+              <Link to="/cart" className="relative cursor-pointer hover:text-accent flex items-center">
+                <ShoppingBag className="h-5 w-5 text-white" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#F3BA12] text-[#0A1128] text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black font-sans">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </Link>
+
               {/* Wishlist Link with notification badge */}
               <Link to="/wishlist" className="hidden sm:flex items-center gap-1.5 hover:text-accent transition text-xs relative">
                 <span>Wishlist</span>
@@ -946,7 +960,7 @@ const Navbar = () => {
               {loggedInUser && (
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7 flex items-center gap-1"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7 flex items-center gap-1 hidden sm:flex"
                   onClick={() => navigate("/referrals")}
                   title={`Wallet Available: ${formatMoney(walletAvailable)} (Hold: ${formatMoney(walletHold)})`}
                   disabled={loading.wallet}
@@ -957,26 +971,26 @@ const Navbar = () => {
               )}
 
               {/* Mobile Menu Toggle */}
-              <button className="lg:hidden" onClick={() => setMobileMenuOpen((v) => !v)}>
-                {mobileMenuOpen ? <X className="h-6 w-6 cursor-pointer" /> : <Menu className="h-6 w-6 cursor-pointer" />}
+              <button className="lg:hidden ml-1" onClick={() => setMobileMenuOpen((v) => !v)}>
+                {mobileMenuOpen ? <X className="h-6 w-6 cursor-pointer text-white" /> : <Menu className="h-6 w-6 cursor-pointer text-white" />}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 2 */}
-      <div className="container mx-auto px-4 py-3 flex items-center gap-4">
+      {/* Row 2 (Desktop only, hidden on mobile) */}
+      <div className="hidden lg:flex container mx-auto px-4 py-3 items-center gap-4">
         {/* ✅ Shop by Category dropdown */}
         <div className="relative" ref={shopByRef}>
           <Button
             variant="outline"
-            className="text-foreground bg-white border-0 hover:bg-gray-50"
+            className="text-foreground bg-white border-0 hover:bg-gray-50 px-2 sm:px-4"
             onClick={() => setShopByOpen((v) => !v)}
           >
-            <Menu className="h-4 w-4 mr-2" />
-            Shop by Category
-            <ChevronDown className="h-4 w-4 ml-2" />
+            <Menu className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Shop by Category</span>
+            <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
           </Button>
           {categoryDropdown}
         </div>
@@ -1122,7 +1136,7 @@ const Navbar = () => {
           </Button>
 
           {notificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-96 bg-white border border-slate-100 rounded-2xl shadow-premium z-50 text-navy p-4">
+            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-[384px] bg-white border border-slate-100 rounded-2xl shadow-premium z-50 text-navy p-4">
               <div className="flex items-center justify-between border-b pb-2 mb-2">
                 <p className="font-extrabold text-sm text-navy">Notifications ({allNotifications.filter((n: any) => !n.isRead && n.status !== 'read').length})</p>
                 <div className="flex items-center gap-2">
@@ -1333,6 +1347,40 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="lg:hidden bg-navy-dark border-t border-navy-light text-xs font-semibold">
           <div className="container mx-auto px-4 py-4">
+            {/* Search Input inside Mobile Drawer Menu */}
+            <div className="mb-4">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search groceries, products, services..."
+                  className="w-full bg-white text-navy pr-10 rounded-xl focus:ring-2 focus:ring-accent font-medium text-xs"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const q = searchQuery.trim();
+                      if (q) {
+                        setMobileMenuOpen(false);
+                        navigate(`/products?q=${encodeURIComponent(q)}`);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const q = searchQuery.trim();
+                    if (q) {
+                      setMobileMenuOpen(false);
+                      navigate(`/products?q=${encodeURIComponent(q)}`);
+                    }
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-navy cursor-pointer bg-transparent border-none"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <Link to="/" className="block py-2 hover:text-accent transition" onClick={() => setMobileMenuOpen(false)}>
                 HOME
@@ -1441,6 +1489,26 @@ const Navbar = () => {
               >
                 WISHLIST
               </Link>
+            </div>
+
+            {/* Mobile Language Controls */}
+            <div className="pt-4 mt-2 border-t border-navy-light flex items-center justify-end gap-2 text-slate-200">
+
+              <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 text-xs font-semibold">
+                <span className="mr-0.5">🌐</span>
+                {Object.entries(languages).map(([code]) => (
+                  <button
+                    key={code}
+                    onClick={() => {
+                      setActiveLang(code);
+                      localStorage.setItem("user_language", code);
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${activeLang === code ? "bg-accent text-white" : "text-slate-300 hover:text-white"}`}
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* User Section - Mobile */}

@@ -146,7 +146,7 @@ const ProductCard = ({
       {/* Info */}
       <div className="flex-1 p-3 flex flex-col">
         {/* Vendor */}
-        <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium truncate mb-1">
+        <p className="hidden md:block text-[9px] md:text-[10px] text-muted-foreground font-medium truncate mb-1">
           {getVendorName(product.vendorId)}
         </p>
 

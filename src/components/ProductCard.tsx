@@ -137,7 +137,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 🔥 {product.discountPercent || 15}% OFF
               </div>
               {/* 2. Fast Delivery */}
-              <div className="absolute bottom-2 left-2 bg-accent/90 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm backdrop-blur-sm">
+              <div className="absolute bottom-2 left-2 bg-accent/90 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm backdrop-blur-sm hidden md:inline">
                 ⚡ Fast [{product.estimatedDeliveryMinutes || 10} MINS]
               </div>
             </>
@@ -148,7 +148,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div>
             {/* 3. Store Name with Store Rating */}
             <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 mb-1">
-              <span className="truncate max-w-[70%]">🏪 {product.brand || "ApexBee Seller"}</span>
+              <span className="truncate max-w-[70%] hidden md:inline">🏪 {product.brand || "ApexBee Seller"}</span>
               <span className="text-amber-600 bg-amber-50 px-1 rounded shrink-0">★ {product.storeRating || "4.8"}</span>
             </div>
 
@@ -185,7 +185,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 </span>
               </div>
               <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100/50">
-                <span>📍 {product.calculatedDistanceKm || "1.2"} km</span>
+                <span className="hidden md:inline">📍 {product.calculatedDistanceKm || "1.2"} km</span>
                 <span>Delivery: {product.shippingCharge ? `₹${product.shippingCharge}` : "FREE"}</span>
               </div>
             </div>

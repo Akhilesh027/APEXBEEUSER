@@ -19,6 +19,15 @@ import {
   ShoppingBag,
   Briefcase as ToolIcon,
   Clock,
+  Coins,
+  Utensils,
+  HeartPulse,
+  Shirt,
+  Smartphone,
+  Plane,
+  Truck,
+  Tag,
+  BadgePercent,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -835,6 +844,13 @@ const Home = () => {
     container.scrollLeft += direction === "left" ? -amount : amount;
   };
 
+  const scrollHorizontally = (id: string, direction: "left" | "right") => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    const amount = 280;
+    container.scrollLeft += direction === "left" ? -amount : amount;
+  };
+
   const handleViewAllCategories = () => navigate("/categories");
 
   const locationLabel = useMemo(() => {
@@ -874,7 +890,7 @@ const Home = () => {
         className="text-left bg-white border rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all group w-full flex flex-col justify-between"
       >
         <div>
-          <div className="h-44 bg-muted overflow-hidden relative w-full">
+          <div className="h-36 sm:h-44 bg-muted overflow-hidden relative w-full">
             <img
               src={img}
               alt={title}
@@ -896,7 +912,7 @@ const Home = () => {
           <div className="p-3.5 space-y-2">
             {/* 3. Store Name with Store Rating */}
             <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
-              <span className="truncate max-w-[70%]">🏪 {p.brand || "ApexBee Seller"}</span>
+              <span className="truncate max-w-[70%] hidden md:inline">🏪 {p.brand || "ApexBee Seller"}</span>
               <span className="text-amber-500 bg-amber-50 px-1 rounded shrink-0">★ 4.8</span>
             </div>
 
@@ -936,7 +952,7 @@ const Home = () => {
                 </span>
               </div>
               <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100">
-                <span>📍 {p.calculatedDistanceKm || 1.2} km</span>
+                <span className="hidden md:inline">📍 {p.calculatedDistanceKm || 1.2} km</span>
                 <span>Delivery: {p.adminPricing?.shippingCharge ? `₹${p.adminPricing.shippingCharge}` : "FREE"}</span>
               </div>
             </div>
@@ -985,26 +1001,17 @@ const Home = () => {
                 </h3>
 
                 {/* delivers to location tag */}
-                <p className="text-xs font-bold text-navy flex items-center gap-1 bg-blue-50 border border-blue-100/60 px-3 py-1.5 rounded-full w-fit">
-                  Delivering to: <span className="text-accent font-black">📍 {userLocation?.colony || "Buchireddypalem"}</span>
-                </p>
-
-                <p className="text-xs text-slate-500 font-semibold mt-1">
-                  {greetingOffer}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
+                  className="text-xs font-bold text-navy flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100/80 border border-blue-100 px-3 py-1.5 rounded-full w-fit transition-all cursor-pointer shadow-xs border-none"
+                  title="Click to change your delivery location"
+                >
+                  <span>Delivering to:</span>
+                  <span className="text-accent font-black">📍 {userLocation?.colony || "Buchireddypalem"}</span>
+                  <span className="text-[9px] text-accent font-bold">▼</span>
+                </button>
               </div>
-
-              {/* Flash offer countdown card */}
-              {milkCountdown && (
-                <div className="bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm shrink-0 border-amber-200 bg-gradient-to-r from-amber-50/30 to-white max-w-xs w-full sm:w-auto hover:shadow-md transition-all duration-300 z-10">
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-lg shrink-0">{offerEmoji}</div>
-                  <div className="text-left">
-                    <p className="font-extrabold text-navy text-xs leading-none">{offerTitle}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">Flash offer ends in:</p>
-                    <p className="font-black text-red-500 text-xs mt-0.5 tracking-wider font-mono animate-pulse">{milkCountdown}</p>
-                  </div>
-                </div>
-              )}
             </div>
           </section>
 
@@ -1075,47 +1082,50 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 3. Quick Shortcuts Grid (max 8 per row on desktop) */}
-          <section className="container mx-auto px-4 py-4">
+          {/* 3. Quick Shortcuts Grid (4 per row on mobile, larger tiles with Lucide icons) */}
+          <section className="container mx-auto px-4 py-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-navy">Quick Shortcuts</h2>
-              <button onClick={() => navigate("/category")} className="text-xs text-primary font-semibold hover:underline bg-transparent border-none cursor-pointer">
+              <h2 className="text-xl font-extrabold text-navy">Quick Shortcuts</h2>
+              <button onClick={() => navigate("/category")} className="text-xs text-primary font-bold hover:underline bg-transparent border-none cursor-pointer">
                 View All →
               </button>
             </div>
-            <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-8 xl:grid-cols-8 gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-3 sm:gap-4">
               {[
-                { label: "Grocery", emoji: "🛒", gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/category/🛒 Daily Needs" },
-                { label: "Food", emoji: "🍔", gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/category/🍽 Food & Dining" },
-                { label: "Pharmacy", emoji: "💊", gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/❤ Health & Wellness" },
-                { label: "Fashion", emoji: "👗", gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/🛍 Shopping" },
-                { label: "Electronics", emoji: "📱", gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/🛍 Shopping" },
-                { label: "Services", emoji: "🔧", gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
-                { label: "Academy", emoji: "🎓", gradient: "linear-gradient(135deg,#711c91,#a8c0ff)", to: "/academy" },
-                { label: "Travel", emoji: "✈", gradient: "linear-gradient(135deg,#00c6ff,#3f2b96)", to: "/travel" },
-                { label: "Book Delivery", emoji: "📦", gradient: "linear-gradient(135deg,#a8c0ff,#3f2b96)", to: "/category/🚚 Delivery & Logistics" },
-                { label: "Pickup", emoji: "🛵", gradient: "linear-gradient(135deg,#FDC830,#F37335)", to: "/category/🚚 Delivery & Logistics" },
-                { label: "Recharge", emoji: "⚡", gradient: "linear-gradient(135deg,#00F260,#0575E6)", to: "/community" },
-                { label: "Offers", emoji: "🔥", gradient: "linear-gradient(135deg,#f12711,#f5af19)", to: "/category/📢 Promotional" },
-              ].slice(0, 12).map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => navigate(item.to)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group cursor-pointer"
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition-transform duration-200"
-                    style={{ background: item.gradient }}
+                { label: "Earn Money", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn" },
+                { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/category/🛒 Daily Needs" },
+                { label: "Food", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/category/🍽 Food & Dining" },
+                { label: "Shops", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e293b)", to: "/local-stores" },
+                { label: "Services", icon: ToolIcon, gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
+                { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/❤ Health & Wellness" },
+                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/🛍 Shopping" },
+                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/🛍 Shopping" },
+                { label: "Academy", icon: BookOpen, gradient: "linear-gradient(135deg,#711c91,#a8c0ff)", to: "/academy" },
+                { label: "Travel", icon: Plane, gradient: "linear-gradient(135deg,#00c6ff,#3f2b96)", to: "/travel" },
+                { label: "Delivery", icon: Truck, gradient: "linear-gradient(135deg,#a8c0ff,#3f2b96)", to: "/category/🚚 Delivery & Logistics" },
+                { label: "Offers", icon: BadgePercent, gradient: "linear-gradient(135deg,#f12711,#f5af19)", to: "/category/📢 Promotional" },
+              ].map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => navigate(item.to)}
+                    className="flex flex-col items-center justify-center gap-2 p-3.5 sm:p-4 rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
                   >
-                    {item.emoji}
-                  </div>
-                  <div className="text-center">
-                    <p className="font-extrabold text-navy text-[10px] leading-tight group-hover:text-accent transition-colors">
-                      {item.label}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                    <div
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+                      style={{ background: item.gradient }}
+                    >
+                      <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2px]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-black text-navy text-xs sm:text-sm leading-tight group-hover:text-accent transition-colors">
+                        {item.label}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
 
@@ -1250,84 +1260,102 @@ const Home = () => {
             </section>
           )}
 
-          {/* 5. Main Categories (15 Premium Hexagon Icons) */}
+          {/* 5. Main Categories (Larger Images & Clear Label Placement) */}
           <section className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-navy text-left">Explore Categories</h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-extrabold text-navy text-left">Explore Categories</h2>
               <Button
                 variant="outline"
                 size="sm"
-                className="text-accent border-accent hover:bg-accent hover:text-white"
+                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs"
                 onClick={handleViewAllCategories}
               >
                 View All
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => scrollCategories("left")}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-
-              <div
-                id="categories-container"
-                className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth flex-1 pb-1"
-              >
-                {loadingCategories ? (
-                  Array.from({ length: 7 }).map((_, index) => (
-                    <div key={index} className="flex flex-col items-center gap-2 min-w-[100px]">
-                      <Skeleton
-                        className="w-[84px] h-[84px]"
-                        style={{ clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)" }}
-                      />
-                      <Skeleton className="w-16 h-3 rounded mt-2" />
-                    </div>
-                  ))
-                ) : categories.length === 0 ? (
-                  <div className="w-full rounded-xl border bg-muted/20 p-6 text-center text-muted-foreground">
-                    No categories available.
+            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
+              {loadingCategories ? (
+                Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="flex flex-col items-center gap-2">
+                    <Skeleton className="w-20 h-20 xs:w-[100px] xs:h-[100px] rounded-full" />
+                    <Skeleton className="w-16 h-3 rounded mt-1" />
                   </div>
-                ) : (
-                  categories.map((category) => (
-                    <button
-                      type="button"
-                      key={category.id}
-                      onClick={() => navigate(category.to)}
-                      className="flex flex-col items-center min-w-[100px] cursor-pointer group"
-                    >
-                      <div
-                        className="w-[84px] h-[84px] bg-gradient-to-br from-primary/10 to-violet-500/10 p-[2.5px] transition-all duration-300 group-hover:scale-105 group-hover:from-accent group-hover:to-rose-500 shadow-md"
-                        style={{ clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)" }}
-                      >
-                        <div
-                          className="w-full h-full bg-white overflow-hidden flex items-center justify-center relative"
-                          style={{ clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)" }}
-                        >
-                          <img
-                            src={category.image || "/placeholder.svg"}
-                            alt={category.label}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            loading="lazy"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs font-black mt-3 text-center text-navy group-hover:text-accent max-w-[84px] leading-tight line-clamp-2">
-                        {category.label}
+                ))
+              ) : categories.length === 0 ? (
+                <div className="col-span-full rounded-2xl border bg-muted/20 p-8 text-center text-muted-foreground font-semibold text-sm">
+                  No categories available right now.
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => navigate(category.to)}
+                    className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
+                  >
+                    <div className="w-20 h-20 xs:w-[100px] xs:h-[100px] rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
+                      <img
+                        src={category.image || "/placeholder.svg"}
+                        alt={category.label}
+                        className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="w-full text-center px-0.5">
+                      <p className="text-[10px] xs:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
+                        {category.label.includes(" & ") ? (
+                          <>
+                            {category.label.split(" & ")[0]} &<br />
+                            {category.label.split(" & ")[1]}
+                          </>
+                        ) : (
+                          category.label
+                        )}
                       </p>
-                    </button>
-                  ))
-                )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* 5.5 Feature Badges Bar (3 Pillars matching mobile UI) */}
+          <section className="container mx-auto px-4 py-3">
+            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 flex items-center justify-around text-center text-[10px] sm:text-xs font-extrabold text-[#0A1128]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm sm:text-base">🚀</span>
+                <div className="text-left leading-tight">
+                  <p className="font-black">Fast Delivery</p>
+                  <p className="text-[9px] text-slate-500 font-bold">15-30 mins</p>
+                </div>
               </div>
 
-              <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => scrollCategories("right")}>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+              <div className="h-6 w-px bg-amber-200" />
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm sm:text-base">🏷️</span>
+                <div className="text-left leading-tight">
+                  <p className="font-black">Best Prices</p>
+                  <p className="text-[9px] text-slate-500 font-bold">Guarantee</p>
+                </div>
+              </div>
+
+              <div className="h-6 w-px bg-amber-200" />
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm sm:text-base">🏪</span>
+                <div className="text-left leading-tight">
+                  <p className="font-black">Local Stores</p>
+                  <p className="text-[9px] text-slate-500 font-bold">Near You</p>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* 6. Deals & Featured Products */}
           <section className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div className="text-left">
                 <h2 className="text-xl font-bold text-navy">Featured Products</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Handpicked best items for you.</p>
@@ -1337,33 +1365,55 @@ const Home = () => {
               </Button>
             </div>
 
-            {featuredLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border bg-white overflow-hidden">
-                    <Skeleton className="h-44 w-full" />
-                    <div className="p-4 space-y-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
+            <div className="relative group">
+              <button
+                onClick={() => scrollHorizontally("featured-products-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-slate-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              {featuredLoading ? (
+                <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
+                      <Skeleton className="h-44 w-full" />
+                      <div className="p-4 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : featuredProducts.length === 0 ? (
-              <div className="rounded-2xl border bg-muted/20 p-10 text-center text-muted-foreground text-sm">
-                No featured products available.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                {featuredProducts.slice(0, 4).map(renderProductCard)}
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : featuredProducts.length === 0 ? (
+                <div className="rounded-2xl border bg-muted/20 p-10 text-center text-muted-foreground text-sm">
+                  No featured products available.
+                </div>
+              ) : (
+                <div id="featured-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
+                  {featuredProducts.map((p) => (
+                    <div key={p._id} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 flex flex-col">
+                      {renderProductCard(p)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => scrollHorizontally("featured-products-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-slate-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
           </section>
 
           {/* Daily Deals Block */}
           <section className="container mx-auto px-4 py-6">
             <div className="rounded-3xl border bg-gradient-to-r from-yellow-50 to-orange-50 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
                 <div className="text-left">
                   <div className="inline-flex items-center gap-2 text-[10px] font-bold bg-white/70 px-3 py-1 rounded-full text-yellow-800">
                     <Flame className="h-3.5 w-3.5" /> DAILY DEALS
@@ -1378,27 +1428,49 @@ const Home = () => {
                 </Button>
               </div>
 
-              {dealsLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border bg-white overflow-hidden">
-                      <Skeleton className="h-44 w-full" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
+              <div className="relative group">
+                <button
+                  onClick={() => scrollHorizontally("deals-products-scroll", "left")}
+                  className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                  aria-label="Scroll Left"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                {dealsLoading ? (
+                  <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
+                        <Skeleton className="h-44 w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : dealProducts.length === 0 ? (
-                <div className="rounded-2xl border bg-white/60 p-10 text-center text-muted-foreground text-sm">
-                  No deals available right now.
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {dealProducts.slice(0, 4).map(renderProductCard)}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : dealProducts.length === 0 ? (
+                  <div className="rounded-2xl border bg-white/60 p-10 text-center text-muted-foreground text-sm">
+                    No deals available right now.
+                  </div>
+                ) : (
+                  <div id="deals-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
+                    {dealProducts.map((p) => (
+                      <div key={p._id} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 flex flex-col">
+                        {renderProductCard(p)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => scrollHorizontally("deals-products-scroll", "right")}
+                  className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                  aria-label="Scroll Right"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </section>
 

@@ -815,6 +815,16 @@ const ProductDetail = () => {
         </div>
       )}
 
+      {/* Sticky Mobile Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 z-40 flex gap-3 shadow-lg">
+        <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-bold h-11" disabled={isOutOfStock}>
+          Add to Cart
+        </Button>
+        <Button onClick={handleBuyNow} className="flex-1 bg-navy hover:bg-navy/90 text-white font-bold h-11" disabled={isOutOfStock}>
+          Buy Now
+        </Button>
+      </div>
+
       <Footer />
     </div>
   );
