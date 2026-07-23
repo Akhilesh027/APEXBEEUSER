@@ -16,3 +16,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+plugins: [
+  react(),
+  mode === "development" && componentTagger(),
+  pwaPluginInstance
+].filter(Boolean),
+  resolve: {
+  alias: {
+    "@": path.resolve(__dirname, "./src"),
+    },
+},
+}));

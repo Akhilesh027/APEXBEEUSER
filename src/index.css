@@ -108,7 +108,8 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html, body {
+  html,
+  body {
     max-width: 100%;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
@@ -128,13 +129,15 @@ All colors MUST be HSL.
 .shadow-premium-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .shadow-premium-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 1px 5px rgba(0, 0, 0, 0.03);
 }
 
 .rounded-button-premium {
-  border-radius: 0.75rem; /* slightly rounded buttons */
+  border-radius: 0.75rem;
+  /* slightly rounded buttons */
 }
 
 /* Hide scrollbar for Chrome, Safari, Edge, Firefox */
@@ -149,15 +152,20 @@ All colors MUST be HSL.
 .scrollbar-hide,
 .scrollbar-none,
 .no-scrollbar {
-  -ms-overflow-style: none !important;  /* IE and Edge */
-  scrollbar-width: none !important;  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE and Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
 }
 
 @keyframes map-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.5;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 0.1;
@@ -166,4 +174,4 @@ All colors MUST be HSL.
 
 .animate-map-pulse {
   animation: map-pulse 2s infinite ease-in-out;
-}
+}
