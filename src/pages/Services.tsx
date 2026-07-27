@@ -13,7 +13,7 @@ import {
   Sparkles, Bug
 } from "lucide-react";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -713,7 +713,7 @@ const Services = () => {
 
     // Track recently viewed
     try {
-      const list = JSON.parse(localStorage.getItem("mock_recently_viewed") || "[]");
+      const list = JSON.parse(localStorage.getItem("recently_viewed") || "[]");
       const filtered = list.filter((item: any) => !(item.id === p._id && item.type === "service"));
       filtered.unshift({
         id: p._id,
@@ -725,7 +725,7 @@ const Services = () => {
         categoryName: p.serviceCategory[0] || "Service",
         timestamp: new Date().toISOString(),
       });
-      localStorage.setItem("mock_recently_viewed", JSON.stringify(filtered.slice(0, 15)));
+      localStorage.setItem("recently_viewed", JSON.stringify(filtered.slice(0, 15)));
     } catch (e) {
       console.error("Error tracking service:", e);
     }
@@ -1487,7 +1487,7 @@ const Services = () => {
                         className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "upi" ? "border-navy bg-navy/5 text-navy font-bold shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-slate-350"}`}
                       >
                         <span className="text-xl mb-1">📱</span>
-                        <span className="text-xs">Mock UPI Pay</span>
+                        <span className="text-xs">UPI Payment</span>
                       </button>
                     </div>
                   </div>

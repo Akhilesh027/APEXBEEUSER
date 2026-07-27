@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 // ─────────────────────────────────────────────
 // Types

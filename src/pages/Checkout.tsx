@@ -33,7 +33,7 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import upi from "../Web images/Web images/upi.jpeg";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 type CartItem = any;
 

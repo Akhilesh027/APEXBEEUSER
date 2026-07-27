@@ -8,11 +8,12 @@ import {
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProductCustomizerModal from "@/components/ProductCustomizerModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const getStatusDisplay = (status: string) => {
   switch (status) {
@@ -100,11 +101,75 @@ const StorePage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "ALL">("ALL");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'products' | 'about' | 'gallery' | 'policies' | 'hours' | 'reviews'>('products');
 
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Subcategory Chips based on store category and product tags
+  const vendorSubcategories = useMemo(() => {
+    const catName = (store?.category || (store?.categories && store?.categories[0]) || "").toLowerCase();
+
+    const productSubcats = new Set<string>();
+    for (const p of products) {
+      if (p.subcategory && p.subcategory.trim()) productSubcats.add(p.subcategory.trim());
+      if ((p as any).subCategory?.name) productSubcats.add((p as any).subCategory.name);
+      if ((p as any).childCategory?.name) productSubcats.add((p as any).childCategory.name);
+    }
+
+    let presetChips: { id: string; label: string; icon: string }[] = [];
+    if (catName.includes("food") || catName.includes("restaurant")) {
+      presetChips = [
+        { id: "ALL", label: "All Menu Items", icon: "🍽️" },
+        { id: "Biryani", label: "Dum Biryani & Rice", icon: "🍲" },
+        { id: "Starter", label: "Starters & Appetizers", icon: "🥗" },
+        { id: "Main Course", label: "Main Course & Gravies", icon: "🍛" },
+        { id: "Bread", label: "Tandoori Breads", icon: "🥖" },
+        { id: "Dessert", label: "Desserts & Sweets", icon: "🍰" },
+        { id: "Beverage", label: "Beverages & Shakes", icon: "☕" }
+      ];
+    } else if (catName.includes("grocery") || catName.includes("daily")) {
+      presetChips = [
+        { id: "ALL", label: "All Grocery Items", icon: "🛒" },
+        { id: "Dairy", label: "Dairy, Milk & Bakery", icon: "🥛" },
+        { id: "Vegetable", label: "Fresh Fruits & Veggies", icon: "🥬" },
+        { id: "Staples", label: "Rice, Atta & Oils", icon: "🌾" },
+        { id: "Snack", label: "Snacks & Munchies", icon: "🍫" },
+        { id: "Cleaning", label: "Cleaning & Hygiene", icon: "🧼" }
+      ];
+    } else if (catName.includes("fashion") || catName.includes("apparel")) {
+      presetChips = [
+        { id: "ALL", label: "All Fashion Items", icon: "👗" },
+        { id: "Ethnic", label: "Women Ethnic & Sarees", icon: "🥻" },
+        { id: "Men", label: "Men Formal & Casuals", icon: "👔" },
+        { id: "Kids", label: "Kids & Baby Wear", icon: "🧸" },
+        { id: "Footwear", label: "Footwear & Shoes", icon: "👠" },
+        { id: "Jewelry", label: "Jewelry & Ornaments", icon: "💎" }
+      ];
+    } else if (catName.includes("service") || catName.includes("repair")) {
+      presetChips = [
+        { id: "ALL", label: "All Service Packages", icon: "🛠️" },
+        { id: "Electrician", label: "Electrical & Plumbing", icon: "⚡" },
+        { id: "Appliance", label: "AC & Appliance Repair", icon: "❄️" },
+        { id: "Cleaning", label: "Deep Home Cleaning", icon: "🧹" },
+        { id: "Salon", label: "Salon & Beauty at Home", icon: "💄" }
+      ];
+    } else {
+      presetChips = [
+        { id: "ALL", label: "All Store Items", icon: "🛍️" }
+      ];
+    }
+
+    productSubcats.forEach(sub => {
+      if (!presetChips.some(c => c.id.toLowerCase() === sub.toLowerCase() || c.label.toLowerCase().includes(sub.toLowerCase()))) {
+        presetChips.push({ id: sub, label: sub, icon: "🏷️" });
+      }
+    });
+
+    return presetChips;
+  }, [store, products]);
 
   // Admin moderation states
   const [editingReview, setEditingReview] = useState<any>(null);
@@ -198,6 +263,62 @@ const StorePage = () => {
   const [submittingSub, setSubmittingSub] = useState(false);
   const [cartAddingId, setCartAddingId] = useState<string | null>(null);
 
+  // Customizer modal state
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [customizingProduct, setCustomizingProduct] = useState<any>(null);
+
+  // Table Booking Modal state
+  const [tableBookingOpen, setTableBookingOpen] = useState(false);
+  const [bookingGuestName, setBookingGuestName] = useState('');
+  const [bookingGuestPhone, setBookingGuestPhone] = useState('');
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTimeSlot, setBookingTimeSlot] = useState('07:30 PM');
+  const [bookingGuestCount, setBookingGuestCount] = useState(2);
+  const [bookingRequests, setBookingRequests] = useState('');
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+
+  const handleBookTableSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!store || !bookingGuestName || !bookingGuestPhone || !bookingDate) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    try {
+      setBookingSubmitting(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/table-bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vendorId: store.vendorId || store._id,
+          guestName: bookingGuestName,
+          guestPhone: bookingGuestPhone,
+          bookingDate,
+          timeSlot: bookingTimeSlot,
+          guestCount: bookingGuestCount,
+          specialRequests: bookingRequests,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Table Reservation Confirmed!\n${data.message}`);
+        setTableBookingOpen(false);
+        setBookingGuestName('');
+        setBookingGuestPhone('');
+        setBookingRequests('');
+      } else {
+        alert(data.message || 'Failed to submit table reservation');
+      }
+    } catch (err: any) {
+      alert('Error submitting reservation: ' + err.message);
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const userId = user?.id || user?._id || "mock-user-123";
 
@@ -286,11 +407,20 @@ const StorePage = () => {
     return Array.from(map.values());
   }, [products]);
 
-  // Filter products by selected category + search query
+  // Filter products by selected category + subcategory + search query
   const filteredProducts = useMemo(() => {
     let list = products;
     if (selectedCategoryId !== "ALL") {
       list = list.filter((p) => p.category?._id === selectedCategoryId);
+    }
+    if (selectedSubcategory !== "ALL") {
+      const q = selectedSubcategory.toLowerCase();
+      list = list.filter((p) =>
+        p.subcategory?.toLowerCase().includes(q) ||
+        p.category?.name?.toLowerCase().includes(q) ||
+        p.itemName.toLowerCase().includes(q) ||
+        (p as any).subCategory?.name?.toLowerCase().includes(q)
+      );
     }
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -301,7 +431,7 @@ const StorePage = () => {
       );
     }
     return list;
-  }, [products, selectedCategoryId, searchQuery]);
+  }, [products, selectedCategoryId, selectedSubcategory, searchQuery]);
 
   // ✅ Pagination state for handling 200+ products
   const [currentPage, setCurrentPage] = useState(1);
@@ -361,6 +491,57 @@ const StorePage = () => {
       alert("Error adding to cart");
     } finally {
       setCartAddingId(null);
+    }
+  };
+
+  const handleOpenCustomizer = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCustomizingProduct(product);
+    setCustomizerOpen(true);
+  };
+
+  const handleAddToCartConfigured = async (configuredItem: any) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add items to cart.");
+      return;
+    }
+    const item = {
+      userId,
+      productId: configuredItem.productId || configuredItem._id,
+      name: configuredItem.itemName || configuredItem.name,
+      price: configuredItem.unitPrice || configuredItem.price,
+      image: configuredItem.images?.[0] || configuredItem.thumbnail,
+      quantity: configuredItem.quantity || 1,
+      selectedColor: configuredItem.selectedVariant?.name || "default",
+      selectedVariant: configuredItem.selectedVariant,
+      selectedAddons: configuredItem.selectedAddons,
+      spiceLevel: configuredItem.spiceLevel,
+      cookingNotes: configuredItem.cookingNotes,
+      customText: configuredItem.customText,
+      vendorId: store?.vendorId,
+      deliveryFee: configuredItem.deliveryFee ?? 0,
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/cart/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(item),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to add to cart.");
+      } else {
+        window.dispatchEvent(new Event("storage"));
+        alert(`${item.name} added to cart!`);
+      }
+    } catch {
+      alert("Error adding to cart");
     }
   };
 
@@ -551,8 +732,13 @@ const StorePage = () => {
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight truncate">
                       {store.businessName}
                     </h1>
+                    {store.category && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-extrabold shadow-sm">
+                        🏷️ {store.category}
+                      </span>
+                    )}
                     {store.verifiedBadge && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
                         Verified
                       </span>
                     )}
@@ -560,6 +746,46 @@ const StorePage = () => {
                       ● {getStatusDisplay(store.computedAvailability || "closed").label}
                     </span>
                   </div>
+
+                  {/* Category-Specific Capabilities & Operational Tags */}
+                  {(() => {
+                    const catName = (store.category || (store.categories && store.categories[0]) || "").toLowerCase();
+                    if (catName.includes("food") || catName.includes("restaurant")) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 my-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">🟢 Veg / 🔴 Non-Veg Menu</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30">⏱️ Prep: 15-20 Mins</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 text-[11px] font-bold border border-purple-500/30">🍷 Table Reservations</span>
+                        </div>
+                      );
+                    }
+                    if (catName.includes("grocery") || catName.includes("daily")) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 my-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">⚡ 10-Min Supermarket Express</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">🌅 Morning Milk & Produce Slot</span>
+                        </div>
+                      );
+                    }
+                    if (catName.includes("fashion") || catName.includes("apparel")) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 my-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 text-[11px] font-bold border border-rose-500/30">🔄 7-Day Easy Return</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-pink-500/20 text-pink-300 text-[11px] font-bold border border-pink-500/30">🛋️ In-Store Trial Room</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 text-[11px] font-bold border border-purple-500/30">✂️ Custom Stitching</span>
+                        </div>
+                      );
+                    }
+                    if (catName.includes("service") || catName.includes("repair")) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 my-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 text-[11px] font-bold border border-blue-500/30">🏷️ Fixed & Hourly Rates</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30">🚨 24x7 Emergency On-Demand</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-300">
                     <div className="inline-flex items-center gap-1">
@@ -620,6 +846,13 @@ const StorePage = () => {
                   </Button>
                 )}
 
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shrink-0 shadow-md transition border-0"
+                  onClick={() => setTableBookingOpen(true)}
+                >
+                  🍽️ Reserve a Table
+                </Button>
+
                 <div className="px-3.5 py-1.5 rounded-xl bg-white/15 border border-white/15 text-center shrink-0">
                   <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Delivery Time</p>
                   <p className="text-xs font-extrabold text-white">{store.estimatedDeliveryMinutes || 30} Mins</p>
@@ -678,27 +911,41 @@ const StorePage = () => {
 
         {/* STORE SUB-TABS NAVIGATION BAR */}
         <section className="container mx-auto px-4 mt-6 select-none">
-          <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1 scrollbar-none">
-            {[
-              { key: 'products', label: 'Products Catalog', icon: '🛍️' },
-              { key: 'reviews', label: `Reviews (${reviews.length})`, icon: '⭐' },
-              { key: 'about', label: 'About Store', icon: 'ℹ️' },
-              { key: 'gallery', label: 'Store Gallery', icon: '🖼️' },
-              { key: 'policies', label: 'Return Policies', icon: '🛡️' },
-              { key: 'hours', label: 'Operating Hours', icon: '⏰' }
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                className={`px-5 py-3 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap ${activeTab === tab.key
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-muted-foreground hover:text-navy'
-                  }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
-          </div>
+          {(() => {
+            const catName = (store.category || (store.categories && store.categories[0]) || "").toLowerCase();
+            const isFood = catName.includes("food") || catName.includes("restaurant");
+            const isGrocery = catName.includes("grocery") || catName.includes("daily");
+            const isFashion = catName.includes("fashion") || catName.includes("apparel");
+            const isService = catName.includes("service") || catName.includes("repair");
+            const isDevotional = catName.includes("devotional") || catName.includes("puja");
+
+            const catalogTabLabel = isFood ? 'Food & Digital Menu' : isGrocery ? 'Supermarket Catalog' : isFashion ? 'Apparel & Lookbook' : isService ? 'Service Packages' : isDevotional ? 'Devotional Catalog' : 'Products Catalog';
+            const catalogTabIcon = isFood ? '🍽️' : isGrocery ? '🛒' : isFashion ? '👗' : isService ? '🛠️' : isDevotional ? '🏛️' : '🛍️';
+
+            return (
+              <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                  { key: 'products', label: catalogTabLabel, icon: catalogTabIcon },
+                  { key: 'reviews', label: `Reviews (${reviews.length})`, icon: '⭐' },
+                  { key: 'about', label: 'About Store', icon: 'ℹ️' },
+                  { key: 'gallery', label: 'Store Gallery', icon: '🖼️' },
+                  { key: 'policies', label: 'Return Policies', icon: '🛡️' },
+                  { key: 'hours', label: 'Operating Hours', icon: '⏰' }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`px-5 py-3 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap cursor-pointer ${activeTab === tab.key
+                      ? 'border-accent text-accent'
+                      : 'border-transparent text-muted-foreground hover:text-navy'
+                      }`}
+                  >
+                    {tab.icon} {tab.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </section>
 
         {/* TAB CONTENT: PRODUCTS CATALOG */}
@@ -733,30 +980,23 @@ const StorePage = () => {
                 </div>
               </div>
 
-              {/* CATEGORIES CHIPS */}
+              {/* SUBCATEGORY FILTER CHIPS */}
               <div className="mt-5 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                <button
-                  onClick={() => setSelectedCategoryId("ALL")}
-                  className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${selectedCategoryId === "ALL"
-                    ? "bg-accent text-white border-accent"
-                    : "bg-white text-navy border-slate-200 hover:bg-slate-50"
-                    }`}
-                >
-                  🛍️ All Products
-                </button>
-
-                {vendorCategories.map((c) => (
-                  <button
-                    key={c._id}
-                    onClick={() => setSelectedCategoryId(c._id)}
-                    className={`px-5 py-2.5 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm ${selectedCategoryId === c._id
-                      ? "bg-accent text-white border-accent"
-                      : "bg-white text-navy border-slate-200 hover:bg-slate-50"
-                      }`}
-                  >
-                    📦 {c.name}
-                  </button>
-                ))}
+                {vendorSubcategories.map((chip) => {
+                  const isSelected = selectedSubcategory === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      onClick={() => setSelectedSubcategory(chip.id)}
+                      className={`px-4 py-2 rounded-full border text-xs font-bold transition whitespace-nowrap shadow-sm cursor-pointer ${isSelected
+                        ? "bg-accent text-white border-accent shadow-md"
+                        : "bg-white text-navy border-slate-200 hover:bg-slate-50"
+                        }`}
+                    >
+                      {chip.icon} {chip.label}
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
@@ -850,7 +1090,7 @@ const StorePage = () => {
                             <Button
                               className="w-full bg-navy hover:bg-navy/90 text-white rounded-xl py-1.5 sm:py-2 flex items-center justify-center gap-1.5 font-bold transition shadow-sm text-[10px] sm:text-xs"
                               disabled={cartAddingId === p._id}
-                              onClick={(e) => handleAddToCart(p, e)}
+                              onClick={(e) => handleOpenCustomizer(p, e)}
                             >
                               {cartAddingId === p._id ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -911,11 +1151,10 @@ const StorePage = () => {
                                   setCurrentPage(pageNum);
                                   window.scrollTo({ top: 400, behavior: "smooth" });
                                 }}
-                                className={`w-8 h-8 rounded-xl text-xs font-black transition cursor-pointer border ${
-                                  currentPage === pageNum
-                                    ? "bg-[#0A1128] text-white border-[#0A1128] shadow-sm"
-                                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                                }`}
+                                className={`w-8 h-8 rounded-xl text-xs font-black transition cursor-pointer border ${currentPage === pageNum
+                                  ? "bg-[#0A1128] text-white border-[#0A1128] shadow-sm"
+                                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                  }`}
                               >
                                 {pageNum}
                               </button>
@@ -1454,6 +1693,146 @@ const StorePage = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Customizer Modal for variants & options */}
+      <ProductCustomizerModal
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        product={customizingProduct}
+        vendorCategory={store?.category}
+        onAddToCart={handleAddToCartConfigured}
+      />
+
+      {/* Table Booking Modal */}
+      {tableBookingOpen && store && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setTableBookingOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-left border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-navy flex items-center gap-2">
+                  🍽️ Reserve Table at {store.businessName}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Confirm your guest slot for dining & takeaway
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTableBookingOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleBookTableSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-navy block mb-1">Guest Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter your full name"
+                  value={bookingGuestName}
+                  onChange={(e) => setBookingGuestName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="10-digit mobile number"
+                  value={bookingGuestPhone}
+                  onChange={(e) => setBookingGuestPhone(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-navy block mb-1">Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-navy block mb-1">Time Slot *</label>
+                  <select
+                    value={bookingTimeSlot}
+                    onChange={(e) => setBookingTimeSlot(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                  >
+                    <option value="12:30 PM">12:30 PM (Lunch)</option>
+                    <option value="01:30 PM">01:30 PM (Lunch)</option>
+                    <option value="02:30 PM">02:30 PM (Lunch)</option>
+                    <option value="07:30 PM">07:30 PM (Dinner)</option>
+                    <option value="08:30 PM">08:30 PM (Dinner)</option>
+                    <option value="09:30 PM">09:30 PM (Dinner)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Number of Guests</label>
+                <select
+                  value={bookingGuestCount}
+                  onChange={(e) => setBookingGuestCount(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                >
+                  <option value={1}>1 Guest</option>
+                  <option value={2}>2 Guests</option>
+                  <option value={4}>4 Guests (Family Table)</option>
+                  <option value={6}>6 Guests (Group)</option>
+                  <option value={8}>8+ Guests (Party)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Quiet corner table, AC seating"
+                  value={bookingRequests}
+                  onChange={(e) => setBookingRequests(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 rounded-xl text-xs"
+                  onClick={() => setTableBookingOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={bookingSubmitting}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
+                >
+                  {bookingSubmitting ? 'Submitting...' : 'Confirm Table Booking'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

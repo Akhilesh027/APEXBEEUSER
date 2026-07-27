@@ -16,7 +16,7 @@ const formatCurrency = (amount: any) => {
   }).format(value);
 };
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const initialProduct: any = {
   _id: null,
@@ -616,9 +616,61 @@ const ProductDetail = () => {
             </div>
 
 
-            <div className="bg-gray-100 p-6 rounded-lg mt-6">
-              <h3 className="font-bold mb-2">Product Details</h3>
-              <p className="text-sm">{description}</p>
+            {/* Category Specifications & Dynamic Specs Table */}
+            <div className="bg-slate-50 border border-slate-200/80 p-6 rounded-2xl mt-6 space-y-4 shadow-sm">
+              <h3 className="font-extrabold text-sm text-navy uppercase tracking-wider border-b border-slate-200 pb-2">
+                Product & Category Specifications
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {product.categoryName && (
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
+                    <span className="text-muted-foreground font-medium">Category:</span>
+                    <span className="font-bold text-navy">{product.categoryName}</span>
+                  </div>
+                )}
+
+                {product.brand && (
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
+                    <span className="text-muted-foreground font-medium">Brand:</span>
+                    <span className="font-bold text-navy">{product.brand}</span>
+                  </div>
+                )}
+
+                {product.sku && (
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
+                    <span className="text-muted-foreground font-medium">SKU Code:</span>
+                    <span className="font-mono text-indigo-600 font-bold">{selectedVariant?.sku || product.sku}</span>
+                  </div>
+                )}
+
+                {stock > 0 && (
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
+                    <span className="text-muted-foreground font-medium">Stock Status:</span>
+                    <span className="font-bold text-emerald-600">In Stock ({stock} available)</span>
+                  </div>
+                )}
+
+                {/* Render Dynamic Specifications Key-Value Pairs */}
+                {product.attributes &&
+                  Object.keys(product.attributes).map((key) => {
+                    const val = selectedAttrs[key] || (Array.isArray(product.attributes[key]) ? product.attributes[key].join(', ') : product.attributes[key]);
+                    if (!val) return null;
+                    return (
+                      <div key={key} className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between capitalize">
+                        <span className="text-muted-foreground font-medium">{key}:</span>
+                        <span className="font-bold text-navy">{String(val)}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {description && (
+                <div className="pt-2 border-t border-slate-200">
+                  <span className="text-xs font-bold text-navy block mb-1">Description:</span>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const RECENTLY_VIEWED_KEY = "apexbee_recently_viewed_products";
 
 // ═══════════════════════════════════════════════════════
@@ -166,12 +166,14 @@ const ProductCard = ({
 
           {/* Rating */}
           <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded-full shrink-0">
-            <span className="text-[10px] font-bold text-green-700">{Number(product.rating || 4.5).toFixed(1)}</span>
+            <span className="text-[10px] font-bold text-green-700">
+              {product.rating && Number(product.rating) > 0 ? Number(product.rating).toFixed(1) : "New"}
+            </span>
             <Star className="h-2.5 w-2.5 fill-green-600 text-green-600" />
           </div>
 
           <span className="text-[10px] text-slate-400 font-bold ml-1">
-            👥 120+ Sold
+            👥 {product.soldCount && product.soldCount > 0 ? `${product.soldCount}+ Sold` : "0 Sold"}
           </span>
         </div>
 

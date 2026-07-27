@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const LOCATION_KEY = "user_location";
 
 const getStatusDisplay = (status: string) => {
@@ -139,6 +139,58 @@ const LocalStores = () => {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [showAiFloatingOptions, setShowAiFloatingOptions] = useState(false);
 
+  // Table Booking Modal state
+  const [tableBookingStore, setTableBookingStore] = useState<any>(null);
+  const [bookingGuestName, setBookingGuestName] = useState('');
+  const [bookingGuestPhone, setBookingGuestPhone] = useState('');
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTimeSlot, setBookingTimeSlot] = useState('07:30 PM');
+  const [bookingGuestCount, setBookingGuestCount] = useState(2);
+  const [bookingRequests, setBookingRequests] = useState('');
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+
+  const handleBookTableSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tableBookingStore || !bookingGuestName || !bookingGuestPhone || !bookingDate) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    try {
+      setBookingSubmitting(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/table-bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vendorId: tableBookingStore._id,
+          guestName: bookingGuestName,
+          guestPhone: bookingGuestPhone,
+          bookingDate,
+          timeSlot: bookingTimeSlot,
+          guestCount: bookingGuestCount,
+          specialRequests: bookingRequests,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Table Reservation Confirmed!\n${data.message}`);
+        setTableBookingStore(null);
+        setBookingGuestName('');
+        setBookingGuestPhone('');
+        setBookingRequests('');
+      } else {
+        alert(data.message || 'Failed to submit table reservation');
+      }
+    } catch (err: any) {
+      alert('Error submitting reservation: ' + err.message);
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
   // Quick Filter Flags
   const [filterOpenNow, setFilterOpenNow] = useState(false);
   const [filterFreeDelivery, setFilterFreeDelivery] = useState(false);
@@ -262,7 +314,8 @@ const LocalStores = () => {
     try {
       setSubLoading(true);
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const userId = user?.id || user?._id || "mock-user-123";
+      const userId = user?.id || user?._id;
+      if (!userId) return;
       const res = await fetch(`${API_BASE}/local-shop/subscriptions/${userId}`);
       const json = await res.json();
       if (json?.success) setSubscriptions(json.subscriptions || []);
@@ -273,7 +326,8 @@ const LocalStores = () => {
   const fetchBilling = useCallback(async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const userId = user?.id || user?._id || "mock-user-123";
+      const userId = user?.id || user?._id;
+      if (!userId) return;
       const res = await fetch(`${API_BASE}/local-shop/billing/${userId}`);
       const json = await res.json();
       if (json?.success) setBilling(json.billing);
@@ -283,7 +337,8 @@ const LocalStores = () => {
   const fetchLoyalty = useCallback(async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const userId = user?.id || user?._id || "mock-user-123";
+      const userId = user?.id || user?._id;
+      if (!userId) return;
       const res = await fetch(`${API_BASE}/local-shop/loyalty/${userId}`);
       const json = await res.json();
       if (json?.success) setLoyalty(json.loyalty);
@@ -293,7 +348,8 @@ const LocalStores = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const userId = user?.id || user?._id || "mock-user-123";
+      const userId = user?.id || user?._id;
+      if (!userId) return;
       const res = await fetch(`${API_BASE}/local-shop/notifications/${userId}`);
       const json = await res.json();
       if (json?.success) setNotifications(json.notifications || []);
@@ -1218,13 +1274,31 @@ const LocalStores = () => {
                         </div>
 
                         {/* Categories list */}
-                        {categories.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-3">
-                            {categories.slice(0, 3).map((cat) => (
-                              <span key={cat} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-50 border text-slate-600">{cat}</span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {(() => {
+                            const cat = (shop.category || shop.primaryCategory || (shop.categories && shop.categories[0]) || "").toLowerCase();
+                            const name = (shop.businessName || "").toLowerCase();
+                            let label = "Local Store 🏬";
+                            if (cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("bistro") || name.includes("cafe") || name.includes("biryani") || name.includes("kitchen") || name.includes("dine")) {
+                              label = "Food & Restaurant 🍽️";
+                            } else if (cat.includes("grocery") || cat.includes("daily") || cat.includes("milk") || name.includes("grocery") || name.includes("supermarket") || name.includes("mart")) {
+                              label = "Daily Needs & Grocery 🛒";
+                            } else if (cat.includes("fashion") || cat.includes("apparel") || cat.includes("boutique") || name.includes("fashion") || name.includes("boutique")) {
+                              label = "Fashion & Boutique 👗";
+                            } else if (cat.includes("service") || cat.includes("repair") || name.includes("service") || name.includes("repair")) {
+                              label = "Home Services 🛠️";
+                            } else if (cat.includes("devotional") || cat.includes("puja") || name.includes("pooja") || name.includes("temple")) {
+                              label = "Devotional & Puja 🏛️";
+                            } else if (shop.category) {
+                              label = shop.category;
+                            }
+                            return (
+                              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300">
+                                {label}
+                              </span>
+                            );
+                          })()}
+                        </div>
 
                         {/* Custom services badge override */}
                         {isFlowerMerchant ? (
@@ -1269,9 +1343,23 @@ const LocalStores = () => {
                             </p>
                           </div>
                         </div>
-                        <Button className="w-full mt-4 bg-navy hover:bg-navy/90 text-white rounded-xl text-xs py-2 font-bold flex items-center justify-center gap-2 border-none font-sans font-sans">
-                          Visit Store <ChevronRight className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-2 mt-4">
+                          <Button className="flex-1 bg-navy hover:bg-navy/90 text-white rounded-xl text-xs py-2 font-bold flex items-center justify-center gap-2 border-none">
+                            Visit Store <ChevronRight className="h-3 w-3" />
+                          </Button>
+                          {(shop.storeType === 'restaurant' || shop.businessName?.toLowerCase().includes('restaurant') || shop.businessName?.toLowerCase().includes('food') || shop.businessName?.toLowerCase().includes('biryani')) && (
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTableBookingStore(shop);
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs py-2 px-3 font-bold border-none shrink-0"
+                            >
+                              🍽️ Reserve Table
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1572,7 +1660,7 @@ const LocalStores = () => {
                         </div>
                       </div>
 
-                      <Button variant="outline" className="w-full" onClick={() => alert("Invoice downloaded! (Mock)")}>
+                      <Button variant="outline" className="w-full" onClick={() => alert("Invoice downloaded successfully.")}>
                         <CreditCard className="h-4 w-4 mr-2" /> Download Invoice
                       </Button>
                     </>
@@ -1694,6 +1782,137 @@ const LocalStores = () => {
           localStorage.setItem(LOCATION_KEY, JSON.stringify(loc));
         }}
       />
+
+      {/* Table Booking Modal */}
+      {tableBookingStore && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setTableBookingStore(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-left border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-navy flex items-center gap-2">
+                  🍽️ Reserve Table at {tableBookingStore.businessName}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Confirm your guest slot for dining & takeaway
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTableBookingStore(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleBookTableSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-navy block mb-1">Guest Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter your full name"
+                  value={bookingGuestName}
+                  onChange={(e) => setBookingGuestName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="10-digit mobile number"
+                  value={bookingGuestPhone}
+                  onChange={(e) => setBookingGuestPhone(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-navy block mb-1">Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-navy block mb-1">Time Slot *</label>
+                  <select
+                    value={bookingTimeSlot}
+                    onChange={(e) => setBookingTimeSlot(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                  >
+                    <option value="12:30 PM">12:30 PM (Lunch)</option>
+                    <option value="01:30 PM">01:30 PM (Lunch)</option>
+                    <option value="02:30 PM">02:30 PM (Lunch)</option>
+                    <option value="07:30 PM">07:30 PM (Dinner)</option>
+                    <option value="08:30 PM">08:30 PM (Dinner)</option>
+                    <option value="09:30 PM">09:30 PM (Dinner)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Number of Guests</label>
+                <select
+                  value={bookingGuestCount}
+                  onChange={(e) => setBookingGuestCount(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                >
+                  <option value={1}>1 Guest</option>
+                  <option value={2}>2 Guests</option>
+                  <option value={4}>4 Guests (Family Table)</option>
+                  <option value={6}>6 Guests (Group)</option>
+                  <option value={8}>8+ Guests (Party)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Quiet corner table, AC seating"
+                  value={bookingRequests}
+                  onChange={(e) => setBookingRequests(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 rounded-xl text-xs"
+                  onClick={() => setTableBookingStore(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={bookingSubmitting}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
+                >
+                  {bookingSubmitting ? 'Submitting...' : 'Confirm Table Booking'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

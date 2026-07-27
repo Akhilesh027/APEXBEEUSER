@@ -4,7 +4,7 @@ import { Star, ArrowLeft, Search, Trash2, Edit2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const AdminReviews = () => {
   const navigate = useNavigate();

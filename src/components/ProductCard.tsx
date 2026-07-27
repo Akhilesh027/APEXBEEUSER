@@ -133,13 +133,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
           ) : (
             <>
               {/* 1. Discount */}
-              <div className="absolute top-2 left-2 bg-green-600 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm">
-                🔥 {product.discountPercent || 15}% OFF
-              </div>
+              {product.discountPercent && product.discountPercent > 0 ? (
+                <div className="absolute top-2 left-2 bg-green-600 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm">
+                  🔥 {product.discountPercent}% OFF
+                </div>
+              ) : null}
               {/* 2. Fast Delivery */}
-              <div className="absolute bottom-2 left-2 bg-accent/90 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm backdrop-blur-sm hidden md:inline">
-                ⚡ Fast [{product.estimatedDeliveryMinutes || 10} MINS]
-              </div>
+              {product.estimatedDeliveryMinutes ? (
+                <div className="absolute bottom-2 left-2 bg-accent/90 text-white px-2.5 py-1 text-[9px] font-black rounded-full shadow-sm backdrop-blur-sm hidden md:inline">
+                  ⚡ Fast [{product.estimatedDeliveryMinutes} MINS]
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -149,7 +153,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {/* 3. Store Name with Store Rating */}
             <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 mb-1">
               <span className="truncate max-w-[70%] hidden md:inline">🏪 {product.brand || "ApexBee Seller"}</span>
-              <span className="text-amber-600 bg-amber-50 px-1 rounded shrink-0">★ {product.storeRating || "4.8"}</span>
+              {product.storeRating && (
+                <span className="text-amber-600 bg-amber-50 px-1 rounded shrink-0">★ {product.storeRating}</span>
+              )}
             </div>
 
             <h3 className="text-xs font-extrabold text-navy leading-snug line-clamp-2 min-h-[32px] group-hover:text-accent transition-colors">
@@ -164,16 +170,20 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
 
           <div className="space-y-1.5 mt-auto">
-            {/* Price */}
+            {/* Price & MRP */}
             <div className="flex items-baseline gap-1.5">
-              <span className="text-sm font-black text-navy">₹{product.price}</span>
-              <span className="text-[10px] text-slate-400 line-through">₹{Math.round(product.price * 1.2)}</span>
+              <span className="text-sm font-black text-navy">₹{product.price || product.baseSellingPrice || 0}</span>
+              {(product.baseMrp || product.mrp) && (product.baseMrp || product.mrp) > (product.price || product.baseSellingPrice || 0) && (
+                <span className="text-[10px] text-slate-400 line-through">₹{product.baseMrp || product.mrp}</span>
+              )}
             </div>
 
             {/* 4. Product Rating & 5. Sold Count */}
             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold border-t border-dashed pt-1.5">
-              <span className="flex items-center gap-0.5">⭐ {product.rating || "4.5"} ({product.reviews || 24})</span>
-              <span>👥 {product.reviews ? `${product.reviews * 12}+ Sold` : "120+ Sold"}</span>
+              <span className="flex items-center gap-0.5">
+                {product.rating && Number(product.rating) > 0 && (product.reviews || 0) > 0 ? `⭐ ${Number(product.rating).toFixed(1)} (${product.reviews})` : '⭐ New'}
+              </span>
+              <span>👥 {product.soldCount && product.soldCount > 0 ? `${product.soldCount}+ Sold` : '0 Sold'}</span>
             </div>
 
             {/* 6. Delivery Type & 7. Distance + Delivery Charges */}
@@ -185,8 +195,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 </span>
               </div>
               <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100/50">
-                <span className="hidden md:inline">📍 {product.calculatedDistanceKm || "1.2"} km</span>
-                <span>Delivery: {product.shippingCharge ? `₹${product.shippingCharge}` : "FREE"}</span>
+                {product.calculatedDistanceKm && (
+                  <span className="hidden md:inline">📍 {product.calculatedDistanceKm} km</span>
+                )}
+                <span>Delivery: {(product.shippingCharge || product.adminPricing?.shippingCharge) ? `₹${product.shippingCharge || product.adminPricing?.shippingCharge}` : "FREE"}</span>
               </div>
             </div>
           </div>

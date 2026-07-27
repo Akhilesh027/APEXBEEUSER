@@ -43,7 +43,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
@@ -272,10 +272,14 @@ const SUCCESS_STORIES: SuccessStory[] = [
 ];
 
 const APPLICATION_STATUS: Record<string, { label: string; color: string }> = {
-  pending: { label: "Pending Review", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  under_review: { label: "Under Review", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  approved: { label: "Approved! 🎉", color: "bg-green-100 text-green-700 border-green-200" },
-  rejected: { label: "Not Approved", color: "bg-red-100 text-red-700 border-red-200" },
+  pending_approval: { label: "Pending Admin Review ⏳", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  pending: { label: "Pending Admin Review ⏳", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  pre_approved: { label: "Pre-Approved! Submit KYC 📄", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  kyc_submitted: { label: "KYC Under Verification 🔍", color: "bg-purple-100 text-purple-800 border-purple-300" },
+  under_review: { label: "KYC Under Verification 🔍", color: "bg-purple-100 text-purple-800 border-purple-300" },
+  verified: { label: "Verified & Approved! 🎉", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  approved: { label: "Verified & Approved! 🎉", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  rejected: { label: "Not Approved", color: "bg-rose-100 text-rose-800 border-rose-300" },
 };
 
 const getAuth = () => {
@@ -1676,28 +1680,65 @@ const EarnWithApexBee = () => {
                 </div>
 
                 <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-                  {app.status === "approved" ? (
+                  {app.status === "verified" || app.status === "approved" ? (
                     <div className="space-y-3">
-                      <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-xl font-bold">
-                        🎉 Approved! Go to matching provider portal to start business.
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold space-y-1">
+                        <p className="text-sm text-emerald-700 font-extrabold flex items-center gap-1.5">
+                          🎉 Congratulations! Your Business is Verified!
+                        </p>
+                        <p className="text-[11px] text-emerald-600 font-medium">
+                          Admin has verified your KYC and assigned your business category. You can now enter your dedicated Vendor Portal.
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-emerald-200 text-[11px] text-slate-700 flex flex-wrap gap-x-4 gap-y-1 font-mono">
+                          <span>Verified Category: <strong>{(app as any).primaryCategory || (app as any).category || "Food & Restaurant"}</strong></span>
+                          <span>Portal URL: <a href="http://localhost:5177" target="_blank" rel="noreferrer" className="text-primary underline font-bold">http://localhost:5177</a></span>
+                        </div>
                       </div>
                       <Button
                         onClick={() => handleGoToPortal(app.role.replace("Become a ", "").replace("Partner", "").replace("Provider", "").replace(" ", "_").toLowerCase())}
-                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        Enter Business Dashboard
+                        <ExternalLink className="w-4 h-4" /> Enter Vendor Business Dashboard
                       </Button>
                     </div>
-                  ) : app.status === "pending" || app.status === "under_review" ? (
+                  ) : app.status === "pre_approved" ? (
                     <div className="space-y-3">
-                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-bold">
-                        ⏳ Please complete KYC documentation below to process verification details.
+                      <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 text-xs rounded-xl space-y-1">
+                        <p className="font-extrabold text-blue-800 flex items-center gap-1.5">
+                          ✅ Application Pre-Approved! Category Assigned.
+                        </p>
+                        <p className="text-[11px]">
+                          Admin has assigned your Primary Business Category: <strong className="text-navy font-bold">{(app as any).primaryCategory || (app as any).category || "Food & Restaurant"}</strong>.
+                        </p>
+                        <p className="text-[11px] text-blue-700 font-semibold pt-1">
+                          Please complete your KYC document form below to complete final verification.
+                        </p>
                       </div>
                       <KycUploadSection application={app} onSuccess={fetchApplications} />
                     </div>
+                  ) : app.status === "kyc_submitted" || app.status === "under_review" ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-purple-50 border border-purple-200 text-purple-900 text-xs rounded-xl space-y-1 font-bold">
+                        <p className="flex items-center gap-1.5 text-purple-800">
+                          🔍 KYC Documents Submitted for Verification
+                        </p>
+                        <p className="text-[11px] text-purple-700 font-medium">
+                          Your uploaded Aadhaar, PAN, and Bank details are being verified by Admin. Once verified, your portal login details will unlock here.
+                        </p>
+                      </div>
+                    </div>
+                  ) : app.status === "pending_approval" || app.status === "pending" ? (
+                    <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl space-y-1 font-bold">
+                      <p className="flex items-center gap-1.5 text-amber-800 font-extrabold">
+                        ⏳ Application Pending Admin Approval
+                      </p>
+                      <p className="text-[11px] text-amber-700 font-medium">
+                        Your application has been received. Admin is reviewing your details and assigning your Primary Business Category. Please check back shortly.
+                      </p>
+                    </div>
                   ) : (
                     <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-medium">
-                      Status: Rejected. Please contact support@apexbee.com to check reasons.
+                      Status: Rejected. Please contact support@apexbee.com to request re-review.
                     </div>
                   )}
                 </div>

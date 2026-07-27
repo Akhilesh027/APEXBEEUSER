@@ -48,6 +48,8 @@ type SavedLocation = {
   address: string;
 };
 
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
+
 const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) => {
   const [geo, setGeo] = useState<GeoState>({ status: "idle" });
   const [showManualForm, setShowManualForm] = useState(false);
@@ -65,40 +67,50 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
   const [saveAs, setSaveAs] = useState<"Home" | "Office" | "Other" | "none">("none");
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
 
-  // Load saved locations from localStorage or seed defaults
+  // Load saved locations from backend if logged in, or local storage fallback
   useEffect(() => {
-    const stored = localStorage.getItem("mock_saved_locations");
-    if (stored) {
-      try {
-        setSavedLocations(JSON.parse(stored));
-      } catch {
-        // use fallback
-      }
+    if (!open) return;
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+    let user: any = null;
+    try { user = userRaw ? JSON.parse(userRaw) : null; } catch { user = null; }
+    const userId = user?.id || user?._id;
+
+    if (token && userId) {
+      fetch(`${API_BASE}/user/address/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.addresses && Array.isArray(data.addresses) && data.addresses.length > 0) {
+            const mapped: SavedLocation[] = data.addresses.map((a: any) => ({
+              id: a._id || a.id || `loc_${Date.now()}`,
+              label: (a.type || a.label || "Home") as "Home" | "Office" | "Other",
+              state: a.state || "",
+              district: a.district || "",
+              mandal: a.mandal || "",
+              colony: a.street || a.colony || "",
+              pincode: a.pincode || "",
+              landmark: a.landmark || "",
+              address: a.address || `${a.street}, ${a.colony}, ${a.district}, ${a.state} - ${a.pincode}`,
+            }));
+            setSavedLocations(mapped);
+            return;
+          }
+          loadLocalSavedLocations();
+        })
+        .catch(() => loadLocalSavedLocations());
     } else {
-      const defaultLocations: SavedLocation[] = [
-        {
-          id: "loc_home",
-          label: "Home",
-          state: "Karnataka",
-          district: "Bangalore",
-          mandal: "Bangalore South",
-          colony: "Brigade Road",
-          pincode: "560001",
-          address: "No. 102, 3rd Floor, Brigade Residency, Brigade Road, Bangalore, Karnataka - 560001",
-        },
-        {
-          id: "loc_office",
-          label: "Office",
-          state: "Karnataka",
-          district: "Bangalore",
-          mandal: "Bangalore East",
-          colony: "MG Road",
-          pincode: "560001",
-          address: "No. 42, 2nd Floor, Apex Towers, MG Road, Bangalore, Karnataka - 560001",
-        },
-      ];
-      localStorage.setItem("mock_saved_locations", JSON.stringify(defaultLocations));
-      setSavedLocations(defaultLocations);
+      loadLocalSavedLocations();
+    }
+
+    function loadLocalSavedLocations() {
+      const stored = localStorage.getItem("saved_locations");
+      if (stored) {
+        try { setSavedLocations(JSON.parse(stored)); } catch { }
+      } else {
+        setSavedLocations([]);
+      }
     }
   }, [open]);
 
@@ -227,8 +239,8 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
           err.code === 1
             ? "Permission denied. Please allow location access."
             : err.code === 2
-            ? "Position unavailable. Try again."
-            : "Location request timed out. Try again.";
+              ? "Position unavailable. Try again."
+              : "Location request timed out. Try again.";
 
         setGeo({ status: "error", error: msg });
         setShowManualForm(true);
@@ -304,7 +316,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
     if (saveAs !== "none") {
       const isDuplicate = savedLocations.some(l => l.label === saveAs);
       const idPrefix = saveAs.toLowerCase();
-      const nextLocations = isDuplicate 
+      const nextLocations = isDuplicate
         ? savedLocations.map(l => l.label === saveAs ? { ...l, ...payload, id: `loc_${idPrefix}_${Date.now()}` } : l)
         : [...savedLocations, { id: `loc_${idPrefix}_${Date.now()}`, label: saveAs, ...payload }];
 
@@ -393,17 +405,15 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
           <div className="w-full flex border-b border-slate-100">
             <button
               onClick={() => setActiveTab("detect")}
-              className={`flex-1 pb-2 text-xs font-bold transition ${
-                activeTab === "detect" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
-              }`}
+              className={`flex-1 pb-2 text-xs font-bold transition ${activeTab === "detect" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
+                }`}
             >
               📍 Find/Enter Area
             </button>
             <button
               onClick={() => setActiveTab("saved")}
-              className={`flex-1 pb-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === "saved" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
-              }`}
+              className={`flex-1 pb-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${activeTab === "saved" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
+                }`}
             >
               🏠 Saved Address ({savedLocations.length})
             </button>
@@ -532,11 +542,10 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                         key={type}
                         type="button"
                         onClick={() => setSaveAs(saveAs === type ? "none" : type)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold border transition ${
-                          saveAs === type 
-                            ? "bg-navy text-white border-navy"
-                            : "bg-white border-slate-200 text-navy hover:bg-slate-50"
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold border transition ${saveAs === type
+                          ? "bg-navy text-white border-navy"
+                          : "bg-white border-slate-200 text-navy hover:bg-slate-50"
+                          }`}
                       >
                         {type === "Home" ? "🏠 " : type === "Office" ? "🏢 " : "📍 "}
                         {type}

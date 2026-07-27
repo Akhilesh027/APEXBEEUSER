@@ -21,7 +21,7 @@ import logo from "../Web images/Web images/logo.png";
 import FormModal from "./FormModal.tsx";
 import LocationModal from "./LocationModal";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
@@ -643,8 +643,8 @@ const Navbar = () => {
         return { ...n, category };
       });
     }
-    return MOCK_NOTIFICATIONS;
-  }, [notifications]);
+    return loggedInUser ? [] : MOCK_NOTIFICATIONS;
+  }, [notifications, loggedInUser]);
 
   const filteredNotifications = useMemo(() => {
     if (activeNotificationTab === "all") return allNotifications;

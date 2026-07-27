@@ -348,12 +348,7 @@ const Home = () => {
     if (personalization?.continueShopping && personalization.continueShopping.length > 0) {
       return personalization.continueShopping;
     }
-    return [
-      { _id: "mock-oil", itemName: "Freedom Refined Sunflower Oil 1L", baseSellingPrice: 135, thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300", brand: "Cooking Oil" },
-      { _id: "mock-rice", itemName: "Lalitha Brand HMT Rice 25kg", baseSellingPrice: 1450, thumbnail: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300", brand: "Rice" },
-      { _id: "mock-honey", itemName: "Dabur Organic Honey 500g", baseSellingPrice: 220, thumbnail: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300", brand: "Honey" },
-      { _id: "mock-milk", itemName: "Heritage Fresh Milk 500ml", baseSellingPrice: 28, thumbnail: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300", brand: "Milk" }
-    ];
+    return [];
   }, [personalization]);
 
   const homeServices = useMemo(() => {
@@ -362,11 +357,7 @@ const Home = () => {
 
 
   const homeRestaurants = useMemo(() => {
-    return personalization?.restaurants || [
-      { id: "mock-rest-1", name: "Tasty Biryani Point", food: "Biryani, North Indian", rating: "4.7", eta: "20 mins", distance: "800m", min: "₹120", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300" },
-      { id: "mock-rest-2", name: "Nellore Tiffins", food: "Dosa, South Indian Breakfast", rating: "4.9", eta: "15 mins", distance: "600m", min: "₹80", image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=300" },
-      { id: "mock-rest-3", name: "Sweet Magic Bakery", food: "Cakes, Desserts, Shakes", rating: "4.6", eta: "25 mins", distance: "1.1 km", min: "₹150", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300" }
-    ];
+    return personalization?.restaurants || [];
   }, [personalization]);
 
   const fetchPersonalization = async () => {
@@ -711,12 +702,13 @@ const Home = () => {
     return () => window.removeEventListener("storage", loadLocation);
   }, []);
 
-  /** ---------------------------
-   * Fetch categories
-   * -------------------------- */
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const DEFAULT_PRIMARY_CATEGORIES: CategoryItem[] = [
+    { id: 'cat-food', label: 'Food & Restaurant', to: '/category/Pets', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300&auto=format&fit=crop&q=60' },
+    { id: 'cat-grocery', label: 'Daily Needs & Grocery', to: '/category/Daily Needs & Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=60' },
+    { id: 'cat-fashion', label: 'Fashion & Boutique', to: '/category/Fashion & Boutique', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=60' },
+    { id: 'cat-services', label: 'Home Services & Repair', to: '/category/Home Services & Repair', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=60' },
+    { id: 'cat-devotional', label: 'Devotional & Puja', to: '/category/Devotional & Puja', image: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=300&auto=format&fit=crop&q=60' },
+  ];
 
   const fetchCategories = async () => {
     try {
@@ -726,15 +718,24 @@ const Home = () => {
 
       const data = await res.json();
       const list = Array.isArray(data?.categories) ? data.categories : [];
+      const parsed = flattenCategoryTree(list);
 
-      setCategories(flattenCategoryTree(list));
+      if (parsed.length > 0) {
+        setCategories(parsed);
+      } else {
+        setCategories(DEFAULT_PRIMARY_CATEGORIES);
+      }
     } catch (e) {
       console.error("Error fetching categories:", e);
-      setCategories([]);
+      setCategories(DEFAULT_PRIMARY_CATEGORIES);
     } finally {
       setLoadingCategories(false);
     }
   };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   /** ---------------------------
    * Fetch products (reuse)
@@ -913,7 +914,9 @@ const Home = () => {
             {/* 3. Store Name with Store Rating */}
             <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
               <span className="truncate max-w-[70%] hidden md:inline">🏪 {p.brand || "ApexBee Seller"}</span>
-              <span className="text-amber-500 bg-amber-50 px-1 rounded shrink-0">★ 4.8</span>
+              {p.storeRating ? (
+                <span className="text-amber-500 bg-amber-50 px-1 rounded shrink-0">★ {p.storeRating}</span>
+              ) : null}
             </div>
 
             <p className="font-extrabold text-navy text-xs leading-tight line-clamp-2 min-h-[32px] group-hover:text-accent transition-colors">{title}</p>
@@ -939,8 +942,10 @@ const Home = () => {
 
             {/* 4. Product Rating & 5. Sold Count */}
             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold border-t border-dashed pt-1.5 mt-2">
-              <span className="flex items-center gap-0.5">⭐ {avgRating > 0 ? avgRating.toFixed(1) : "4.5"} ({ratingCount || 24})</span>
-              <span>👥 {ratingCount ? `${ratingCount * 12}+ Sold` : "120+ Sold"}</span>
+              <span className="flex items-center gap-0.5">
+                {avgRating > 0 && ratingCount > 0 ? `⭐ ${avgRating.toFixed(1)} (${ratingCount})` : '⭐ New'}
+              </span>
+              <span>👥 {p.soldCount && p.soldCount > 0 ? `${p.soldCount}+ Sold` : '0 Sold'}</span>
             </div>
 
             {/* 2. Fast Delivery, 6. Delivery Type, 7. Distance & Delivery Charges */}
@@ -989,14 +994,14 @@ const Home = () => {
           )}
 
           {/* 1. Welcome Portal + Location Greeting Banner */}
-          <section className="container mx-auto px-4 py-3 mt-4 text-left">
-            <div className="bg-gradient-to-br from-white/70 to-slate-100/30 backdrop-blur-md border border-white/40 rounded-[32px] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-premium relative overflow-hidden">
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3 mt-1 sm:mt-4 text-left">
+            <div className="bg-gradient-to-br from-white/70 to-slate-100/30 backdrop-blur-md border border-white/40 rounded-2xl sm:rounded-[32px] p-3.5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-6 shadow-premium relative overflow-hidden">
               <div className="absolute -right-16 -top-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute -left-16 -bottom-16 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="space-y-1.5 z-10">
                 <span className="text-[9px] font-black text-accent uppercase tracking-wider font-mono bg-accent/10 px-2 py-0.5 rounded-full">Hyperlocal Customer Portal</span>
-                <h3 className="text-xl font-extrabold text-navy leading-tight mt-1">
+                <h3 className="text-base sm:text-xl font-extrabold text-navy leading-tight mt-0.5 sm:mt-1">
                   {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Guru Swamy")} 👋
                 </h3>
 
@@ -1016,8 +1021,8 @@ const Home = () => {
           </section>
 
           {/* 2. Hero Banner Slider */}
-          <section className="container mx-auto px-4 py-4">
-            <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[280px] flex items-center">
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-4">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[160px] sm:min-h-[220px] md:min-h-[280px] flex items-center">
               {displayBanners.map((slide, idx) => (
                 <div
                   key={slide.id}
@@ -1030,20 +1035,20 @@ const Home = () => {
                     alt="banner"
                     className="w-full h-full object-cover absolute inset-0"
                   />
-                  <div className="relative p-6 sm:p-10 md:p-14 max-w-2xl flex flex-col justify-center h-full z-10 text-left">
-                    <div className="inline-flex self-start items-center gap-2 bg-accent px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase text-white mb-4">
+                  <div className="relative p-3.5 sm:p-8 md:p-14 max-w-2xl flex flex-col justify-center h-full z-10 text-left">
+                    <div className="inline-flex self-start items-center gap-2 bg-accent px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-white mb-1.5 sm:mb-4">
                       {slide.badge}
                     </div>
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
+                    <h2 className="text-sm sm:text-2xl md:text-4xl font-black text-white leading-tight line-clamp-2">
                       {slide.title}
                     </h2>
-                    <p className="text-xs sm:text-sm text-white/80 mt-3 max-w-lg font-medium leading-relaxed">
+                    <p className="text-[11px] sm:text-sm text-white/80 mt-1 sm:mt-3 max-w-lg font-medium leading-snug line-clamp-2 hidden xs:block">
                       {slide.desc}
                     </p>
-                    <div className="mt-6">
+                    <div className="mt-2.5 sm:mt-6">
                       <Button
                         onClick={slide.action}
-                        className="bg-accent hover:bg-accent/90 text-white font-extrabold text-xs px-6 py-3 rounded-full shadow-lg hover:shadow-accent/30 active:scale-95 transition-all cursor-pointer border-none"
+                        className="bg-accent hover:bg-accent/90 text-white font-extrabold text-[10px] sm:text-xs px-3.5 py-1.5 sm:px-6 sm:py-3 h-auto rounded-full shadow-lg hover:shadow-accent/30 active:scale-95 transition-all cursor-pointer border-none"
                       >
                         {slide.btnText}
                       </Button>
@@ -1055,25 +1060,25 @@ const Home = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20"
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20 w-7 h-7 sm:w-10 sm:h-10"
                 onClick={() => setCurrentSlide((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)}
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20"
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20 w-7 h-7 sm:w-10 sm:h-10"
                 onClick={() => setCurrentSlide((prev) => (prev + 1) % displayBanners.length)}
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
 
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+              <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                 {displayBanners.map((_, idx) => (
                   <button
                     key={idx}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? "bg-accent w-5" : "bg-white/40"
+                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? "bg-accent w-4 sm:w-5" : "bg-white/40"
                       }`}
                     onClick={() => setCurrentSlide(idx)}
                   />
@@ -1082,15 +1087,15 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 3. Quick Shortcuts Grid (4 per row on mobile, larger tiles with Lucide icons) */}
-          <section className="container mx-auto px-4 py-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-extrabold text-navy">Quick Shortcuts</h2>
+          {/* 3. Quick Shortcuts Grid (3 per row on mobile) */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-extrabold text-navy">Quick Shortcuts</h2>
               <button onClick={() => navigate("/category")} className="text-xs text-primary font-bold hover:underline bg-transparent border-none cursor-pointer">
                 View All →
               </button>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-2.5 sm:gap-4">
               {[
                 { label: "Earn Money", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn" },
                 { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/category/🛒 Daily Needs" },
@@ -1110,13 +1115,13 @@ const Home = () => {
                   <button
                     key={item.label}
                     onClick={() => navigate(item.to)}
-                    className="flex flex-col items-center justify-center gap-2 p-3.5 sm:p-4 rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
+                    className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-4 rounded-2xl sm:rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
                   >
                     <div
-                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+                      className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
                       style={{ background: item.gradient }}
                     >
-                      <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2px]" />
+                      <IconComponent className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2px]" />
                     </div>
                     <div className="text-center">
                       <p className="font-black text-navy text-xs sm:text-sm leading-tight group-hover:text-accent transition-colors">
@@ -1131,7 +1136,7 @@ const Home = () => {
 
           {/* 4. Today's Schedule Card Widget */}
           {loggedInUser && (
-            <section className="container mx-auto px-4 py-3 text-left">
+            <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3 text-left">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* Today’s Schedule */}
                 <div className="bg-gradient-to-br from-blue-50/40 to-indigo-50/50 border border-indigo-100/70 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
@@ -1227,7 +1232,7 @@ const Home = () => {
 
           {/* Live Order Tracking Widget */}
           {hasActiveOrder && activeTracking && (
-            <section className="container mx-auto px-4 py-2 mt-1">
+            <section className="container mx-auto px-3 sm:px-4 py-1 sm:py-2 mt-0.5 sm:mt-1">
               <div className="bg-blue-50 border border-blue-200 rounded-3xl p-5 shadow-sm text-left flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl shrink-0 animate-bounce">
@@ -1260,25 +1265,25 @@ const Home = () => {
             </section>
           )}
 
-          {/* 5. Main Categories (Larger Images & Clear Label Placement) */}
-          <section className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-extrabold text-navy text-left">Explore Categories</h2>
+          {/* 5. Main Categories (3 per row on mobile, Larger Images & Clear Label Placement) */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-6">
+            <div className="flex items-center justify-between mb-2.5 sm:mb-5">
+              <h2 className="text-lg sm:text-xl font-extrabold text-navy text-left">Explore Categories</h2>
               <Button
                 variant="outline"
                 size="sm"
-                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs"
+                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs px-3 py-1"
                 onClick={handleViewAllCategories}
               >
                 View All
               </Button>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-4">
               {loadingCategories ? (
-                Array.from({ length: 8 }).map((_, index) => (
+                Array.from({ length: 9 }).map((_, index) => (
                   <div key={index} className="flex flex-col items-center gap-2">
-                    <Skeleton className="w-20 h-20 xs:w-[100px] xs:h-[100px] rounded-full" />
+                    <Skeleton className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full" />
                     <Skeleton className="w-16 h-3 rounded mt-1" />
                   </div>
                 ))
@@ -1294,7 +1299,7 @@ const Home = () => {
                     onClick={() => navigate(category.to)}
                     className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
                   >
-                    <div className="w-20 h-20 xs:w-[100px] xs:h-[100px] rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
+                    <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
                       <img
                         src={category.image || "/placeholder.svg"}
                         alt={category.label}
@@ -1303,7 +1308,7 @@ const Home = () => {
                       />
                     </div>
                     <div className="w-full text-center px-0.5">
-                      <p className="text-[10px] xs:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
+                      <p className="text-xs sm:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
                         {category.label.includes(" & ") ? (
                           <>
                             {category.label.split(" & ")[0]} &<br />
@@ -1321,8 +1326,8 @@ const Home = () => {
           </section>
 
           {/* 5.5 Feature Badges Bar (3 Pillars matching mobile UI) */}
-          <section className="container mx-auto px-4 py-3">
-            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 flex items-center justify-around text-center text-[10px] sm:text-xs font-extrabold text-[#0A1128]">
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3">
+            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-2.5 sm:p-3 flex items-center justify-around text-center text-[10px] sm:text-xs font-extrabold text-[#0A1128]">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm sm:text-base">🚀</span>
                 <div className="text-left leading-tight">
@@ -1354,7 +1359,7 @@ const Home = () => {
           </section>
 
           {/* 6. Deals & Featured Products */}
-          <section className="container mx-auto px-4 py-8">
+          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8">
             <div className="flex items-center justify-between mb-4">
               <div className="text-left">
                 <h2 className="text-xl font-bold text-navy">Featured Products</h2>
@@ -1510,11 +1515,11 @@ const Home = () => {
           )}
 
           {/* 7. Nearby Stores */}
-          <section className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-6">
+          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div className="text-left">
-                <h2 className="text-xl font-bold text-navy">Nearby Stores</h2>
-                <p className="text-xs text-muted-foreground mt-1">
+                <h2 className="text-lg sm:text-xl font-bold text-navy">Nearby Stores</h2>
+                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
                   Top vendors serving{" "}
                   <span className="font-semibold text-navy">
                     {userLocation?.colony ? `${userLocation.colony} - ` : ""}
@@ -1581,8 +1586,27 @@ const Home = () => {
                         <span>•</span>
                         <span>Min ₹100</span>
                       </div>
-                      <p className="text-[11px] text-accent font-semibold mt-1">
-                        ★ {shop.rating || "4.8"} • {shop.category || "Grocery Store"}
+                      <p className="text-[11px] text-accent font-extrabold mt-1">
+                        ★ {typeof shop.rating === 'object' ? (shop.rating?.totalReviews > 0 ? shop.rating.average : "New") : (shop.rating || "New")} • {(() => {
+                          const cat = (shop.category || shop.primaryCategory || (shop.categories && shop.categories[0]) || "").toLowerCase();
+                          const name = (shop.businessName || "").toLowerCase();
+                          if (cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("bistro") || name.includes("cafe") || name.includes("biryani") || name.includes("kitchen") || name.includes("dine")) {
+                            return "Food & Restaurant 🍽️";
+                          }
+                          if (cat.includes("grocery") || cat.includes("daily") || cat.includes("milk") || name.includes("grocery") || name.includes("supermarket") || name.includes("mart")) {
+                            return "Daily Needs & Grocery 🛒";
+                          }
+                          if (cat.includes("fashion") || cat.includes("apparel") || cat.includes("boutique") || name.includes("fashion") || name.includes("boutique")) {
+                            return "Fashion & Boutique 👗";
+                          }
+                          if (cat.includes("service") || cat.includes("repair") || name.includes("service") || name.includes("repair")) {
+                            return "Home Services 🛠️";
+                          }
+                          if (cat.includes("devotional") || cat.includes("puja") || name.includes("pooja") || name.includes("temple")) {
+                            return "Devotional & Puja 🏛️";
+                          }
+                          return shop.category || shop.primaryCategory || "Local Merchant 🏬";
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -1591,50 +1615,89 @@ const Home = () => {
             )}
           </section>
 
-          {/* 8. Nearby Restaurants (NEW SECTION) */}
-          <section className="container mx-auto px-4 py-8 text-left">
-            <div className="flex items-center justify-between mb-6">
+          {/* 8. Nearby Restaurants (Dynamic Backend API Vendors) */}
+          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8 text-left">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div>
-                <h2 className="text-xl font-bold text-navy">Nearby Restaurants</h2>
-                <p className="text-xs text-muted-foreground mt-1">Order delicious meals from top rated diners nearby.</p>
+                <h2 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
+                  <span>🍽️ Nearby Restaurants</span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-extrabold px-2 py-0.5 rounded-full">Backend Live</span>
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">Order delicious meals from top rated diners nearby.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("/category/🍽 Food & Dining")}>
+              <Button variant="outline" size="sm" onClick={() => navigate("/category/Pets")}>
                 View All Diners
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {homeRestaurants.map((rest: any, idx) => (
-                <div key={rest.id || idx} className="group rounded-2xl border bg-white p-4 hover:shadow-md cursor-pointer transition flex gap-3 text-left" onClick={() => navigate(rest.id.startsWith("mock-") ? "/category/🍽 Food & Dining" : `/business/${rest.id}`)}>
-                  <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
-                    <img src={rest.image} alt={rest.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+
+            {(() => {
+              // Combine real food vendors from nearbyShops or homeRestaurants
+              const foodVendors = (nearbyShops || []).filter(s => {
+                const cat = (s.category || (s.categories && s.categories[0]) || "").toLowerCase();
+                const name = (s.businessName || "").toLowerCase();
+                return cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") || name.includes("cafe") || name.includes("diner");
+              });
+
+              const displayList = foodVendors.length > 0 ? foodVendors.map(v => ({
+                id: v._id,
+                name: v.businessName,
+                food: v.category || "Food & Restaurant 🍽️",
+                rating: v.rating?.totalReviews > 0 ? String(v.rating.average) : (v.rating?.average ? String(v.rating.average) : "New"),
+                eta: `${v.estimatedDeliveryMinutes || 20} mins`,
+                distance: v.pincode ? `Pin: ${v.pincode}` : "800m",
+                min: `₹${v.minOrder || 100}`,
+                image: v.storeDesign?.logoUrl || v.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300"
+              })) : (homeRestaurants || []).filter(r => r.id && !r.id.startsWith("mock-"));
+
+              if (displayList.length === 0) {
+                return (
+                  <div className="rounded-3xl border border-amber-200/60 bg-amber-50/40 p-8 text-center text-muted-foreground">
+                    <span className="text-3xl block mb-2">🍽️</span>
+                    <h4 className="font-extrabold text-navy text-sm">No Restaurant Vendors Registered Near Location Yet</h4>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">Registered food vendors will automatically appear here once approved by Admin in the Approval Center.</p>
+                    <Button onClick={() => navigate("/earn-with-apexbee")} size="sm" className="mt-4 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl border-none">
+                      🏪 Register a Food Store Partner
+                    </Button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-navy text-sm leading-tight truncate group-hover:text-accent transition-colors">{rest.name}</h3>
-                      <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-light text-navy">OPEN</span>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {displayList.map((rest: any, idx: number) => (
+                    <div key={rest.id || idx} className="group rounded-2xl border bg-white p-4 hover:shadow-md cursor-pointer transition flex gap-3 text-left" onClick={() => navigate(`/business/${rest.id}`)}>
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
+                        <img src={rest.image} alt={rest.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-bold text-navy text-sm leading-tight truncate group-hover:text-accent transition-colors">{rest.name}</h3>
+                          <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-light text-navy">OPEN</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 truncate">{rest.food}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px] text-slate-500 font-bold">
+                          <span>📍 {rest.distance}</span>
+                          <span>•</span>
+                          <span>⚡ {rest.eta}</span>
+                          <span>•</span>
+                          <span>Min {rest.min}</span>
+                        </div>
+                        <p className="text-[11px] text-amber-600 font-extrabold mt-1">★ {rest.rating} • Food & Restaurant 🍽️</p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 truncate">{rest.food}</p>
-                    <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px] text-slate-500 font-bold">
-                      <span>📍 {rest.distance}</span>
-                      <span>•</span>
-                      <span>⚡ {rest.eta}</span>
-                      <span>•</span>
-                      <span>Min {rest.min}</span>
-                    </div>
-                    <p className="text-[11px] text-accent font-semibold mt-1">★ {rest.rating} • Food & Dining</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </section>
 
           {/* 9. Nearby Services (Featured Services) */}
           {homeServices && homeServices.length > 0 && (
-            <section className="container mx-auto px-4 py-8 bg-blue-light/20 rounded-3xl border my-6 text-left">
-              <div className="flex items-center justify-between mb-6">
+            <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 bg-blue-light/20 rounded-2xl sm:rounded-3xl border my-3 sm:my-6 text-left">
+              <div className="flex items-center justify-between mb-3 sm:mb-6">
                 <div className="text-left">
-                  <h2 className="text-xl font-bold text-navy">Featured Services</h2>
-                  <p className="text-xs text-muted-foreground mt-1">Book reliable home & commercial services locally.</p>
+                  <h2 className="text-lg sm:text-xl font-bold text-navy">Featured Services</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">Book reliable home & commercial services locally.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => navigate("/services")}>
                   Book Services
@@ -1665,12 +1728,10 @@ const Home = () => {
             </section>
           )}
 
-
-
           {/* 10. Festival Quick-Action Widget */}
           {personalization?.festival && (
-            <section className="container mx-auto px-4 py-2 text-left">
-              <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-pink-600 text-white rounded-[32px] p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-amber-500/20">
+            <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-2 text-left">
+              <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-pink-600 text-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 border border-amber-500/20">
                 <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-9xl font-bold translate-x-5 -translate-y-5">🌸</div>
                 <div className="space-y-2.5 max-w-xl z-10">
                   <span className="text-[9px] font-black text-amber-200 bg-white/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">Festival Specials</span>

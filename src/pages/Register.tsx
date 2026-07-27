@@ -9,7 +9,7 @@ import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Bri
 import { GoogleLogin } from "@react-oauth/google";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 type AccountType = "guest" | "customer" | "business";
 

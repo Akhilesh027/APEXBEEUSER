@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const Wishlist = () => {
   const navigate = useNavigate();

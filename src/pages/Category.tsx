@@ -6,7 +6,7 @@ import axios from "axios";
 import { ShoppingCart, Search, Filter, Star, Sparkles, MapPin, Tag, Compass, Calendar, RefreshCw, ChevronRight, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const API_BASE = "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 // ═══════════════════════════════════════════════════════
 // Types
@@ -46,6 +46,178 @@ interface CategoryType {
   isActive?: boolean;
   children?: CategoryType[];
   productCount?: number;
+}
+
+function getDemoProducts(catName: string, mainCat: CategoryType | null, subs: any[], childs: any[]): Product[] {
+  const clean = (catName || '').toLowerCase();
+
+  const getSubId = (keyword: string, fallback: string) => {
+    const found = subs.find(s => s.name.toLowerCase().includes(keyword));
+    return found ? found._id : fallback;
+  };
+
+  if (clean.includes("pet") || clean.includes("dog") || clean.includes("cat") || clean.includes("animal")) {
+    const pFood = getSubId("food", "sub-pet-food");
+    const pGroom = getSubId("groom", "sub-pet-grooming");
+    const pAcc = getSubId("access", "sub-pet-acc");
+    const pVet = getSubId("vet", "sub-pet-vet");
+
+    return [
+      {
+        _id: "pet-prod-1",
+        itemName: "Pedigree Adult Dry Dog Food - Chicken & Vegetables 3kg",
+        name: "Pedigree Adult Dry Dog Food - Chicken & Vegetables 3kg",
+        userPrice: 850,
+        afterDiscount: 699,
+        baseMrp: 850,
+        baseSellingPrice: 699,
+        rating: 4.8,
+        reviews: 142,
+        brand: "Pedigree",
+        tag: "Best Seller",
+        subCategoryId: pFood,
+        subcategory: pFood,
+        subCategoryName: "Pet Food",
+        childCategoryId: `child-${pFood}-1`,
+        childCategoryName: "Dog Food & Kibble",
+        images: ["https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-2",
+        itemName: "Whiskas Wet Cat Food Gravy Pouches (Pack of 12 x 85g)",
+        name: "Whiskas Wet Cat Food Gravy Pouches (Pack of 12 x 85g)",
+        userPrice: 540,
+        afterDiscount: 479,
+        baseMrp: 540,
+        baseSellingPrice: 479,
+        rating: 4.9,
+        reviews: 98,
+        brand: "Whiskas",
+        tag: "Top Rated",
+        subCategoryId: pFood,
+        subcategory: pFood,
+        subCategoryName: "Pet Food",
+        childCategoryId: `child-${pFood}-2`,
+        childCategoryName: "Cat Food & Gravy",
+        images: ["https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-3",
+        itemName: "Bio-Groom Anti-Itch Herbal Pet Shampoo 350ml",
+        name: "Bio-Groom Anti-Itch Herbal Pet Shampoo 350ml",
+        userPrice: 450,
+        afterDiscount: 349,
+        baseMrp: 450,
+        baseSellingPrice: 349,
+        rating: 4.7,
+        reviews: 56,
+        brand: "Bio-Groom",
+        tag: "Herbal",
+        subCategoryId: pGroom,
+        subcategory: pGroom,
+        subCategoryName: "Pet Grooming",
+        childCategoryId: `child-${pGroom}-1`,
+        childCategoryName: "Pet Shampoos & Oils",
+        images: ["https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-4",
+        itemName: "Reflective Nylon Dog Leash & Padded Harness Set",
+        name: "Reflective Nylon Dog Leash & Padded Harness Set",
+        userPrice: 599,
+        afterDiscount: 399,
+        baseMrp: 599,
+        baseSellingPrice: 399,
+        rating: 4.8,
+        reviews: 84,
+        brand: "PetPlus",
+        tag: "20% OFF",
+        subCategoryId: pAcc,
+        subcategory: pAcc,
+        subCategoryName: "Pet Accessories",
+        childCategoryId: `child-${pAcc}-1`,
+        childCategoryName: "Collars, Belts & Leashes",
+        images: ["https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-5",
+        itemName: "Royal Canin Maxi Puppy Dry Food 4kg",
+        name: "Royal Canin Maxi Puppy Dry Food 4kg",
+        userPrice: 2200,
+        afterDiscount: 1899,
+        baseMrp: 2200,
+        baseSellingPrice: 1899,
+        rating: 4.9,
+        reviews: 110,
+        brand: "Royal Canin",
+        tag: "Superfood",
+        subCategoryId: pFood,
+        subcategory: pFood,
+        subCategoryName: "Pet Food",
+        childCategoryId: `child-${pFood}-1`,
+        childCategoryName: "Dog Food & Kibble",
+        images: ["https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-6",
+        itemName: "Himalaya Erina EP Tick & Flea Powder 150g",
+        name: "Himalaya Erina EP Tick & Flea Powder 150g",
+        userPrice: 220,
+        afterDiscount: 180,
+        baseMrp: 220,
+        baseSellingPrice: 180,
+        rating: 4.7,
+        reviews: 73,
+        brand: "Himalaya Pets",
+        tag: "Vet Approved",
+        subCategoryId: pVet,
+        subcategory: pVet,
+        subCategoryName: "Veterinary Care",
+        childCategoryId: `child-${pVet}-1`,
+        childCategoryName: "Flea & Tick Powders",
+        images: ["https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-7",
+        itemName: "Cozy Plush Velvet Pet Bed (Washable Cover)",
+        name: "Cozy Plush Velvet Pet Bed (Washable Cover)",
+        userPrice: 1299,
+        afterDiscount: 899,
+        baseMrp: 1299,
+        baseSellingPrice: 899,
+        rating: 4.9,
+        reviews: 62,
+        brand: "ComfortPets",
+        tag: "Ultra Soft",
+        subCategoryId: pAcc,
+        subcategory: pAcc,
+        subCategoryName: "Pet Accessories",
+        childCategoryId: `child-${pAcc}-2`,
+        childCategoryName: "Pet Beds & Cages",
+        images: ["https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "pet-prod-8",
+        itemName: "Interactive Feather Cat Wand & Teaser Toys Set",
+        name: "Interactive Feather Cat Wand & Teaser Toys Set",
+        userPrice: 350,
+        afterDiscount: 249,
+        baseMrp: 350,
+        baseSellingPrice: 249,
+        rating: 4.8,
+        reviews: 45,
+        brand: "PlayPaws",
+        tag: "Fun Play",
+        subCategoryId: pAcc,
+        subcategory: pAcc,
+        subCategoryName: "Pet Accessories",
+        childCategoryId: `child-${pAcc}-3`,
+        childCategoryName: "Chew & Interactive Toys",
+        images: ["https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=400&auto=format&fit=crop&q=80"]
+      }
+    ];
+  }
+  return [];
 }
 
 // Mapping to detect "virtual" service/non-product categories
@@ -400,8 +572,10 @@ const Category = () => {
   // ── Detail state ──
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [childCategories, setChildCategories] = useState<CategoryType[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
+  const [selectedChildCategoryId, setSelectedChildCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // ── Left Filter State ──
@@ -523,10 +697,14 @@ const Category = () => {
         const catRes = await axios.get(`${API_BASE}/categories`);
         const flat: CategoryType[] = catRes?.data?.categories || [];
         const cleanName = (s: string) => s.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim().toLowerCase();
+        const reqClean = cleanName(categoryName);
+        const reqLower = categoryName.trim().toLowerCase();
+
         const found = flat.find((c) => {
           const n1 = c.name.trim().toLowerCase();
-          const n2 = categoryName.trim().toLowerCase();
-          return n1 === n2 || cleanName(c.name) === cleanName(categoryName) || (c.slug && n2.includes(c.slug));
+          const cn1 = cleanName(c.name);
+          const slug = (c.slug || '').toLowerCase();
+          return n1 === reqLower || cn1 === reqClean || slug === reqLower || slug === reqClean.replace(/[^a-z0-9]+/g, '-') || cn1.includes(reqClean) || reqClean.includes(cn1);
         });
         if (!found) {
           setCategory(null);
@@ -548,35 +726,95 @@ const Category = () => {
         addRecentlyViewed({ id: mainCategory._id, name: mainCategory.name, icon: getSubIcon(mainCategory.name) });
         setCategory(mainCategory);
 
-        // get children as subcategories of the main category
+        // Get children as subcategories (Level 2) of the main category
         const subs = flat.filter((c) => c.parentId && String(c.parentId) === mainCategory._id);
-        const mappedSubs = subs.map((s) => ({ _id: s._id, name: s.name, image: s.image }));
+        const mappedSubs = subs.map((s) => ({ _id: s._id, name: s.name, image: s.image, slug: s.slug }));
         setSelectedSubcategoryId(selectedSubId);
 
-        // Fetch active subcategories from the Subcategory collection via our new API
+        // Fetch active subcategories from the Subcategory collection via API
+        let finalSubs = mappedSubs;
         try {
           const subRes = await axios.get(`${API_BASE}/categories/${mainCategory._id}/subcategories`);
           if (subRes.data?.success && Array.isArray(subRes.data.subcategories)) {
             const apiSubs = subRes.data.subcategories.map((s: any) => ({
               _id: s._id,
               name: s.name,
-              image: s.image || s.banner
+              image: s.image || s.banner,
+              slug: s.slug
             }));
             const allSubsMap = new Map();
             mappedSubs.forEach(s => allSubsMap.set(String(s._id), s));
             apiSubs.forEach((s: any) => allSubsMap.set(String(s._id), s));
-            setSubcategories(Array.from(allSubsMap.values()));
-          } else {
-            setSubcategories(mappedSubs);
+            finalSubs = Array.from(allSubsMap.values());
           }
         } catch (subErr) {
           console.error("Error fetching database subcategories:", subErr);
-          setSubcategories(mappedSubs);
         }
 
-        // Fetch products of the categoryName
-        const prodRes = await axios.get(`${API_BASE}/products?category=${encodeURIComponent(categoryName)}`);
-        setAllProducts(prodRes?.data?.products || []);
+        // Fallback subcategories if empty for Pets
+        if (finalSubs.length === 0 && cleanName(mainCategory.name).includes("pet")) {
+          finalSubs = [
+            { _id: "sub-pet-food", name: "Pet Food", image: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-pet-grooming", name: "Pet Grooming", image: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-pet-accessories", name: "Pet Accessories", image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-pet-vet", name: "Veterinary Care", image: "https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-pet-boarding", name: "Pet Boarding", image: "https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=200&auto=format&fit=crop&q=60" },
+          ];
+        }
+
+        setSubcategories(finalSubs);
+
+        // Get Level 3 Child Categories
+        const subIds = new Set(finalSubs.map(s => String(s._id)));
+        const level3FromTree = flat.filter((c) => c.parentId && subIds.has(String(c.parentId)));
+
+        let builtChildCategories: CategoryType[] = level3FromTree;
+        if (builtChildCategories.length === 0) {
+          finalSubs.forEach(sub => {
+            const sName = sub.name.toLowerCase();
+            if (sName.includes("food")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Dog Food & Kibble", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Cat Food & Gravy", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Bird & Fish Food", parentId: sub._id }
+              );
+            } else if (sName.includes("groom")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Pet Shampoos & Oils", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Brushes & Combs", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Nail Clippers & Trimmers", parentId: sub._id }
+              );
+            } else if (sName.includes("access")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Collars, Belts & Leashes", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Pet Beds & Cages", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Chew & Interactive Toys", parentId: sub._id }
+              );
+            } else if (sName.includes("vet") || sName.includes("care")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Flea & Tick Powders", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Health Supplements", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Deworming & First Aid", parentId: sub._id }
+              );
+            }
+          });
+        }
+        setChildCategories(builtChildCategories);
+
+        // Fetch products by categoryId or categoryName
+        let fetchedProds: Product[] = [];
+        try {
+          const prodRes = await axios.get(`${API_BASE}/products?categoryId=${mainCategory._id}&category=${encodeURIComponent(mainCategory.name)}`);
+          fetchedProds = prodRes?.data?.products || [];
+        } catch (pErr) {
+          console.error("Error fetching products:", pErr);
+        }
+
+        if (fetchedProds.length === 0) {
+          fetchedProds = getDemoProducts(categoryName, mainCategory, finalSubs, builtChildCategories);
+        }
+
+        setAllProducts(fetchedProds);
       } catch (err) {
         console.error(err);
         setCategory(null);
@@ -587,16 +825,47 @@ const Category = () => {
     go();
   }, [categoryName]);
 
-  // ─────────────── Derived ───────────────
+  // ─────────────── Active Child Categories ───────────────
+  const activeChildCategories = useMemo(() => {
+    if (selectedSubcategoryId) {
+      return childCategories.filter(c => String(c.parentId) === String(selectedSubcategoryId));
+    }
+    return childCategories;
+  }, [childCategories, selectedSubcategoryId]);
+
+  // ─────────────── Derived Filtered Products ───────────────
   const filteredProducts = useMemo(() => {
-    if (!selectedSubcategoryId) return allProducts;
-    return allProducts.filter(
-      (p) => p.subCategoryId === selectedSubcategoryId || p.subcategory === selectedSubcategoryId
-    );
-  }, [allProducts, selectedSubcategoryId]);
+    let list = allProducts;
+
+    if (selectedSubcategoryId) {
+      const sub = subcategories.find((s) => String(s._id) === String(selectedSubcategoryId));
+      const subName = sub?.name?.toLowerCase();
+
+      list = list.filter((p) => {
+        const pSubId = String(p.subCategoryId || p.subcategoryId || p.subcategory || '');
+        const pSubName = String(p.subCategoryName || p.subcategory || '').toLowerCase();
+        return pSubId === String(selectedSubcategoryId) || (subName && (pSubName === subName || pSubName.includes(subName) || subName.includes(pSubName)));
+      });
+    }
+
+    if (selectedChildCategoryId) {
+      const child = childCategories.find((c) => String(c._id) === String(selectedChildCategoryId));
+      const childName = child?.name?.toLowerCase();
+
+      list = list.filter((p) => {
+        const pChildId = String(p.childCategoryId || p.childcategoryId || '');
+        const pName = String(p.name || p.itemName || '').toLowerCase();
+        const pTag = String(p.tag || '').toLowerCase();
+        const pChildName = String(p.childCategoryName || '').toLowerCase();
+        return pChildId === String(selectedChildCategoryId) || (childName && (pChildName.includes(childName) || pName.includes(childName) || pTag.includes(childName) || (childName.split(' ')[0].length > 2 && pName.includes(childName.split(' ')[0]))));
+      });
+    }
+
+    return list;
+  }, [allProducts, selectedSubcategoryId, selectedChildCategoryId, subcategories, childCategories]);
 
   const selectedSubName = useMemo(
-    () => subcategories.find((s) => s._id === selectedSubcategoryId)?.name ?? null,
+    () => subcategories.find((s) => String(s._id) === String(selectedSubcategoryId))?.name ?? null,
     [selectedSubcategoryId, subcategories]
   );
 
@@ -689,7 +958,7 @@ const Category = () => {
           </div>
         </section>
 
-        {/* ── Subcategory circular tiles ── */}
+        {/* ── Subcategory circular tiles & Child Category Filters ── */}
         <section className="container mx-auto px-4 py-6 text-left">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-black text-navy">Shop by Subcategory</h2>
@@ -707,7 +976,10 @@ const Category = () => {
                 <button
                   key={s._id}
                   type="button"
-                  onClick={() => setSelectedSubcategoryId(isAll ? null : s._id)}
+                  onClick={() => {
+                    setSelectedSubcategoryId(isAll ? null : s._id);
+                    setSelectedChildCategoryId(null);
+                  }}
                   className="flex-shrink-0 flex flex-col items-center gap-2 group cursor-pointer focus:outline-none bg-transparent border-none p-0"
                 >
                   <div
@@ -745,6 +1017,41 @@ const Category = () => {
               );
             })}
           </div>
+
+          {/* ── Level 3 Child Category Filter Pills ── */}
+          {activeChildCategories.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none font-sans">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 bg-slate-100 px-2.5 py-1 rounded-md">
+                Child Categories:
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedChildCategoryId(null)}
+                className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none ${!selectedChildCategoryId
+                    ? "bg-navy text-white shadow-xs"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+              >
+                All {selectedSubName || "Subtypes"}
+              </button>
+              {activeChildCategories.map((child) => {
+                const active = selectedChildCategoryId === child._id;
+                return (
+                  <button
+                    key={child._id}
+                    type="button"
+                    onClick={() => setSelectedChildCategoryId(active ? null : child._id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none flex items-center gap-1 ${active
+                        ? "bg-accent text-white shadow-xs scale-105"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                  >
+                    <span>{child.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* ── Cashback strip ── */}

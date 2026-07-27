@@ -31,13 +31,7 @@ import {
   Briefcase
 } from "lucide-react";
 
-const FEED_ITEMS = [
-  { id: "f1", user: "ApexBee System", avatar: "🐝", action: "Announced the Summer Super Sale", time: "2 hours ago", content: "Get up to 50% off on all electronics and fashion from top vendors. Sale starts tomorrow at 12 PM!", type: "announcement" },
-  { id: "f2", user: "Rajesh Kumar", avatar: "RK", action: "became a verified Vendor", time: "5 hours ago", content: "Rajesh Electronics is now live in Delhi. Explore their store for genuine products with quick delivery.", type: "vendor_joined" },
-  { id: "f3", user: "ApexBee Academy", avatar: "🎓", action: "published a new course", time: "1 day ago", content: "Course: Advanced Digital Marketing for Local Stores. Enroll now and get certified!", type: "course" },
-  { id: "f4", user: "Neha Sharma", avatar: "NS", action: "earned the Top Referrer badge", time: "2 days ago", content: "Neha successfully referred 50 friends to ApexBee and earned ₹12,500 in rewards! 🏆", type: "achievement" },
-  { id: "f5", user: "TechFix Computers", avatar: "🔧", action: "is offering 20% off on Computer AMCs", time: "3 days ago", content: "Keep your devices running smoothly. Verified professionals available across Mumbai.", type: "service" },
-];
+
 
 const Community = () => {
   const [activeTab, setActiveTab] = useState("feed");
