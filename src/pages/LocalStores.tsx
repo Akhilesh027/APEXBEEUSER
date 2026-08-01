@@ -14,8 +14,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "https://server.apexbee.in/api" : "https://server.apexbee.in/api");
 const LOCATION_KEY = "user_location";
+
+const safeJsonFetch = async (url: string, options?: RequestInit) => {
+  try {
+    const res = await fetch(url, options);
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.warn(`[API] Non-JSON response received from ${url}:`, res.status);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error(`[API] Fetch error for ${url}:`, err);
+    return null;
+  }
+};
 
 const getStatusDisplay = (status: string) => {
   switch (status) {
@@ -158,7 +173,7 @@ const LocalStores = () => {
     try {
       setBookingSubmitting(true);
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/table-bookings`, {
+      const json = await safeJsonFetch(`${API_BASE}/table-bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,15 +189,14 @@ const LocalStores = () => {
           specialRequests: bookingRequests,
         }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Table Reservation Confirmed!\n${data.message}`);
+      if (json?.success) {
+        alert(`Table Reservation Confirmed!\n${json.message}`);
         setTableBookingStore(null);
         setBookingGuestName('');
         setBookingGuestPhone('');
         setBookingRequests('');
       } else {
-        alert(data.message || 'Failed to submit table reservation');
+        alert(json?.message || 'Failed to submit table reservation');
       }
     } catch (err: any) {
       alert('Error submitting reservation: ' + err.message);
@@ -206,8 +220,12 @@ const LocalStores = () => {
   // Main tabs
   const [mainTab, setMainTab] = useState<"explore" | "subscriptions">("explore");
 
-  // Stores
+  // Stores & API Data
   const [stores, setStores] = useState<any[]>([]);
+  const [apiStats, setApiStats] = useState<any>(null);
+  const [featuredStores, setFeaturedStores] = useState<any[]>([]);
+  const [localDeals, setLocalDeals] = useState<any[]>([]);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -245,6 +263,45 @@ const LocalStores = () => {
     }
   }, []);
 
+  const fetchFeaturedStores = useCallback(async () => {
+    try {
+      const json = await safeJsonFetch(`${API_BASE}/v1/stores/featured`);
+      if (json?.success && Array.isArray(json.data)) {
+        setFeaturedStores(json.data);
+      }
+    } catch (err) {
+      console.error("Error fetching featured stores:", err);
+    }
+  }, []);
+
+  const fetchLocalDeals = useCallback(async () => {
+    try {
+      const json = await safeJsonFetch(`${API_BASE}/v1/stores/deals`);
+      if (json?.success && Array.isArray(json.deals)) {
+        setLocalDeals(json.deals);
+      }
+    } catch (err) {
+      console.error("Error fetching local deals:", err);
+    }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const json = await safeJsonFetch(`${API_BASE}/v1/stores/categories`);
+      if (json?.success && Array.isArray(json.categories)) {
+        setDbCategories(json.categories);
+      }
+    } catch (err) {
+      console.error("Error fetching store categories:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeaturedStores();
+    fetchLocalDeals();
+    fetchCategories();
+  }, [fetchFeaturedStores, fetchLocalDeals, fetchCategories]);
+
   // Unified store fetch — auto-selects GPS → Pincode → City
   const fetchNearbyStores = useCallback(async (
     lat: number | null, lng: number | null,
@@ -256,23 +313,31 @@ const LocalStores = () => {
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      let url = `${API_BASE}/vendor/nearby?radiusKm=${radiusKm}&category=${category}&sort=${sort}`;
+      let url = `${API_BASE}/v1/stores/nearby?radiusKm=${radiusKm}&category=${category}&sort=${sort}`;
 
       if (lat && lng) {
-        // Stage 1: GPS
         url += `&lat=${lat}&lng=${lng}`;
       } else if (pincode && pincode.trim().length >= 4) {
-        // Stage 2: Pincode
         url += `&pincode=${pincode.trim()}`;
       } else {
-        // Stage 3: Fallback — use default coordinates so page always loads stores
         url += `&lat=18.5204&lng=73.8567`;
       }
 
-      const res = await fetch(url, { headers });
-      const json = await res.json();
-      if (!res.ok || !json?.success) throw new Error(json?.message || "Failed to fetch nearby stores");
-      setStores(Array.isArray(json?.data) ? json.data : []);
+      let json = await safeJsonFetch(url, { headers });
+      if (!json?.success) {
+        const fallbackUrl = `${API_BASE}/vendor/nearby?radiusKm=${radiusKm}&category=${category}&sort=${sort}${lat && lng ? `&lat=${lat}&lng=${lng}` : pincode ? `&pincode=${pincode}` : ''}`;
+        json = await safeJsonFetch(fallbackUrl, { headers });
+      }
+
+      if (json?.success) {
+        setStores(Array.isArray(json?.data) ? json.data : []);
+        if (json?.stats) {
+          setApiStats(json.stats);
+        }
+      } else {
+        // Fallback gracefully to empty list without crashing
+        setStores([]);
+      }
     } catch (e: any) {
       setStores([]); setError(e?.message || "Failed to fetch stores");
     } finally { setLoading(false); }
@@ -316,8 +381,7 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/local-shop/subscriptions/${userId}`);
-      const json = await res.json();
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/subscriptions/${userId}`);
       if (json?.success) setSubscriptions(json.subscriptions || []);
     } catch { /* ignore */ }
     finally { setSubLoading(false); }
@@ -328,8 +392,7 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/local-shop/billing/${userId}`);
-      const json = await res.json();
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/billing/${userId}`);
       if (json?.success) setBilling(json.billing);
     } catch { /* ignore */ }
   }, []);
@@ -339,8 +402,7 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/local-shop/loyalty/${userId}`);
-      const json = await res.json();
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/loyalty/${userId}`);
       if (json?.success) setLoyalty(json.loyalty);
     } catch { /* ignore */ }
   }, []);
@@ -350,8 +412,7 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/local-shop/notifications/${userId}`);
-      const json = await res.json();
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/notifications/${userId}`);
       if (json?.success) setNotifications(json.notifications || []);
     } catch { /* ignore */ }
   }, []);
@@ -411,17 +472,24 @@ const LocalStores = () => {
     fetchSubscriptions();
   };
 
-  // Live stats calculation
+  // Live stats calculation from API & stores data
   const liveStats = useMemo(() => {
+    const total = apiStats?.totalStores ?? stores.length;
+    const openCount = apiStats?.openNow ?? stores.filter(s => s.computedAvailability === 'open' || s.isOpen !== false).length;
+    const avgDeliveryMins = apiStats?.averageDeliveryMinutes ? `${apiStats.averageDeliveryMinutes} mins` : "24 mins";
+    const activeOffersCount = apiStats?.activeOffers ?? stores.filter(s => s.offers && s.offers.length > 0).length;
+    const freeDelivCount = apiStats?.freeDelivery ?? stores.filter(s => s.deliveryCharge === 0).length;
+    const scheduledSlotsCount = stores.filter(s => s.storeServices?.includes('scheduled_delivery') || s.hasScheduledDelivery !== false).length || total;
+
     return {
-      totalStores: stores.length || 128,
-      openStores: stores.filter(s => s.computedAvailability === 'open' || s.isOpen !== false).length || 94,
-      avgDelivery: "24 mins",
-      activeOffers: stores.filter(s => s.offers && s.offers.length > 0).length || 52,
-      freeDelivery: stores.filter(s => s.deliveryCharge === 0).length || 38,
-      scheduledAvailable: 12
+      totalStores: total,
+      openStores: openCount,
+      avgDelivery: avgDeliveryMins,
+      activeOffers: activeOffersCount,
+      freeDelivery: freeDelivCount,
+      scheduledAvailable: scheduledSlotsCount
     };
-  }, [stores]);
+  }, [stores, apiStats]);
 
   // Filters
   const filteredStores = useMemo(() => {
@@ -714,95 +782,53 @@ const LocalStores = () => {
 
           {/* Dynamic Category Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 font-sans">
-            {/* Daily Needs */}
-            <div
-              onClick={() => setCategoryFilter("ALL")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "ALL" ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2 font-sans">
-                <span className="text-2xl">🛒</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "ALL" ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"
-                  }`}>Daily Needs</span>
-              </div>
-              <h4 className={`text-sm font-extrabold ${categoryFilter === "ALL" ? "text-white" : "text-navy"}`}>Groceries & Milk</h4>
-              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
-                <span className={categoryFilter === "ALL" ? "text-white/85" : "text-indigo-600"}>18 Active Offers</span>
-                <span>•</span>
-                <span className={categoryFilter === "ALL" ? "text-white/85" : "text-slate-500"}>4 Scheduled</span>
-              </div>
-              <div className="mt-2 text-[11px] font-bold opacity-80 flex items-center justify-between font-sans">
-                <span>120 Vendors Nearby</span>
-                <span>Explore →</span>
-              </div>
-            </div>
+            {(() => {
+              const cats = dbCategories.length > 0 ? dbCategories.filter(c => c.key !== "ALL") : [
+                { key: "Grocery", label: "Groceries & Milk", icon: "🛒", tag: "Daily Needs" },
+                { key: "Services", label: "Home Services", icon: "🛠", tag: "Services" },
+                { key: "Bakery", label: "Food & Restaurants", icon: "🍕", tag: "Food & Dining" },
+                { key: "Medical", label: "Pharmacy & Clinic", icon: "🏥", tag: "Health" },
+              ];
 
-            {/* Services */}
-            <div
-              onClick={() => navigate("/services")}
-              className="p-4 rounded-3xl border bg-white hover:bg-slate-50 border-slate-100 transition-all duration-300 text-left cursor-pointer hover:shadow-lg font-sans"
-            >
-              <div className="flex items-center justify-between mb-2 font-sans">
-                <span className="text-2xl">🛠</span>
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-800">Services</span>
-              </div>
-              <h4 className="text-sm font-extrabold text-navy font-sans">Plumbing & AC Repair</h4>
-              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
-                <span className="text-orange-600 font-sans">AC from ₹199</span>
-                <span>•</span>
-                <span>Home Clean ₹399</span>
-              </div>
-              <div className="mt-2 text-[11px] font-bold text-slate-600 flex items-center justify-between font-sans">
-                <span>35 Pros Online</span>
-                <span>Book Now →</span>
-              </div>
-            </div>
+              return cats.slice(0, 4).map((c: any) => {
+                const isSelected = categoryFilter === c.key;
+                const storeCount = c.count !== undefined ? c.count : stores.filter(s => (s.categories || []).some((cat: string) => cat.toLowerCase().includes(c.key.toLowerCase()))).length;
+                const icon = c.icon || "🏪";
+                const tag = c.tag || c.label;
+                const gradient = isSelected ? "bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100";
 
-            {/* Food & Dining */}
-            <div
-              onClick={() => setCategoryFilter("Bakery")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "Bakery" ? "bg-gradient-to-br from-rose-500 to-pink-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2 font-sans">
-                <span className="text-2xl">🍕</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "Bakery" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-800"
-                  }`}>Food & Dining</span>
-              </div>
-              <h4 className={`text-sm font-extrabold ${categoryFilter === "Bakery" ? "text-white" : "text-navy"}`}>Restaurants & Bakers</h4>
-              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
-                <span className={categoryFilter === "Bakery" ? "text-white/85" : "text-rose-600"}>Free Delivery</span>
-                <span>•</span>
-                <span className={categoryFilter === "Bakery" ? "text-white/85" : "text-slate-500"}>2 Combo Offers</span>
-              </div>
-              <div className="mt-2 text-[11px] font-bold opacity-80 flex items-center justify-between font-sans">
-                <span>28 Eateries Open</span>
-                <span>Order Now →</span>
-              </div>
-            </div>
-
-            {/* Health */}
-            <div
-              onClick={() => setCategoryFilter("Medical")}
-              className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${categoryFilter === "Medical" ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent" : "bg-white hover:bg-slate-50 border-slate-100"
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2 font-sans">
-                <span className="text-2xl">🏥</span>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryFilter === "Medical" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-800"
-                  }`}>Health</span>
-              </div>
-              <h4 className={`text-sm font-extrabold ${categoryFilter === "Medical" ? "text-white" : "text-navy"}`}>Pharmacy & Clinic</h4>
-              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
-                <span className={categoryFilter === "Medical" ? "text-white/85" : "text-emerald-600"}>Doctors Available</span>
-                <span>•</span>
-                <span className={categoryFilter === "Medical" ? "text-white/85" : "text-slate-500"}>Meds Delivery</span>
-              </div>
-              <div className="mt-2 text-[11px] font-bold opacity-80 flex items-center justify-between font-sans font-sans">
-                <span>Lab Tests & Vitals</span>
-                <span>Consult →</span>
-              </div>
-            </div>
+                return (
+                  <div
+                    key={c.key}
+                    onClick={() => {
+                      if (c.key === "Services") {
+                        navigate("/services");
+                      } else {
+                        setCategoryFilter(categoryFilter === c.key ? "ALL" : c.key);
+                      }
+                    }}
+                    className={`p-4 rounded-3xl border transition-all duration-300 text-left cursor-pointer hover:shadow-lg ${gradient}`}
+                  >
+                    <div className="flex items-center justify-between mb-2 font-sans">
+                      <span className="text-2xl">{icon}</span>
+                      <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${isSelected ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"}`}>
+                        {tag}
+                      </span>
+                    </div>
+                    <h4 className={`text-sm font-extrabold ${isSelected ? "text-white" : "text-navy"}`}>{c.label}</h4>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold font-sans">
+                      <span className={isSelected ? "text-white/85" : "text-indigo-600"}>{storeCount} Vendors Available</span>
+                      <span>•</span>
+                      <span className={isSelected ? "text-white/85" : "text-slate-500"}>Fast Delivery</span>
+                    </div>
+                    <div className="mt-2 text-[11px] font-bold opacity-80 flex items-center justify-between font-sans">
+                      <span>{storeCount} Stores</span>
+                      <span>Explore →</span>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* Search */}
@@ -945,86 +971,105 @@ const LocalStores = () => {
           </div>
 
           {/* Featured Stores Section */}
-          <div className="mb-8 text-left font-sans font-sans">
-            <h2 className="text-lg font-black text-navy flex items-center gap-1.5 mb-4 font-sans font-sans font-sans">
-              <span className="text-red-500 animate-bounce font-sans font-sans font-sans font-sans">🔥</span> Featured Store Partners
+          <div className="mb-8 text-left font-sans">
+            <h2 className="text-lg font-black text-navy flex items-center gap-1.5 mb-4 font-sans">
+              <span className="text-red-500 animate-bounce">🔥</span> Featured Store Partners
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans font-sans font-sans font-sans">
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100/50 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4 font-sans font-sans">
-                <div className="space-y-1 font-sans">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-orange-700 bg-white/70 px-2 py-0.5 rounded-full font-sans font-sans font-sans">Sponsored Premium Partner</span>
-                  <h3 className="text-base font-black text-navy font-sans font-sans font-sans font-sans font-sans">GM Super Market</h3>
-                  <p className="text-xs text-muted-foreground font-medium font-sans font-sans font-sans font-sans">Serving fresh local vegetables, dairy & organic staples in Buchireddypalem.</p>
-                  <div className="flex items-center gap-3 text-[11px] font-extrabold text-navy pt-2 font-sans font-sans">
-                    <span className="flex items-center gap-0.5">⭐ 4.8</span>
-                    <span>•</span>
-                    <span>2.1 KM • 25 mins</span>
-                  </div>
-                  <div className="pt-2">
-                    <Button onClick={() => navigate("/business/6a477215fe6b8d23e568b54e")} className="bg-navy hover:bg-navy/90 text-white rounded-xl text-xs py-2 h-8 font-sans border-none font-sans font-sans font-sans">
-                      Visit Store
-                    </Button>
-                  </div>
-                </div>
-                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-100 p-2 flex items-center justify-center shrink-0 shadow text-3xl select-none font-sans font-sans">
-                  🏪
-                </div>
-              </div>
+            {(() => {
+              const listToDisplay = featuredStores.length > 0 ? featuredStores : stores.slice(0, 2);
+              if (listToDisplay.length === 0) return null;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
+                  {listToDisplay.map((featShop: any, idx: number) => {
+                    const logo = featShop.storeDesign?.logoUrl || featShop.logo || "";
+                    const rating = featShop.rating?.average || 4.8;
+                    const distance = featShop.distanceInKm ? `${Number(featShop.distanceInKm).toFixed(1)} KM` : `${featShop.distance || "1.5"} KM`;
+                    const eta = `${featShop.estimatedDeliveryMinutes || 25} mins`;
+                    const bgGradient = idx % 2 === 0
+                      ? "bg-gradient-to-br from-amber-50 to-orange-50 border-orange-100/50"
+                      : "bg-gradient-to-br from-sky-50 to-indigo-50 border-indigo-100/50";
+                    const badgeColor = idx % 2 === 0 ? "text-orange-700 bg-white/70" : "text-indigo-700 bg-white/70";
+                    const badgeText = idx % 2 === 0 ? "Sponsored Premium Partner" : "Top Subscription Partner";
 
-              <div className="bg-gradient-to-br from-sky-50 to-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4 font-sans font-sans">
-                <div className="space-y-1 font-sans">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-indigo-700 bg-white/70 px-2 py-0.5 rounded-full font-sans font-sans font-sans font-sans font-sans font-sans">Top Subscription Partner</span>
-                  <h3 className="text-base font-black text-navy font-sans font-sans font-sans font-sans">Nellore Fresh Mart</h3>
-                  <p className="text-xs text-muted-foreground font-medium font-sans font-sans font-sans font-sans">Daily morning doorstep delivery slots for unadulterated milk, flowers, and produce.</p>
-                  <div className="flex items-center gap-3 text-[11px] font-extrabold text-navy pt-2 font-sans font-sans font-sans">
-                    <span className="flex items-center gap-0.5">⭐ 4.7</span>
-                    <span>•</span>
-                    <span>1.5 KM • 15 mins</span>
-                  </div>
-                  <div className="pt-2">
-                    <Button onClick={() => navigate("/business/6a477215fe6b8d23e568b54f")} className="bg-navy hover:bg-navy/90 text-white rounded-xl text-xs py-2 h-8 font-sans border-none font-sans font-sans">
-                      Visit Store
-                    </Button>
-                  </div>
+                    return (
+                      <div key={featShop._id || idx} className={`${bgGradient} border rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4 font-sans`}>
+                        <div className="space-y-1 font-sans">
+                          <span className={`text-[9px] font-black uppercase tracking-wider ${badgeColor} px-2 py-0.5 rounded-full`}>
+                            {badgeText}
+                          </span>
+                          <h3 className="text-base font-black text-navy">{featShop.businessName}</h3>
+                          <p className="text-xs text-muted-foreground font-medium line-clamp-2">
+                            {featShop.description || featShop.address || "Fresh produce, daily essentials & doorstep grocery delivery."}
+                          </p>
+                          <div className="flex items-center gap-3 text-[11px] font-extrabold text-navy pt-2">
+                            <span className="flex items-center gap-0.5">⭐ {rating}</span>
+                            <span>•</span>
+                            <span>{distance} • {eta}</span>
+                          </div>
+                          <div className="pt-2">
+                            <Button onClick={() => navigate(`/business/${featShop._id}`)} className="bg-navy hover:bg-navy/90 text-white rounded-xl text-xs py-2 h-8 font-sans border-none">
+                              Visit Store
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="w-24 h-24 rounded-2xl bg-white border border-slate-100 p-2 flex items-center justify-center shrink-0 shadow text-3xl select-none font-sans">
+                          {typeof logo === "string" && logo.startsWith("http") ? (
+                            <img src={logo} alt={featShop.businessName} className="h-full w-full object-cover rounded-xl" />
+                          ) : (
+                            "🏪"
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-100 p-2 flex items-center justify-center shrink-0 shadow text-3xl select-none font-sans font-sans">
-                  🥦
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* Today's Local Deals */}
-          <div className="mb-8 text-left font-sans font-sans font-sans">
-            <h2 className="text-lg font-black text-navy flex items-center gap-1.5 mb-4 font-sans font-sans font-sans font-sans font-sans">
-              <span className="text-yellow-500 font-sans font-sans font-sans font-sans font-sans font-sans font-sans font-sans">⚡</span> Today's Local Deals
+          <div className="mb-8 text-left font-sans">
+            <h2 className="text-lg font-black text-navy flex items-center gap-1.5 mb-4 font-sans">
+              <span className="text-yellow-500">⚡</span> Today's Local Deals
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-sans font-sans font-sans">
-              <div className="p-4 rounded-3xl border bg-white shadow-sm hover:shadow transition font-sans font-sans font-sans font-sans font-sans">
-                <span className="text-[8px] font-black uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full font-sans font-sans font-sans">Flash Deal</span>
-                <h4 className="text-sm font-extrabold text-navy mt-2 font-sans font-sans font-sans font-sans">Nandini Milk Deal</h4>
-                <p className="text-xs text-slate-500 font-semibold mt-1 font-sans font-sans font-sans">₹5 OFF per liter on daily subscription slots.</p>
-                <p className="text-[10px] text-red-500 font-bold mt-2 font-mono">⏱ Ends in 1 hr</p>
-              </div>
-              <div className="p-4 rounded-3xl border bg-white shadow-sm hover:shadow transition font-sans font-sans font-sans font-sans">
-                <span className="text-[8px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full font-sans font-sans">Weekend Special</span>
-                <h4 className="text-sm font-extrabold text-navy mt-2 font-sans font-sans">Organic Staples</h4>
-                <p className="text-xs text-slate-500 font-semibold mt-1 font-sans font-sans">Order any 2 dals and get organic toor dal 1kg free.</p>
-                <p className="text-[10px] text-indigo-600 font-bold mt-2 font-sans font-sans">✓ Verified Vendor</p>
-              </div>
-              <div className="p-4 rounded-3xl border bg-white shadow-sm hover:shadow transition font-sans font-sans font-sans font-sans font-sans font-sans">
-                <span className="text-[8px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-sans font-sans">Free Delivery</span>
-                <h4 className="text-sm font-extrabold text-navy mt-2 font-sans font-sans font-sans font-sans font-sans font-sans">GM Fresh Produce</h4>
-                <p className="text-xs text-slate-500 font-semibold mt-1 font-sans font-sans">No delivery charge on orders above ₹150 today.</p>
-                <p className="text-[10px] text-emerald-600 font-bold mt-2 font-sans font-sans">✓ Auto Applied</p>
-              </div>
-              <div className="p-4 rounded-3xl border bg-white shadow-sm hover:shadow transition font-sans font-sans font-sans font-sans font-sans font-sans">
-                <span className="text-[8px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-sans font-sans font-sans">Festival Special</span>
-                <h4 className="text-sm font-extrabold text-navy mt-2 font-sans font-sans font-sans">Ugadi Pooja Garland</h4>
-                <p className="text-xs text-slate-500 font-semibold mt-1 font-sans font-sans font-sans">Auspicous marigold pooja garland discounted to ₹28 today.</p>
-                <p className="text-[10px] text-amber-600 font-bold mt-2 font-sans font-sans">🛒 Order Bundle</p>
-              </div>
-            </div>
+            {(() => {
+              const dealsToDisplay = localDeals.length > 0
+                ? localDeals
+                : stores.flatMap(s => (s.offers || []).map((off: any) => ({
+                  id: off._id || `${s._id}-${off.title}`,
+                  vendorName: s.businessName,
+                  title: off.title,
+                  description: off.description || `Special offer from ${s.businessName}`,
+                  badge: off.isFlashDeal ? 'Flash Deal' : 'Local Special',
+                  tag: off.discountType === 'percentage' ? `${off.discountValue}% OFF` : `₹${off.discountValue} OFF`
+                }))).slice(0, 4);
+
+              if (dealsToDisplay.length === 0) return null;
+
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-sans">
+                  {dealsToDisplay.slice(0, 4).map((deal: any, idx: number) => {
+                    const badgeColors = [
+                      "text-rose-700 bg-rose-50",
+                      "text-indigo-700 bg-indigo-50",
+                      "text-emerald-700 bg-emerald-50",
+                      "text-amber-700 bg-amber-50"
+                    ];
+                    const badgeColor = badgeColors[idx % badgeColors.length];
+                    return (
+                      <div key={deal.id || idx} className="p-4 rounded-3xl border bg-white shadow-sm hover:shadow transition font-sans">
+                        <span className={`text-[8px] font-black uppercase tracking-wider ${badgeColor} px-2 py-0.5 rounded-full`}>
+                          {deal.badge || deal.tag || "Special Offer"}
+                        </span>
+                        <h4 className="text-sm font-extrabold text-navy mt-2 truncate">{deal.title}</h4>
+                        <p className="text-xs text-slate-500 font-semibold mt-1 line-clamp-2">{deal.description || `Offer by ${deal.vendorName}`}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold mt-2">✓ {deal.vendorName || "Verified Partner"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Stores Content View (List Radar Map) */}

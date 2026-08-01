@@ -762,7 +762,11 @@ const Navbar = () => {
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left"
                 onClick={() => {
                   setShopByOpen(false);
-                  navigate(`/category/${encodeURIComponent(c.name)}`);
+                  if (c.experienceType === 'coming_soon_lead_capture' && c.experienceRoute) {
+                    navigate(c.experienceRoute);
+                  } else {
+                    navigate(`/category/${encodeURIComponent(c.name)}`);
+                  }
                 }}
               >
                 <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 border flex items-center justify-center">

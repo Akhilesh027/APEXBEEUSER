@@ -30,6 +30,7 @@ import {
   BadgePercent,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { trackCategoryClick } from "../utils/categoryAnalytics";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -569,7 +570,7 @@ const Home = () => {
       badge: "🛒 Grocery Offers",
       image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1200",
       btnText: "Shop Groceries Now",
-      action: () => navigate("/category/🛒 Daily Needs"),
+      action: () => { trackCategoryClick({ categoryName: 'Daily Needs', targetPath: '/category/🛒 Daily Needs', source: 'banner' }); navigate("/category/🛒 Daily Needs"); },
     },
     {
       id: 2,
@@ -578,7 +579,7 @@ const Home = () => {
       badge: "🍔 Food Delivery",
       image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=1200",
       btnText: "Order Food Now",
-      action: () => navigate("/category/🍽 Food & Dining"),
+      action: () => { trackCategoryClick({ categoryName: 'Food & Dining', targetPath: '/category/🍽 Food & Dining', source: 'banner' }); navigate("/category/🍽 Food & Dining"); },
     },
     {
       id: 3,
@@ -587,7 +588,7 @@ const Home = () => {
       badge: "💊 Pharmacy",
       image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=1200",
       btnText: "Order Medicines Now",
-      action: () => navigate("/category/❤ Health & Wellness"),
+      action: () => { trackCategoryClick({ categoryName: 'Health & Wellness', targetPath: '/category/❤ Health & Wellness', source: 'banner' }); navigate("/category/❤ Health & Wellness"); },
     },
     {
       id: 4,
@@ -596,7 +597,7 @@ const Home = () => {
       badge: "🔧 Local Services",
       image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=1200",
       btnText: "Book Professionals Now",
-      action: () => navigate("/services"),
+      action: () => { trackCategoryClick({ categoryName: 'Services', targetPath: '/services', source: 'banner' }); navigate("/services"); },
     },
   ], [navigate]);
 
@@ -1114,7 +1115,14 @@ const Home = () => {
                 return (
                   <button
                     key={item.label}
-                    onClick={() => navigate(item.to)}
+                    onClick={() => {
+                      trackCategoryClick({
+                        categoryName: item.label,
+                        targetPath: item.to,
+                        source: 'shortcut_grid',
+                      });
+                      navigate(item.to);
+                    }}
                     className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-4 rounded-2xl sm:rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
                   >
                     <div

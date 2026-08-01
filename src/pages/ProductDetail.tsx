@@ -60,6 +60,37 @@ const ProductDetail = () => {
   // Variant & attributes selection state
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
 
+  // Deduplicate attributes for rendering (handles legacy title case & snake_case duplicate keys)
+  const formattedAttributes = useMemo(() => {
+    if (!product?.attributes) return [];
+    const entries = Object.entries(product.attributes);
+    const resultMap = new Map<string, { key: string; label: string; values: any; valueStr: string }>();
+
+    entries.forEach(([key, rawVal]) => {
+      if (rawVal === undefined || rawVal === null || rawVal === '') return;
+      if (Array.isArray(rawVal) && rawVal.length === 0) return;
+
+      const valStr = Array.isArray(rawVal) ? rawVal.join(', ') : String(rawVal);
+      const cleanKey = key.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+      let existingKey = Array.from(resultMap.keys()).find(k => {
+        if (k === cleanKey) return true;
+        const item = resultMap.get(k);
+        return item?.valueStr === valStr && (k.includes(cleanKey) || cleanKey.includes(k));
+      });
+
+      if (!existingKey) {
+        const label = key.includes('_')
+          ? key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+          : key;
+
+        resultMap.set(cleanKey, { key, label, values: rawVal, valueStr: valStr });
+      }
+    });
+
+    return Array.from(resultMap.values());
+  }, [product?.attributes]);
+
   useEffect(() => {
     if (product?.attributes) {
       const initial: Record<string, string> = {};
@@ -560,28 +591,27 @@ const ProductDetail = () => {
             )}
 
             {/* Attribute/Variant Selectors */}
-            {product.attributes && Object.keys(product.attributes).length > 0 && (
+            {formattedAttributes.length > 0 && (
               <div className="my-6 space-y-4 border-t border-b py-4 border-border">
-                {Object.keys(product.attributes).map((attrName) => {
-                  const values = product.attributes[attrName];
+                {formattedAttributes.map(({ key, label, values }) => {
                   if (!Array.isArray(values) || values.length === 0) return null;
                   return (
-                    <div key={attrName} className="space-y-2">
-                      <span className="text-sm font-semibold text-navy capitalize">{attrName}:</span>
+                    <div key={key} className="space-y-2">
+                      <span className="text-sm font-semibold text-navy capitalize">{label}:</span>
                       <div className="flex flex-wrap gap-2">
-                        {values.map((val) => {
-                          const isSelected = selectedAttrs[attrName] === val;
+                        {values.map((val: any) => {
+                          const isSelected = selectedAttrs[key] === val;
                           return (
                             <button
-                              key={val}
+                              key={String(val)}
                               type="button"
-                              onClick={() => setSelectedAttrs((prev) => ({ ...prev, [attrName]: val }))}
+                              onClick={() => setSelectedAttrs((prev) => ({ ...prev, [key]: val }))}
                               className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${isSelected
                                 ? "bg-accent text-white border-transparent shadow-sm shadow-accent/50 scale-105"
                                 : "bg-white text-navy border-gray-300 hover:border-gray-400"
                                 }`}
                             >
-                              {val}
+                              {String(val)}
                             </button>
                           );
                         })}
@@ -652,17 +682,16 @@ const ProductDetail = () => {
                 )}
 
                 {/* Render Dynamic Specifications Key-Value Pairs */}
-                {product.attributes &&
-                  Object.keys(product.attributes).map((key) => {
-                    const val = selectedAttrs[key] || (Array.isArray(product.attributes[key]) ? product.attributes[key].join(', ') : product.attributes[key]);
-                    if (!val) return null;
-                    return (
-                      <div key={key} className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between capitalize">
-                        <span className="text-muted-foreground font-medium">{key}:</span>
-                        <span className="font-bold text-navy">{String(val)}</span>
-                      </div>
-                    );
-                  })}
+                {formattedAttributes.map(({ key, label, valueStr }) => {
+                  const val = selectedAttrs[key] || valueStr;
+                  if (!val) return null;
+                  return (
+                    <div key={key} className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between capitalize">
+                      <span className="text-muted-foreground font-medium">{label}:</span>
+                      <span className="font-bold text-navy">{String(val)}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {description && (

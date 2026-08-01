@@ -630,19 +630,27 @@ const Category = () => {
         const res = await axios.get(`${API_BASE}/categories`);
         const flat: CategoryType[] = (res.data?.categories || []).filter((c: CategoryType) => c.isActive !== false);
 
+        const getParentIdStr = (pId: any): string | null => {
+          if (!pId) return null;
+          if (typeof pId === 'object') return pId._id ? String(pId._id) : null;
+          return String(pId);
+        };
+
         // Build parent → children tree
         const parentMap = new Map<string, CategoryType>();
         const parents: CategoryType[] = [];
         flat.forEach((c) => {
-          if (!c.parentId) {
+          const pId = getParentIdStr(c.parentId);
+          if (!pId) {
             c.children = [];
-            parentMap.set(c._id, c);
+            parentMap.set(String(c._id), c);
             parents.push(c);
           }
         });
         flat.forEach((c) => {
-          if (c.parentId) {
-            const p = parentMap.get(String(c.parentId));
+          const pId = getParentIdStr(c.parentId);
+          if (pId) {
+            const p = parentMap.get(pId);
             if (p) p.children = [...(p.children || []), c];
           }
         });
@@ -715,11 +723,18 @@ const Category = () => {
         let mainCategory = found;
         let selectedSubId = null;
 
-        if (found.parentId) {
-          const parent = flat.find((c) => c._id === String(found.parentId));
+        const getParentIdStr = (pId: any): string | null => {
+          if (!pId) return null;
+          if (typeof pId === 'object') return pId._id ? String(pId._id) : null;
+          return String(pId);
+        };
+
+        const foundPId = getParentIdStr(found.parentId);
+        if (foundPId) {
+          const parent = flat.find((c) => String(c._id) === foundPId);
           if (parent) {
             mainCategory = parent;
-            selectedSubId = found._id;
+            selectedSubId = String(found._id);
           }
         }
 
@@ -727,8 +742,11 @@ const Category = () => {
         setCategory(mainCategory);
 
         // Get children as subcategories (Level 2) of the main category
-        const subs = flat.filter((c) => c.parentId && String(c.parentId) === mainCategory._id);
-        const mappedSubs = subs.map((s) => ({ _id: s._id, name: s.name, image: s.image, slug: s.slug }));
+        const subs = flat.filter((c) => {
+          const pId = getParentIdStr(c.parentId);
+          return pId === String(mainCategory._id);
+        });
+        const mappedSubs = subs.map((s) => ({ _id: String(s._id), name: s.name, image: s.image, slug: s.slug }));
         setSelectedSubcategoryId(selectedSubId);
 
         // Fetch active subcategories from the Subcategory collection via API
@@ -737,7 +755,7 @@ const Category = () => {
           const subRes = await axios.get(`${API_BASE}/categories/${mainCategory._id}/subcategories`);
           if (subRes.data?.success && Array.isArray(subRes.data.subcategories)) {
             const apiSubs = subRes.data.subcategories.map((s: any) => ({
-              _id: s._id,
+              _id: String(s._id),
               name: s.name,
               image: s.image || s.banner,
               slug: s.slug
@@ -766,7 +784,10 @@ const Category = () => {
 
         // Get Level 3 Child Categories
         const subIds = new Set(finalSubs.map(s => String(s._id)));
-        const level3FromTree = flat.filter((c) => c.parentId && subIds.has(String(c.parentId)));
+        const level3FromTree = flat.filter((c) => {
+          const pId = getParentIdStr(c.parentId);
+          return pId && subIds.has(pId);
+        });
 
         let builtChildCategories: CategoryType[] = level3FromTree;
         if (builtChildCategories.length === 0) {
@@ -825,10 +846,12 @@ const Category = () => {
     go();
   }, [categoryName]);
 
-  // ─────────────── Active Child Categories ───────────────
   const activeChildCategories = useMemo(() => {
     if (selectedSubcategoryId) {
-      return childCategories.filter(c => String(c.parentId) === String(selectedSubcategoryId));
+      return childCategories.filter(c => {
+        const pId = typeof c.parentId === 'object' ? (c.parentId as any)?._id : c.parentId;
+        return String(pId) === String(selectedSubcategoryId);
+      });
     }
     return childCategories;
   }, [childCategories, selectedSubcategoryId]);
@@ -1028,8 +1051,8 @@ const Category = () => {
                 type="button"
                 onClick={() => setSelectedChildCategoryId(null)}
                 className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none ${!selectedChildCategoryId
-                    ? "bg-navy text-white shadow-xs"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-navy text-white shadow-xs"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
               >
                 All {selectedSubName || "Subtypes"}
@@ -1042,8 +1065,8 @@ const Category = () => {
                     type="button"
                     onClick={() => setSelectedChildCategoryId(active ? null : child._id)}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none flex items-center gap-1 ${active
-                        ? "bg-accent text-white shadow-xs scale-105"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      ? "bg-accent text-white shadow-xs scale-105"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                       }`}
                   >
                     <span>{child.name}</span>
@@ -1399,7 +1422,13 @@ const Category = () => {
                     >
 
                       {/* Image section with hover Explore Overlay */}
-                      <div className="relative h-32 sm:h-44 overflow-hidden cursor-pointer" onClick={() => navigate(`/category/${encodeURIComponent(cat.name)}`)}>
+                      <div className="relative h-32 sm:h-44 overflow-hidden cursor-pointer" onClick={() => {
+                        if (cat.experienceType === 'coming_soon_lead_capture' && cat.experienceRoute) {
+                          navigate(cat.experienceRoute);
+                        } else {
+                          navigate(`/category/${encodeURIComponent(cat.name)}`);
+                        }
+                      }}>
                         <img
                           src={cat.image || "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&h=300&q=80"}
                           alt={cat.name}
@@ -1453,7 +1482,7 @@ const Category = () => {
 
                         <div className="flex items-center justify-between border-t border-dashed pt-3 mt-auto">
                           <Link
-                            to={`/category/${encodeURIComponent(cat.name)}`}
+                            to={cat.experienceType === 'coming_soon_lead_capture' && cat.experienceRoute ? cat.experienceRoute : `/category/${encodeURIComponent(cat.name)}`}
                             onClick={() => addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) })}
                             className="text-xs font-black text-navy hover:text-accent transition flex items-center gap-1"
                           >

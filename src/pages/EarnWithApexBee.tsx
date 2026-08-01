@@ -516,10 +516,11 @@ const EarnWithApexBee = () => {
   const [activeView, setActiveView] = useState<"home" | "detail" | "apply" | "applications">("home");
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedState, setSelectedState] = useState("Telangana");
-  const [selectedDistrict, setSelectedDistrict] = useState("Hyderabad");
-  const [selectedMandal, setSelectedMandal] = useState("Ameerpet");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedMandal, setSelectedMandal] = useState("");
   const [locationData, setLocationData] = useState<Record<string, Record<string, string[]>>>({});
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
 
   // Quiz Finder State
   const [quizStep, setQuizStep] = useState<number>(0);
@@ -545,6 +546,9 @@ const EarnWithApexBee = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Role-specific form states
+  const [primaryCategory, setPrimaryCategory] = useState("Devotional & Puja");
+  const [subCategory, setSubCategory] = useState("");
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState("");
   const [gstNumber, setGstNumber] = useState("");
   const [panNumber, setPanNumber] = useState("");
@@ -606,43 +610,107 @@ const EarnWithApexBee = () => {
   }, []);
 
   useEffect(() => {
-    if (!locationData) return;
-    const states = Object.keys(locationData);
-    if (states.length > 0) {
-      if (!states.includes(selectedState)) {
-        const newState = states.includes("Telangana") ? "Telangana" : states[0];
-        setSelectedState(newState);
-
-        const districts = Object.keys(locationData[newState] || {});
-        const newDist = districts[0] || "";
-        setSelectedDistrict(newDist);
-
-        const mandals = locationData[newState]?.[newDist] || [];
-        setSelectedMandal(mandals[0] || "");
+    const fetchDbCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/categories`);
+        const data = await res.json();
+        const catList = Array.isArray(data) ? data : (data?.categories || data?.data || []);
+        if (catList.length > 0) {
+          setDbCategories(catList);
+        }
+      } catch (err) {
+        console.error("Error fetching DB categories:", err);
       }
+    };
+
+    fetchDbCategories();
+  }, []);
+
+  const parentCategoryList = useMemo(() => {
+    const level1 = dbCategories.filter((c: any) => c.level === 1 || !c.parentId);
+    if (level1.length > 0) return level1;
+
+    return [
+      { _id: "devotional", name: "Devotional & Puja" },
+      { _id: "food", name: "Food & Restaurant" },
+      { _id: "daily_needs", name: "Daily Needs & Grocery" },
+      { _id: "fashion", name: "Fashion & Apparel" },
+      { _id: "services", name: "Home Services & Repair" },
+      { _id: "electronics", name: "Electronics & Mobiles" },
+      { _id: "retail", name: "General Retail" },
+    ];
+  }, [dbCategories]);
+
+  const selectedParentCategory = useMemo(() => {
+    if (!primaryCategory) return null;
+    return parentCategoryList.find((c: any) =>
+      c._id === primaryCategory ||
+      c.name.toLowerCase() === primaryCategory.toLowerCase() ||
+      c.name.toLowerCase().includes(primaryCategory.toLowerCase()) ||
+      primaryCategory.toLowerCase().includes(c.name.toLowerCase())
+    ) || null;
+  }, [primaryCategory, parentCategoryList]);
+
+  const currentSubCategoriesList = useMemo(() => {
+    if (!selectedParentCategory) return [];
+    const parentIdStr = String(selectedParentCategory._id);
+    return dbCategories.filter((c: any) => {
+      if (c.level !== 2) return false;
+      const pId = typeof c.parentId === 'object' ? c.parentId?._id : c.parentId;
+      return String(pId) === parentIdStr;
+    });
+  }, [selectedParentCategory, dbCategories]);
+
+  useEffect(() => {
+    if (!locationData || !selectedState) return;
+    const states = Object.keys(locationData);
+    if (states.length > 0 && selectedState && !states.includes(selectedState)) {
+      setSelectedState("");
+      setSelectedDistrict("");
+      setSelectedMandal("");
     }
   }, [locationData]);
 
   useEffect(() => {
     if (!locationData || !selectedState) return;
     const districts = Object.keys(locationData[selectedState] || {});
-    const firstDistrict = districts[0] || "";
-    const firstMandal = locationData[selectedState]?.[firstDistrict]?.[0] || "";
-
-    if (!districts.includes(selectedDistrict)) {
-      setSelectedDistrict(firstDistrict);
-      setSelectedMandal(firstMandal);
+    if (selectedDistrict && !districts.includes(selectedDistrict)) {
+      setSelectedDistrict("");
+      setSelectedMandal("");
     }
   }, [selectedState, locationData]);
 
   useEffect(() => {
     if (!locationData || !selectedState || !selectedDistrict) return;
     const mandals = locationData[selectedState]?.[selectedDistrict] || [];
-
-    if (!mandals.includes(selectedMandal)) {
-      setSelectedMandal(mandals[0] || "");
+    if (selectedMandal && !mandals.includes(selectedMandal)) {
+      setSelectedMandal("");
     }
   }, [selectedDistrict, selectedState, locationData]);
+
+  const stateOptions = useMemo(() => {
+    const keys = Object.keys(locationData || {});
+    return keys.length > 0 ? keys : ["Telangana", "Andhra Pradesh", "Karnataka"];
+  }, [locationData]);
+
+  const districtOptions = useMemo(() => {
+    if (!selectedState) return [];
+    const dists = Object.keys(locationData[selectedState] || {});
+    if (dists.length > 0) return dists;
+    if (selectedState === "Telangana") return ["Hyderabad", "Rangareddy", "Warangal", "Medak", "Nizamabad"];
+    if (selectedState === "Andhra Pradesh") return ["Nellore", "Tirupati", "Vijayawada", "Visakhapatnam", "Guntur"];
+    return ["Central", "North", "South", "East", "West"];
+  }, [selectedState, locationData]);
+
+  const mandalOptions = useMemo(() => {
+    if (!selectedState || !selectedDistrict) return [];
+    const mnds = locationData[selectedState]?.[selectedDistrict] || [];
+    if (mnds.length > 0) return mnds;
+    if (selectedDistrict === "Hyderabad") return ["Ameerpet", "Banjara Hills", "Jubilee Hills", "Kukatpally", "Secunderabad", "Madhapur"];
+    if (selectedDistrict === "Nellore") return ["Nellore Urban", "Nellore Rural", "Kavali", "Gudur", "Atmakur"];
+    if (selectedDistrict === "Tirupati") return ["Tirupati Urban", "Tirupati Rural", "Chandragiri", "Srikalahasti"];
+    return ["Mandal 1", "Mandal 2", "Mandal 3"];
+  }, [selectedState, selectedDistrict, locationData]);
 
   const handleGoToPortal = (oppId: string) => {
     const { user } = getAuth();
@@ -683,6 +751,9 @@ const EarnWithApexBee = () => {
     setFormLocation("");
     setFormExperience("");
     setFormRemarks("");
+    setPrimaryCategory("Devotional & Puja");
+    setSubCategory("");
+    setSelectedSubcategories([]);
     setBusinessName("");
     setGstNumber("");
     setPanNumber("");
@@ -694,9 +765,9 @@ const EarnWithApexBee = () => {
     setVehicleType("Two-Wheeler");
     setLicenseNumber("");
     setActiveView("apply");
-    setSelectedState("Telangana");
-    setSelectedDistrict("Hyderabad");
-    setSelectedMandal("Ameerpet");
+    setSelectedState("");
+    setSelectedDistrict("");
+    setSelectedMandal("");
   };
 
   const handleSubmitApplication = async () => {
@@ -705,11 +776,17 @@ const EarnWithApexBee = () => {
       return;
     }
 
+    if (!selectedState || !selectedDistrict || !selectedMandal) {
+      alert("Please select State, District, and Mandal.");
+      return;
+    }
+
     const type = selectedOpp?.id || "";
 
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
-      if (!businessName.trim() || !gstNumber.trim() || !panNumber.trim()) {
-        alert("Please fill in Business Name, GST Number, and PAN Number.");
+      const activeSubs = selectedSubcategories.length > 0 ? selectedSubcategories : (subCategory ? [subCategory] : []);
+      if (!businessName.trim() || !primaryCategory.trim() || activeSubs.length === 0 || !panNumber.trim()) {
+        alert("Please fill in Business Name, Primary Category, select at least one Subcategory, and PAN Number.");
         return;
       }
     } else if (type === "franchise") {
@@ -743,6 +820,7 @@ const EarnWithApexBee = () => {
     try {
       const { user, token } = getAuth();
       if (!user || !token) { navigate("/login"); return; }
+      const activeSubs = selectedSubcategories.length > 0 ? selectedSubcategories : (subCategory ? [subCategory] : []);
       const payload = {
         userId: user._id || user.id,
         role: selectedOpp?.role || "",
@@ -761,6 +839,11 @@ const EarnWithApexBee = () => {
         state: selectedState,
         district: selectedDistrict,
         mandal: selectedMandal,
+        primaryCategory: primaryCategory,
+        category: primaryCategory,
+        subCategory: activeSubs[0] || "",
+        approvedSubcategories: activeSubs,
+        subCategories: activeSubs,
         gstNumber,
         panNumber,
         aadhaarNumber,
@@ -899,7 +982,7 @@ const EarnWithApexBee = () => {
           </p>
 
           <div className="flex flex-wrap gap-3 pt-3">
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md border-none" onClick={() => setActiveView("applications")}>
+            <Button className="bg-navy hover:bg-navy/90 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md border-none" onClick={() => setActiveView("applications")}>
               <FileText className="w-4 h-4 mr-2" /> View My Applications
             </Button>
             <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 text-xs font-bold px-6 py-2.5 rounded-xl" onClick={() => {
@@ -1018,7 +1101,7 @@ const EarnWithApexBee = () => {
                   {isApproved ? (
                     <Button
                       size="sm"
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold h-9 rounded-xl border-none"
+                      className="flex-1 bg-navy hover:bg-navy/90 text-white text-[10px] font-bold h-9 rounded-xl border-none"
                       onClick={() => handleGoToPortal(opp.id)}
                     >
                       Enter Portal
@@ -1027,13 +1110,13 @@ const EarnWithApexBee = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-[10px] border-orange-200 bg-orange-50 text-orange-700 font-bold h-9 rounded-xl"
+                      className="flex-1 text-[10px] border-navy/30 bg-navy/5 text-navy font-bold h-9 rounded-xl"
                       onClick={() => setActiveView("applications")}
                     >
                       Under Review
                     </Button>
                   ) : (
-                    <Button size="sm" className="flex-1 bg-navy hover:bg-navy/95 text-white text-[10px] font-bold h-9 rounded-xl" onClick={() => openApply(opp)}>
+                    <Button size="sm" className="flex-1 bg-navy hover:bg-navy/90 text-white text-[10px] font-bold h-9 rounded-xl" onClick={() => openApply(opp)}>
                       Apply Now
                     </Button>
                   )}
@@ -1067,13 +1150,13 @@ const EarnWithApexBee = () => {
                 {story.videoLink && (
                   <Button
                     size="sm"
-                    className="mt-4 w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold rounded-xl border border-indigo-200"
+                    className="mt-4 w-full bg-navy text-white hover:bg-navy/90 text-xs font-bold rounded-xl border-none"
                     onClick={() => {
                       setVideoUrl(story.videoLink || "");
                       setShowVideoModal(true);
                     }}
                   >
-                    <Play className="w-3.5 h-3.5 mr-1 text-indigo-600" /> Play Video
+                    <Play className="w-3.5 h-3.5 mr-1 text-white" /> Play Video
                   </Button>
                 )}
               </CardContent>
@@ -1412,7 +1495,7 @@ const EarnWithApexBee = () => {
               {isApproved ? (
                 <Button
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 rounded-xl font-bold text-xs h-10 shadow-sm"
+                  className="bg-navy hover:bg-navy/90 text-white px-8 rounded-xl font-bold text-xs h-10 shadow-sm"
                   onClick={() => handleGoToPortal(opp.id)}
                 >
                   Go To Portal <ExternalLink className="w-4 h-4 ml-2" />
@@ -1421,7 +1504,7 @@ const EarnWithApexBee = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-orange-200 bg-orange-50 text-orange-700 px-8 font-bold text-xs h-10 rounded-xl animate-pulse"
+                  className="border-navy/30 bg-navy/5 text-navy px-8 font-bold text-xs h-10 rounded-xl"
                   onClick={() => setActiveView("applications")}
                 >
                   Under Review / View Application
@@ -1484,6 +1567,104 @@ const EarnWithApexBee = () => {
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Business Information</h4>
                 <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Primary Business Category *</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {parentCategoryList.map((cat: any) => {
+                      const isSelected = primaryCategory === cat.name;
+                      return (
+                        <button
+                          key={cat._id}
+                          type="button"
+                          onClick={() => {
+                            setPrimaryCategory(cat.name);
+                            setSubCategory("");
+                            setSelectedSubcategories([]);
+                          }}
+                          className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isSelected
+                              ? "bg-navy text-white border-navy shadow-md ring-2 ring-navy/20"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-navy/40 hover:bg-slate-50"
+                            }`}
+                        >
+                          <span className="truncate">{cat.name}</span>
+                          {isSelected && <span className="text-emerald-400 font-black">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {primaryCategory && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories *</label>
+                      <span className="text-[10px] text-emerald-600 font-bold">
+                        (Multi-select enabled: Click chips to toggle)
+                      </span>
+                    </div>
+
+                    {currentSubCategoriesList.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {currentSubCategoriesList.map((sub: any) => {
+                          const isSubSelected = selectedSubcategories.includes(sub.name) || subCategory === sub.name;
+                          return (
+                            <button
+                              key={sub._id}
+                              type="button"
+                              onClick={() => {
+                                if (isSubSelected) {
+                                  const updated = selectedSubcategories.filter((s: string) => s !== sub.name);
+                                  setSelectedSubcategories(updated);
+                                  setSubCategory(updated[0] || "");
+                                } else {
+                                  const updated = [...selectedSubcategories, sub.name];
+                                  setSelectedSubcategories(updated);
+                                  setSubCategory(updated[0] || sub.name);
+                                }
+                              }}
+                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${isSubSelected
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
+                                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                                }`}
+                            >
+                              <span>{isSubSelected ? "✓" : "+"}</span>
+                              <span>{sub.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                        No DB subcategories found for {primaryCategory}. You can proceed or contact admin.
+                      </div>
+                    )}
+
+                    {selectedSubcategories.length > 0 && (
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] font-bold text-emerald-800 mr-1">
+                          Selected Subcategories ({selectedSubcategories.length}):
+                        </span>
+                        {selectedSubcategories.map((sub, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white border border-emerald-300 text-emerald-700 font-bold text-[10px] rounded-lg shadow-sm">
+                            <span>{sub}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = selectedSubcategories.filter((_, i) => i !== idx);
+                                setSelectedSubcategories(updated);
+                                setSubCategory(updated[0] || "");
+                              }}
+                              className="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
                   <label className="text-xs font-bold text-slate-600 block mb-1">Business Name *</label>
                   <input
                     type="text"
@@ -1495,12 +1676,12 @@ const EarnWithApexBee = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">GST Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">GST Number (Optional)</label>
                     <input
                       type="text"
                       value={gstNumber}
                       onChange={(e) => setGstNumber(e.target.value)}
-                      placeholder="e.g. 22AAAAA0000A1Z5"
+                      placeholder="e.g. 22AAAAA0000A1Z5 (Optional)"
                       className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
@@ -1568,51 +1749,64 @@ const EarnWithApexBee = () => {
               </div>
             ) : null}
 
-            {/* General form remarks and location lists */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t text-left">
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">State *</label>
-                <select
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
-                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
-                >
-                  {Object.keys(locationData).length > 0 ? (
-                    Object.keys(locationData).map(s => <option key={s} value={s}>{s}</option>)
-                  ) : (
-                    <option value="Telangana">Telangana</option>
-                  )}
-                </select>
-              </div>
+            {/* Cascading Location Selection */}
+            <div className="space-y-3 pt-4 border-t text-left">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Territory Location Selection *</h4>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">State *</label>
+                  <select
+                    value={selectedState}
+                    onChange={(e) => {
+                      setSelectedState(e.target.value);
+                      setSelectedDistrict("");
+                      setSelectedMandal("");
+                    }}
+                    className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                  >
+                    <option value="">-- Select State --</option>
+                    {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
-                <select
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
-                >
-                  {locationData[selectedState] ? (
-                    Object.keys(locationData[selectedState]).map(d => <option key={d} value={d}>{d}</option>)
-                  ) : (
-                    <option value="Hyderabad">Hyderabad</option>
-                  )}
-                </select>
-              </div>
+                {selectedState ? (
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                    <select
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        setSelectedDistrict(e.target.value);
+                        setSelectedMandal("");
+                      }}
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                    >
+                      <option value="">-- Select District --</option>
+                      {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
+                    Select State first
+                  </div>
+                )}
 
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
-                <select
-                  value={selectedMandal}
-                  onChange={(e) => setSelectedMandal(e.target.value)}
-                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9"
-                >
-                  {locationData[selectedState]?.[selectedDistrict] ? (
-                    locationData[selectedState][selectedDistrict].map(m => <option key={m} value={m}>{m}</option>)
-                  ) : (
-                    <option value="Ameerpet">Ameerpet</option>
-                  )}
-                </select>
+                {selectedState && selectedDistrict ? (
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
+                    <select
+                      value={selectedMandal}
+                      onChange={(e) => setSelectedMandal(e.target.value)}
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                    >
+                      <option value="">-- Select Mandal --</option>
+                      {mandalOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
+                    Select District first
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1691,12 +1885,13 @@ const EarnWithApexBee = () => {
                         </p>
                         <div className="mt-2 pt-2 border-t border-emerald-200 text-[11px] text-slate-700 flex flex-wrap gap-x-4 gap-y-1 font-mono">
                           <span>Verified Category: <strong>{(app as any).primaryCategory || (app as any).category || "Food & Restaurant"}</strong></span>
+                          {(app as any).subCategory && <span>Subcategory: <strong>{(app as any).subCategory}</strong></span>}
                           <span>Portal URL: <a href="http://localhost:5177" target="_blank" rel="noreferrer" className="text-primary underline font-bold">http://localhost:5177</a></span>
                         </div>
                       </div>
                       <Button
                         onClick={() => handleGoToPortal(app.role.replace("Become a ", "").replace("Partner", "").replace("Provider", "").replace(" ", "_").toLowerCase())}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4" /> Enter Vendor Business Dashboard
                       </Button>
