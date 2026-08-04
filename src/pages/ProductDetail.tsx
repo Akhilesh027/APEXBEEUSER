@@ -60,36 +60,102 @@ const ProductDetail = () => {
   // Variant & attributes selection state
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
 
-  // Deduplicate attributes for rendering (handles legacy title case & snake_case duplicate keys)
+  // Deduplicate attributes for rendering (extracts from both product.attributes and product.variants)
   const formattedAttributes = useMemo(() => {
-    if (!product?.attributes) return [];
-    const entries = Object.entries(product.attributes);
-    const resultMap = new Map<string, { key: string; label: string; values: any; valueStr: string }>();
+    const resultMap = new Map<string, { key: string; label: string; values: string[]; valueStr: string }>();
 
-    entries.forEach(([key, rawVal]) => {
+    // 1. Extract from product.attributes
+    if (product?.attributes && typeof product.attributes === 'object') {
+      Object.entries(product.attributes).forEach(([key, rawVal]) => {
+        if (rawVal === undefined || rawVal === null || rawVal === '') return;
+        const valArr = Array.isArray(rawVal) ? rawVal.map(String) : [String(rawVal)];
+        if (valArr.length === 0) return;
+
+        const cleanKey = key.toLowerCase().replace(/[^a-z0-9]+/g, '');
+        const label = key.includes('_')
+          ? key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+          : key.charAt(0).toUpperCase() + key.slice(1);
+
+        resultMap.set(cleanKey, { key, label, values: valArr, valueStr: valArr.join(', ') });
+      });
+    }
+
+    // 2. Extract from product.variants if present
+    if (product?.variants && Array.isArray(product.variants)) {
+      product.variants.forEach((v: any) => {
+        if (v?.attributes && typeof v.attributes === 'object') {
+          Object.entries(v.attributes).forEach(([key, val]) => {
+            if (val === undefined || val === null || val === '') return;
+            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]+/g, '');
+            const strVal = String(val);
+
+            if (resultMap.has(cleanKey)) {
+              const item = resultMap.get(cleanKey)!;
+              if (!item.values.includes(strVal)) {
+                item.values.push(strVal);
+                item.valueStr = item.values.join(', ');
+              }
+            } else {
+              const label = key.includes('_')
+                ? key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                : key.charAt(0).toUpperCase() + key.slice(1);
+              resultMap.set(cleanKey, { key, label, values: [strVal], valueStr: strVal });
+            }
+          });
+        }
+      });
+    }
+
+    return Array.from(resultMap.values()).filter(item => item.values && item.values.length > 1);
+  }, [product?.attributes, product?.variants]);
+
+  // Extract all single-value specifications from attributes, specifications, compliance & rules
+  const allSpecifications = useMemo(() => {
+    if (!product) return [];
+    const map = new Map<string, { label: string; value: string }>();
+
+    const addSpec = (rawKey: string, rawVal: any) => {
       if (rawVal === undefined || rawVal === null || rawVal === '') return;
       if (Array.isArray(rawVal) && rawVal.length === 0) return;
 
       const valStr = Array.isArray(rawVal) ? rawVal.join(', ') : String(rawVal);
-      const cleanKey = key.toLowerCase().replace(/[^a-z0-9]+/g, '');
+      const cleanKey = rawKey.toLowerCase().replace(/[^a-z0-9]+/g, '');
 
-      let existingKey = Array.from(resultMap.keys()).find(k => {
-        if (k === cleanKey) return true;
-        const item = resultMap.get(k);
-        return item?.valueStr === valStr && (k.includes(cleanKey) || cleanKey.includes(k));
-      });
-
-      if (!existingKey) {
-        const label = key.includes('_')
-          ? key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-          : key;
-
-        resultMap.set(cleanKey, { key, label, values: rawVal, valueStr: valStr });
+      if (!map.has(cleanKey)) {
+        const label = rawKey.includes('_')
+          ? rawKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+          : rawKey.charAt(0).toUpperCase() + rawKey.slice(1);
+        map.set(cleanKey, { label, value: valStr });
       }
-    });
+    };
 
-    return Array.from(resultMap.values());
-  }, [product?.attributes]);
+    if (product.specifications && typeof product.specifications === 'object') {
+      Object.entries(product.specifications).forEach(([k, v]) => addSpec(k, v));
+    }
+    if (product.attributes && typeof product.attributes === 'object') {
+      Object.entries(product.attributes).forEach(([k, v]) => {
+        if (!Array.isArray(v) || v.length === 1) {
+          addSpec(k, v);
+        }
+      });
+    }
+    if (product.complianceRules && typeof product.complianceRules === 'object') {
+      Object.entries(product.complianceRules).forEach(([k, v]) => addSpec(k, v));
+    }
+
+    return Array.from(map.values());
+  }, [product]);
+
+  const deliveryReachText = useMemo(() => {
+    if (!product) return { icon: "📍", text: "Local Quick Delivery", badge: "Local Delivery" };
+    const scope = product.deliveryScope;
+    const isLocal = product.isLocalDelivery !== false && (scope === 'local' || scope === 'both' || !scope);
+    const isPan = product.isPanIndia || scope === 'pan_india' || scope === 'both';
+
+    if (isLocal && isPan) return { icon: "📍🌐", text: "Local 15-30 Min Express & Pan India Courier Shipping", badge: "Express & Pan-India" };
+    if (isPan) return { icon: "🌐", text: "Pan India Courier Delivery Available", badge: "Pan-India Shipping" };
+    return { icon: "📍", text: "Local Quick Delivery (15-30 mins in vendor area)", badge: "Local Quick Delivery" };
+  }, [product?.deliveryScope, product?.isPanIndia, product?.isLocalDelivery]);
 
   useEffect(() => {
     if (product?.attributes) {
@@ -114,6 +180,34 @@ const ProductDetail = () => {
       });
     });
   }, [product?.variants, selectedAttrs]);
+
+  // MOQ - update quantity to MOQ when product loads or variant changes
+  const moq = useMemo(() => {
+    let raw = product?.minimumOrderQuantity ?? product?.moq ?? product?.wholesaleRules?.minOrderQty ?? product?.inventoryRules?.minOrderQty;
+
+    const findInAttrs = (attrsObj: any) => {
+      if (!attrsObj || typeof attrsObj !== 'object') return null;
+      for (const [key, val] of Object.entries(attrsObj)) {
+        const k = key.toLowerCase();
+        if (k.includes('moq') || k.includes('minimum order')) {
+          const num = Number(val);
+          if (!isNaN(num) && num > 0) return num;
+        }
+      }
+      return null;
+    };
+
+    const attrMoq = findInAttrs(selectedVariant?.attributes) ?? findInAttrs(product?.attributes);
+    const finalMoq = attrMoq || Number(raw) || 1;
+    return Math.max(1, finalMoq);
+  }, [product, selectedVariant]);
+
+  // When MOQ changes (product loads or variant selected), enforce quantity >= MOQ
+  useEffect(() => {
+    if (moq > 1) {
+      setQuantity((q) => Math.max(moq, q));
+    }
+  }, [moq]);
 
   // Mapped fields for backend schema / legacy compatibility
   const title = product.name || product.itemName || "Product";
@@ -150,7 +244,7 @@ const ProductDetail = () => {
   const deliveryFee = shippingCharge;
   const description = product.description || "";
   const stock = selectedVariant ? selectedVariant.stock : (product.stock ?? 0);
-  const isOutOfStock = stock <= 0;
+  const isOutOfStock = stock <= 0 || stock < moq;
 
   // ✅ Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -369,14 +463,20 @@ const ProductDetail = () => {
     );
   };
 
-  // ✅ Add to Cart – now includes deliveryFee
+  // ✅ Add to Cart – now includes deliveryFee & MOQ check
   const handleAddToCart = async () => {
+    if (quantity < moq) {
+      alert(`⚠️ Minimum order quantity for this item is ${moq} units.`);
+      setQuantity(moq);
+      return;
+    }
+
     const item = {
       productId: product._id,
       name: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
       price: afterDiscount,
       image: images[0],
-      quantity,
+      quantity: Math.max(quantity, moq),
       selectedColor: selectedAttrs.color || "default",
       selectedSize: selectedAttrs.size || "default",
       selectedAttributes: selectedAttrs,
@@ -429,7 +529,7 @@ const ProductDetail = () => {
     }
   };
 
-  // ✅ Buy Now – uses product's delivery fee instead of fixed ₹50
+  // ✅ Buy Now – uses product's delivery fee instead of fixed ₹50 & enforces MOQ
   const handleBuyNow = () => {
     if (!user) {
       alert("Please login first.");
@@ -437,14 +537,21 @@ const ProductDetail = () => {
       return;
     }
 
+    const buyQuantity = Math.max(quantity, moq);
+
+    if (quantity < moq) {
+      alert(`⚠️ Minimum order quantity for this item is ${moq} units.`);
+      setQuantity(moq);
+    }
+
     const baseSellingPrice = selectedVariant
       ? selectedVariant.sellingPrice
       : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0);
 
-    const subtotal = baseSellingPrice * quantity;
-    const discount = Math.max(0, userPrice - baseSellingPrice) * quantity;
-    const totalPacking = packingCharge * quantity;
-    const totalShipping = deliveryFee * quantity;
+    const subtotal = baseSellingPrice * buyQuantity;
+    const discount = Math.max(0, userPrice - baseSellingPrice) * buyQuantity;
+    const totalPacking = packingCharge * buyQuantity;
+    const totalShipping = deliveryFee * buyQuantity;
     const taxableAmount = subtotal + totalPacking + totalShipping;
     const gstAmount = Math.round(taxableAmount * 0.05);
     const total = taxableAmount + gstAmount;
@@ -463,7 +570,7 @@ const ProductDetail = () => {
           packingCharge: packingCharge,
           sellingPrice: baseSellingPrice,
           images,
-          quantity
+          quantity: buyQuantity
         }],
         subtotal,
         discount,
@@ -568,10 +675,42 @@ const ProductDetail = () => {
               )}
             </div>
 
+            {/* 🚨 BULK / WHOLESALE PRODUCT ALERT BANNER */}
+            {moq > 1 && (
+              <div className="mb-6 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-2 border-amber-400/90 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="bg-amber-400 text-amber-950 p-2.5 rounded-xl text-xl shrink-0 font-extrabold shadow-sm">
+                    📦
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <span className="bg-amber-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider shadow-xs">
+                        Bulk / Wholesale Item
+                      </span>
+                      <span className="text-xs font-black text-amber-950 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-300">
+                        MOQ: {moq} Units Minimum
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-950 font-bold leading-relaxed">
+                      ⚠️ <strong>Bulk Product Alert:</strong> This product requires a minimum order quantity of <strong>{moq} units</strong> per purchase.
+                    </p>
+                    <div className="text-[11px] font-semibold text-amber-900 pt-2 border-t border-amber-300/60 flex items-center justify-between flex-wrap gap-1">
+                      <span>Unit Price: <strong>{formatCurrency(afterDiscount)}</strong> / unit</span>
+                      <span className="font-black text-amber-950 text-xs">
+                        Min. Order Cost: {formatCurrency(afterDiscount * moq)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Stock status indicator */}
             <div className="mb-4 text-sm">
               {isOutOfStock ? (
-                <span className="text-red-500 font-bold">Out of Stock</span>
+                <span className="text-red-500 font-bold">
+                  Out of Stock {stock > 0 ? `(Stock ${stock} is below MOQ requirement of ${moq} units)` : ""}
+                </span>
               ) : (
                 <span className="text-green-600 font-bold">
                   In Stock {stock < 10 ? `(Only ${stock} left!)` : `(${stock} available)`}
@@ -579,16 +718,23 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* ✅ Optional: Show delivery fee (included in price) */}
-            {deliveryFee > 0 ? (
-              <div className="mb-4 text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
-                🚚 Delivery fee of {formatCurrency(deliveryFee)} included in price
+            {/* Delivery fee & Reach Badges */}
+            <div className="mb-4 flex flex-wrap gap-2 items-center">
+              {deliveryFee > 0 ? (
+                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
+                  🚚 Delivery fee of {formatCurrency(deliveryFee)} included in price
+                </div>
+              ) : (
+                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
+                  🚚 Free Delivery
+                </div>
+              )}
+
+              <div className="text-xs font-semibold text-indigo-700 bg-indigo-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-indigo-200">
+                <span>{deliveryReachText.icon}</span>
+                <span>{deliveryReachText.badge}</span>
               </div>
-            ) : (
-              <div className="mb-4 text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
-                🚚 Free Delivery
-              </div>
-            )}
+            </div>
 
             {/* Attribute/Variant Selectors */}
             {formattedAttributes.length > 0 && (
@@ -623,40 +769,65 @@ const ProductDetail = () => {
             )}
 
             {/* Quantity */}
-            <div className="mb-6 flex items-center gap-4">
-              Quantity:
-              <div className="flex items-center border rounded-lg overflow-hidden">
-                <Button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={isOutOfStock}>
-                  -
-                </Button>
-                <span className="px-4">{quantity}</span>
-                <Button type="button" onClick={() => setQuantity((q) => q + 1)} disabled={isOutOfStock}>
-                  +
-                </Button>
+            <div className="mb-6">
+              <div className="flex items-center gap-4 text-xs font-bold text-navy mb-2">
+                Quantity:
+                <div className="flex items-center border rounded-lg overflow-hidden">
+                  <Button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(moq, q - 1))}
+                    disabled={isOutOfStock || quantity <= moq}
+                    className="px-3"
+                  >
+                    -
+                  </Button>
+                  <span className="px-4 min-w-[40px] text-center">{quantity}</span>
+                  <Button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    disabled={isOutOfStock}
+                    className="px-3"
+                  >
+                    +
+                  </Button>
+                </div>
               </div>
+
+              {/* MOQ badge */}
+              {moq > 1 && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  <span className="text-amber-600 font-black text-sm">📦</span>
+                  <div>
+                    <p className="text-xs font-extrabold text-amber-800">Bulk / Wholesale Product</p>
+                    <p className="text-[10px] text-amber-700 font-medium">
+                      Minimum order quantity: <strong>{moq} units</strong> — Cannot add fewer than {moq} items to cart.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4">
-              <Button onClick={handleAddToCart} className="flex-1 bg-accent text-white" disabled={isOutOfStock}>
+              <Button onClick={handleAddToCart} className="flex-1 bg-accent text-white font-bold" disabled={isOutOfStock}>
                 Add to Cart
               </Button>
-              <Button onClick={handleBuyNow} className="flex-1 bg-navy text-white" disabled={isOutOfStock}>
+              <Button onClick={handleBuyNow} className="flex-1 bg-navy text-white font-bold" disabled={isOutOfStock}>
                 Buy Now
               </Button>
             </div>
 
-
             {/* Category Specifications & Dynamic Specs Table */}
             <div className="bg-slate-50 border border-slate-200/80 p-6 rounded-2xl mt-6 space-y-4 shadow-sm">
-              <h3 className="font-extrabold text-sm text-navy uppercase tracking-wider border-b border-slate-200 pb-2">
-                Product & Category Specifications
+              <h3 className="font-extrabold text-sm text-navy uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center justify-between">
+                <span>📋 Specifications &amp; Product Details</span>
+                <span className="text-[10px] text-muted-foreground font-semibold lowercase">verified product specs</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {product.categoryName && (
+                {(product.categoryName || product.categoryId?.name) && (
                   <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
                     <span className="text-muted-foreground font-medium">Category:</span>
-                    <span className="font-bold text-navy">{product.categoryName}</span>
+                    <span className="font-bold text-navy">{product.categoryName || product.categoryId?.name}</span>
                   </div>
                 )}
 
@@ -667,12 +838,17 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {product.sku && (
+                {(product.sku || selectedVariant?.sku) && (
                   <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
                     <span className="text-muted-foreground font-medium">SKU Code:</span>
                     <span className="font-mono text-indigo-600 font-bold">{selectedVariant?.sku || product.sku}</span>
                   </div>
                 )}
+
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
+                  <span className="text-muted-foreground font-medium">Shipping Scope:</span>
+                  <span className="font-bold text-emerald-600">{deliveryReachText.badge}</span>
+                </div>
 
                 {stock > 0 && (
                   <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
@@ -681,23 +857,26 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {/* Render Dynamic Specifications Key-Value Pairs */}
-                {formattedAttributes.map(({ key, label, valueStr }) => {
-                  const val = selectedAttrs[key] || valueStr;
-                  if (!val) return null;
-                  return (
-                    <div key={key} className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between capitalize">
-                      <span className="text-muted-foreground font-medium">{label}:</span>
-                      <span className="font-bold text-navy">{String(val)}</span>
-                    </div>
-                  );
-                })}
+                {moq > 1 && (
+                  <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 flex justify-between">
+                    <span className="text-amber-800 font-medium">Minimum Order (MOQ):</span>
+                    <span className="font-extrabold text-amber-900">{moq} Units Required</span>
+                  </div>
+                )}
+
+                {/* Render Dynamic Attributes & Specifications Key-Value Pairs */}
+                {allSpecifications.map(({ label, value }) => (
+                  <div key={label} className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between capitalize">
+                    <span className="text-muted-foreground font-medium">{label}:</span>
+                    <span className="font-bold text-navy">{value}</span>
+                  </div>
+                ))}
               </div>
 
               {description && (
-                <div className="pt-2 border-t border-slate-200">
-                  <span className="text-xs font-bold text-navy block mb-1">Description:</span>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+                <div className="pt-3 border-t border-slate-200">
+                  <span className="text-xs font-bold text-navy block mb-1">Product Description:</span>
+                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{description}</p>
                 </div>
               )}
             </div>

@@ -597,9 +597,7 @@ const EarnWithApexBee = () => {
             });
           });
 
-          if (Object.keys(finalData).length > 0) {
-            setLocationData(finalData);
-          }
+          setLocationData(finalData);
         }
       } catch (err) {
         console.error("Error fetching territories:", err);
@@ -689,27 +687,17 @@ const EarnWithApexBee = () => {
   }, [selectedDistrict, selectedState, locationData]);
 
   const stateOptions = useMemo(() => {
-    const keys = Object.keys(locationData || {});
-    return keys.length > 0 ? keys : ["Telangana", "Andhra Pradesh", "Karnataka"];
+    return Object.keys(locationData || {});
   }, [locationData]);
 
   const districtOptions = useMemo(() => {
-    if (!selectedState) return [];
-    const dists = Object.keys(locationData[selectedState] || {});
-    if (dists.length > 0) return dists;
-    if (selectedState === "Telangana") return ["Hyderabad", "Rangareddy", "Warangal", "Medak", "Nizamabad"];
-    if (selectedState === "Andhra Pradesh") return ["Nellore", "Tirupati", "Vijayawada", "Visakhapatnam", "Guntur"];
-    return ["Central", "North", "South", "East", "West"];
+    if (!selectedState || !locationData[selectedState]) return [];
+    return Object.keys(locationData[selectedState] || {});
   }, [selectedState, locationData]);
 
   const mandalOptions = useMemo(() => {
-    if (!selectedState || !selectedDistrict) return [];
-    const mnds = locationData[selectedState]?.[selectedDistrict] || [];
-    if (mnds.length > 0) return mnds;
-    if (selectedDistrict === "Hyderabad") return ["Ameerpet", "Banjara Hills", "Jubilee Hills", "Kukatpally", "Secunderabad", "Madhapur"];
-    if (selectedDistrict === "Nellore") return ["Nellore Urban", "Nellore Rural", "Kavali", "Gudur", "Atmakur"];
-    if (selectedDistrict === "Tirupati") return ["Tirupati Urban", "Tirupati Rural", "Chandragiri", "Srikalahasti"];
-    return ["Mandal 1", "Mandal 2", "Mandal 3"];
+    if (!selectedState || !selectedDistrict || !locationData[selectedState]?.[selectedDistrict]) return [];
+    return locationData[selectedState][selectedDistrict] || [];
   }, [selectedState, selectedDistrict, locationData]);
 
   const handleGoToPortal = (oppId: string) => {
@@ -959,7 +947,20 @@ const EarnWithApexBee = () => {
     };
   }, [calcRole, calcOrders, calcAvgValue]);
 
-  const activeLocationsList = ["Tirupati", "Nellore", "Vijayawada", "Hyderabad"];
+  const activeLocationsList = useMemo(() => {
+    const locs: string[] = [];
+    Object.keys(locationData || {}).forEach((st) => {
+      Object.keys(locationData[st] || {}).forEach((dst) => {
+        const mnds = locationData[st][dst] || [];
+        if (mnds.length > 0) {
+          mnds.forEach((mnd) => locs.push(`${mnd}, ${dst} (${st})`));
+        } else {
+          locs.push(`${dst} (${st})`);
+        }
+      });
+    });
+    return locs;
+  }, [locationData]);
 
   // ─── HOME VIEW ────────────────────────────────────────────────────
   const renderHome = () => (
@@ -1291,17 +1292,25 @@ const EarnWithApexBee = () => {
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             <p className="text-xs text-slate-500">Territories actively onboarding vendors and franchise operations:</p>
-            <div className="grid grid-cols-2 gap-3">
-              {activeLocationsList.map((loc) => (
-                <div key={loc} className="bg-white border rounded-xl p-3 shadow-inner flex items-center gap-2">
-                  <span className="text-indigo-600 text-lg">📍</span>
-                  <div>
-                    <h5 className="font-extrabold text-navy text-xs leading-none">{loc}</h5>
-                    <span className="text-[9px] text-emerald-600 font-bold">Active Onboarding</span>
+            {activeLocationsList.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {activeLocationsList.map((loc) => (
+                  <div key={loc} className="bg-white border rounded-xl p-3 shadow-inner flex items-center gap-2">
+                    <span className="text-indigo-600 text-lg">📍</span>
+                    <div>
+                      <h5 className="font-extrabold text-navy text-xs leading-none">{loc}</h5>
+                      <span className="text-[9px] text-emerald-600 font-bold">Active Onboarding</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-5 text-center space-y-1">
+                <MapPin className="w-6 h-6 text-slate-300 mx-auto" />
+                <h5 className="font-bold text-slate-600 text-xs">No Active Territories Added Yet</h5>
+                <p className="text-[11px] text-slate-400">Territories will appear here once configured in the admin panel.</p>
+              </div>
+            )}
             <div className="rounded-xl border bg-yellow-50/30 border-yellow-100 p-3 text-xs text-yellow-800 font-semibold">
               ⚠️ Slots are locked mandal-wise. Apply early to ensure territory exclusivity.
             </div>
@@ -1581,8 +1590,8 @@ const EarnWithApexBee = () => {
                             setSelectedSubcategories([]);
                           }}
                           className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isSelected
-                              ? "bg-navy text-white border-navy shadow-md ring-2 ring-navy/20"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-navy/40 hover:bg-slate-50"
+                            ? "bg-navy text-white border-navy shadow-md ring-2 ring-navy/20"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-navy/40 hover:bg-slate-50"
                             }`}
                         >
                           <span className="truncate">{cat.name}</span>
@@ -1622,8 +1631,8 @@ const EarnWithApexBee = () => {
                                 }
                               }}
                               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${isSubSelected
-                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
-                                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
+                                : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                                 }`}
                             >
                               <span>{isSubSelected ? "✓" : "+"}</span>
@@ -1674,14 +1683,14 @@ const EarnWithApexBee = () => {
                     className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">GST Number (Optional)</label>
                     <input
                       type="text"
                       value={gstNumber}
                       onChange={(e) => setGstNumber(e.target.value)}
-                      placeholder="e.g. 22AAAAA0000A1Z5 (Optional)"
+                      placeholder="e.g. 22AAAAA0000A1Z5"
                       className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
@@ -1692,7 +1701,17 @@ const EarnWithApexBee = () => {
                       value={panNumber}
                       onChange={(e) => setPanNumber(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar Number (Optional)</label>
+                    <input
+                      type="text"
+                      value={aadhaarNumber}
+                      onChange={(e) => setAadhaarNumber(e.target.value)}
+                      placeholder="12-digit Aadhaar Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
                     />
                   </div>
                 </div>
@@ -1712,7 +1731,7 @@ const EarnWithApexBee = () => {
                     className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">Franchise Tier *</label>
                     <select
@@ -1745,6 +1764,136 @@ const EarnWithApexBee = () => {
                       className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                     />
                   </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar *</label>
+                    <input
+                      type="text"
+                      value={aadhaarNumber}
+                      onChange={(e) => setAadhaarNumber(e.target.value)}
+                      placeholder="Aadhaar code"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedOpp.id === "delivery_partner" ? (
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
+                <h4 className="text-sm font-semibold text-navy">Delivery Partner & Vehicle Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Vehicle Type *</label>
+                    <select
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
+                    >
+                      <option value="Two-Wheeler">Two-Wheeler (Bike/Scooter)</option>
+                      <option value="Electric Vehicle">Electric Vehicle (EV)</option>
+                      <option value="Three-Wheeler">Three-Wheeler (Auto/Loader)</option>
+                      <option value="Four-Wheeler">Four-Wheeler (Mini Truck/Van)</option>
+                      <option value="Bicycle">Bicycle</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Driving License Number *</label>
+                    <input
+                      type="text"
+                      value={licenseNumber}
+                      onChange={(e) => setLicenseNumber(e.target.value)}
+                      placeholder="e.g. TS0820210001234"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar Number *</label>
+                    <input
+                      type="text"
+                      value={aadhaarNumber}
+                      onChange={(e) => setAadhaarNumber(e.target.value)}
+                      placeholder="12-digit Aadhaar Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedOpp.id === "service_provider" ? (
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
+                <h4 className="text-sm font-semibold text-navy">Service Provider & Entity Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Service Business/Entity Name *</label>
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="e.g. Apex Repair & Maintenance"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Primary Service Offered *</label>
+                    <input
+                      type="text"
+                      value={serviceType}
+                      onChange={(e) => setServiceType(e.target.value)}
+                      placeholder="e.g. Electrician, Plumbing, AC Repair"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <input
+                      type="text"
+                      value={panNumber}
+                      onChange={(e) => setPanNumber(e.target.value)}
+                      placeholder="e.g. ABCDE1234F"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar Number *</label>
+                    <input
+                      type="text"
+                      value={aadhaarNumber}
+                      onChange={(e) => setAadhaarNumber(e.target.value)}
+                      placeholder="12-digit Aadhaar Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedOpp.id === "entrepreneur" ? (
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
+                <h4 className="text-sm font-semibold text-navy">Identity & Network Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <input
+                      type="text"
+                      value={panNumber}
+                      onChange={(e) => setPanNumber(e.target.value)}
+                      placeholder="e.g. ABCDE1234F"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar Number *</label>
+                    <input
+                      type="text"
+                      value={aadhaarNumber}
+                      onChange={(e) => setAadhaarNumber(e.target.value)}
+                      placeholder="12-digit Aadhaar Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1752,62 +1901,68 @@ const EarnWithApexBee = () => {
             {/* Cascading Location Selection */}
             <div className="space-y-3 pt-4 border-t text-left">
               <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Territory Location Selection *</h4>
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">State *</label>
-                  <select
-                    value={selectedState}
-                    onChange={(e) => {
-                      setSelectedState(e.target.value);
-                      setSelectedDistrict("");
-                      setSelectedMandal("");
-                    }}
-                    className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
-                  >
-                    <option value="">-- Select State --</option>
-                    {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+              {stateOptions.length === 0 ? (
+                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-medium">
+                  📍 <strong>No operational territories added yet.</strong> Territories will become available once configured by the admin team.
                 </div>
-
-                {selectedState ? (
+              ) : (
+                <div className="grid sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">State *</label>
                     <select
-                      value={selectedDistrict}
+                      value={selectedState}
                       onChange={(e) => {
-                        setSelectedDistrict(e.target.value);
+                        setSelectedState(e.target.value);
+                        setSelectedDistrict("");
                         setSelectedMandal("");
                       }}
                       className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
                     >
-                      <option value="">-- Select District --</option>
-                      {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                      <option value="">-- Select State --</option>
+                      {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-                ) : (
-                  <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
-                    Select State first
-                  </div>
-                )}
 
-                {selectedState && selectedDistrict ? (
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
-                    <select
-                      value={selectedMandal}
-                      onChange={(e) => setSelectedMandal(e.target.value)}
-                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
-                    >
-                      <option value="">-- Select Mandal --</option>
-                      {mandalOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
-                    Select District first
-                  </div>
-                )}
-              </div>
+                  {selectedState ? (
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                      <select
+                        value={selectedDistrict}
+                        onChange={(e) => {
+                          setSelectedDistrict(e.target.value);
+                          setSelectedMandal("");
+                        }}
+                        className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                      >
+                        <option value="">-- Select District --</option>
+                        {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
+                      Select State first
+                    </div>
+                  )}
+
+                  {selectedState && selectedDistrict ? (
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
+                      <select
+                        value={selectedMandal}
+                        onChange={(e) => setSelectedMandal(e.target.value)}
+                        className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                      >
+                        <option value="">-- Select Mandal --</option>
+                        {mandalOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
+                      Select District first
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="text-left">
@@ -1861,6 +2016,39 @@ const EarnWithApexBee = () => {
         <div className="grid md:grid-cols-2 gap-6">
           {applications.map((app) => {
             const statusInfo = APPLICATION_STATUS[app.status] || { label: app.status, color: "bg-gray-100 text-gray-700" };
+
+            const roleStr = (app.role || app.applicationType || "").toLowerCase();
+            let appRoleKey = "vendor";
+            let portalLabel = "Vendor Business Dashboard";
+            let portalUrl = PORTAL_LINKS.vendor || "http://localhost:5177";
+            const isVendorRole = roleStr.includes("vendor") || app.applicationType === "vendor";
+
+            if (roleStr.includes("franchise")) {
+              appRoleKey = "franchise";
+              portalLabel = "Franchise Management Portal";
+              portalUrl = PORTAL_LINKS.franchise || "http://localhost:5175";
+            } else if (roleStr.includes("entrepreneur")) {
+              appRoleKey = "entrepreneur";
+              portalLabel = "Entrepreneur Partner Portal";
+              portalUrl = PORTAL_LINKS.franchise || "http://localhost:5175";
+            } else if (roleStr.includes("service")) {
+              appRoleKey = "service_provider";
+              portalLabel = "Service Provider Portal";
+              portalUrl = PORTAL_LINKS.service_provider || "http://localhost:5176";
+            } else if (roleStr.includes("delivery")) {
+              appRoleKey = "delivery_partner";
+              portalLabel = "Delivery Partner Portal";
+              portalUrl = "http://localhost:5178";
+            } else if (roleStr.includes("course") || roleStr.includes("academy")) {
+              appRoleKey = "course_provider";
+              portalLabel = "Digital Academy Portal";
+              portalUrl = PORTAL_LINKS.course_provider || "http://localhost:5174";
+            } else if (roleStr.includes("wholesaler") || roleStr.includes("manufacturer")) {
+              appRoleKey = "vendor";
+              portalLabel = "B2B Merchant Portal";
+              portalUrl = PORTAL_LINKS.vendor || "http://localhost:5177";
+            }
+
             return (
               <Card key={app._id} className="border border-slate-200 bg-white rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex justify-between items-start">
@@ -1878,33 +2066,39 @@ const EarnWithApexBee = () => {
                     <div className="space-y-3">
                       <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold space-y-1">
                         <p className="text-sm text-emerald-700 font-extrabold flex items-center gap-1.5">
-                          🎉 Congratulations! Your Business is Verified!
+                          🎉 Congratulations! Your Application is Verified!
                         </p>
                         <p className="text-[11px] text-emerald-600 font-medium">
-                          Admin has verified your KYC and assigned your business category. You can now enter your dedicated Vendor Portal.
+                          Admin has verified your KYC and approved your {app.role || "business"} application. You can now enter your dedicated partner portal.
                         </p>
                         <div className="mt-2 pt-2 border-t border-emerald-200 text-[11px] text-slate-700 flex flex-wrap gap-x-4 gap-y-1 font-mono">
-                          <span>Verified Category: <strong>{(app as any).primaryCategory || (app as any).category || "Food & Restaurant"}</strong></span>
-                          {(app as any).subCategory && <span>Subcategory: <strong>{(app as any).subCategory}</strong></span>}
-                          <span>Portal URL: <a href="http://localhost:5177" target="_blank" rel="noreferrer" className="text-primary underline font-bold">http://localhost:5177</a></span>
+                          {isVendorRole && ((app as any).primaryCategory || (app as any).category) && (
+                            <span>Verified Category: <strong>{(app as any).primaryCategory || (app as any).category}</strong></span>
+                          )}
+                          {isVendorRole && (app as any).subCategory && (
+                            <span>Subcategory: <strong>{(app as any).subCategory}</strong></span>
+                          )}
+                          <span>Portal URL: <a href={portalUrl} target="_blank" rel="noreferrer" className="text-primary underline font-bold">{portalUrl}</a></span>
                         </div>
                       </div>
                       <Button
-                        onClick={() => handleGoToPortal(app.role.replace("Become a ", "").replace("Partner", "").replace("Provider", "").replace(" ", "_").toLowerCase())}
+                        onClick={() => handleGoToPortal(appRoleKey)}
                         className="w-full bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <ExternalLink className="w-4 h-4" /> Enter Vendor Business Dashboard
+                        <ExternalLink className="w-4 h-4" /> Enter {portalLabel}
                       </Button>
                     </div>
                   ) : app.status === "pre_approved" ? (
                     <div className="space-y-3">
                       <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 text-xs rounded-xl space-y-1">
                         <p className="font-extrabold text-blue-800 flex items-center gap-1.5">
-                          ✅ Application Pre-Approved! Category Assigned.
+                          ✅ Application Pre-Approved!
                         </p>
-                        <p className="text-[11px]">
-                          Admin has assigned your Primary Business Category: <strong className="text-navy font-bold">{(app as any).primaryCategory || (app as any).category || "Food & Restaurant"}</strong>.
-                        </p>
+                        {isVendorRole && ((app as any).primaryCategory || (app as any).category) && (
+                          <p className="text-[11px]">
+                            Admin has assigned your Primary Business Category: <strong className="text-navy font-bold">{(app as any).primaryCategory || (app as any).category}</strong>.
+                          </p>
+                        )}
                         <p className="text-[11px] text-blue-700 font-semibold pt-1">
                           Please complete your KYC document form below to complete final verification.
                         </p>
@@ -1928,7 +2122,7 @@ const EarnWithApexBee = () => {
                         ⏳ Application Pending Admin Approval
                       </p>
                       <p className="text-[11px] text-amber-700 font-medium">
-                        Your application has been received. Admin is reviewing your details and assigning your Primary Business Category. Please check back shortly.
+                        Your application has been received. Admin is reviewing your details. Please check back shortly.
                       </p>
                     </div>
                   ) : (

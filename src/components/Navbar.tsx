@@ -834,13 +834,9 @@ const Navbar = () => {
               <Link to="/academy" className="hover:text-accent transition">
                 ACADEMY
               </Link>
-              <Link to="/travel" className="hover:text-accent transition">
-                TRAVEL
-              </Link>
               <Link to="/community" className="hover:text-accent transition">
                 COMMUNITY
               </Link>
-
               {/* Earn With Us */}
               <div className="relative" ref={earnRef}>
                 <Button
@@ -861,25 +857,25 @@ const Navbar = () => {
                       🚀 OPPORTUNITIES MARKETPLACE
                     </Link>
                     <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold"
+                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
                       onClick={() => handleOpenForm("Become a Vendor", "vendor")}
                     >
                       BECOME A VENDOR
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold"
+                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
                       onClick={() => handleOpenForm("Become a Franchiser", "franchiser")}
                     >
                       BECOME A FRANCHISER
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold"
+                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
                       onClick={() => handleOpenForm("Become a Freelancer", "freelancer")}
                     >
                       BECOME A FREELANCER
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold"
+                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
                       onClick={() => handleOpenForm("Become an Entrepreneur", "entrepreneur")}
                     >
                       BECOME AN ENTREPRENEUR
@@ -888,7 +884,7 @@ const Navbar = () => {
                 )}
               </div>
 
-              <Link to="/referrals" className="hover:text-accent transition">
+              <Link to="/referrals" className="hover:text-accent transition text-amber-400 font-extrabold">
                 REFER & EARN
               </Link>
             </div>
@@ -1419,18 +1415,18 @@ const Navbar = () => {
                 ACADEMY
               </Link>
               <Link
-                to="/travel"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                TRAVEL
-              </Link>
-              <Link
                 to="/community"
                 className="block py-2 hover:text-accent transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 COMMUNITY
+              </Link>
+              <Link
+                to="/referrals"
+                className="block py-2 hover:text-accent transition text-amber-400 font-extrabold"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                REFER & EARN
               </Link>
 
               {/* Mobile Earn dropdown */}

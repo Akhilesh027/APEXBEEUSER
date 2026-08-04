@@ -187,18 +187,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
 
             {/* 6. Delivery Type & 7. Distance + Delivery Charges */}
-            <div className="bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold space-y-0.5">
+            <div className="bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold space-y-0.5 mt-2">
               <div className="flex items-center justify-between">
-                <span className="text-accent uppercase text-[8px] font-black tracking-wider">Hyperlocal</span>
+                <span className="text-accent shrink-0 font-extrabold">
+                  {(product as any).isCourierShipping || ((product as any).calculatedDistanceKm && (product as any).calculatedDistanceKm > 20)
+                    ? "🌐 Courier [2-4 Days]"
+                    : "⚡ Fast Delivery (15-30 Mins)"}
+                </span>
                 <span className="text-primary font-black uppercase text-[8px] bg-primary/10 px-1 rounded">
-                  {product.deliveryMode || "Platform"}
+                  {(product as any).deliveryMode === "platform_delivery" || (product as any).deliveryMode === "Platform" ? "Platform" : "Vendor"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100/50">
-                {product.calculatedDistanceKm && (
-                  <span className="hidden md:inline">📍 {product.calculatedDistanceKm} km</span>
-                )}
-                <span>Delivery: {(product.shippingCharge || product.adminPricing?.shippingCharge) ? `₹${product.shippingCharge || product.adminPricing?.shippingCharge}` : "FREE"}</span>
+                <span className="font-bold">
+                  {(product as any).isCourierShipping || ((product as any).calculatedDistanceKm && (product as any).calculatedDistanceKm > 20)
+                    ? `📦 ${(product as any).vendorLocationName ? `${(product as any).vendorLocationName} Seller` : "Pan India Courier"}`
+                    : "📍 Nearby You (Local Store)"}
+                </span>
+                <span className="font-extrabold text-emerald-600">
+                  Delivery: {((product as any).shippingCharge || (product as any).adminPricing?.shippingCharge) ? `₹${(product as any).shippingCharge || (product as any).adminPricing?.shippingCharge}` : "FREE"}
+                </span>
               </div>
             </div>
           </div>

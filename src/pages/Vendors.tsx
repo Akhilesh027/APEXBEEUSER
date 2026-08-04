@@ -396,6 +396,24 @@ const StorePage = () => {
     })();
   }, [store?.vendorId]);
 
+  const isRestaurantStore = useMemo(() => {
+    if (!store) return false;
+    const catStr = String(
+      store.storeType ||
+      store.primaryCategory ||
+      store.category ||
+      (Array.isArray(store.categories) ? store.categories[0] : '') ||
+      ''
+    ).toLowerCase();
+    return (
+      catStr.includes('restaurant') ||
+      catStr.includes('dining') ||
+      catStr.includes('food & dining') ||
+      catStr.includes('cafe') ||
+      catStr.includes('table')
+    );
+  }, [store]);
+
   // Unique categories
   const vendorCategories = useMemo(() => {
     const map = new Map<string, CategoryObj>();
@@ -846,12 +864,14 @@ const StorePage = () => {
                   </Button>
                 )}
 
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shrink-0 shadow-md transition border-0"
-                  onClick={() => setTableBookingOpen(true)}
-                >
-                  🍽️ Reserve a Table
-                </Button>
+                {isRestaurantStore && (
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shrink-0 shadow-md transition border-0 cursor-pointer"
+                    onClick={() => setTableBookingOpen(true)}
+                  >
+                    🍽️ Reserve a Table
+                  </Button>
+                )}
 
                 <div className="px-3.5 py-1.5 rounded-xl bg-white/15 border border-white/15 text-center shrink-0">
                   <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Delivery Time</p>

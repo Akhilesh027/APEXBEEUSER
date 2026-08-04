@@ -558,9 +558,21 @@ function getSubcategoryImage(name: string, slug?: string): string {
   return fallbacks[charCodeSum % fallbacks.length];
 }
 
+const LOCATION_KEY = "apexbee_user_location";
+
 const Category = () => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+
+  // ── User Location state ──
+  const [userLocation, setUserLocation] = useState<{ lat?: number; lng?: number; pincode?: string; district?: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCATION_KEY);
+      if (saved) setUserLocation(JSON.parse(saved));
+    } catch { }
+  }, []);
 
   // ── Discovery state ──
   const [allCats, setAllCats] = useState<CategoryType[]>([]);
@@ -822,11 +834,38 @@ const Category = () => {
         }
         setChildCategories(builtChildCategories);
 
-        // Fetch products by categoryId or categoryName
+        // Fetch products by categoryId or categoryName — include user location for hyperlocal scoping
         let fetchedProds: Product[] = [];
         try {
-          const prodRes = await axios.get(`${API_BASE}/products?categoryId=${mainCategory._id}&category=${encodeURIComponent(mainCategory.name)}`);
-          fetchedProds = prodRes?.data?.products || [];
+          let prodUrl = `${API_BASE}/products?categoryId=${mainCategory._id}&category=${encodeURIComponent(mainCategory.name)}&limit=100`;
+          const loc = (() => { try { return JSON.parse(localStorage.getItem(LOCATION_KEY) || 'null'); } catch { return null; } })();
+          if (loc?.lat && loc?.lng) {
+            prodUrl += `&lat=${loc.lat}&lng=${loc.lng}`;
+          } else if (loc?.pincode) {
+            prodUrl += `&pincode=${loc.pincode}`;
+          }
+          if (loc?.district) prodUrl += `&district=${encodeURIComponent(loc.district)}`;
+
+          const prodRes = await axios.get(prodUrl);
+          const rawProds: Product[] = prodRes?.data?.products || [];
+
+          // Apply local vs Pan-India scoping on the client too
+          fetchedProds = rawProds.filter((p: any) => {
+            const scope = p.deliveryScope;
+            const isPan = p.isPanIndia || scope === 'pan_india' || scope === 'both';
+            if (isPan) return true;
+            // If no location known, show all
+            if (!loc?.pincode && !loc?.lat) return true;
+            // For local products, only show if vendor is in same pincode area
+            const vendorPin = p.vendorPincode || p.sellerId?.pincode;
+            if (loc?.pincode && vendorPin) return String(loc.pincode).trim() === String(vendorPin).trim();
+            // If distance is within 20 km show it
+            if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
+            return true; // default show if no geo data
+          });
+
+          // Fallback: if all products got filtered out, show pan-india/all (no strict local filter)
+          if (fetchedProds.length === 0) fetchedProds = rawProds;
         } catch (pErr) {
           console.error("Error fetching products:", pErr);
         }
@@ -1121,6 +1160,9 @@ const Category = () => {
                   : "Price N/A";
                 const dp = discountPct(product);
 
+                const isCourier = product.isCourierShipping || (product.calculatedDistanceKm && product.calculatedDistanceKm > 20);
+                const shippingFee = product.shippingCharge || product.adminPricing?.shippingCharge || 0;
+
                 return (
                   <div
                     key={product._id}
@@ -1159,6 +1201,29 @@ const Category = () => {
                         <StarRating rating={product.rating ?? 4} />
                         <span className="text-xs text-muted-foreground">({product.reviews ?? 0})</span>
                       </div>
+
+                      {/* Delivery Badge */}
+                      <div className="space-y-0.5 bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-orange-500 shrink-0 font-extrabold">
+                            {isCourier ? "🌐 Courier [2-4 Days]" : "⚡ Fast Delivery (15-30 Mins)"}
+                          </span>
+                          <span className="text-[8px] font-black uppercase bg-blue-50 text-blue-700 px-1 rounded">
+                            {product.deliveryMode === "platform_delivery" ? "Platform" : "Vendor"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[8px] text-slate-500 border-t border-slate-100 pt-0.5">
+                          <span className="font-bold">
+                            {isCourier
+                              ? `📦 ${product.vendorLocationName ? `${product.vendorLocationName} Seller` : "Pan India Courier"}`
+                              : "📍 Nearby You (Local Store)"}
+                          </span>
+                          <span className="font-extrabold text-emerald-600">
+                            {shippingFee > 0 ? `₹${shippingFee}` : "FREE"}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* Add button */}
                       <button
                         onClick={(e) => {

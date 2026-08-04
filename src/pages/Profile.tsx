@@ -63,6 +63,17 @@ const Profile = () => {
     const [referralLoaded, setReferralLoaded] = useState(false);
     // --- End Referral States ---
 
+    // --- Reviews & Saved Payment Cards States ---
+    const [myReviews, setMyReviews] = useState<any[]>([]);
+    const [showAddCardModal, setShowAddCardModal] = useState(false);
+    const [newCardData, setNewCardData] = useState({ cardHolder: "", cardType: "VISA", last4: "", expiry: "12/28" });
+    const [savedCards, setSavedCards] = useState<any[]>(() => {
+        try {
+            const raw = localStorage.getItem("apexbee_saved_cards");
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    });
+
     const [loading, setLoading] = useState({
         user: true,
         orders: false,
@@ -125,11 +136,11 @@ const Profile = () => {
                 _id: user.id,
                 name: user.name || user.username,
                 email: user.email,
-                phone: user.phone || "+91 98765 43210",
+                phone: user.phone || user.mobile || "",
                 dateOfBirth: user.dateOfBirth || "",
                 gender: user.gender || "",
                 bio: user.bio || "",
-                avatar: user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+                avatar: user.profileImage || user.avatar || "",
             };
             setUserData(initialData);
             setEditFormData({
@@ -165,6 +176,48 @@ const Profile = () => {
             fetchReferralData();
         }
     }, [activeTab, userData, referralLoaded]);
+
+    const fetchUserReviews = useCallback(async () => {
+        try {
+            const data = await authenticatedFetch("/api/reviews/user/my");
+            if (data?.success && Array.isArray(data.reviews)) {
+                setMyReviews(data.reviews);
+            }
+        } catch {
+            setMyReviews([]);
+        }
+    }, [authenticatedFetch]);
+
+    useEffect(() => {
+        if (activeTab === "settings" && userData?._id) {
+            fetchUserReviews();
+        }
+    }, [activeTab, userData, fetchUserReviews]);
+
+    const handleAddCard = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newCardData.last4) return;
+        const newCard = {
+            id: Date.now().toString(),
+            type: newCardData.cardType || "VISA",
+            last4: newCardData.last4.slice(-4),
+            expiry: newCardData.expiry || "12/28",
+            isDefault: savedCards.length === 0
+        };
+        const updated = [...savedCards, newCard];
+        setSavedCards(updated);
+        localStorage.setItem("apexbee_saved_cards", JSON.stringify(updated));
+        setShowAddCardModal(false);
+        setNewCardData({ cardHolder: "", cardType: "VISA", last4: "", expiry: "12/28" });
+        toast({ title: "Card Saved", description: "Your payment card has been saved securely." });
+    };
+
+    const handleDeleteCard = (cardId: string) => {
+        const updated = savedCards.filter(c => c.id !== cardId);
+        setSavedCards(updated);
+        localStorage.setItem("apexbee_saved_cards", JSON.stringify(updated));
+        toast({ title: "Card Removed", description: "Payment card removed from saved methods." });
+    };
 
 
     // --- Core API Call Handlers ---
@@ -332,6 +385,7 @@ const Profile = () => {
             };
 
             localStorage.setItem("user", JSON.stringify(updatedUserData));
+            window.dispatchEvent(new Event("user_updated"));
             setUserData(prev => ({ ...prev, ...editFormData }));
 
             setSuccess("Profile updated successfully!");
@@ -365,8 +419,9 @@ const Profile = () => {
             });
 
             const currentUser = JSON.parse(localStorage.getItem("user"));
-            const updatedUserData = { ...currentUser, [field]: tempValue };
+            const updatedUserData = { ...currentUser, [field]: tempValue, isProfileIncomplete: false };
             localStorage.setItem("user", JSON.stringify(updatedUserData));
+            window.dispatchEvent(new Event("user_updated"));
 
             setUserData(prev => ({ ...prev, [field]: tempValue }));
             setEditFormData(prev => ({ ...prev, [field]: tempValue }));
@@ -422,14 +477,14 @@ const Profile = () => {
             // Save to database profile
             await authenticatedFetch(`/api/user/profile/${userData._id}`, {
                 method: "PATCH",
-                body: JSON.stringify({ avatar: imageUrl })
+                body: JSON.stringify({ avatar: imageUrl, profileImage: imageUrl })
             });
 
-            const updatedUserData = { ...userData, avatar: imageUrl };
+            const updatedUserData = { ...userData, avatar: imageUrl, profileImage: imageUrl };
             setUserData(updatedUserData);
 
             const currentUser = JSON.parse(localStorage.getItem("user"));
-            localStorage.setItem("user", JSON.stringify({ ...currentUser, avatar: imageUrl }));
+            localStorage.setItem("user", JSON.stringify({ ...currentUser, avatar: imageUrl, profileImage: imageUrl }));
 
             setSuccess("Profile picture updated successfully!");
             setTimeout(() => setSuccess(""), 3000);
@@ -634,6 +689,25 @@ const Profile = () => {
                         </div>
                     )}
 
+                    {(!userData?.phone || !userData?.phone.trim()) && (
+                        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl">⚠️</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-amber-800">Profile Incomplete</h4>
+                                    <p className="text-[11px] text-amber-700">Please add your mobile number to complete your profile registration.</p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shrink-0"
+                                onClick={() => handleInlineEdit('phone', userData?.phone || '')}
+                            >
+                                Add Phone Number
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Profile Header */}
                     <Card className="mb-6">
                         <CardContent className="p-6">
@@ -641,11 +715,11 @@ const Profile = () => {
                                 <div className="relative">
                                     <Avatar className="h-24 w-24 border-4 border-yellow">
                                         <AvatarImage src={userData?.avatar} />
-                                        <AvatarFallback className="text-2xl">
+                                        <AvatarFallback className="text-2xl font-black bg-navy text-white">
                                             {userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-navy text-white p-2 rounded-full cursor-pointer hover:bg-navy/90 transition-colors">
+                                    <label htmlFor="avatar-upload" title="Upload profile picture" className="absolute bottom-0 right-0 bg-navy text-white p-2 rounded-full cursor-pointer hover:bg-navy/90 transition-colors shadow-md">
                                         <Camera className="h-4 w-4" />
                                         <input
                                             id="avatar-upload"
@@ -659,7 +733,7 @@ const Profile = () => {
                                 <div className="flex-1 text-center md:text-left">
                                     <h1 className="text-3xl font-bold mb-2">{userData?.name}</h1>
                                     <p className="text-muted-foreground">{userData?.email}</p>
-                                    <p className="text-muted-foreground">{userData?.phone}</p>
+                                    <p className="text-muted-foreground font-semibold mt-0.5">{userData?.phone || "📱 Mobile: Not set"}</p>
                                     {userData?.bio && (
                                         <p className="text-muted-foreground mt-2 italic">"{userData.bio}"</p>
                                     )}
@@ -1100,63 +1174,80 @@ const Profile = () => {
                                 {/* Reviews History */}
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> My Reviews</CardTitle>
+                                        <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> My Reviews ({myReviews.length})</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-4">
-                                            {[
-                                                { product: "Aashirvaad Atta 5kg", rating: 5, date: "2024-12-15", comment: "Excellent quality! Fresh and soft rotis every time." },
-                                                { product: "Amul Butter 500g", rating: 4, date: "2024-11-28", comment: "Good taste, delivery was a bit delayed though." },
-                                                { product: "Tata Salt 1kg", rating: 5, date: "2024-10-10", comment: "Best salt for everyday use. Always buy from ApexBee!" },
-                                            ].map((review, i) => (
-                                                <div key={i} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <p className="font-semibold text-navy">{review.product}</p>
-                                                            <div className="flex items-center gap-1 mt-1">
-                                                                {Array.from({ length: 5 }, (_, idx) => (
-                                                                    <Star key={idx} className={`h-4 w-4 ${idx < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                                                                ))}
+                                        {myReviews.length === 0 ? (
+                                            <div className="text-center py-8 border border-dashed rounded-xl bg-slate-50/50 space-y-2">
+                                                <span className="text-2xl block">⭐</span>
+                                                <p className="font-semibold text-xs text-slate-700">No product reviews submitted yet</p>
+                                                <p className="text-[11px] text-slate-400">Reviews you write after receiving orders will be displayed here.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {myReviews.map((review, i) => (
+                                                    <div key={review._id || i} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <p className="font-semibold text-navy">{review.productName || review.productId?.name || "ApexBee Product"}</p>
+                                                                <div className="flex items-center gap-1 mt-1">
+                                                                    {Array.from({ length: 5 }, (_, idx) => (
+                                                                        <Star key={idx} className={`h-4 w-4 ${idx < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                                                    ))}
+                                                                </div>
                                                             </div>
+                                                            <span className="text-xs text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}</span>
                                                         </div>
-                                                        <span className="text-xs text-muted-foreground">{formatDate(review.date)}</span>
+                                                        {review.title && <p className="text-xs font-bold text-slate-800 mt-2">{review.title}</p>}
+                                                        {review.comment && <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>}
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {/* No reviews empty state */}
-                                        <p className="text-center text-xs text-muted-foreground mt-4">Showing your most recent reviews</p>
+                                                ))}
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
 
                                 {/* Saved Payment Cards */}
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-500" /> Saved Payment Methods</CardTitle>
+                                        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-500" /> Saved Payment Methods ({savedCards.length})</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-3">
-                                            {[
-                                                { type: "VISA", last4: "4242", expiry: "12/26", isDefault: true },
-                                                { type: "Mastercard", last4: "8888", expiry: "06/25", isDefault: false },
-                                            ].map((card, i) => (
-                                                <div key={i} className="flex items-center justify-between border rounded-lg p-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-8 bg-gradient-to-br from-navy to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">{card.type}</div>
-                                                        <div>
-                                                            <p className="text-sm font-medium">•••• •••• •••• {card.last4}</p>
-                                                            <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
+                                        {savedCards.length === 0 ? (
+                                            <div className="text-center py-8 border border-dashed rounded-xl bg-slate-50/50 space-y-2">
+                                                <span className="text-2xl block">💳</span>
+                                                <p className="font-semibold text-xs text-slate-700">No saved payment methods</p>
+                                                <p className="text-[11px] text-slate-400">Save cards securely during checkout for one-click payments.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {savedCards.map((card, i) => (
+                                                    <div key={card.id || i} className="flex items-center justify-between border rounded-lg p-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-12 h-8 bg-gradient-to-br from-navy to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">{card.type || "CARD"}</div>
+                                                            <div>
+                                                                <p className="text-sm font-medium">•••• •••• •••• {card.last4}</p>
+                                                                <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {card.isDefault && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Default</Badge>}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteCard(card.id || i)}
+                                                                className="text-red-500 hover:text-red-700 cursor-pointer"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {card.isDefault && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Default</Badge>}
-                                                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <Button variant="outline" className="mt-4 w-full gap-2"><Plus className="h-4 w-4" /> Add New Payment Method</Button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <Button variant="outline" onClick={() => setShowAddCardModal(true)} className="mt-4 w-full gap-2 cursor-pointer">
+                                            <Plus className="h-4 w-4" /> Add New Payment Method
+                                        </Button>
                                     </CardContent>
                                 </Card>
 
@@ -1491,6 +1582,58 @@ const Profile = () => {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Card Modal Dialog */}
+            <Dialog open={showAddCardModal} onOpenChange={setShowAddCardModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Add Payment Method</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddCard} className="space-y-4 pt-2">
+                        <div>
+                            <Label className="text-xs font-bold mb-1 block">Card Network / Type</Label>
+                            <Select value={newCardData.cardType} onValueChange={(val) => setNewCardData(prev => ({ ...prev, cardType: val }))}>
+                                <SelectTrigger className="text-xs">
+                                    <SelectValue placeholder="Select Card Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="VISA">VISA</SelectItem>
+                                    <SelectItem value="Mastercard">Mastercard</SelectItem>
+                                    <SelectItem value="RuPay">RuPay</SelectItem>
+                                    <SelectItem value="Amex">American Express</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label className="text-xs font-bold mb-1 block">Card Number (Last 4 Digits)</Label>
+                            <Input
+                                type="text"
+                                maxLength={4}
+                                placeholder="e.g. 4242"
+                                value={newCardData.last4}
+                                onChange={(e) => setNewCardData(prev => ({ ...prev, last4: e.target.value }))}
+                                className="text-xs"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs font-bold mb-1 block">Expiry Date (MM/YY)</Label>
+                            <Input
+                                type="text"
+                                placeholder="MM/YY (e.g. 12/28)"
+                                value={newCardData.expiry}
+                                onChange={(e) => setNewCardData(prev => ({ ...prev, expiry: e.target.value }))}
+                                className="text-xs"
+                                required
+                            />
+                        </div>
+                        <DialogFooter className="pt-2">
+                            <Button type="button" variant="outline" onClick={() => setShowAddCardModal(false)} className="text-xs">Cancel</Button>
+                            <Button type="submit" className="bg-navy hover:bg-navy/90 text-white text-xs font-bold">Save Card</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </div>

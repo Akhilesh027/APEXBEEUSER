@@ -177,11 +177,26 @@ const ProductCard = ({
           </span>
         </div>
 
-        {/* Delivery Charge */}
-        <div className="text-[9px] md:text-[10px] font-bold text-accent mt-1 flex items-center gap-1">
-          <span>⚡ Fast Delivery</span>
-          <span className="text-slate-300">•</span>
-          <span className="text-green-600">{deliveryFee > 0 ? `₹${deliveryFee}` : "Free"}</span>
+        {/* Delivery Info Badge */}
+        <div className="bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold space-y-0.5 mt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-accent shrink-0 font-extrabold">
+              {(product as any).isCourierShipping || ((product as any).calculatedDistanceKm && (product as any).calculatedDistanceKm > 20)
+                ? "🌐 Courier [2-4 Days]"
+                : "⚡ Fast Delivery (15-30 Mins)"}
+            </span>
+            <span className="text-primary font-black uppercase text-[8px] bg-primary/10 px-1 rounded">
+              {(product as any).deliveryMode === "platform_delivery" || (product as any).deliveryMode === "Platform" ? "Platform" : "Vendor"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100">
+            <span className="font-bold">
+              {(product as any).isCourierShipping || ((product as any).calculatedDistanceKm && (product as any).calculatedDistanceKm > 20)
+                ? `📦 ${(product as any).vendorLocationName ? `${(product as any).vendorLocationName} Seller` : "Pan India Courier"}`
+                : "📍 Nearby You (Local Store)"}
+            </span>
+            <span className="font-extrabold text-emerald-600">Delivery: {deliveryFee > 0 ? `₹${deliveryFee}` : "FREE"}</span>
+          </div>
         </div>
 
         {/* Price & Add to Cart row */}

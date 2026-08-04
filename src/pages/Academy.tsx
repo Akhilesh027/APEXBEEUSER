@@ -441,8 +441,8 @@ export default function Academy() {
                         key={opt.value}
                         onClick={() => handleCheckboxToggle(opt.value)}
                         className={`p-4 rounded-xl border-2 transition-all cursor-pointer select-none flex items-center gap-3 ${formData.selectedInterests.includes(opt.value)
-                            ? 'border-amber-400 bg-amber-500/10 text-white'
-                            : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-400'
+                          ? 'border-amber-400 bg-amber-500/10 text-white'
+                          : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-400'
                           }`}
                       >
                         <input
@@ -459,8 +459,8 @@ export default function Academy() {
                         key={opt.value}
                         onClick={() => handleCheckboxToggle(opt.value)}
                         className={`p-4 rounded-xl border-2 transition-all cursor-pointer select-none flex items-center gap-3 ${formData.selectedInterests.includes(opt.value)
-                            ? 'border-amber-400 bg-amber-500/10 text-white'
-                            : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-400'
+                          ? 'border-amber-400 bg-amber-500/10 text-white'
+                          : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-400'
                           }`}
                       >
                         <input

@@ -344,6 +344,8 @@ const Home = () => {
   const [personalization, setPersonalization] = useState<any>(null);
   const [offerTitle, setOfferTitle] = useState("Fresh Milk Deal");
   const [offerEmoji, setOfferEmoji] = useState("🥛");
+  const [petProducts, setPetProducts] = useState<Product[]>([]);
+  const [kidsProducts, setKidsProducts] = useState<Product[]>([]);
 
   const continueShoppingProducts = useMemo(() => {
     if (personalization?.continueShopping && personalization.continueShopping.length > 0) {
@@ -393,9 +395,40 @@ const Home = () => {
     }
   };
 
+  const fetchPetAndKidsProducts = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/products?limit=50`);
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
+        const liveList = list.filter((p: any) => p.status === "Live" && p.isActive !== false);
+
+        const pets = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          const tags = Array.isArray(p.tags) ? p.tags.join(" ").toLowerCase() : "";
+          return cat.includes("pet") || name.includes("dog") || name.includes("cat") || name.includes("pet") || tags.includes("pet");
+        });
+
+        const kids = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          const tags = Array.isArray(p.tags) ? p.tags.join(" ").toLowerCase() : "";
+          return cat.includes("kid") || cat.includes("toy") || name.includes("kid") || name.includes("toy") || name.includes("baby") || name.includes("child") || tags.includes("kids");
+        });
+
+        setPetProducts(pets);
+        setKidsProducts(kids);
+      }
+    } catch (err) {
+      console.error("fetchPetAndKidsProducts error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchPersonalization();
     fetchCourses();
+    fetchPetAndKidsProducts();
   }, [loggedInUser]);
 
   // Dynamic Greeting & Timer Effect
@@ -630,13 +663,24 @@ const Home = () => {
    * Auth: Check login
    * -------------------------- */
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (user.hasPets === undefined) user.hasPets = true;
-      if (user.hasKids === undefined) user.hasKids = true;
-      setLoggedInUser(user);
-    }
+    const updateUser = () => {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.hasPets === undefined) user.hasPets = true;
+        if (user.hasKids === undefined) user.hasKids = true;
+        setLoggedInUser(user);
+      } else {
+        setLoggedInUser(null);
+      }
+    };
+    updateUser();
+    window.addEventListener("storage", updateUser);
+    window.addEventListener("user_updated", updateUser);
+    return () => {
+      window.removeEventListener("storage", updateUser);
+      window.removeEventListener("user_updated", updateUser);
+    };
   }, []);
 
   const handleBuyAgainAdd = async (p: any) => {
@@ -743,24 +787,54 @@ const Home = () => {
    * -------------------------- */
   const fetchProducts = async (limit: number) => {
     let url = `${API_BASE}/products?limit=${limit}`;
+    let locationUrl = url;
     if (userLocation?.lat && userLocation?.lng) {
-      url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
+      locationUrl += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
     } else if (userLocation?.pincode) {
-      url += `&pincode=${userLocation.pincode}`;
+      locationUrl += `&pincode=${userLocation.pincode}`;
     }
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch products");
 
-    const json = await res.json();
+    try {
+      const res = await fetch(locationUrl);
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+        const filtered = (list as Product[]).filter(
+          (product: Product) =>
+            (product.status === "Live" || product.status === "Active" || product.status === "Approved" || (product as any).status === "approved") &&
+            product.isActive !== false
+        );
 
-    const list =
-      Array.isArray(json?.products) ? json.products :
-        Array.isArray(json?.data) ? json.data :
-          Array.isArray(json) ? json :
-            [];
+        if (filtered.length > 0) return filtered;
+      }
+    } catch (e) {
+      console.warn("Location product query failed, trying global fetch fallback:", e);
+    }
 
-    return (list as Product[]).filter(
-      (product: Product) => product.status === "Live" && product.isActive === true
+    // Fallback to fetch all active products across the platform if no local vendor matched
+    const fallbackRes = await fetch(`${API_BASE}/products?limit=${limit}`);
+    if (!fallbackRes.ok) throw new Error("Failed to fetch products");
+
+    const fallbackJson = await fallbackRes.json();
+    const fallbackList = Array.isArray(fallbackJson?.products) ? fallbackJson.products : Array.isArray(fallbackJson?.data) ? fallbackJson.data : Array.isArray(fallbackJson) ? fallbackJson : [];
+
+    return (fallbackList as Product[]).filter(
+      (product: Product) => {
+        const isLiveStatus = (product.status === "Live" || product.status === "Active" || product.status === "Approved" || (product as any).status === "approved") && product.isActive !== false;
+        if (!isLiveStatus) return false;
+
+        const scope = (product as any).deliveryScope;
+        const isPan = product.isPanIndia || scope === 'pan_india' || scope === 'both';
+        if (isPan) return true; // Pan India items are deliverable anywhere
+
+        // Local-only items are ONLY deliverable if vendor pincode matches user location pincode
+        const vendorPin = (product as any).vendorPincode || (product as any).sellerId?.pincode;
+        if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) {
+          return true;
+        }
+
+        return false; // Exclude local-only items from distant vendors
+      }
     );
   };
 
@@ -952,14 +1026,24 @@ const Home = () => {
             {/* 2. Fast Delivery, 6. Delivery Type, 7. Distance & Delivery Charges */}
             <div className="space-y-1 bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold mt-2">
               <div className="flex items-center justify-between">
-                <span className="text-accent shrink-0">⚡ Fast [{p.estimatedDeliveryMinutes || 10} MINS]</span>
+                <span className="text-accent shrink-0 font-extrabold">
+                  {(p as any).isCourierShipping || (p.calculatedDistanceKm && p.calculatedDistanceKm > 20)
+                    ? "🌐 Courier [2-4 Days]"
+                    : "⚡ Fast Delivery (15-30 Mins)"}
+                </span>
                 <span className="text-primary font-black uppercase text-[8px] bg-primary/10 px-1 rounded">
-                  {p.deliveryMode === "platform_delivery" ? "Platform" : "Vendor"}
+                  {p.deliveryMode === "platform_delivery" || p.deliveryMode === "Platform" ? "Platform" : "Vendor"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[8px] text-slate-500 pt-0.5 border-t border-slate-100">
-                <span className="hidden md:inline">📍 {p.calculatedDistanceKm || 1.2} km</span>
-                <span>Delivery: {p.adminPricing?.shippingCharge ? `₹${p.adminPricing.shippingCharge}` : "FREE"}</span>
+                <span className="font-bold">
+                  {(p as any).isCourierShipping || (p.calculatedDistanceKm && p.calculatedDistanceKm > 20)
+                    ? `📦 ${(p as any).vendorLocationName ? `${(p as any).vendorLocationName} Seller` : "Pan India Courier"}`
+                    : "📍 Nearby You (Local Store)"}
+                </span>
+                <span className="font-extrabold text-emerald-600">
+                  Delivery: {(p.adminPricing?.shippingCharge || (p as any).shippingCharge) ? `₹${p.adminPricing?.shippingCharge || (p as any).shippingCharge}` : "FREE"}
+                </span>
               </div>
             </div>
 
@@ -994,36 +1078,44 @@ const Home = () => {
             </div>
           )}
 
-          {/* 1. Welcome Portal + Location Greeting Banner */}
-          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3 mt-1 sm:mt-4 text-left">
-            <div className="bg-gradient-to-br from-white/70 to-slate-100/30 backdrop-blur-md border border-white/40 rounded-2xl sm:rounded-[32px] p-3.5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-6 shadow-premium relative overflow-hidden">
-              <div className="absolute -right-16 -top-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute -left-16 -bottom-16 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
+          {loggedInUser && (!loggedInUser.phone || String(loggedInUser.phone).trim() === "") && (
+            <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 px-4 py-2.5 text-xs font-bold flex items-center justify-between gap-3 text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-base">⚠️</span>
+                <span>Complete Your Profile: Please add your mobile number to unlock full features.</span>
+              </div>
+              <button
+                onClick={() => navigate("/profile")}
+                className="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-lg transition shrink-0 cursor-pointer shadow-xs"
+              >
+                Add Mobile Number
+              </button>
+            </div>
+          )}
 
-              <div className="space-y-1.5 z-10">
-                <span className="text-[9px] font-black text-accent uppercase tracking-wider font-mono bg-accent/10 px-2 py-0.5 rounded-full">Hyperlocal Customer Portal</span>
-                <h3 className="text-base sm:text-xl font-extrabold text-navy leading-tight mt-0.5 sm:mt-1">
-                  {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Guru Swamy")} 👋
-                </h3>
+          {/* 1. Hero Banner Slider with Integrated Greeting Overlay */}
+          <section className="container mx-auto px-3 sm:px-4 py-1 sm:py-2">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[240px] sm:min-h-[320px] md:min-h-[400px] lg:min-h-[440px] flex items-center">
+              {/* Floating Glass Greeting & Location Overlay Bar */}
+              <div className="absolute top-2.5 left-3 right-3 sm:top-4 sm:left-6 sm:right-6 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+                <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 sm:px-4 sm:py-1.5 flex items-center gap-1.5 shadow-lg">
+                  <span className="text-xs sm:text-sm font-extrabold text-white">
+                    {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Guru Swamy")} 👋
+                  </span>
+                </div>
 
-                {/* delivers to location tag */}
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
-                  className="text-xs font-bold text-navy flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100/80 border border-blue-100 px-3 py-1.5 rounded-full w-fit transition-all cursor-pointer shadow-xs border-none"
+                  className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full transition-all cursor-pointer shadow-lg border-none"
                   title="Click to change your delivery location"
                 >
-                  <span>Delivering to:</span>
-                  <span className="text-accent font-black">📍 {userLocation?.colony || "Buchireddypalem"}</span>
-                  <span className="text-[9px] text-accent font-bold">▼</span>
+                  <span className="opacity-90">Delivering to:</span>
+                  <span className="text-amber-300 font-black">📍 {userLocation?.colony || "Buchireddypalem"}</span>
+                  <span className="text-[9px] text-amber-300 font-bold">▼</span>
                 </button>
               </div>
-            </div>
-          </section>
 
-          {/* 2. Hero Banner Slider */}
-          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-4">
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[160px] sm:min-h-[220px] md:min-h-[280px] flex items-center">
               {displayBanners.map((slide, idx) => (
                 <div
                   key={slide.id}
@@ -1036,20 +1128,20 @@ const Home = () => {
                     alt="banner"
                     className="w-full h-full object-cover absolute inset-0"
                   />
-                  <div className="relative p-3.5 sm:p-8 md:p-14 max-w-2xl flex flex-col justify-center h-full z-10 text-left">
+                  <div className="relative pt-12 sm:pt-16 p-4 sm:p-10 md:p-16 max-w-2xl flex flex-col justify-center h-full z-10 text-left">
                     <div className="inline-flex self-start items-center gap-2 bg-accent px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-white mb-1.5 sm:mb-4">
                       {slide.badge}
                     </div>
-                    <h2 className="text-sm sm:text-2xl md:text-4xl font-black text-white leading-tight line-clamp-2">
+                    <h2 className="text-base sm:text-3xl md:text-5xl font-black text-white leading-tight line-clamp-2">
                       {slide.title}
                     </h2>
-                    <p className="text-[11px] sm:text-sm text-white/80 mt-1 sm:mt-3 max-w-lg font-medium leading-snug line-clamp-2 hidden xs:block">
+                    <p className="text-[11px] sm:text-sm md:text-base text-white/90 mt-1 sm:mt-3 max-w-lg font-medium leading-snug line-clamp-2 hidden xs:block">
                       {slide.desc}
                     </p>
-                    <div className="mt-2.5 sm:mt-6">
+                    <div className="mt-3 sm:mt-6">
                       <Button
                         onClick={slide.action}
-                        className="bg-accent hover:bg-accent/90 text-white font-extrabold text-[10px] sm:text-xs px-3.5 py-1.5 sm:px-6 sm:py-3 h-auto rounded-full shadow-lg hover:shadow-accent/30 active:scale-95 transition-all cursor-pointer border-none"
+                        className="bg-accent hover:bg-accent/90 text-white font-extrabold text-[10px] sm:text-xs px-4 py-2 sm:px-7 sm:py-3.5 h-auto rounded-full shadow-lg hover:shadow-accent/30 active:scale-95 transition-all cursor-pointer border-none"
                       >
                         {slide.btnText}
                       </Button>
@@ -1088,28 +1180,88 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 3. Quick Shortcuts Grid (3 per row on mobile) */}
+          {/* 2. Explore Categories (Placed FIRST after Hero Banner) */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
+            <div className="flex items-center justify-between mb-2.5 sm:mb-5">
+              <h2 className="text-lg sm:text-xl font-extrabold text-navy text-left">Explore Categories</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs px-3 py-1"
+                onClick={handleViewAllCategories}
+              >
+                View All
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-4">
+              {loadingCategories ? (
+                Array.from({ length: 9 }).map((_, index) => (
+                  <div key={index} className="flex flex-col items-center gap-2">
+                    <Skeleton className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full" />
+                    <Skeleton className="w-16 h-3 rounded mt-1" />
+                  </div>
+                ))
+              ) : categories.length === 0 ? (
+                <div className="col-span-full rounded-2xl border bg-muted/20 p-8 text-center text-muted-foreground font-semibold text-sm">
+                  No categories available right now.
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => navigate(category.to)}
+                    className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
+                  >
+                    <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
+                      <img
+                        src={category.image || "/placeholder.svg"}
+                        alt={category.label}
+                        className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="w-full text-center px-0.5">
+                      <p className="text-xs sm:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
+                        {category.label.includes(" & ") ? (
+                          <>
+                            {category.label.split(" & ")[0]} &<br />
+                            {category.label.split(" & ")[1]}
+                          </>
+                        ) : (
+                          category.label
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* 3. Quick Shortcuts Grid (4 items per row on mobile) */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
             <div className="flex items-center justify-between mb-2 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-extrabold text-navy">Quick Shortcuts</h2>
-              <button onClick={() => navigate("/category")} className="text-xs text-primary font-bold hover:underline bg-transparent border-none cursor-pointer">
+              <button onClick={() => navigate("/categories")} className="text-xs text-primary font-bold hover:underline bg-transparent border-none cursor-pointer">
                 View All →
               </button>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-2.5 sm:gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-2 sm:gap-4">
               {[
-                { label: "Earn Money", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn" },
-                { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/category/🛒 Daily Needs" },
-                { label: "Food", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/category/🍽 Food & Dining" },
-                { label: "Shops", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e293b)", to: "/local-stores" },
+                { label: "Earn With Us", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn-with-apexbee" },
+                { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/grocery" },
+                { label: "Food & Dining", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/category/🍽 Food & Dining" },
+                { label: "Local Stores", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e293b)", to: "/local-stores" },
                 { label: "Services", icon: ToolIcon, gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
                 { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/❤ Health & Wellness" },
-                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/🛍 Shopping" },
-                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/🛍 Shopping" },
+                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/categories" },
+                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/categories" },
                 { label: "Academy", icon: BookOpen, gradient: "linear-gradient(135deg,#711c91,#a8c0ff)", to: "/academy" },
-                { label: "Travel", icon: Plane, gradient: "linear-gradient(135deg,#00c6ff,#3f2b96)", to: "/travel" },
-                { label: "Delivery", icon: Truck, gradient: "linear-gradient(135deg,#a8c0ff,#3f2b96)", to: "/category/🚚 Delivery & Logistics" },
-                { label: "Offers", icon: BadgePercent, gradient: "linear-gradient(135deg,#f12711,#f5af19)", to: "/category/📢 Promotional" },
+                { label: "Refer & Earn", icon: Gift, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/referrals" },
+                { label: "Community", icon: Users, gradient: "linear-gradient(135deg,#00c6ff,#3f2b96)", to: "/community" },
+                { label: "Offers & Promos", icon: BadgePercent, gradient: "linear-gradient(135deg,#f12711,#f5af19)", to: "/categories" },
               ].map((item) => {
                 const IconComponent = item.icon;
                 return (
@@ -1121,18 +1273,22 @@ const Home = () => {
                         targetPath: item.to,
                         source: 'shortcut_grid',
                       });
-                      navigate(item.to);
+                      if (item.to.startsWith("http")) {
+                        window.location.href = item.to;
+                      } else {
+                        navigate(item.to);
+                      }
                     }}
-                    className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-4 rounded-2xl sm:rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
+                    className="flex flex-col items-center justify-center gap-1 p-1.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
                   >
                     <div
-                      className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+                      className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-300"
                       style={{ background: item.gradient }}
                     >
                       <IconComponent className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2px]" />
                     </div>
                     <div className="text-center">
-                      <p className="font-black text-navy text-xs sm:text-sm leading-tight group-hover:text-accent transition-colors">
+                      <p className="font-black text-navy text-[10px] sm:text-sm leading-tight group-hover:text-accent transition-colors line-clamp-2">
                         {item.label}
                       </p>
                     </div>
@@ -1272,66 +1428,6 @@ const Home = () => {
               </div>
             </section>
           )}
-
-          {/* 5. Main Categories (3 per row on mobile, Larger Images & Clear Label Placement) */}
-          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-6">
-            <div className="flex items-center justify-between mb-2.5 sm:mb-5">
-              <h2 className="text-lg sm:text-xl font-extrabold text-navy text-left">Explore Categories</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs px-3 py-1"
-                onClick={handleViewAllCategories}
-              >
-                View All
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-4">
-              {loadingCategories ? (
-                Array.from({ length: 9 }).map((_, index) => (
-                  <div key={index} className="flex flex-col items-center gap-2">
-                    <Skeleton className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full" />
-                    <Skeleton className="w-16 h-3 rounded mt-1" />
-                  </div>
-                ))
-              ) : categories.length === 0 ? (
-                <div className="col-span-full rounded-2xl border bg-muted/20 p-8 text-center text-muted-foreground font-semibold text-sm">
-                  No categories available right now.
-                </div>
-              ) : (
-                categories.map((category) => (
-                  <button
-                    type="button"
-                    key={category.id}
-                    onClick={() => navigate(category.to)}
-                    className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
-                  >
-                    <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
-                      <img
-                        src={category.image || "/placeholder.svg"}
-                        alt={category.label}
-                        className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="w-full text-center px-0.5">
-                      <p className="text-xs sm:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
-                        {category.label.includes(" & ") ? (
-                          <>
-                            {category.label.split(" & ")[0]} &<br />
-                            {category.label.split(" & ")[1]}
-                          </>
-                        ) : (
-                          category.label
-                        )}
-                      </p>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </section>
 
           {/* 5.5 Feature Badges Bar (3 Pillars matching mobile UI) */}
           <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3">
@@ -1737,85 +1833,75 @@ const Home = () => {
           )}
 
           {/* 10. Festival Quick-Action Widget */}
-          {personalization?.festival && (
-            <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-2 text-left">
-              <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-pink-600 text-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 border border-amber-500/20">
-                <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-9xl font-bold translate-x-5 -translate-y-5">🌸</div>
-                <div className="space-y-2.5 max-w-xl z-10">
-                  <span className="text-[9px] font-black text-amber-200 bg-white/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">Festival Specials</span>
-                  <h3 className="text-xl font-black text-white">{personalization.festival.title}</h3>
-                  <p className="text-xs text-white/90 leading-relaxed font-semibold">{personalization.festival.desc}</p>
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 font-bold">
-                    {(personalization.festival.items || []).map((item: string) => (
-                      <span key={item} className="text-[9px] bg-white/20 border border-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm">{item}</span>
-                    ))}
-                  </div>
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-2 text-left">
+            <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-pink-600 text-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 border border-amber-500/20">
+              <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-9xl font-bold translate-x-5 -translate-y-5">🌸</div>
+              <div className="space-y-2.5 max-w-xl z-10">
+                <span className="text-[9px] font-black text-amber-200 bg-white/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">Festival Specials</span>
+                <h3 className="text-xl font-black text-white">{personalization?.festival?.title || "🪔 Varalakshmi Vratham is coming up!"}</h3>
+                <p className="text-xs text-white/90 leading-relaxed font-semibold">{personalization?.festival?.desc || "Ensure complete puja preparation. Instantly book your bundle or custom items with 30-min guaranteed doorstep delivery."}</p>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 font-bold">
+                  {(personalization?.festival?.items || ["🌼 Flowers", "🍎 Fruits", "🛍 Pooja Kit", "🥥 Coconut", "🍌 Banana", "🪔 Deepam"]).map((item: string) => (
+                    <span key={item} className="text-[9px] bg-white/20 border border-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition" onClick={() => navigate("/categories")}>{item}</span>
+                  ))}
                 </div>
-                <Button
-                  onClick={() => navigate("/category/📢 Promotional")}
-                  className="bg-white hover:bg-slate-50 text-rose-600 hover:scale-105 transition-all duration-300 font-extrabold text-xs rounded-xl px-6 py-3.5 shadow-lg shrink-0 border-none cursor-pointer z-10"
-                >
-                  {personalization.festival.actionLabel || "🛒 Order Puja Bundle"}
-                </Button>
               </div>
-            </section>
-          )}
+              <Button
+                onClick={() => navigate("/categories")}
+                className="bg-white hover:bg-slate-50 text-rose-600 hover:scale-105 transition-all duration-300 font-extrabold text-xs rounded-xl px-6 py-3.5 shadow-lg shrink-0 border-none cursor-pointer z-10"
+              >
+                {personalization?.festival?.actionLabel || "🛒 Order Puja Bundle"}
+              </Button>
+            </div>
+          </section>
 
-          {/* Festival Banner Card (from DB if set) */}
-          {festivalBanner && (
-            <section className="container mx-auto px-4 py-2">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-3xl p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 text-left relative overflow-hidden">
-                <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-7xl font-bold">✨</div>
-                <div className="z-10 max-w-lg">
-                  {festivalBanner.discount && (
-                    <div className="inline-block bg-white/20 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      {festivalBanner.discount}
-                    </div>
-                  )}
-                  <h4 className="font-extrabold text-sm sm:text-base mt-2">{festivalBanner.title}! 🎁</h4>
-                  <p className="text-[11px] text-white/90 mt-1 leading-relaxed">{festivalBanner.description}</p>
+          {/* Festival Raksha Bandhan Offers Banner Card */}
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 text-left">
+            <div className="bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
+              <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-7xl font-bold">✨</div>
+              <div className="z-10 max-w-lg">
+                <div className="inline-block bg-white/20 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  {festivalBanner?.discount || "20% OFF"}
                 </div>
-                {festivalBanner.link && (
-                  <Button
-                    onClick={() => navigate(festivalBanner.link)}
-                    className="bg-white hover:bg-slate-100 text-rose-600 font-bold text-xs rounded-xl shrink-0 z-10 py-2.5 px-4 shadow border-none cursor-pointer"
-                  >
-                    View Festive Deals
-                  </Button>
-                )}
+                <h4 className="font-extrabold text-sm sm:text-base mt-1.5">{festivalBanner?.title || "Festival Raksha Bandhan Offers!"} 🎁</h4>
+                <p className="text-[11px] text-white/90 mt-1 leading-relaxed">{festivalBanner?.description || "Send local sweet boxes to siblings. Get 20% off from local sweet shops."}</p>
               </div>
-            </section>
-          )}
+              <Button
+                onClick={() => navigate(festivalBanner?.link || "/categories")}
+                className="bg-white hover:bg-slate-100 text-rose-600 font-bold text-xs rounded-xl shrink-0 z-10 py-2.5 px-4 shadow border-none cursor-pointer"
+              >
+                View Festive Deals
+              </Button>
+            </div>
+          </section>
 
-          {/* 11. AI Suggestions widget */}
-          {personalization?.aiSuggest && (
-            <section className="container mx-auto px-4 py-2 text-left">
-              <div className="bg-gradient-to-r from-amber-50/70 via-yellow-50/40 to-white border border-amber-200/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl animate-bounce">🐝</span>
-                  <div>
-                    <h4 className="font-extrabold text-navy text-xs leading-none font-sans flex items-center gap-1.5">
-                      {personalization.aiSuggest.label} <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
-                    </h4>
-                    <p className="text-[11px] text-slate-600 mt-1.5 leading-snug">{personalization.aiSuggest.desc}</p>
-                  </div>
+          {/* 11. AI Suggestions widget (Abhi Suggests) */}
+          <section className="container mx-auto px-3 sm:px-4 py-1.5 text-left">
+            <div className="bg-gradient-to-r from-amber-50/70 via-yellow-50/40 to-white border border-amber-200/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl animate-bounce">🐝</span>
+                <div>
+                  <h4 className="font-extrabold text-navy text-xs leading-none font-sans flex items-center gap-1.5">
+                    {personalization?.aiSuggest?.label || "Abhi Suggests"} <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-1.5 leading-snug">{personalization?.aiSuggest?.desc || "Last week list block item Tomatoes order chesaru. Need a quick reorder?"}</p>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    alert(`${personalization.aiSuggest.item} added to basket!`);
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 hover:scale-105 transition-all duration-300 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer shrink-0 border-none"
-                >
-                  🔄 Order Again
-                </Button>
               </div>
-            </section>
-          )}
+              <Button
+                size="sm"
+                onClick={() => {
+                  alert(`${personalization?.aiSuggest?.item || "Tomatoes"} added to basket!`);
+                }}
+                className="bg-amber-500 hover:bg-amber-600 hover:scale-105 transition-all duration-300 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer shrink-0 border-none"
+              >
+                🔄 Order Again
+              </Button>
+            </div>
+          </section>
 
           {/* Pets Corner */}
-          {personalization?.hasPets && (
-            <section className="container mx-auto px-4 py-2 text-left">
+          {(personalization?.hasPets || petProducts.length > 0 || true) && (
+            <section className="container mx-auto px-3 sm:px-4 py-2 text-left">
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 rounded-3xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-black text-navy flex items-center gap-1.5">🐶 Pets Corner</h3>
@@ -1827,57 +1913,85 @@ const Home = () => {
                       <p className="font-extrabold text-navy text-xs">Pet Food Reminder</p>
                       <p className="text-[10px] text-slate-500 mt-1 font-medium">Next scheduled check tomorrow</p>
                     </div>
-                    <Button size="sm" onClick={() => alert("Added food pack to basket!")} className="bg-orange-500 text-white font-bold text-[10px] py-1 rounded-lg">Buy Now</Button>
+                    <Button size="sm" onClick={() => navigate("/categories")} className="bg-orange-500 text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Buy Now</Button>
                   </div>
                   <div className="p-3 bg-white rounded-2xl border border-orange-100/50 flex items-center justify-between shadow-sm">
                     <div>
                       <p className="font-extrabold text-navy text-xs">Vaccination Due</p>
                       <p className="text-[10px] text-red-500 font-bold mt-1">⚠️ In 3 Days</p>
                     </div>
-                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg">Book Clinic</Button>
+                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Book Clinic</Button>
                   </div>
                   <div className="p-3 bg-white rounded-2xl border border-orange-100/50 flex items-center justify-between shadow-sm">
                     <div>
                       <p className="font-extrabold text-navy text-xs">Pet Grooming</p>
                       <p className="text-[10px] text-slate-500 mt-1 font-medium">Spa styling at home</p>
                     </div>
-                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg">Book Salon</Button>
+                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Book Salon</Button>
                   </div>
                 </div>
+
+                {/* Real Live Pet Products Row if available */}
+                {petProducts.length > 0 && (
+                  <div className="pt-2">
+                    <p className="text-xs font-extrabold text-orange-900 mb-2">🐾 Recommended Pet Products</p>
+                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
+                      {petProducts.map((p) => (
+                        <div key={p._id} className="min-w-[170px] max-w-[170px] shrink-0 bg-white border rounded-2xl p-2 shadow-xs">
+                          {renderProductCard(p)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           )}
 
           {/* Kids Corner */}
-          {personalization?.hasKids && (
-            <section className="container mx-auto px-4 py-2 text-left">
+          {(personalization?.hasKids || kidsProducts.length > 0 || true) && (
+            <section className="container mx-auto px-3 sm:px-4 py-2 text-left">
               <div className="bg-gradient-to-br from-pink-50 to-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-black text-navy flex items-center gap-1.5">👶 Kids Corner</h3>
                   <span className="text-[9px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded uppercase tracking-wider">Birthday in 5 Days! 🎉</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
                     <p className="font-extrabold text-navy text-xs">Return Gifts</p>
                     <p className="text-[10px] text-slate-500 mt-1 font-medium">Pack of 12 gift items</p>
-                    <Button size="sm" onClick={() => navigate("/category/🛍 Shopping")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl">Browse Gifts</Button>
+                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Browse Gifts</Button>
                   </div>
                   <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
                     <p className="font-extrabold text-navy text-xs">Decorations</p>
                     <p className="text-[10px] text-slate-500 mt-1 font-medium">Balloons & Party themes</p>
-                    <Button size="sm" onClick={() => navigate("/category/🛍 Shopping")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl">View Themes</Button>
+                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">View Themes</Button>
                   </div>
                   <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
                     <p className="font-extrabold text-navy text-xs">Birthday Cake</p>
                     <p className="text-[10px] text-slate-500 mt-1 font-medium">Flavor & custom print selection</p>
-                    <Button size="sm" onClick={() => navigate("/category/🍽 Food & Dining")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl">Order Cake</Button>
+                    <Button size="sm" onClick={() => navigate("/category/🍽 Food & Dining")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Order Cake</Button>
                   </div>
                   <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
                     <p className="font-extrabold text-navy text-xs">Birthday Outfits</p>
                     <p className="text-[10px] text-slate-500 mt-1 font-medium">Kids ethnic & casual section</p>
-                    <Button size="sm" onClick={() => navigate("/category/🛍 Shopping")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl">Browse Outfits</Button>
+                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Browse Outfits</Button>
                   </div>
                 </div>
+
+                {/* Real Live Kids Products Row if available */}
+                {kidsProducts.length > 0 && (
+                  <div className="pt-2">
+                    <p className="text-xs font-extrabold text-rose-900 mb-2">🎁 Featured Kids Products & Toys</p>
+                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
+                      {kidsProducts.map((p) => (
+                        <div key={p._id} className="min-w-[170px] max-w-[170px] shrink-0 bg-white border rounded-2xl p-2 shadow-xs">
+                          {renderProductCard(p)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           )}

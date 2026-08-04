@@ -142,6 +142,20 @@ type ReturnRecord = {
   amount: number;
 };
 
+const getItemImage = (item: any) => {
+  if (!item) return "/placeholder-product.png";
+  const img = item.image || item.thumbnail || item.productId?.thumbnail || item.productId?.images?.[0];
+  if (img && typeof img === 'string' && img.trim() && img !== '/placeholder.png' && img !== '/placeholder.svg') {
+    return img;
+  }
+  return "/placeholder-product.png";
+};
+
+const getItemName = (item: any) => {
+  if (!item) return "Product";
+  return item.name || item.itemName || item.productName || item.productId?.name || item.productId?.itemName || "Product";
+};
+
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
@@ -899,20 +913,20 @@ const MyOrders = () => {
                           <div className="flex gap-3 items-center">
                             <div className="flex gap-2">
                               {(order.orderItems || []).slice(0, 3).map((item, i) => (
-                                <div key={i} className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                                <div key={i} className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 border border-slate-100">
+                                  <img src={getItemImage(item)} alt={getItemName(item)} className="w-full h-full object-cover" loading="lazy" />
                                 </div>
                               ))}
                               {(order.orderItems || []).length > 3 && (
-                                <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0">
+                                <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0 font-bold">
                                   +{(order.orderItems || []).length - 3}
                                 </div>
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{order.orderItems?.[0]?.name}</p>
+                              <p className="text-sm font-semibold text-navy truncate">{getItemName(order.orderItems?.[0])}</p>
                               {(order.orderItems || []).length > 1 && (
-                                <p className="text-xs text-muted-foreground">+{(order.orderItems || []).length - 1} more</p>
+                                <p className="text-xs text-muted-foreground font-medium">+{(order.orderItems || []).length - 1} more item(s)</p>
                               )}
                             </div>
                             <Button
@@ -974,12 +988,12 @@ const MyOrders = () => {
                                       <div className="space-y-2">
                                         {sub.items.map((item, i) => (
                                           <div key={i} className="flex gap-3 items-center">
-                                            <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-md" />
+                                            <img src={getItemImage(item)} alt={getItemName(item)} className="w-10 h-10 object-contain rounded-md border border-slate-200 p-0.5 bg-white" />
                                             <div className="flex-1 text-sm">
-                                              <p className="font-medium truncate">{item.name}</p>
-                                              <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                              <p className="font-semibold text-navy truncate">{getItemName(item)}</p>
+                                              <p className="text-xs text-muted-foreground font-medium">Qty: {item.quantity}</p>
                                             </div>
-                                            <p className="text-sm font-semibold">{formatCurrency((item.price || 0) * item.quantity)}</p>
+                                            <p className="text-sm font-bold text-navy">{formatCurrency((item.price || 0) * item.quantity)}</p>
                                           </div>
                                         ))}
                                       </div>
@@ -1004,12 +1018,12 @@ const MyOrders = () => {
                                     const existingReturn = returns.find((r) => r.orderId === order._id && r.productId === pid);
 
                                     return (
-                                      <div key={item._id || `${order._id}-${idx}`} className="flex gap-3 p-3 border rounded-lg">
-                                        <div className="w-16 h-16 bg-muted rounded-md flex-shrink-0 overflow-hidden">
-                                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                                      <div key={item._id || `${order._id}-${idx}`} className="flex gap-3 p-3 border rounded-xl bg-slate-50/50">
+                                        <div className="w-16 h-16 bg-white rounded-lg flex-shrink-0 overflow-hidden border border-slate-200 p-0.5">
+                                          <img src={getItemImage(item)} alt={getItemName(item)} className="w-full h-full object-contain rounded-md" loading="lazy" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <h4 className="font-semibold text-sm text-navy truncate">{item.name}</h4>
+                                          <h4 className="font-bold text-sm text-navy truncate">{getItemName(item)}</h4>
                                           <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-muted-foreground">
                                             <span>Qty: {item.quantity}</span>
                                             {item.color && item.color !== "default" && <span>Color: {item.color}</span>}

@@ -358,6 +358,20 @@ const Checkout = () => {
     return clamp(limited, 0, baseAmount);
   };
 
+  // Normalize a raw backend coupon object to the CouponRule shape the UI expects
+  const normalizeCoupon = (raw: any): CouponRule => ({
+    code: raw.code || '',
+    title: raw.title || raw.code || '',
+    description: raw.description || '',
+    type: raw.type ?? (raw.discountType === 'flat' || raw.discountType === 'Fixed Amount' ? 'flat' : 'percent'),
+    value: raw.value ?? raw.discountValue ?? 0,
+    maxDiscount: raw.maxDiscount ?? raw.maxDiscountAmount,
+    minOrder: raw.minOrder ?? raw.minSubtotal ?? raw.minOrderAmount ?? 0,
+    firstOrderOnly: raw.firstOrderOnly ?? false,
+    allowedPayments: raw.allowedPayments,
+    expiresAt: raw.expiresAt ?? raw.expiryDate,
+  });
+
   const loadAvailableCoupons = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -373,7 +387,7 @@ const Checkout = () => {
 
       const data = await res.json();
       const list = data.coupons || data.data || [];
-      setAvailableCoupons(Array.isArray(list) ? list : []);
+      setAvailableCoupons(Array.isArray(list) ? list.map(normalizeCoupon) : []);
     } catch (error) {
       console.error("Load coupons error:", error);
     }
@@ -411,8 +425,8 @@ const Checkout = () => {
         });
       }
 
-      const coupon = data.coupon || data.data || availableCoupons.find((c) => c.code === code);
-      if (!coupon) {
+      const rawCoupon = data.coupon || data.data || availableCoupons.find((c) => c.code === code);
+      if (!rawCoupon) {
         return toast({
           title: "Invalid coupon",
           description: "Coupon details not found from backend",
@@ -420,6 +434,7 @@ const Checkout = () => {
         });
       }
 
+      const coupon = normalizeCoupon(rawCoupon);
       const discount = Number(data.discount ?? data.discountAmount ?? computeCouponDiscount(coupon, orderDetails.subtotal)) || 0;
 
       setAppliedCoupon(coupon);
@@ -427,7 +442,7 @@ const Checkout = () => {
       setCouponInput(code);
 
       toast({
-        title: "Coupon applied",
+        title: "Coupon applied 🎉",
         description: `${coupon.code} applied. You saved ₹${discount.toFixed(2)}`,
       });
     } catch (error) {
@@ -1924,7 +1939,7 @@ const Checkout = () => {
                             <p className="text-xs text-muted-foreground">{c.description}</p>
                           </div>
                           <span className="text-xs font-semibold px-2 py-1 rounded bg-muted">
-                            {c.type === "flat" ? `₹${c.value} OFF` : `${c.value}% OFF`}
+                            {c.type === "flat" ? `₹${c.value ?? 0} OFF` : `${c.value ?? 0}% OFF`}
                           </span>
                         </div>
                       </button>

@@ -37,6 +37,24 @@ const Account = () => {
       <div className="container mx-auto px-4 py-8 pb-20">
         <h1 className="text-2xl sm:text-3xl font-black text-navy mb-6 text-left">Your Account</h1>
 
+        {(!user.phone || !user.phone.trim() || user.isProfileIncomplete) && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <h4 className="text-xs font-bold text-amber-700">Profile Incomplete</h4>
+                <p className="text-[11px] text-amber-600">Mobile number is required to complete your account registration.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/profile")}
+              className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition shrink-0"
+            >
+              Add Phone Number
+            </button>
+          </div>
+        )}
+
         {/* User Info */}
         <div className="bg-white border border-gray-150 rounded-3xl p-6 mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
