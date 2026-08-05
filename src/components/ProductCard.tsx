@@ -172,9 +172,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div className="space-y-1.5 mt-auto">
             {/* Price & MRP */}
             <div className="flex items-baseline gap-1.5">
-              <span className="text-sm font-black text-navy">₹{product.price || product.baseSellingPrice || 0}</span>
-              {(product.baseMrp || product.mrp) && (product.baseMrp || product.mrp) > (product.price || product.baseSellingPrice || 0) && (
-                <span className="text-[10px] text-slate-400 line-through">₹{product.baseMrp || product.mrp}</span>
+              <span className="text-sm font-black text-navy">₹{product.sellingPrice || product.baseSellingPrice || product.price || 0}</span>
+              {(product.baseMrp || product.mrp || product.originalPrice) && (product.baseMrp || product.mrp || product.originalPrice) > (product.sellingPrice || product.baseSellingPrice || product.price || 0) && (
+                <span className="text-[10px] text-slate-400 line-through">₹{product.baseMrp || product.mrp || product.originalPrice}</span>
               )}
             </div>
 

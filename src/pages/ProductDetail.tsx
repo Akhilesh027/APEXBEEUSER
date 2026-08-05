@@ -231,15 +231,16 @@ const ProductDetail = () => {
   }, [product.thumbnail, product.images]);
   const images = variantImages || productImages;
 
-  const customerSellingPrice = product.adminPricing?.customerSellingAmount ?? product.baseSellingPrice ?? product.afterDiscount ?? 0;
   const shippingCharge = product.adminPricing?.shippingCharge ?? product.deliveryFee ?? 0;
   const packingCharge = product.adminPricing?.packingCharge ?? 0;
 
-  const afterDiscount = selectedVariant
-    ? (selectedVariant.sellingPrice + shippingCharge + packingCharge)
-    : customerSellingPrice;
+  const baseSellingPrice = selectedVariant
+    ? (selectedVariant.sellingPrice ?? selectedVariant.price ?? 0)
+    : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? 0);
 
-  const userPrice = selectedVariant?.mrp ?? product.baseMrp ?? product.userPrice ?? 0;
+  const afterDiscount = baseSellingPrice;
+
+  const userPrice = selectedVariant?.mrp ?? product.adminPricing?.mrp ?? product.baseMrp ?? product.userPrice ?? product.mrp ?? 0;
   const discount = product.discountPercent ?? product.discount ?? 0;
   const deliveryFee = shippingCharge;
   const description = product.description || "";
@@ -718,15 +719,27 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Delivery fee & Reach Badges */}
+            {/* Delivery fee & Packing Charge Badges */}
             <div className="mb-4 flex flex-wrap gap-2 items-center">
+              {/* Shipping charge */}
               {deliveryFee > 0 ? (
-                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
-                  🚚 Delivery fee of {formatCurrency(deliveryFee)} included in price
+                <div className="text-xs font-semibold text-orange-700 bg-orange-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-200">
+                  🚚 Shipping: {formatCurrency(deliveryFee)}
                 </div>
               ) : (
-                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-block px-2.5 py-1 rounded-lg border border-green-200">
+                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-green-200">
                   🚚 Free Delivery
+                </div>
+              )}
+
+              {/* Packing charge */}
+              {packingCharge > 0 ? (
+                <div className="text-xs font-semibold text-orange-700 bg-orange-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-200">
+                  📦 Packing: {formatCurrency(packingCharge)}
+                </div>
+              ) : (
+                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-green-200">
+                  📦 Free Packing
                 </div>
               )}
 

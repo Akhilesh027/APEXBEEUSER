@@ -98,7 +98,7 @@ const ProductCard = ({
   onAddToCart: (p: Product) => void;
 }) => {
   const title = product.name || product.itemName || "Product";
-  const price = Number(product.adminPricing?.customerSellingAmount ?? product.baseSellingPrice ?? product.afterDiscount ?? product.userPrice ?? 0);
+  const price = Number(product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? 0);
   const mrp = Number(product.baseMrp ?? product.userPrice ?? 0);
   const dp = mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : (product.discountPercent ?? product.discount ?? 0);
   const img = product.images?.[0] || product.thumbnail || "/placeholder-product.png";
@@ -524,7 +524,7 @@ const ProductsPage = () => {
       return;
     }
     try {
-      const price = p.adminPricing?.customerSellingAmount ?? p.baseSellingPrice ?? p.afterDiscount ?? p.userPrice ?? 0;
+      const price = p.adminPricing?.sellingPrice ?? p.baseSellingPrice ?? (p as any).sellingPrice ?? (p as any).price ?? 0;
       const deliveryFee = p.adminPricing?.shippingCharge ?? 0;
       const token = localStorage.getItem("token");
       await fetch(`${API_BASE}/cart/add`, {

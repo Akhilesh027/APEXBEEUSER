@@ -170,28 +170,27 @@ const flattenCategoryTree = (items: any[] = []) => {
 const getDisplayPrices = (p: Product) => {
   const admin = p.adminPricing;
 
-  const customerSellingAmount = toNumber(admin?.customerSellingAmount);
-  const adminSellingWithCharges =
-    toNumber(admin?.sellingPrice) +
-    toNumber(admin?.shippingCharge) +
-    toNumber(admin?.packingCharge);
-
-  const after = toNumber(p.afterDiscount);
+  const adminSelling = toNumber(admin?.sellingPrice);
   const baseSelling = toNumber(p.baseSellingPrice);
-  const userPrice = toNumber(p.userPrice);
+  const sellingProp = toNumber((p as any).sellingPrice);
+  const priceProp = toNumber((p as any).price);
+  const after = toNumber(p.afterDiscount);
 
+  // Base product selling price without bundled delivery/packing fees
   const price =
-    customerSellingAmount ||
-    adminSellingWithCharges ||
-    after ||
+    adminSelling ||
     baseSelling ||
-    userPrice ||
+    sellingProp ||
+    (after > 0 ? after : 0) ||
+    priceProp ||
     0;
 
   const mrp =
     toNumber(admin?.mrp) ||
     toNumber(p.baseMrp) ||
     toNumber(p.userPrice) ||
+    toNumber((p as any).mrp) ||
+    toNumber((p as any).originalPrice) ||
     0;
 
   const percentOff =

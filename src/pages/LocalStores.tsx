@@ -381,7 +381,11 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const json = await safeJsonFetch(`${API_BASE}/local-shop/subscriptions/${userId}`);
+      const token = localStorage.getItem("token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/subscriptions/${userId}`, { headers });
       if (json?.success) setSubscriptions(json.subscriptions || []);
     } catch { /* ignore */ }
     finally { setSubLoading(false); }
@@ -392,7 +396,11 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const json = await safeJsonFetch(`${API_BASE}/local-shop/billing/${userId}`);
+      const token = localStorage.getItem("token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/billing/${userId}`, { headers });
       if (json?.success) setBilling(json.billing);
     } catch { /* ignore */ }
   }, []);
@@ -402,7 +410,11 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const json = await safeJsonFetch(`${API_BASE}/local-shop/loyalty/${userId}`);
+      const token = localStorage.getItem("token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/loyalty/${userId}`, { headers });
       if (json?.success) setLoyalty(json.loyalty);
     } catch { /* ignore */ }
   }, []);
@@ -412,7 +424,11 @@ const LocalStores = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const userId = user?.id || user?._id;
       if (!userId) return;
-      const json = await safeJsonFetch(`${API_BASE}/local-shop/notifications/${userId}`);
+      const token = localStorage.getItem("token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const json = await safeJsonFetch(`${API_BASE}/local-shop/notifications/${userId}`, { headers });
       if (json?.success) setNotifications(json.notifications || []);
     } catch { /* ignore */ }
   }, []);
