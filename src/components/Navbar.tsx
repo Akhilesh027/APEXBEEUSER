@@ -73,6 +73,7 @@ const Navbar = () => {
   });
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [openLocationModal, setOpenLocationModal] = useState(false);
   const [userLocation, setUserLocation] = useState<any | null>(null);
@@ -83,7 +84,6 @@ const Navbar = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalEndpoint, setModalEndpoint] = useState("");
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileEarnOpen, setMobileEarnOpen] = useState(false);
 
   // ✅ Shop by Category dropdown
@@ -807,23 +807,27 @@ const Navbar = () => {
     .filter(Boolean);
 
   return (
-    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md">
-      {/* Row 1 */}
+    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full font-sans">
+      {/* Row 1 — FIXED DESKTOP TOP HEADER BAR */}
       <div className="border-b border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex items-center justify-between h-14 shrink-0 flex-nowrap">
             {/* Logo */}
-            <Link to="/" className="text-2xl font-bold shrink-0" onClick={closeAllPopovers}>
+            <Link to="/" className="text-2xl font-bold shrink-0 flex items-center" onClick={closeAllPopovers}>
               <img src={logo} alt="logo" className="w-28 sm:w-32 h-auto object-contain" />
             </Link>
 
-            {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-5 text-[11px] xl:text-xs font-bold tracking-wider">
-              <Link to="/" className="hover:text-accent transition">
+            {/* Desktop Menu — FIXED NO-MOVE NO-WRAP */}
+            <div className="hidden lg:flex items-center space-x-4 xl:space-x-5 text-[11px] xl:text-xs font-extrabold tracking-wider whitespace-nowrap shrink-0">
+              <Link to="/" className="hover:text-amber-400 transition">
                 HOME
               </Link>
-              <Link to="/categories" className="hover:text-accent transition">
+              <Link to="/categories" className="hover:text-amber-400 transition">
                 CATEGORY
+              </Link>
+              <Link to="/food" className="hover:text-amber-400 text-amber-400 font-extrabold transition flex items-center space-x-1">
+                <span>FOOD & DINING</span>
+                <span className="px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[9px] rounded font-black">HOT</span>
               </Link>
               <Link to="/local-stores" className="hover:text-accent transition">
                 LOCAL STORES
@@ -899,34 +903,7 @@ const Navbar = () => {
             {/* Right Section */}
             <div className="flex items-center space-x-3">
 
-              {/* Language Selector (hidden on mobile, visible on desktop) */}
-              <div className="hidden md:block relative" ref={langRef}>
-                <div
-                  className="flex items-center gap-1 cursor-pointer hover:text-accent text-xs bg-white/10 px-2.5 py-1 rounded border border-white/10"
-                  onClick={() => setLangOpen((v) => !v)}
-                >
-                  <span className="text-xs">🌐</span>
-                  <span className="font-semibold text-xs leading-none">{languages[activeLang] || "English"}</span>
-                  <span className="text-[8px] text-accent leading-none">▼</span>
-                </div>
-                {langOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-white text-black rounded-xl shadow-xl border border-slate-100 py-1 w-28 z-50 text-[11px] font-bold">
-                    {Object.entries(languages).map(([code, name]) => (
-                      <button
-                        key={code}
-                        onClick={() => {
-                          setActiveLang(code);
-                          localStorage.setItem("user_language", code);
-                          setLangOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 transition-colors ${activeLang === code ? "text-accent" : "text-navy"}`}
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+
 
               {/* Notification icon (mobile & desktop visible) */}
               <div className="relative cursor-pointer hover:text-accent flex items-center" onClick={() => setNotificationsOpen((v) => !v)}>

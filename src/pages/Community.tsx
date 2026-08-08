@@ -1,7 +1,5 @@
 // src/pages/Community.tsx — Module 13: Community, Support & Engagement
 import { useState, useEffect, useCallback } from "react";
-
-const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -28,23 +26,67 @@ import {
   UserCircle,
   Share2,
   Globe,
-  Briefcase
+  Briefcase,
+  Sparkles,
+  Send,
+  Plus,
+  Image as ImageIcon,
+  CheckCircle,
+  ShieldCheck,
+  Search,
+  MessageSquare,
+  ThumbsUp,
+  Flag,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
+const FAQ_ITEMS = [
+  {
+    q: "How do I track my order in real-time?",
+    a: "You can track your order live from the 'My Orders' section in your account dashboard. You can also view live GPS tracking for instant food and grocery deliveries.",
+  },
+  {
+    q: "What is the return & refund policy?",
+    a: "Products are eligible for returns within 7 days of delivery. For damaged or defective items, you can request an instant return from your 'My Orders' tab.",
+  },
+  {
+    q: "How do I redeem my ApexBee Wallet balance?",
+    a: "Your wallet balance is automatically available at checkout. Simply check the 'Use ApexBee Wallet Balance' option to apply instant discounts.",
+  },
+  {
+    q: "How can I register as a local merchant or vendor?",
+    a: "Click on 'Sell on ApexBee' in the footer or menu bar to register your store, complete your digital profile, and start selling to local customers.",
+  },
+  {
+    q: "How does the Refer & Earn program work?",
+    a: "Share your unique referral code with friends. When they complete their first order, both of you earn instant cashback credited directly to your ApexBee wallet.",
+  },
+  {
+    q: "How do I book a table for Dineout with discounts?",
+    a: "Go to the Food & Dining section (/food), switch to the 'Dineout' tab, pick your favorite restaurant venue, select date/time, and receive instant table reservation confirmation with up to 40% OFF.",
+  },
+];
 
 const Community = () => {
-  const [activeTab, setActiveTab] = useState("feed");
-  const [supportTab, setSupportTab] = useState("faq"); // faq, tickets, contact
+  const [activeTab, setActiveTab] = useState<"feed" | "stores" | "support">("feed");
+  const [supportTab, setSupportTab] = useState<"faq" | "tickets" | "contact">("faq");
 
   // Dynamic Feed States
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [postInput, setPostInput] = useState("");
+  const [postType, setPostType] = useState("general");
+  const [postMediaUrl, setPostMediaUrl] = useState("");
+  const [showMediaInput, setShowMediaInput] = useState(false);
   const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [commentInput, setCommentInput] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
+  const [faqSearch, setFaqSearch] = useState("");
+  const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
 
   // Support Ticket Form State
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -55,9 +97,13 @@ const Community = () => {
   const [ticketMessage, setTicketMessage] = useState("");
 
   const getAuth = () => {
-    const user = JSON.parse(localStorage.getItem("user") || "null");
-    const token = localStorage.getItem("token");
-    return { user, token };
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      const token = localStorage.getItem("token");
+      return { user, token };
+    } catch {
+      return { user: null, token: null };
+    }
   };
 
   const fetchPosts = useCallback(async () => {
@@ -119,10 +165,16 @@ const Community = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ content: postInput, postType: "general" })
+        body: JSON.stringify({
+          content: postInput,
+          postType: postType,
+          mediaUrl: postMediaUrl.trim()
+        })
       });
       if (res.ok) {
         setPostInput("");
+        setPostMediaUrl("");
+        setShowMediaInput(false);
         fetchPosts();
       } else {
         const data = await res.json();
@@ -179,6 +231,10 @@ const Community = () => {
   };
 
   const handleOpenComments = async (postId: string) => {
+    if (activeCommentsPostId === postId) {
+      setActiveCommentsPostId(null);
+      return;
+    }
     setActiveCommentsPostId(postId);
     setLoadingComments(true);
     try {
@@ -249,368 +305,520 @@ const Community = () => {
         setTicketMessage("");
         setShowTicketModal(false);
         fetchTickets();
+        alert("✅ Support ticket submitted successfully! Our team will respond shortly.");
       }
     } catch (err) {
       console.error("create ticket error:", err);
     }
   };
 
-  const renderFeed = () => (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Post Box */}
-      <Card className="border border-gray-200 shadow-sm rounded-2xl overflow-hidden bg-white">
-        <CardContent className="p-4 flex gap-3 items-center">
-          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold flex-shrink-0">
-            🐝
-          </div>
-          <input
-            type="text"
-            value={postInput}
-            onChange={(e) => setPostInput(e.target.value)}
-            placeholder="Share something with the community..."
-            className="flex-1 bg-gray-50 border-0 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 text-navy"
-          />
-          <Button onClick={handleCreatePost} size="sm" className="bg-navy hover:bg-navy/90 text-white rounded-full font-bold px-5">
-            Post
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Feed Items */}
-      <div className="space-y-4">
-        {loadingFeed ? (
-          [1, 2].map((i) => (
-            <Card key={i} className="p-6 border border-gray-200">
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/3 mb-2" />
-              <div className="h-3 bg-gray-200 animate-pulse rounded w-1/4 mb-4" />
-              <div className="h-10 bg-gray-200 animate-pulse rounded w-full" />
-            </Card>
-          ))
-        ) : posts.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-8">No community posts yet. Be the first to share!</p>
-        ) : (
-          posts.map((item) => {
-            const isLiked = item.likes?.includes(getAuth().user?._id || getAuth().user?.id);
-            const relativeTime = new Date(item.createdAt).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit"
-            });
-
-            return (
-              <Card key={item._id} className="hover:shadow-md transition-shadow border border-gray-200 rounded-2xl overflow-hidden bg-white">
-                <CardContent className="p-5">
-                  <div className="flex gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-navy/20 flex items-center justify-center font-bold text-navy flex-shrink-0 text-lg">
-                      {item.authorAvatar || "🐝"}
-                    </div>
-                    <div>
-                      <p className="text-sm">
-                        <strong className="text-navy cursor-pointer hover:underline">{item.authorName}</strong>{" "}
-                        <Badge variant="outline" className="text-[10px] scale-95 border-gray-300 font-bold uppercase tracking-wider">
-                          {item.postType}
-                        </Badge>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{relativeTime}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm leading-relaxed text-gray-800 mb-4 whitespace-pre-wrap">{item.content}</p>
-                  <div className="flex items-center gap-6 border-t pt-3">
-                    <button
-                      onClick={() => handleLikePost(item._id)}
-                      className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${isLiked ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-navy"
-                        }`}
-                    >
-                      <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} /> Like ({item.likes?.length || 0})
-                    </button>
-                    <button
-                      onClick={() => handleOpenComments(item._id)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-navy transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4" /> Comment
-                    </button>
-                    <button
-                      onClick={() => handleReportPost(item._id)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-orange-600 transition-colors ml-auto"
-                    >
-                      <AlertCircle className="w-4 h-4" /> Report Post
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-
-  const renderSupport = () => (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-navy rounded-2xl p-8 text-white flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">How can we help you?</h2>
-          <p className="opacity-90">Search our knowledge base or raise a ticket for assistance.</p>
-        </div>
-        <HelpCircle className="w-16 h-16 opacity-20" />
-      </div>
-
-      <div className="flex gap-4 border-b">
-        <button onClick={() => setSupportTab("faq")} className={`pb-3 font-medium text-sm transition-colors ${supportTab === "faq" ? "border-b-2 border-navy text-navy" : "text-muted-foreground hover:text-navy"}`}>FAQs</button>
-        <button onClick={() => setSupportTab("tickets")} className={`pb-3 font-medium text-sm transition-colors ${supportTab === "tickets" ? "border-b-2 border-navy text-navy" : "text-muted-foreground hover:text-navy"}`}>My Tickets</button>
-        <button onClick={() => setSupportTab("contact")} className={`pb-3 font-medium text-sm transition-colors ${supportTab === "contact" ? "border-b-2 border-navy text-navy" : "text-muted-foreground hover:text-navy"}`}>Contact Us</button>
-      </div>
-
-      {supportTab === "faq" && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            "How do I track my order?",
-            "What is the return policy?",
-            "How do I redeem my wallet balance?",
-            "How can I become a vendor?",
-            "How does the referral program work?",
-            "My service provider didn't arrive."
-          ].map((q, i) => (
-            <div key={i} className="p-4 border rounded-xl hover:shadow-sm cursor-pointer flex justify-between items-center group">
-              <span className="font-medium text-sm text-navy group-hover:text-blue-600 transition-colors">{q}</span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {supportTab === "tickets" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-navy">Recent Tickets</h3>
-            <Button size="sm" className="bg-navy hover:bg-navy/90 text-white" onClick={() => setShowTicketModal(true)}><Ticket className="w-4 h-4 mr-2" /> Raise Ticket</Button>
-          </div>
-          {tickets.map(t => (
-            <Card key={t.id}>
-              <CardContent className="p-4 flex justify-between items-center">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-sm text-navy">{t.id}</span>
-                    <Badge className={t.status === "Resolved" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}>{t.status}</Badge>
-                  </div>
-                  <p className="font-medium text-sm">{t.subject}</p>
-                  <p className="text-xs text-muted-foreground">{t.date}</p>
-                </div>
-                <Button variant="outline" size="sm">View</Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {supportTab === "contact" && (
-        <div className="grid sm:grid-cols-3 gap-4 text-center">
-          <Card>
-            <CardContent className="p-6">
-              <MessageCircle className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-              <h4 className="font-bold mb-1">Live Chat</h4>
-              <p className="text-xs text-muted-foreground mb-3">Available 24/7</p>
-              <Button variant="outline" className="w-full text-xs">Start Chat</Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <Phone className="w-8 h-8 text-green-500 mx-auto mb-3" />
-              <h4 className="font-bold mb-1">Call Us</h4>
-              <p className="text-xs text-muted-foreground mb-3">Mon-Sat, 9AM to 6PM</p>
-              <Button variant="outline" className="w-full text-xs">9999-888-777</Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <Mail className="w-8 h-8 text-orange-500 mx-auto mb-3" />
-              <h4 className="font-bold mb-1">Email Support</h4>
-              <p className="text-xs text-muted-foreground mb-3">Response in 24 hours</p>
-              <Button variant="outline" className="w-full text-xs">support@apexbee.in</Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderProfile = () => (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Card className="border-0 shadow-md bg-gradient-to-r from-navy to-blue-800 text-white">
-        <CardContent className="p-8 flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full bg-white text-navy flex items-center justify-center text-3xl font-bold border-4 border-white/20">
-            A
-          </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold mb-1">Akhil</h2>
-            <p className="opacity-90 flex items-center gap-1 text-sm"><Phone className="w-3 h-3" /> +91 9876543210</p>
-            <p className="opacity-90 flex items-center gap-1 text-sm mb-3"><Mail className="w-3 h-3" /> akhil@example.com</p>
-            <div className="flex gap-2">
-              <Badge className="bg-yellow-500 border-0 text-white"><Award className="w-3 h-3 mr-1" /> Gold Member</Badge>
-              <Badge className="bg-white/20 border-0 hover:bg-white/30 text-white transition-colors cursor-pointer">Edit Profile</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 space-y-4">
-          {[
-            { icon: <UserCircle className="w-5 h-5" />, label: "Personal Information" },
-            { icon: <MapPin className="w-5 h-5" />, label: "Saved Addresses" },
-            { icon: <Globe className="w-5 h-5" />, label: "Language Settings" },
-            { icon: <Bell className="w-5 h-5" />, label: "Notifications" },
-            { icon: <Settings className="w-5 h-5" />, label: "Account Settings" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer font-medium text-sm text-gray-700 transition-colors">
-              <div className="text-navy">{item.icon}</div>
-              {item.label}
-            </div>
-          ))}
-        </div>
-
-        <div className="md:col-span-2 space-y-6">
-          <h3 className="text-xl font-bold text-navy">Achievements & Badges</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { title: "Top Referrer", desc: "Invited 50+ friends", icon: "🏆", color: "bg-yellow-50" },
-              { title: "Loyal Shopper", desc: "Placed 20+ orders", icon: "🛍️", color: "bg-blue-50" },
-              { title: "Avid Learner", desc: "Completed 5 courses", icon: "🎓", color: "bg-green-50" },
-              { title: "Community Pillar", desc: "Helped 10 users in forum", icon: "🤝", color: "bg-purple-50" },
-            ].map((b, i) => (
-              <div key={i} className={`p-4 rounded-xl border flex items-center gap-4 ${b.color}`}>
-                <div className="text-3xl">{b.icon}</div>
-                <div>
-                  <h4 className="font-bold text-navy text-sm">{b.title}</h4>
-                  <p className="text-xs text-muted-foreground">{b.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+  const filteredFaqs = FAQ_ITEMS.filter(
+    (item) =>
+      item.q.toLowerCase().includes(faqSearch.toLowerCase()) ||
+      item.a.toLowerCase().includes(faqSearch.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <Navbar />
 
-      <div className="border-b bg-white sticky top-[64px] z-10 shadow-sm">
-        <div className="container mx-auto px-4 flex gap-1 overflow-x-auto scrollbar-none">
-          {[
-            { key: "feed", label: "Community Feed", icon: <Users className="w-4 h-4 mr-2" /> },
-            { key: "support", label: "Help & Support", icon: <HelpCircle className="w-4 h-4 mr-2" /> },
-            { key: "profile", label: "My Profile", icon: <UserCircle className="w-4 h-4 mr-2" /> },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key ? "border-navy text-navy" : "border-transparent text-muted-foreground hover:text-navy hover:border-gray-300"
-                }`}
-            >
-              {tab.icon}{tab.label}
-            </button>
-          ))}
+      {/* ── TOP HERO BANNER & COMMUNITY STATS STRIP ── */}
+      <div className="bg-gradient-to-r from-[#0A1128] via-[#101F42] to-[#0A1128] text-white py-8 sm:py-12 relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-amber-400/10 blur-3xl pointer-events-none" />
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-amber-400 text-[#0A1128] px-3.5 py-1 rounded-full font-black text-xs shadow-md mb-3">
+                <Users className="w-3.5 h-3.5" /> ApexBee Social Hub & Customer Care
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                ApexBee Community & Support
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-2xl mt-1.5 leading-relaxed">
+                Connect with verified local buyers & merchants, share product reviews, discover community deals, or get instant customer support.
+              </p>
+            </div>
+
+            {/* Quick Community Stats */}
+            <div className="grid grid-cols-3 gap-3 shrink-0">
+              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Members</p>
+                <p className="text-xl sm:text-2xl font-black text-amber-400">12.4K+</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Posts</p>
+                <p className="text-xl sm:text-2xl font-black text-emerald-400">3.8K+</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Merchants</p>
+                <p className="text-xl sm:text-2xl font-black text-sky-400">950+</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {activeTab === "feed" && renderFeed()}
-        {activeTab === "support" && renderSupport()}
-        {activeTab === "profile" && renderProfile()}
+      {/* ── MAIN CONTENT AREA ── */}
+      <div className="container mx-auto px-2 sm:px-6 py-6 sm:py-8">
+
+        {/* ── MAIN VIEW TABS ── */}
+        <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 mb-8 max-w-xl mx-auto">
+          <button
+            onClick={() => setActiveTab("feed")}
+            className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer ${activeTab === "feed"
+                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+                : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
+              }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Community Feed</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("support")}
+            className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer ${activeTab === "support"
+                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+                : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
+              }`}
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>Support & Help Center</span>
+          </button>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 1: COMMUNITY FEED & DISCUSSIONS */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {activeTab === "feed" && (
+          <div className="max-w-3xl mx-auto space-y-6">
+
+            {/* POST CREATOR BOX */}
+            <Card className="border border-slate-200/90 shadow-md rounded-3xl overflow-hidden bg-white">
+              <CardContent className="p-4 sm:p-5 space-y-3">
+                <div className="flex gap-3 items-start">
+                  <div className="w-10 h-10 rounded-full bg-[#0A1128] text-amber-400 flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
+                    🐝
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <textarea
+                      value={postInput}
+                      onChange={(e) => setPostInput(e.target.value)}
+                      placeholder="Share a story, product recommendation, or question with the community..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-amber-400 min-h-[70px] resize-none font-medium"
+                    />
+
+                    {showMediaInput && (
+                      <input
+                        type="url"
+                        value={postMediaUrl}
+                        onChange={(e) => setPostMediaUrl(e.target.value)}
+                        placeholder="Paste image or photo URL (http://...)"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-400 font-mono"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* POST TOOLBAR */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={postType}
+                      onChange={(e) => setPostType(e.target.value)}
+                      className="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 cursor-pointer focus:outline-none"
+                    >
+                      <option value="general">💬 General Discussion</option>
+                      <option value="review">⭐ Product Review</option>
+                      <option value="announcement">📢 Local Announcement</option>
+                      <option value="business">💼 Franchise / Business</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaInput(!showMediaInput)}
+                      className={`p-2 rounded-xl border text-xs font-bold transition flex items-center gap-1 cursor-pointer ${showMediaInput ? "bg-amber-50 text-amber-800 border-amber-300" : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                        }`}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Add Photo</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCreatePost}
+                    className="bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition shadow-sm border-none cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Publish</span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* FEED POSTS LIST */}
+            <div className="space-y-4">
+              {loadingFeed ? (
+                [1, 2, 3].map((i) => (
+                  <Card key={i} className="p-6 border border-slate-200 bg-white rounded-3xl animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-slate-200 rounded w-1/4 mb-4" />
+                    <div className="h-16 bg-slate-200 rounded w-full" />
+                  </Card>
+                ))
+              ) : posts.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-10 text-center space-y-3 shadow-xs">
+                  <MessageCircle className="w-12 h-12 text-slate-300 mx-auto" />
+                  <h3 className="text-base font-extrabold text-slate-800">No Posts Yet</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Be the first member to share a post, review, or question with the ApexBee community!
+                  </p>
+                </div>
+              ) : (
+                posts.map((item) => {
+                  const isLiked = item.likes?.includes(getAuth().user?._id || getAuth().user?.id);
+                  const relativeTime = new Date(item.createdAt || Date.now()).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  });
+
+                  return (
+                    <Card key={item._id} className="border border-slate-200/90 rounded-3xl overflow-hidden bg-white shadow-xs hover:shadow-md transition">
+                      <CardContent className="p-4 sm:p-6 space-y-4">
+                        {/* AUTHOR HEADER */}
+                        <div className="flex gap-3 items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#0A1128] text-[#F3BA12] flex items-center justify-center font-black text-sm shrink-0 border border-slate-200 shadow-xs">
+                              {item.authorAvatar && item.authorAvatar.length <= 4 ? item.authorAvatar : "🐝"}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-extrabold text-sm text-[#0A1128]">{item.authorName || "ApexBee Member"}</span>
+                                <Badge className="bg-amber-100 text-amber-900 border-amber-200 text-[9px] font-black uppercase px-2 py-0.2">
+                                  {item.postType || "General"}
+                                </Badge>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-semibold">{relativeTime}</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleReportPost(item._id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition border-none cursor-pointer"
+                            title="Report Post"
+                          >
+                            <Flag className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* CONTENT TEXT */}
+                        <p className="text-xs sm:text-sm leading-relaxed text-slate-800 font-medium whitespace-pre-wrap">
+                          {item.content}
+                        </p>
+
+                        {/* MEDIA ATTACHMENT */}
+                        {item.mediaUrl && (
+                          <div className="rounded-2xl overflow-hidden max-h-80 bg-slate-100 border border-slate-100">
+                            <img src={item.mediaUrl} alt="Post media" className="w-full h-full object-cover" loading="lazy" />
+                          </div>
+                        )}
+
+                        {/* ACTION BAR */}
+                        <div className="flex items-center gap-6 border-t border-slate-100 pt-3 text-xs font-extrabold text-slate-500">
+                          <button
+                            type="button"
+                            onClick={() => handleLikePost(item._id)}
+                            className={`flex items-center gap-1.5 transition cursor-pointer border-none bg-transparent ${isLiked ? "text-rose-600 font-black" : "hover:text-[#0A1128]"
+                              }`}
+                          >
+                            <Heart className={`w-4 h-4 ${isLiked ? "fill-rose-600 text-rose-600" : ""}`} />
+                            <span>Like ({item.likes?.length || 0})</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenComments(item._id)}
+                            className="flex items-center gap-1.5 hover:text-[#0A1128] transition cursor-pointer border-none bg-transparent"
+                          >
+                            <MessageCircle className="w-4 h-4 text-amber-500" />
+                            <span>Comments ({item.commentsCount || 0})</span>
+                          </button>
+                        </div>
+
+                        {/* COMMENTS COLLAPSIBLE DRAWER */}
+                        {activeCommentsPostId === item._id && (
+                          <div className="mt-3 pt-3 border-t border-slate-100 space-y-3 bg-slate-50/80 p-3 sm:p-4 rounded-2xl">
+                            <h4 className="text-xs font-black text-[#0A1128]">Comments</h4>
+
+                            {/* COMMENT INPUT */}
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={commentInput}
+                                onChange={(e) => setCommentInput(e.target.value)}
+                                placeholder="Write a comment..."
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-400 font-medium"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddComment}
+                                className="bg-[#0A1128] text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-500 hover:text-[#0A1128] transition border-none cursor-pointer shrink-0"
+                              >
+                                Reply
+                              </button>
+                            </div>
+
+                            {/* COMMENTS LIST */}
+                            {loadingComments ? (
+                              <p className="text-xs text-slate-400 font-semibold py-2">Loading comments...</p>
+                            ) : comments.length === 0 ? (
+                              <p className="text-xs text-slate-400 font-medium py-1">No comments yet. Be the first to reply!</p>
+                            ) : (
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {comments.map((c) => (
+                                  <div key={c._id} className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-xs">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-bold text-[#0A1128]">{c.authorName || "User"}</span>
+                                      <span className="text-[9px] text-slate-400">
+                                        {new Date(c.createdAt || Date.now()).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                    </div>
+                                    <p className="text-slate-700 font-medium">{c.content}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 2: SUPPORT & HELP CENTER */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {activeTab === "support" && (
+          <div className="max-w-4xl mx-auto space-y-6">
+
+            {/* SUPPORT BANNER */}
+            <div className="bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-black text-white">How can we help you today?</h2>
+                <p className="text-xs sm:text-sm text-slate-200 max-w-md font-medium">
+                  Search our help desk FAQs, raise an instant support ticket, or chat directly with our customer care team.
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowTicketModal(true)}
+                className="bg-amber-400 hover:bg-amber-300 text-[#0A1128] font-black text-xs px-6 py-3 rounded-2xl shadow-lg border-none cursor-pointer shrink-0"
+              >
+                <Ticket className="w-4 h-4 mr-2" /> Raise Support Ticket
+              </Button>
+            </div>
+
+            {/* SUPPORT SUB-TABS */}
+            <div className="flex gap-2 border-b border-slate-200 pb-2">
+              <button
+                onClick={() => setSupportTab("faq")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer border ${supportTab === "faq" ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128]" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                Frequently Asked Questions (FAQs)
+              </button>
+              <button
+                onClick={() => setSupportTab("tickets")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer border ${supportTab === "tickets" ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128]" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                My Tickets ({tickets.length})
+              </button>
+              <button
+                onClick={() => setSupportTab("contact")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer border ${supportTab === "contact" ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128]" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                Contact Support
+              </button>
+            </div>
+
+            {/* ── FAQ TAB ── */}
+            {supportTab === "faq" && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={faqSearch}
+                    onChange={(e) => setFaqSearch(e.target.value)}
+                    placeholder="Search help topics (e.g. order tracking, returns, wallet)..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:border-amber-400 shadow-xs"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  {filteredFaqs.map((faq, i) => {
+                    const isOpen = openFaqIdx === i;
+                    return (
+                      <div
+                        key={i}
+                        className="bg-white border border-slate-200/90 rounded-2xl p-4 cursor-pointer hover:border-amber-400 transition shadow-xs"
+                        onClick={() => setOpenFaqIdx(isOpen ? null : i)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-xs sm:text-sm text-[#0A1128] flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                            {faq.q}
+                          </span>
+                          {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+                        </div>
+                        {isOpen && (
+                          <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-slate-100 leading-relaxed font-medium">
+                            {faq.a}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── MY TICKETS TAB ── */}
+            {supportTab === "tickets" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-black text-[#0A1128]">Your Support Tickets</h3>
+                  <Button size="sm" className="bg-[#0A1128] text-amber-400 hover:bg-amber-500 hover:text-[#0A1128] font-bold text-xs" onClick={() => setShowTicketModal(true)}>
+                    <Ticket className="w-3.5 h-3.5 mr-1.5" /> New Ticket
+                  </Button>
+                </div>
+
+                {loadingTickets ? (
+                  <p className="text-xs text-slate-400 font-semibold text-center py-6">Loading tickets...</p>
+                ) : tickets.length === 0 ? (
+                  <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-2">
+                    <Ticket className="w-10 h-10 text-slate-300 mx-auto" />
+                    <p className="text-xs text-slate-500 font-semibold">You have no active support tickets.</p>
+                  </div>
+                ) : (
+                  tickets.map((t) => (
+                    <Card key={t._id || t.id} className="border border-slate-200 rounded-2xl bg-white">
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-xs text-[#0A1128]">#{t.ticketNumber || t._id}</span>
+                            <Badge className={t.status === "Resolved" ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"}>
+                              {t.status || "Open"}
+                            </Badge>
+                          </div>
+                          <p className="font-extrabold text-sm text-slate-800">{t.subject}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{t.category} • {new Date(t.createdAt || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="rounded-xl border-slate-200 text-xs font-bold">View Ticket</Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* ── CONTACT US TAB ── */}
+            {supportTab === "contact" && (
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-black text-sm text-[#0A1128]">Email Support</h4>
+                  <p className="text-xs text-slate-500 font-medium">support@apexbee.in</p>
+                  <p className="text-[10px] text-slate-400">Response within 2 hours</p>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <Phone className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-black text-sm text-[#0A1128]">Toll-Free Helpline</h4>
+                  <p className="text-xs text-slate-500 font-medium">+91-9999-888-777</p>
+                  <p className="text-[10px] text-slate-400">Mon–Sat (9 AM to 9 PM)</p>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-black text-sm text-[#0A1128]">WhatsApp Support</h4>
+                  <p className="text-xs text-slate-500 font-medium">+91-9999-888-777</p>
+                  <p className="text-[10px] text-slate-400">Instant AI & Human Chat</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* ── RAISE TICKET MODAL ── */}
       <Dialog open={showTicketModal} onOpenChange={setShowTicketModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Raise a Ticket</DialogTitle></DialogHeader>
-          <div className="space-y-4 pt-2">
+        <DialogContent className="sm:max-w-lg rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-[#0A1128]">
+              <Ticket className="w-5 h-5 text-amber-500" /> Raise Support Ticket
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 text-xs font-semibold pt-2">
             <div>
-              <label className="text-sm font-medium mb-1 block">Category</label>
+              <label className="block text-slate-700 mb-1">Issue Category</label>
               <select
                 value={ticketCategory}
                 onChange={(e) => setTicketCategory(e.target.value)}
-                className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold"
               >
-                <option value="Order Issue">Order Issue</option>
-                <option value="Service Issue">Service Issue</option>
-                <option value="Wallet & Payments">Wallet & Payments</option>
-                <option value="Other">Other</option>
+                <option value="Order Issue">Order & Delivery Issue</option>
+                <option value="Payment / Refund">Payment, Wallet & Refunds</option>
+                <option value="Account & Login">Account & Login</option>
+                <option value="Vendor Inquiry">Vendor Partnership</option>
+                <option value="General Support">General Support</option>
               </select>
             </div>
+
             <div>
-              <label className="text-sm font-medium mb-1 block">Subject</label>
+              <label className="block text-slate-700 mb-1">Subject</label>
               <input
                 type="text"
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
-                className="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
-                placeholder="Brief description..."
+                placeholder="Brief summary of your issue..."
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold"
               />
             </div>
+
             <div>
-              <label className="text-sm font-medium mb-1 block">Details</label>
+              <label className="block text-slate-700 mb-1">Detailed Description</label>
               <textarea
                 value={ticketMessage}
                 onChange={(e) => setTicketMessage(e.target.value)}
-                className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 min-h-[100px] resize-none"
-                placeholder="Explain the issue in detail..."
+                placeholder="Describe your issue in detail (order number, product details, etc.)..."
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-medium min-h-[90px] resize-none"
               />
             </div>
-            <Button className="w-full bg-navy hover:bg-navy/90 text-white font-bold" onClick={handleCreateTicket}>
-              Submit Ticket
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* ── Comments Modal Dialog ── */}
-      <Dialog open={activeCommentsPostId !== null} onOpenChange={(open) => !open && setActiveCommentsPostId(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              💬 Post Discussion
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-2">
-            <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-              {loadingComments ? (
-                <p className="text-center text-xs text-muted-foreground">Loading comments...</p>
-              ) : comments.length === 0 ? (
-                <p className="text-center text-xs text-muted-foreground py-4">No comments yet. Write a response below!</p>
-              ) : (
-                comments.map((c) => (
-                  <div key={c._id} className="p-3 bg-muted/40 rounded-xl">
-                    <div className="flex justify-between items-center mb-1">
-                      <strong className="text-navy text-xs">{c.authorName}</strong>
-                      <span className="text-[9px] text-muted-foreground">
-                        {new Date(c.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="border-t pt-3 flex gap-2">
-              <input
-                type="text"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                placeholder="Add a reply..."
-                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 bg-gray-50 focus:bg-white text-navy"
-                onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-              />
-              <Button onClick={handleAddComment} className="bg-navy hover:bg-navy/90 text-white font-bold">
-                Reply
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowTicketModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-[#0A1128] text-amber-400 hover:bg-amber-500 hover:text-[#0A1128] font-black text-xs rounded-xl"
+                onClick={handleCreateTicket}
+              >
+                Submit Ticket
               </Button>
             </div>
           </div>

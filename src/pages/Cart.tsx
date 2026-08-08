@@ -1,12 +1,12 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, Store, Tag, Bookmark, Heart, Truck, Gift } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 // Helper function to format currency
-const formatCurrency = (amount) => {
+const formatCurrency = (amount: any) => {
   const value = typeof amount === "number" && !isNaN(amount) ? amount : 0;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -15,19 +15,19 @@ const formatCurrency = (amount) => {
   }).format(value);
 };
 
-// ✅ Read pickup/preorder flags safely (rename fields if needed)
-const readItemFlags = (item) => {
+// Read pickup/preorder flags safely
+const readItemFlags = (item: any) => {
   const allowPickup = Boolean(item?.allowPickup ?? item?.pickupAvailable ?? false);
   const isPreOrder = Boolean(item?.isPreOrder ?? item?.preOrder ?? false);
-  const availableOn = item?.availableOn || item?.preOrderDate || null; // string/ISO
+  const availableOn = item?.availableOn || item?.preOrderDate || null;
   return { allowPickup, isPreOrder, availableOn };
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [savedItems, setSavedItems] = useState([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [savedItems, setSavedItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -38,10 +38,11 @@ const Cart = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [pendingSingleItem, setPendingSingleItem] = useState<any>(null);
 
   // Countdown timer logic
   useEffect(() => {
-    let timer;
+    let timer: any;
     if (otpSent && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((c) => c - 1);
@@ -87,7 +88,6 @@ const Cart = () => {
     setOtpLoading(true);
     setTimeout(() => {
       setOtpLoading(false);
-      // Register guest customer
       const guestUser = {
         id: `guest-${Date.now()}`,
         name: "Guest Customer",
@@ -100,18 +100,22 @@ const Cart = () => {
       localStorage.setItem("token", "mock-guest-token-12345");
       setShowGuestModal(false);
 
-      // Navigate to checkout directly
-      navigate("/checkout", {
-        state: {
-          cartItems,
-          subtotal,
-          discount,
-          deliveryFee: totalDeliveryFee,
-          total,
-          pickupPossible,
-          preOrderInfo,
-        },
-      });
+      if (pendingSingleItem) {
+        handleCheckoutSingleItem(pendingSingleItem);
+        setPendingSingleItem(null);
+      } else {
+        navigate("/checkout", {
+          state: {
+            cartItems,
+            subtotal,
+            discount,
+            deliveryFee: totalDeliveryFee,
+            total,
+            pickupPossible,
+            preOrderInfo,
+          },
+        });
+      }
       window.dispatchEvent(new Event("storage"));
     }, 600);
   };
@@ -119,7 +123,7 @@ const Cart = () => {
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const userId = user?.id || user?._id;
 
-  // Fetch cart items from backend
+  // Fetch cart items from backend or local_cart
   const fetchCart = async () => {
     if (!userId) {
       const local = localStorage.getItem("local_cart");
@@ -137,9 +141,23 @@ const Cart = () => {
     try {
       const res = await fetch(`${API_BASE}/cart/${userId}`);
       const data = await res.json();
-      setCartItems(data.cart?.items || data.cart || []);
+      const items = data.cart?.items || data.cart || [];
+      if (items.length === 0) {
+        const local = localStorage.getItem("local_cart");
+        if (local) {
+          try {
+            setCartItems(JSON.parse(local));
+            return;
+          } catch { }
+        }
+      }
+      setCartItems(items);
     } catch (err) {
       console.error("Error fetching cart:", err);
+      const local = localStorage.getItem("local_cart");
+      if (local) {
+        try { setCartItems(JSON.parse(local)); } catch { }
+      }
     }
   };
 
@@ -154,7 +172,7 @@ const Cart = () => {
   }, [userId]);
 
   // Update quantity
-  const updateQuantity = async (itemId, delta) => {
+  const updateQuantity = async (itemId: string, delta: number) => {
     if (!userId) {
       const local = localStorage.getItem("local_cart");
       let list = [];
@@ -163,7 +181,7 @@ const Cart = () => {
       }
       if (!Array.isArray(list)) list = [];
 
-      const itemIdx = list.findIndex((i) => i._id === itemId || i.productId === itemId);
+      const itemIdx = list.findIndex((i: any) => i._id === itemId || i.productId === itemId);
       if (itemIdx > -1) {
         const newQty = list[itemIdx].quantity + delta;
         if (newQty < 1) return;
@@ -180,8 +198,8 @@ const Cart = () => {
     const newQuantity = item.quantity + delta;
     if (newQuantity < 1) return;
 
-    if (delta > 0 && item.stock !== undefined && newQuantity > item.stock) {
-      alert(`Only ${item.stock} units are in stock for this product.`);
+    if (delta > 0 && item.stock !== undefined && item.stock !== null && newQuantity > item.stock) {
+      alert(`Only ${item.stock} units are available.`);
       return;
     }
 
@@ -193,8 +211,6 @@ const Cart = () => {
         body: JSON.stringify({ productId: item.productId || item._id, quantity: newQuantity }),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
         setCartItems((prev) =>
           prev.map((i) =>
@@ -202,8 +218,6 @@ const Cart = () => {
           )
         );
         window.dispatchEvent(new Event("storage"));
-      } else {
-        alert(data.message || "Failed to update quantity");
       }
     } catch (err) {
       console.error("Error updating quantity:", err);
@@ -213,17 +227,16 @@ const Cart = () => {
   };
 
   // Remove item
-  const removeItem = async (itemId) => {
-    if (!userId) {
-      const local = localStorage.getItem("local_cart");
-      let list = [];
-      if (local) {
-        try { list = JSON.parse(local); } catch { list = []; }
-      }
-      if (!Array.isArray(list)) list = [];
+  const removeItem = async (itemId: string) => {
+    const local = localStorage.getItem("local_cart");
+    let list = [];
+    if (local) {
+      try { list = JSON.parse(local); } catch { list = []; }
+    }
+    const updated = list.filter((i: any) => i._id !== itemId && i.productId !== itemId);
+    localStorage.setItem("local_cart", JSON.stringify(updated));
 
-      const updated = list.filter((i) => i._id !== itemId && i.productId !== itemId);
-      localStorage.setItem("local_cart", JSON.stringify(updated));
+    if (!userId) {
       setCartItems(updated);
       window.dispatchEvent(new Event("storage"));
       return;
@@ -233,18 +246,14 @@ const Cart = () => {
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/cart/${userId}`, {
+      await fetch(`${API_BASE}/cart/${userId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: item.productId || item._id }),
       });
 
-      if (res.ok) {
-        setCartItems((prev) => prev.filter((i) => i._id !== itemId && i.productId !== itemId));
-        window.dispatchEvent(new Event("storage"));
-      } else {
-        console.error("Failed to remove item");
-      }
+      setCartItems((prev) => prev.filter((i) => i._id !== itemId && i.productId !== itemId));
+      window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Error removing item:", err);
     } finally {
@@ -253,44 +262,58 @@ const Cart = () => {
   };
 
   // Save for Later
-  const saveForLater = async (item) => {
-    if (!userId) return;
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/cart/${userId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: item.productId || item._id }),
-      });
-
-      if (res.ok) {
-        const itemCopy = { ...item };
-        const updatedSaved = [...savedItems.filter(i => (i.productId || i._id) !== (item.productId || item._id)), itemCopy];
-        setSavedItems(updatedSaved);
-        localStorage.setItem("mock_save_for_later", JSON.stringify(updatedSaved));
-
-        setCartItems((prev) => prev.filter((i) => i._id !== item._id && i.productId !== item.productId));
-        window.dispatchEvent(new Event("storage"));
-      }
-    } catch (err) {
-      console.error("Error saving for later:", err);
-    } finally {
-      setLoading(false);
-    }
+  const saveForLater = async (item: any) => {
+    const itemCopy = { ...item };
+    const updatedSaved = [...savedItems.filter(i => (i.productId || i._id) !== (item.productId || item._id)), itemCopy];
+    setSavedItems(updatedSaved);
+    localStorage.setItem("mock_save_for_later", JSON.stringify(updatedSaved));
+    removeItem(item._id || item.productId);
   };
 
   // Move to Cart from Saved list
-  const moveToCart = async (item) => {
-    if (!userId) return;
-    // Check stock before moving to cart
-    if (item.stock !== undefined && item.stock <= 0) {
-      alert("This item is currently out of stock and cannot be moved to cart.");
+  const moveToCart = async (item: any) => {
+    const updatedSaved = savedItems.filter((i) => (i.productId || i._id) !== (item.productId || item._id));
+    setSavedItems(updatedSaved);
+    localStorage.setItem("mock_save_for_later", JSON.stringify(updatedSaved));
+
+    const local = JSON.parse(localStorage.getItem("local_cart") || "[]");
+    local.push({ ...item, quantity: 1 });
+    localStorage.setItem("local_cart", JSON.stringify(local));
+
+    if (userId) {
+      const token = localStorage.getItem("token");
+      try {
+        await fetch(`${API_BASE}/cart/add`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId,
+            productId: item.productId || item._id,
+            quantity: 1,
+            color: item.color || "default",
+            size: item.size || "default",
+          }),
+        });
+      } catch (err) {
+        console.error("Error adding to cart:", err);
+      }
+    }
+    fetchCart();
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  // Move to Wishlist
+  const moveToWishlist = async (item: any) => {
+    if (!userId) {
+      alert("Please login to save items to your wishlist.");
       return;
     }
     try {
-      setLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/cart/add`, {
+      await fetch(`${API_BASE}/wishlist/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -299,74 +322,29 @@ const Cart = () => {
         body: JSON.stringify({
           userId,
           productId: item.productId || item._id,
-          quantity: item.quantity || 1,
-          color: item.color || "default",
-          size: item.size || "One Size",
         }),
       });
-
-      if (res.ok) {
-        const updatedSaved = savedItems.filter(i => (i.productId || i._id) !== (item.productId || item._id));
-        setSavedItems(updatedSaved);
-        localStorage.setItem("mock_save_for_later", JSON.stringify(updatedSaved));
-
-        await fetchCart();
-        window.dispatchEvent(new Event("storage"));
-      }
-    } catch (err) {
-      console.error("Error moving to cart:", err);
-    } finally {
-      setLoading(false);
+      removeItem(item._id || item.productId);
+      alert("Moved to Wishlist!");
+    } catch (e) {
+      console.error("Move to wishlist error", e);
     }
   };
 
-  // Delete Saved Item
-  const deleteSavedItem = (item) => {
-    const updatedSaved = savedItems.filter(i => (i.productId || i._id) !== (item.productId || item._id));
-    setSavedItems(updatedSaved);
-    localStorage.setItem("mock_save_for_later", JSON.stringify(updatedSaved));
-  };
-
-  // Move to Wishlist
-  const moveToWishlist = async (item) => {
-    if (!userId) return;
-    try {
-      setLoading(true);
-      const resWish = await fetch(`${API_BASE}/wishlist/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, productId: item.productId || item._id }),
-      });
-      const dataWish = await resWish.json();
-
-      if (dataWish.success) {
-        const resCart = await fetch(`${API_BASE}/cart/${userId}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: item.productId || item._id }),
-        });
-
-        if (resCart.ok) {
-          setCartItems((prev) => prev.filter((i) => i._id !== item._id && i.productId !== item.productId));
-          window.dispatchEvent(new Event("storage"));
-          alert("Moved to Wishlist!");
-        }
-      }
-    } catch (err) {
-      console.error("Error moving to wishlist:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Group cart items by vendor
+  // Group items by vendor / restaurant
   const groupedCartItems = useMemo(() => {
-    const groups = {};
-    cartItems.forEach((item: any) => {
-      const vendorId = item.vendorId || "unknown";
-      const vendorName = item.vendorName || "ApexBee Seller";
+    const groups: { [key: string]: { vendorName: string; vendorId: string; items: any[] } } = {};
+
+    cartItems.forEach((item) => {
+      const vendorId = item.vendorId || item.restaurantId || "apexbee-store";
+      const vendorName = item.vendorName || item.restaurantName || "ApexBee Store & Food Outlets";
+
       if (!groups[vendorId]) {
-        groups[vendorId] = { vendorId, vendorName, items: [] };
+        groups[vendorId] = {
+          vendorName,
+          vendorId,
+          items: [],
+        };
       }
       groups[vendorId].items.push(item);
     });
@@ -375,24 +353,39 @@ const Cart = () => {
 
   // Subtotal (product selling price)
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + (item.afterDiscount || item.price) * item.quantity,
+    (sum, item) => sum + (item.afterDiscount || item.price || item.sellingPrice || 0) * item.quantity,
     0
   );
 
   // Original total before discounts (MRP)
   const originalTotal = cartItems.reduce(
-    (sum, item) => sum + (item.originalPrice || item.salesPrice || item.price) * item.quantity,
+    (sum, item) => sum + (item.originalPrice || item.salesPrice || item.price || 0) * item.quantity,
     0
   );
   const discount = Math.max(0, originalTotal - subtotal);
 
-  // delivery fee (display only, already included in selling price)
-  const totalDeliveryFee = cartItems.reduce(
-    (sum, item) => sum + (item.deliveryFee ?? 0) * item.quantity,
-    0
-  );
+  // delivery fee
+  const totalDeliveryFee = cartItems.reduce((sum, item: any) => {
+    const fee = Number(
+      item.deliveryFee ??
+      item.shippingCharge ??
+      item.shipping ??
+      item.shippingFee ??
+      item.adminPricing?.shippingCharge ??
+      item.adminPricing?.deliveryFee ??
+      item.product?.adminPricing?.shippingCharge ??
+      item.product?.shippingCharge ??
+      item.product?.deliveryFee ??
+      item.productId?.adminPricing?.shippingCharge ??
+      item.productId?.adminPricing?.deliveryFee ??
+      item.productId?.shippingCharge ??
+      item.productId?.deliveryFee ??
+      item.productId?.shipping ??
+      0
+    );
+    return sum + (fee * (item.quantity || 1));
+  }, 0);
 
-  // Grand total = subtotal only (shipping is already included, not added)
   const total = subtotal;
 
   // Pre-order: compute max availableOn
@@ -410,7 +403,6 @@ const Cart = () => {
     return { hasPreOrder: true, availableOnMax: maxDate.toISOString() };
   }, [cartItems]);
 
-  // pickup possible if ANY item allows pickup
   const pickupPossible = useMemo(() => {
     return cartItems.some((it) => readItemFlags(it).allowPickup);
   }, [cartItems]);
@@ -418,16 +410,9 @@ const Cart = () => {
   const handleCheckout = () => {
     if (cartItems.length === 0) return alert("Your cart is empty!");
 
-    // Stock validation check
-    const outOfStockItems = cartItems.filter(item => !item.stock || item.stock <= 0);
+    const outOfStockItems = cartItems.filter(item => item.stock !== undefined && item.stock !== null && item.stock <= 0);
     if (outOfStockItems.length > 0) {
       alert(`The following items are out of stock: ${outOfStockItems.map(i => i.itemName || i.name).join(", ")}. Please remove them to proceed.`);
-      return;
-    }
-
-    const overStockItems = cartItems.filter(item => item.quantity > (item.stock || 0));
-    if (overStockItems.length > 0) {
-      alert(`The following items exceed available stock: ${overStockItems.map(i => `${i.itemName || i.name} (Available: ${i.stock})`).join(", ")}. Please adjust their quantities.`);
       return;
     }
 
@@ -449,178 +434,207 @@ const Cart = () => {
     });
   };
 
+  const handleCheckoutSingleItem = (item: any) => {
+    if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
+      alert(`This item (${item.itemName || item.name}) is out of stock.`);
+      return;
+    }
+
+    const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
+    const itemSubtotal = (item.afterDiscount || item.price || item.sellingPrice || 0) * (item.quantity || 1);
+    const itemOriginalTotal = (item.originalPrice || item.salesPrice || item.price || 0) * (item.quantity || 1);
+    const itemDiscount = Math.max(0, itemOriginalTotal - itemSubtotal);
+
+    const itemDeliveryFee = Number(
+      item.deliveryFee ??
+      item.shippingCharge ??
+      item.shipping ??
+      item.shippingFee ??
+      item.adminPricing?.shippingCharge ??
+      item.adminPricing?.deliveryFee ??
+      item.product?.adminPricing?.shippingCharge ??
+      item.product?.shippingCharge ??
+      item.product?.deliveryFee ??
+      item.productId?.adminPricing?.shippingCharge ??
+      item.productId?.adminPricing?.deliveryFee ??
+      item.productId?.shippingCharge ??
+      item.productId?.deliveryFee ??
+      item.productId?.shipping ??
+      0
+    ) * (item.quantity || 1);
+
+    const itemTotal = itemSubtotal + itemDeliveryFee;
+
+    const singlePreOrderInfo = {
+      hasPreOrder: isPreOrder && Boolean(availableOn),
+      availableOnMax: availableOn ? new Date(availableOn).toISOString() : null,
+    };
+
+    if (!userId) {
+      setPendingSingleItem(item);
+      setShowGuestModal(true);
+      return;
+    }
+
+    navigate("/checkout", {
+      state: {
+        cartItems: [item],
+        subtotal: itemSubtotal,
+        discount: itemDiscount,
+        deliveryFee: itemDeliveryFee,
+        total: itemTotal,
+        pickupPossible: allowPickup,
+        preOrderInfo: singlePreOrderInfo,
+        singleItemCheckout: true,
+      },
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-navy mb-8">Shopping Cart</h1>
-
-        {/* quick info banners */}
-        {cartItems.length > 0 && (
-          <div className="mb-5 space-y-2">
-            {pickupPossible && (
-              <div className="rounded-lg border bg-blue-50 border-blue-200 p-3 text-sm text-blue-800">
-                ✅ Self Pickup available for some items (choose in checkout)
-              </div>
-            )}
-            {preOrderInfo.hasPreOrder && (
-              <div className="rounded-lg border bg-amber-50 border-amber-200 p-3 text-sm text-amber-800">
-                ⏳ Pre-order items in cart. Ready on / after:{" "}
-                <strong>{new Date(preOrderInfo.availableOnMax).toDateString()}</strong>
-              </div>
-            )}
+      {/* TOP HEADER BANNER */}
+      <div className="bg-[#0A1128] text-white py-8 px-4 sm:px-8 border-b border-amber-500/20">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-extrabold border border-amber-500/30">
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>APEXBEE SECURE CART</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-black text-white font-heading">Your Shopping & Dining Cart</h1>
           </div>
-        )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
+          <div className="flex items-center space-x-2 text-xs text-amber-300 font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>100% Safe Payments & Fast Dispatch</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+        {/* QUICK NOTIFICATION STRIP */}
+        <div className="bg-amber-400 text-[#0A1128] font-black text-xs py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span>Earn 10% Instant Wallet Bonus Cashback on Checkout Today!</span>
+          </div>
+          <span className="hidden sm:inline font-mono">CODE: APEXCHECKOUT</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT: CART ITEMS BY VENDOR */}
           <div className="lg:col-span-2 space-y-6">
             {cartItems.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border p-6">
-                <p className="text-muted-foreground text-lg mb-4">Your cart is empty</p>
-                <Button
-                  onClick={() => navigate("/products")}
-                  className="bg-navy hover:bg-navy/90 text-white"
-                >
-                  Continue Shopping
-                </Button>
+              <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-md p-8 space-y-4">
+                <ShoppingBag className="w-16 h-16 text-slate-300 mx-auto" />
+                <h3 className="text-xl font-black text-[#0A1128] font-heading">Your Cart is Empty</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Explore thousands of fresh products, fashion, groceries, and delicious restaurant meals on ApexBee.
+                </p>
+                <div className="flex items-center justify-center space-x-3 pt-2">
+                  <Button
+                    onClick={() => navigate("/products")}
+                    className="bg-[#0A1128] hover:bg-slate-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-2xl shadow-md"
+                  >
+                    Browse Products
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/food")}
+                    className="bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-extrabold text-xs px-6 py-2.5 rounded-2xl shadow-md"
+                  >
+                    Explore Food & Dining
+                  </Button>
+                </div>
               </div>
             ) : (
               groupedCartItems.map((group: any) => (
-                <div key={group.vendorId} className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-                  <h2 className="text-base font-bold text-navy border-b pb-3 mb-4 flex items-center gap-2">
-                    <span className="bg-accent/15 text-accent text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                      Seller
+                <div key={group.vendorId} className="bg-white rounded-3xl p-6 shadow-md border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <Store className="w-4 h-4 text-amber-500" />
+                      <h2 className="text-base font-black text-[#0A1128] font-heading">{group.vendorName}</h2>
+                    </div>
+                    <span className="text-[10px] font-black bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {group.items.length} {group.items.length === 1 ? 'Item' : 'Items'}
                     </span>
-                    {group.vendorName}
-                  </h2>
+                  </div>
 
-                  <div className="space-y-6">
-                    {group.items.map((item) => {
+                  <div className="divide-y divide-slate-100 space-y-4">
+                    {group.items.map((item: any) => {
                       const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
-                      const isLowStock = item.stock > 0 && item.stock <= 5;
-                      const isOutOfStock = !item.stock || item.stock <= 0;
 
                       return (
-                        <div
-                          key={item._id || item.productId}
-                          className="flex flex-col sm:flex-row gap-4 pb-6 border-b last:border-b-0 last:pb-0"
-                        >
-                          <img
-                            src={item.images?.[0] || item.image || "/placeholder.svg"}
-                            alt={item.itemName || item.name}
-                            className="w-24 h-24 object-cover rounded border bg-gray-50 flex-shrink-0"
-                          />
+                        <div key={item._id || item.productId} className="pt-4 flex flex-col sm:flex-row items-start justify-between gap-4">
+                          <div className="flex items-start space-x-4 flex-1">
+                            <img
+                              src={item.images?.[0] || item.image || item.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&auto=format&fit=crop"}
+                              alt={item.itemName || item.name}
+                              className="w-20 h-20 object-cover rounded-2xl border border-slate-200 bg-slate-50 shrink-0 shadow-sm"
+                            />
 
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <h3 className="font-semibold text-navy text-base leading-snug">
-                                  {item.itemName || item.name}
-                                </h3>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  Category: {item.categoryName || "Marketplace"} | Return: <span className="font-semibold text-navy">{item.returnPolicy || "7-day Easy Return"}</span>
-                                </p>
-                              </div>
-
-                              <div className="flex flex-wrap gap-2">
-                                {allowPickup && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-medium">
-                                    Pickup
-                                  </span>
-                                )}
-                                {isPreOrder && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                                    Pre-order
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {isPreOrder && availableOn && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Available on: <strong>{new Date(availableOn).toDateString()}</strong>
+                            <div className="space-y-1">
+                              <h3 className="font-extrabold text-slate-900 text-base leading-snug font-heading">
+                                {item.itemName || item.name}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-medium">
+                                Category: <span className="font-bold text-slate-700">{item.categoryName || "Marketplace"}</span>
                               </p>
-                            )}
 
-                            {isOutOfStock ? (
-                              <p className="text-xs font-bold text-red-600 mt-1">Out of Stock</p>
-                            ) : isLowStock ? (
-                              <p className="text-xs font-semibold text-orange-600 mt-1">Only {item.stock} left in stock!</p>
-                            ) : (
-                              <p className="text-xs text-green-600 mt-1 font-medium">In Stock</p>
-                            )}
-
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-lg font-bold text-navy">
-                                {formatCurrency(item.afterDiscount || item.price)}
-                              </span>
-                              {item.salesPrice && item.salesPrice > (item.afterDiscount || item.price) && (
-                                <span className="text-sm text-muted-foreground line-through">
-                                  {formatCurrency(item.salesPrice)}
+                              <div className="flex items-center space-x-2 pt-1">
+                                <span className="text-base font-black text-[#0A1128] font-mono">
+                                  {formatCurrency(item.afterDiscount || item.price || item.sellingPrice)}
                                 </span>
-                              )}
+                                {item.salesPrice && item.salesPrice > (item.afterDiscount || item.price) && (
+                                  <span className="text-xs text-slate-400 line-through font-normal">
+                                    {formatCurrency(item.salesPrice)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* QUANTITY & ACTIONS */}
+                          <div className="flex flex-col sm:items-end justify-between space-y-3 w-full sm:w-auto pt-2 sm:pt-0">
+                            <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                              <button
+                                onClick={() => updateQuantity(item._id || item.productId, -1)}
+                                disabled={loading || item.quantity <= 1}
+                                className="w-7 h-7 rounded-xl bg-white hover:bg-slate-200 text-slate-800 flex items-center justify-center transition disabled:opacity-40 cursor-pointer shadow-sm"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-8 text-center text-xs font-black font-mono">{item.quantity}</span>
+                              <button
+                                onClick={() => updateQuantity(item._id || item.productId, 1)}
+                                disabled={loading}
+                                className="w-7 h-7 rounded-xl bg-white hover:bg-slate-200 text-slate-800 flex items-center justify-center transition disabled:opacity-40 cursor-pointer shadow-sm"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
                             </div>
 
-                            {(item.deliveryFee ?? 0) > 0 && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Delivery Fee: {formatCurrency(item.deliveryFee)} per item
-                              </p>
-                            )}
-
-                            <div className="flex flex-wrap items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-                              <div className="flex items-center gap-2 border rounded bg-gray-50">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item._id || item.productId, -1)}
-                                  disabled={loading || item.quantity <= 1}
-                                >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </Button>
-                                <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item._id || item.productId, 1)}
-                                  disabled={loading || (item.stock !== undefined && item.quantity >= item.stock)}
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-
-                              <div className="flex gap-2 text-xs">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => saveForLater(item)}
-                                  disabled={loading}
-                                  className="h-8 text-gray-500 hover:text-navy hover:bg-gray-100"
-                                >
-                                  Save for Later
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => moveToWishlist(item)}
-                                  disabled={loading}
-                                  className="h-8 text-gray-500 hover:text-navy hover:bg-gray-100"
-                                >
-                                  Move to Wishlist
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeItem(item._id || item.productId)}
-                                  disabled={loading}
-                                  className="h-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  Remove
-                                </Button>
-                              </div>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-bold">
+                              <button
+                                onClick={() => handleCheckoutSingleItem(item)}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] rounded-xl shadow-xs transition cursor-pointer flex items-center space-x-1.5 border-none"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <span>Buy Only This Item</span>
+                              </button>
+                              <button
+                                onClick={() => saveForLater(item)}
+                                className="text-slate-500 hover:text-[#0A1128] transition cursor-pointer"
+                              >
+                                Save for Later
+                              </button>
+                              <button
+                                onClick={() => removeItem(item._id || item.productId)}
+                                className="text-rose-600 hover:text-rose-800 font-extrabold transition cursor-pointer flex items-center space-x-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -630,186 +644,91 @@ const Cart = () => {
                 </div>
               ))
             )}
-          </div>
 
-          {/* Order Summary */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 h-fit sticky top-4">
-            <h2 className="text-xl font-bold text-navy mb-4">Order Summary</h2>
+            {/* SAVED FOR LATER SECTION */}
+            {savedItems.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-200 space-y-4">
+                <h2 className="text-lg font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <Bookmark className="w-5 h-5 text-amber-500" />
+                  <span>Saved for Later ({savedItems.length})</span>
+                </h2>
 
-            <div className="space-y-3 mb-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total MRP</span>
-                <span className="font-medium text-navy">{formatCurrency(originalTotal)}</span>
-              </div>
-
-              {discount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Discount on MRP</span>
-                  <span>-{formatCurrency(discount)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Delivery Charges</span>
-                <span className="font-medium text-green-600">FREE (Included in Price)</span>
-              </div>
-
-              <div className="border-t pt-3 flex justify-between text-lg font-bold">
-                <span>Total Amount</span>
-                <span className="text-navy">{formatCurrency(total)}</span>
-              </div>
-            </div>
-
-            <Button
-              className="w-full bg-navy hover:bg-navy/90 text-white"
-              onClick={handleCheckout}
-              disabled={cartItems.length === 0 || loading}
-            >
-              {loading ? "Processing..." : "Proceed to Checkout"}
-            </Button>
-
-            {cartItems.length > 0 && (
-              <Button variant="outline" className="w-full mt-3" onClick={() => navigate("/products")}>
-                Continue Shopping
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Saved For Later Section */}
-        {savedItems.length > 0 && (
-          <div className="mt-12 bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-navy mb-6 flex items-center gap-2">
-              📂 Saved for Later ({savedItems.length})
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedItems.map((item: any) => (
-                <div key={item._id || item.productId} className="flex gap-4 p-4 border rounded-lg hover:shadow-md transition">
-                  <img
-                    src={item.images?.[0] || item.image || "/placeholder.svg"}
-                    alt={item.itemName || item.name}
-                    className="w-20 h-20 object-cover rounded border bg-gray-50 flex-shrink-0"
-                  />
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-semibold text-navy text-sm line-clamp-1">
-                        {item.itemName || item.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Seller: {item.vendorName || "ApexBee Seller"}
-                      </p>
-                      <p className="text-sm font-bold text-navy mt-1">
-                        {formatCurrency(item.afterDiscount || item.price)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        size="sm"
-                        className="bg-navy hover:bg-navy/90 text-white h-7 text-xs px-3"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {savedItems.map((item: any) => (
+                    <div key={item._id || item.productId} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={item.image || item.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&auto=format&fit=crop"}
+                          alt={item.name}
+                          className="w-14 h-14 object-cover rounded-xl border"
+                        />
+                        <div>
+                          <h4 className="font-extrabold text-xs text-slate-900 line-clamp-1">{item.name || item.itemName}</h4>
+                          <div className="text-xs font-black text-amber-600 font-mono mt-0.5">{formatCurrency(item.price)}</div>
+                        </div>
+                      </div>
+                      <button
                         onClick={() => moveToCart(item)}
-                        disabled={loading}
+                        className="px-3 py-1.5 bg-[#0A1128] hover:bg-slate-800 text-amber-400 font-black text-[11px] rounded-xl cursor-pointer shadow"
                       >
                         Move to Cart
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-red-500 hover:text-red-700 px-2"
-                        onClick={() => deleteSavedItem(item)}
-                        disabled={loading}
-                      >
-                        Remove
-                      </Button>
+                      </button>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: ORDER SUMMARY SIDEBAR */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-5 sticky top-24">
+              <h2 className="text-xl font-black text-[#0A1128] font-heading border-b border-slate-100 pb-3">
+                Order Summary
+              </h2>
+
+              <div className="space-y-3 text-xs font-semibold text-slate-600">
+                <div className="flex justify-between">
+                  <span>Total Product MRP</span>
+                  <span className="font-bold text-slate-900 font-mono">{formatCurrency(originalTotal)}</span>
+                </div>
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Discount Savings</span>
+                    <span className="font-mono">-{formatCurrency(discount)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Estimated Delivery Charge</span>
+                  <span className="font-bold text-emerald-600">FREE</span>
+                </div>
+
+                <div className="border-t border-slate-200 pt-3 flex justify-between text-base font-black text-[#0A1128]">
+                  <span>Total Payable</span>
+                  <span className="text-xl text-amber-600 font-mono">{formatCurrency(total)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                disabled={cartItems.length === 0 || loading}
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black text-sm rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="text-[11px] text-slate-400 text-center font-medium pt-1">
+                🔒 Encrypted Payments & Instant Refund Assurance
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       <Footer />
-
-      {/* Guest Checkout Dialog */}
-      {showGuestModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-sans">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative border border-slate-100 text-left space-y-4">
-            <button
-              onClick={() => setShowGuestModal(false)}
-              className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 p-1.5 rounded-full transition cursor-pointer border-none"
-            >
-              ✕
-            </button>
-            <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 border border-indigo-100 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              <span>🚀</span> Guest Checkout
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-navy leading-none">Instant Verification</h3>
-              <p className="text-xs text-muted-foreground mt-1.5 leading-snug">Verify your mobile number to checkout securely as a guest without creating an account.</p>
-            </div>
-
-            {!otpSent ? (
-              <div className="space-y-3.5">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-navy">Enter Mobile Number</label>
-                  <div className="flex gap-2">
-                    <span className="bg-slate-100 border rounded-xl px-3 py-2.5 text-sm text-navy font-bold flex items-center shrink-0">+91</span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="9876543210"
-                      className="flex-1 border rounded-xl px-3.5 py-2.5 text-sm font-bold text-navy bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent"
-                    />
-                  </div>
-                </div>
-                <Button
-                  className="w-full bg-navy hover:bg-navy/90 text-white font-bold"
-                  onClick={handleSendOtp}
-                  disabled={phone.length !== 10 || otpLoading}
-                >
-                  {otpLoading ? "Sending OTP..." : "Get OTP Verification Code"}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-navy">Enter 4-Digit OTP Code</label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="Enter 4-digit code (Use 1234)"
-                    className="w-full text-center tracking-widest text-lg font-bold border rounded-xl py-2.5 text-navy bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
-                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold pt-1.5">
-                    <span>Code sent to +91 {phone}</span>
-                    <span>Resend OTP in: <strong className="text-red-500">{countdown}s</strong></span>
-                  </div>
-                </div>
-                <Button
-                  className="w-full bg-accent hover:bg-accent/90 text-white font-bold"
-                  onClick={handleVerifyOtp}
-                  disabled={otp.length !== 4 || otpLoading}
-                >
-                  {otpLoading ? "Verifying..." : "Verify & Complete Checkout"}
-                </Button>
-                <button
-                  onClick={() => setOtpSent(false)}
-                  className="w-full text-center text-xs font-semibold text-slate-500 hover:underline bg-transparent border-none cursor-pointer mt-1"
-                >
-                  ← Edit Phone Number
-                </button>
-              </div>
-            )}
-
-            <div className="text-[10px] text-muted-foreground text-center border-t pt-3">
-              By checking out, you agree to our Terms and receive order notifications.
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

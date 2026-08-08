@@ -28,6 +28,11 @@ import {
   Truck,
   Tag,
   BadgePercent,
+  AlertTriangle,
+  Wallet as WalletIcon,
+  Star,
+  ShieldCheck,
+  ShoppingCart,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { trackCategoryClick } from "../utils/categoryAnalytics";
@@ -36,6 +41,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LocationModal from "@/components/LocationModal";
 import SupportDrawer from "@/components/SupportDrawer";
+import ProductCard from "@/components/ProductCard";
 import { ApexBeeWelcomeIntro } from "../components/welcome-intro/ApexBeeWelcomeIntro";
 import logo from "../Web images/Web images/logo.png";
 
@@ -277,6 +283,114 @@ const Home = () => {
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
   const [academyCourses, setAcademyCourses] = useState<any[]>([]);
 
+  // Insufficient subscription wallet funds warning state
+  const [insufficientSubWarning, setInsufficientSubWarning] = useState<{
+    productName: string;
+    nextDeliveryDate: string;
+    deliverySlot: string;
+    requiredAmount: string;
+    walletBalance: string;
+    shortfall: string;
+  } | null>(null);
+
+  const [activeUserSubscriptions, setActiveUserSubscriptions] = useState<any[]>([]);
+
+  const checkInsufficientSubscriptionFunds = async () => {
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+    if (!token || !userRaw) {
+      setActiveUserSubscriptions([]);
+      return;
+    }
+
+    try {
+      const u = JSON.parse(userRaw);
+      const uid = u._id || u.id;
+      if (!uid) return;
+
+      const headers = { Authorization: `Bearer ${token}` };
+
+      let walletBalance = 0;
+      try {
+        const walletRes = await fetch(`${API_BASE}/user/wallet/${uid}`, { headers });
+        const walletData = await walletRes.json();
+        walletBalance = Number(walletData?.walletBalance ?? walletData?.wallet?.balance ?? walletData?.balance ?? 0);
+      } catch (e) {
+        console.error("Wallet check error:", e);
+      }
+
+      let subscriptions: any[] = [];
+      try {
+        const subRes = await fetch(`${API_BASE}/local-shop/subscriptions/${uid}`, { headers });
+        const subData = await subRes.json();
+        subscriptions = subData?.subscriptions || subData?.data || [];
+      } catch (e) {
+        console.error("Subscriptions check error:", e);
+      }
+
+      if (!subscriptions || subscriptions.length === 0) {
+        setActiveUserSubscriptions([]);
+        setInsufficientSubWarning(null);
+        return;
+      }
+
+      const activeSubs = subscriptions.filter((s: any) => s.status !== "paused" && s.status !== "cancelled" && s.status !== "inactive");
+      setActiveUserSubscriptions(activeSubs);
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const tomorrowObj = new Date();
+      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+      const tomorrowStr = tomorrowObj.toISOString().split("T")[0];
+
+      let warningFound: any = null;
+
+      for (const sub of subscriptions) {
+        if (sub.status === "paused" || sub.status === "cancelled") continue;
+
+        const quantity = Number(sub.quantity || 1);
+        const unitPrice = Number(sub.unitPrice || 0);
+        const requiredAmount = Number((quantity * unitPrice).toFixed(2));
+
+        if (requiredAmount > 0 && walletBalance < requiredAmount) {
+          const shortfall = Number((requiredAmount - walletBalance).toFixed(2));
+
+          const isTodayScheduled = (sub.calendarHistory || []).some(
+            (h: any) => h.date === todayStr && h.status !== "Skipped" && h.status !== "Delivered"
+          );
+          const isTomorrowScheduled = (sub.calendarHistory || []).some(
+            (h: any) => h.date === tomorrowStr
+          );
+
+          const scheduledLabel = isTodayScheduled
+            ? "Today's Delivery Run"
+            : isTomorrowScheduled
+              ? "Tomorrow's Delivery Run"
+              : "Upcoming Delivery Run";
+
+          warningFound = {
+            productName: sub.productName || "Daily Subscription Product",
+            nextDeliveryDate: scheduledLabel,
+            deliverySlot: sub.deliverySlot || "Morning Shift",
+            requiredAmount: requiredAmount.toFixed(2),
+            walletBalance: walletBalance.toFixed(2),
+            shortfall: shortfall.toFixed(2)
+          };
+          break;
+        }
+      }
+
+      setInsufficientSubWarning(warningFound);
+    } catch (e) {
+      console.error("Error checking subscription wallet funds:", e);
+    }
+  };
+
+  useEffect(() => {
+    checkInsufficientSubscriptionFunds();
+    const interval = setInterval(checkInsufficientSubscriptionFunds, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     try {
       const items = JSON.parse(localStorage.getItem("mock_recently_viewed") || "[]");
@@ -345,6 +459,23 @@ const Home = () => {
   const [offerEmoji, setOfferEmoji] = useState("🥛");
   const [petProducts, setPetProducts] = useState<Product[]>([]);
   const [kidsProducts, setKidsProducts] = useState<Product[]>([]);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDbProducts = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/products?limit=20`);
+        if (res.ok) {
+          const json = await res.json();
+          const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+          setDbProducts(list);
+        }
+      } catch (e) {
+        console.error("fetchDbProducts error:", e);
+      }
+    };
+    fetchDbProducts();
+  }, []);
 
   const continueShoppingProducts = useMemo(() => {
     if (personalization?.continueShopping && personalization.continueShopping.length > 0) {
@@ -424,10 +555,286 @@ const Home = () => {
     }
   };
 
+  const DEMO_DAILY_NEEDS: Product[] = [
+    {
+      _id: "dn-1",
+      name: "Heritage Toned Fresh Milk (500ml)",
+      brand: "Heritage Dairy",
+      baseMrp: 32,
+      baseSellingPrice: 28,
+      discountPercent: 12,
+      thumbnail: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&auto=format&fit=crop&q=80",
+      category: "Daily Needs",
+      rating: 4.9,
+      reviews: 1420
+    },
+    {
+      _id: "dn-2",
+      name: "Bisleri Mineral Water Can (20 Litres)",
+      brand: "Bisleri",
+      baseMrp: 120,
+      baseSellingPrice: 95,
+      discountPercent: 20,
+      thumbnail: "https://images.unsplash.com/photo-1548839140-29a749e1cf4e?w=400&auto=format&fit=crop&q=80",
+      category: "Daily Needs",
+      rating: 4.8,
+      reviews: 890
+    },
+    {
+      _id: "dn-3",
+      name: "Fresh Farm Organic Tomatoes (1 kg)",
+      brand: "Local Farm Fresh",
+      baseMrp: 45,
+      baseSellingPrice: 34,
+      discountPercent: 24,
+      thumbnail: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&auto=format&fit=crop&q=80",
+      category: "Daily Needs",
+      rating: 4.7,
+      reviews: 512
+    },
+    {
+      _id: "dn-4",
+      name: "Aashirvaad Shuddh Chakki Atta (5 kg)",
+      brand: "Aashirvaad",
+      baseMrp: 290,
+      baseSellingPrice: 245,
+      discountPercent: 15,
+      thumbnail: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&auto=format&fit=crop&q=80",
+      category: "Daily Needs",
+      rating: 4.9,
+      reviews: 2100
+    },
+    {
+      _id: "dn-5",
+      name: "Freedom Refined Sunflower Oil (1L)",
+      brand: "Freedom Oil",
+      baseMrp: 165,
+      baseSellingPrice: 139,
+      discountPercent: 16,
+      thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&auto=format&fit=crop&q=80",
+      category: "Daily Needs",
+      rating: 4.8,
+      reviews: 730
+    }
+  ];
+
+  const DEMO_DEVOTIONAL: Product[] = [
+    {
+      _id: "dev-1",
+      name: "Fresh Orange Marigold Flower Garland (Puja Mala)",
+      brand: "Shree Local Harvester",
+      baseMrp: 150,
+      baseSellingPrice: 99,
+      discountPercent: 34,
+      thumbnail: "https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=400&auto=format&fit=crop&q=80",
+      category: "Devotional",
+      rating: 4.9,
+      reviews: 650
+    },
+    {
+      _id: "dev-2",
+      name: "Bhimseni Pure Organic Camphor (100g Jar)",
+      brand: "Mangal deep",
+      baseMrp: 220,
+      baseSellingPrice: 175,
+      discountPercent: 20,
+      thumbnail: "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=400&auto=format&fit=crop&q=80",
+      category: "Devotional",
+      rating: 4.9,
+      reviews: 430
+    },
+    {
+      _id: "dev-3",
+      name: "Handcrafted Brass Diya Kuber Lamp (Pair)",
+      brand: "Pavitra Craft",
+      baseMrp: 499,
+      baseSellingPrice: 349,
+      discountPercent: 30,
+      thumbnail: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=400&auto=format&fit=crop&q=80",
+      category: "Devotional",
+      rating: 4.8,
+      reviews: 310
+    },
+    {
+      _id: "dev-4",
+      name: "Natural Chandan & Gugal Incense Sticks (100 Sticks)",
+      brand: "Cycle Pure Agarbatti",
+      baseMrp: 180,
+      baseSellingPrice: 135,
+      discountPercent: 25,
+      thumbnail: "https://images.unsplash.com/photo-1602928321679-560b4139c908?w=400&auto=format&fit=crop&q=80",
+      category: "Devotional",
+      rating: 4.9,
+      reviews: 1120
+    },
+    {
+      _id: "dev-5",
+      name: "Complete Mahalakshmi Pooja Samagri Kit",
+      brand: "ApexBee Vedic Store",
+      baseMrp: 899,
+      baseSellingPrice: 649,
+      discountPercent: 27,
+      thumbnail: "https://images.unsplash.com/photo-1545232979-fbfd42e000b9?w=400&auto=format&fit=crop&q=80",
+      category: "Devotional",
+      rating: 5.0,
+      reviews: 820
+    }
+  ];
+
+  const DEMO_FOOD: Product[] = [
+    {
+      _id: "food-1",
+      name: "Hyderabadi Mutton Dum Biryani (Full Handi)",
+      brand: "Bawarchi Special",
+      baseMrp: 420,
+      baseSellingPrice: 340,
+      discountPercent: 19,
+      thumbnail: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&auto=format&fit=crop&q=80",
+      category: "Food & Dining",
+      rating: 4.9,
+      reviews: 3410
+    },
+    {
+      _id: "food-2",
+      name: "Ghee Butter Masala Dosa + Sambhar (2 Pcs)",
+      brand: "Chutneys Tiffin",
+      baseMrp: 180,
+      baseSellingPrice: 139,
+      discountPercent: 22,
+      thumbnail: "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=400&auto=format&fit=crop&q=80",
+      category: "Food & Dining",
+      rating: 4.8,
+      reviews: 1890
+    },
+    {
+      _id: "food-3",
+      name: "Special Paneer Butter Masala + 3 Butter Naan",
+      brand: "Punjabi Dhaba Express",
+      baseMrp: 340,
+      baseSellingPrice: 269,
+      discountPercent: 20,
+      thumbnail: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&auto=format&fit=crop&q=80",
+      category: "Food & Dining",
+      rating: 4.7,
+      reviews: 950
+    },
+    {
+      _id: "food-4",
+      name: "Cheesy Loaded Double Veggie Pizza (10 Inch)",
+      brand: "Italian Bistro",
+      baseMrp: 450,
+      baseSellingPrice: 299,
+      discountPercent: 33,
+      thumbnail: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
+      category: "Food & Dining",
+      rating: 4.8,
+      reviews: 2150
+    }
+  ];
+
+  const DEMO_SHOPPING: Product[] = [
+    {
+      _id: "shop-1",
+      name: "Kanjeevaram Pure Silk Zari Saree (Royal Blue)",
+      brand: "Weaver Heritage",
+      baseMrp: 3999,
+      baseSellingPrice: 2499,
+      discountPercent: 37,
+      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&auto=format&fit=crop&q=80",
+      category: "Shopping",
+      rating: 4.9,
+      reviews: 580
+    },
+    {
+      _id: "shop-2",
+      name: "Men's Slim Fit Pure Cotton Oxford Shirt",
+      brand: "Apex Fashions",
+      baseMrp: 1499,
+      baseSellingPrice: 899,
+      discountPercent: 40,
+      thumbnail: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&auto=format&fit=crop&q=80",
+      category: "Shopping",
+      rating: 4.7,
+      reviews: 1240
+    },
+    {
+      _id: "shop-3",
+      name: "Wireless ANC Noise Cancelling Headphones",
+      brand: "SoundBass Pro",
+      baseMrp: 2999,
+      baseSellingPrice: 1799,
+      discountPercent: 40,
+      thumbnail: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80",
+      category: "Shopping",
+      rating: 4.8,
+      reviews: 3100
+    },
+    {
+      _id: "shop-4",
+      name: "Handcrafted Designer Leather Shoulder Bag",
+      brand: "Luxe Craft",
+      baseMrp: 2499,
+      baseSellingPrice: 1499,
+      discountPercent: 40,
+      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&auto=format&fit=crop&q=80",
+      category: "Shopping",
+      rating: 4.8,
+      reviews: 790
+    }
+  ];
+
+  const [dailyNeedsProducts, setDailyNeedsProducts] = useState<Product[]>(DEMO_DAILY_NEEDS);
+  const [devotionalProducts, setDevotionalProducts] = useState<Product[]>(DEMO_DEVOTIONAL);
+  const [foodProducts, setFoodProducts] = useState<Product[]>(DEMO_FOOD);
+  const [shoppingProducts, setShoppingProducts] = useState<Product[]>(DEMO_SHOPPING);
+
+  const fetchCategoryProducts = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/products?limit=100`);
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
+        const liveList = list.filter((p: any) => p.status === "Live" && p.isActive !== false);
+
+        const daily = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          return cat.includes("daily") || cat.includes("grocery") || name.includes("milk") || name.includes("water") || name.includes("vegetable") || name.includes("atta");
+        });
+
+        const dev = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          return cat.includes("devotional") || cat.includes("puja") || cat.includes("pooja") || name.includes("agarbatti") || name.includes("flower") || name.includes("camphor");
+        });
+
+        const food = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          return cat.includes("food") || cat.includes("dining") || cat.includes("restaurant") || name.includes("biryani") || name.includes("dosa") || name.includes("pizza");
+        });
+
+        const shopping = liveList.filter((p: any) => {
+          const cat = (p.category || p.categoryName || "").toLowerCase();
+          const name = (p.name || p.title || "").toLowerCase();
+          return cat.includes("shopping") || cat.includes("fashion") || cat.includes("saree") || name.includes("shirt") || name.includes("dress") || name.includes("saree");
+        });
+
+        if (daily.length > 0) setDailyNeedsProducts([...daily, ...DEMO_DAILY_NEEDS].slice(0, 10));
+        if (dev.length > 0) setDevotionalProducts([...dev, ...DEMO_DEVOTIONAL].slice(0, 10));
+        if (food.length > 0) setFoodProducts([...food, ...DEMO_FOOD].slice(0, 10));
+        if (shopping.length > 0) setShoppingProducts([...shopping, ...DEMO_SHOPPING].slice(0, 10));
+      }
+    } catch (err) {
+      console.error("fetchCategoryProducts error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchPersonalization();
     fetchCourses();
     fetchPetAndKidsProducts();
+    fetchCategoryProducts();
   }, [loggedInUser]);
 
   // Dynamic Greeting & Timer Effect
@@ -611,7 +1018,7 @@ const Home = () => {
       badge: "🍔 Food Delivery",
       image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=1200",
       btnText: "Order Food Now",
-      action: () => { trackCategoryClick({ categoryName: 'Food & Dining', targetPath: '/category/🍽 Food & Dining', source: 'banner' }); navigate("/category/🍽 Food & Dining"); },
+      action: () => { trackCategoryClick({ categoryName: 'Food & Dining', targetPath: '/food', source: 'banner' }); navigate("/food"); },
     },
     {
       id: 3,
@@ -747,7 +1154,7 @@ const Home = () => {
   }, []);
 
   const DEFAULT_PRIMARY_CATEGORIES: CategoryItem[] = [
-    { id: 'cat-food', label: 'Food & Restaurant', to: '/category/Pets', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300&auto=format&fit=crop&q=60' },
+    { id: 'cat-food', label: 'Food & Restaurant', to: '/food', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300&auto=format&fit=crop&q=60' },
     { id: 'cat-grocery', label: 'Daily Needs & Grocery', to: '/category/Daily Needs & Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=60' },
     { id: 'cat-fashion', label: 'Fashion & Boutique', to: '/category/Fashion & Boutique', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=60' },
     { id: 'cat-services', label: 'Home Services & Repair', to: '/category/Home Services & Repair', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=60' },
@@ -868,46 +1275,76 @@ const Home = () => {
     fetchDealsProducts();
   }, [userLocation]);
 
-  /** ---------------------------
-   * Fetch nearby shops by PINCODE
-   * (kept, but not used if shops section is commented)
-   * -------------------------- */
-  const fetchNearbyShops = async (pincode: string) => {
-    try {
-      const pin = normPincode(pincode);
-      if (pin.length !== 6) return;
+  const [nearbyRestaurantsList, setNearbyRestaurantsList] = useState<any[]>([]);
+  const [restaurantsLoading, setRestaurantsLoading] = useState(false);
 
+  /** ---------------------------
+   * Fetch nearby shops by GPS / Location
+   * -------------------------- */
+  const fetchNearbyShops = async () => {
+    try {
       setShopsLoading(true);
       setShopsError(null);
 
-      const res = await fetch(
-        `${API_BASE}/business/by-pincode?pincode=${encodeURIComponent(pin)}&limit=50`
-      );
+      const params = new URLSearchParams();
+      if (userLocation?.lat && userLocation?.lng) {
+        params.append("lat", String(userLocation.lat));
+        params.append("lng", String(userLocation.lng));
+      }
+      if (userLocation?.pincode) {
+        params.append("pincode", String(userLocation.pincode));
+      }
+      params.append("radius", "20");
 
-      const json = await res.json();
-
-      if (!res.ok || !json?.success) {
-        throw new Error(json?.message || "Failed to fetch nearby shops");
+      let res = await fetch(`${API_BASE}/vendors/nearby?${params.toString()}`);
+      if (!res.ok) {
+        res = await fetch(`${API_BASE}/vendor/nearby?${params.toString()}`);
       }
 
-      const list: Business[] = Array.isArray(json?.data) ? json.data : [];
-      setNearbyShops(list);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setNearbyShops(json.data);
+        }
+      }
     } catch (e: any) {
       console.error("fetchNearbyShops error:", e);
-      setNearbyShops([]);
-      setShopsError(e?.message || "Failed to load nearby shops");
     } finally {
       setShopsLoading(false);
     }
   };
 
-  // Nearby shops auto fetch
+  const fetchNearbyRestaurants = async () => {
+    try {
+      setRestaurantsLoading(true);
+      const params = new URLSearchParams();
+      if (userLocation?.lat && userLocation?.lng) {
+        params.append("lat", String(userLocation.lat));
+        params.append("lng", String(userLocation.lng));
+      }
+      if (userLocation?.pincode) {
+        params.append("pincode", String(userLocation.pincode));
+      }
+
+      const res = await fetch(`${API_BASE}/food/restaurants?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.restaurants && Array.isArray(json.restaurants)) {
+          setNearbyRestaurantsList(json.restaurants);
+        }
+      }
+    } catch (e: any) {
+      console.error("fetchNearbyRestaurants error:", e);
+    } finally {
+      setRestaurantsLoading(false);
+    }
+  };
+
+  // Nearby shops & restaurants auto fetch on location change
   useEffect(() => {
-    const pin = normPincode(userLocation?.pincode);
-    if (pin.length !== 6) return;
-    fetchNearbyShops(pin);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation?.pincode]);
+    fetchNearbyShops();
+    fetchNearbyRestaurants();
+  }, [userLocation]);
 
   /** ---------------------------
    * UI helpers
@@ -1059,6 +1496,88 @@ const Home = () => {
     );
   };
 
+  const renderShortRichCard = (p: Product, categoryIcon: string) => {
+    const title = getProductTitle(p);
+    const img = getProductImage(p);
+    const { price, mrp, percentOff } = getDisplayPrices(p);
+    const avgRating = typeof p.ratings === "number" ? p.ratings : typeof p.rating === "number" ? p.rating : 4.8;
+
+    return (
+      <div
+        key={p._id}
+        onClick={() => navigate(`/product/${p._id}`)}
+        className="group min-w-[165px] xs:min-w-[185px] sm:min-w-[210px] max-w-[210px] flex-shrink-0 bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-xl hover:border-amber-400 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between cursor-pointer text-left font-sans"
+      >
+        <div>
+          {/* TOP THUMBNAIL CONTAINER */}
+          <div className="h-32 sm:h-36 bg-slate-100 relative overflow-hidden">
+            <img
+              src={img}
+              alt={title}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+            {/* DISCOUNT BADGE */}
+            {percentOff > 0 && (
+              <span className="absolute top-2 left-2 bg-emerald-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full shadow-md">
+                {percentOff}% OFF
+              </span>
+            )}
+
+            {/* CATEGORY ICON */}
+            <span className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-800 font-bold text-xs p-1 rounded-xl shadow-xs">
+              {categoryIcon}
+            </span>
+
+            {/* RATING OVERLAY */}
+            <div className="absolute bottom-2 left-2 flex items-center space-x-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg text-[10px] font-black text-amber-600 shadow-xs">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>{avgRating.toFixed(1)}</span>
+            </div>
+          </div>
+
+          {/* CARD DETAILS */}
+          <div className="p-3 space-y-1.5">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate">
+              {p.brand || "ApexBee Certified"}
+            </p>
+            <h4 className="font-extrabold text-slate-900 text-xs leading-snug line-clamp-2 min-h-[32px] group-hover:text-amber-600 transition font-heading">
+              {title}
+            </h4>
+
+            {/* PRICE ROW */}
+            <div className="flex items-baseline space-x-1.5 pt-1">
+              <span className="font-black text-sm text-[#0A1128]">
+                {price > 0 ? formatINR(price) : "₹—"}
+              </span>
+              {mrp > price && (
+                <span className="text-[10px] text-slate-400 line-through font-semibold">
+                  {formatINR(mrp)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM ACTION BUTTON */}
+        <div className="px-3 pb-3 pt-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/product/${p._id}`);
+            }}
+            className="w-full py-1.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-xl transition duration-300 text-center flex items-center justify-center space-x-1 cursor-pointer border-none"
+          >
+            <span>+ Add</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {showIntro && (
@@ -1070,6 +1589,55 @@ const Home = () => {
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <div className="min-h-screen bg-background">
           <Navbar />
+
+          {/* ⚠️ Insufficient Wallet Funds Warning Banner for Subscription Delivery */}
+          {insufficientSubWarning && (
+            <div className="container mx-auto px-4 mt-4">
+              <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-red-400/30 animate-in fade-in slide-in-from-top-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shrink-0 text-white">
+                      <AlertTriangle className="h-6 w-6 sm:h-7 sm:w-7" />
+                    </div>
+                    <div className="space-y-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-wider">
+                          Action Needed • Low Wallet Balance
+                        </span>
+                        <span className="text-xs text-red-100 font-medium">Subscription Order Alert</span>
+                      </div>
+
+                      <h3 className="text-base sm:text-lg font-black tracking-tight">
+                        Insufficient Wallet Funds for Next Subscription Delivery!
+                      </h3>
+
+                      <p className="text-xs text-red-100 leading-relaxed max-w-2xl">
+                        Your scheduled delivery for <strong className="text-white underline">{insufficientSubWarning.productName}</strong> is scheduled for <strong className="text-amber-200">{insufficientSubWarning.nextDeliveryDate} ({insufficientSubWarning.deliverySlot})</strong>, but your wallet balance is insufficient.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs pt-1.5 font-bold">
+                        <span>Order Cost: <strong className="text-amber-200 text-sm">₹{insufficientSubWarning.requiredAmount}</strong></span>
+                        <span className="opacity-60">•</span>
+                        <span>Available Wallet: <strong className="text-white text-sm">₹{insufficientSubWarning.walletBalance}</strong></span>
+                        <span className="opacity-60">•</span>
+                        <span>Shortfall: <strong className="text-amber-300 text-sm">₹{insufficientSubWarning.shortfall}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full sm:w-auto shrink-0">
+                    <Button
+                      onClick={() => navigate('/wallet')}
+                      className="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl px-5 py-3 text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer transition transform hover:scale-105"
+                    >
+                      <WalletIcon className="h-4 w-4" />
+                      Recharge Wallet Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {!loggedInUser && (
             <div className="bg-blue-light border-b text-center py-2 text-sm font-semibold">
@@ -1092,8 +1660,28 @@ const Home = () => {
             </div>
           )}
 
+          {/* ⚡ HYPER-LOCAL 15-MINUTE EXPRESS DELIVERY TICKER BAR */}
+          <div className="bg-[#0A1128] text-white py-1.5 px-3 sm:px-4 shadow-sm border-b border-white/10 font-sans">
+            <div className="container mx-auto flex items-center justify-between text-xs font-bold gap-2">
+              <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0 overflow-hidden">
+                <span className="flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <span className="text-amber-400 font-extrabold uppercase tracking-wider text-[9px] sm:text-[10px] shrink-0">⚡ 15-Min Delivery</span>
+                <span className="text-slate-300 font-medium text-[10px] sm:text-xs truncate max-w-[200px] xs:max-w-[280px] sm:max-w-none">
+                  • Guaranteed fast delivery from verified local stores in <strong className="text-white">{userLocation?.colony || "Tamsi Mandal"}</strong>
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-[11px] shrink-0">
+                <span className="bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-mono hidden md:inline">Code: APEXEXPRESS</span>
+                <button onClick={() => navigate("/food")} className="hover:text-amber-400 transition font-black underline cursor-pointer border-none bg-transparent text-white whitespace-nowrap">Order Now &rarr;</button>
+              </div>
+            </div>
+          </div>
+
           {/* 1. Hero Banner Slider with Integrated Greeting Overlay */}
-          <section className="container mx-auto px-3 sm:px-4 py-1 sm:py-2">
+          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-5">
             <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[240px] sm:min-h-[320px] md:min-h-[400px] lg:min-h-[440px] flex items-center">
               {/* Floating Glass Greeting & Location Overlay Bar */}
               <div className="absolute top-2.5 left-3 right-3 sm:top-4 sm:left-6 sm:right-6 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
@@ -1166,7 +1754,7 @@ const Home = () => {
                 <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
 
-              <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
                 {displayBanners.map((_, idx) => (
                   <button
                     key={idx}
@@ -1178,6 +1766,109 @@ const Home = () => {
               </div>
             </div>
           </section>
+
+          {/* 🍱 DUAL BANNER: FOOD DELIVERY & DINEOUT RESERVATION */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* FOOD DELIVERY CARD */}
+              <div
+                onClick={() => navigate("/food")}
+                className="bg-gradient-to-r from-amber-500 via-orange-600 to-rose-700 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-100">
+                    ⚡ 30-Min Fast Delivery
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Craving Hot Food?</h3>
+                  <p className="text-xs text-amber-100 font-medium">Order Biryanis, Pizzas, Burgers & Tiffins from top local restaurants.</p>
+                  <span className="inline-flex items-center gap-1 bg-[#0A1128] text-amber-400 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    🍱 Order Food Now &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80" alt="Food" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+
+              {/* DINEOUT TABLE RESERVATION CARD */}
+              <div
+                onClick={() => navigate("/food")}
+                className="bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    👑 Up to 40% OFF Bills
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Dineout & Table Booking</h3>
+                  <p className="text-xs text-slate-300 font-medium">Reserve tables at luxury fine dining & rooftop lounges with zero booking fees.</p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    🍽️ Reserve Table &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&auto=format&fit=crop&q=80" alt="Dineout" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+            </div>
+          </section>
+
+          {/* SCHEDULED MORNING SUBSCRIPTION DELIVERY ALERT CARD — ONLY SHOWN IF USER HAS ACTIVE SUBSCRIPTIONS */}
+          {activeUserSubscriptions.length > 0 && (() => {
+            const sub0 = activeUserSubscriptions[0];
+            const liveStatus = (sub0.status || sub0.runStatus || 'active').trim();
+            const isDelivered = liveStatus.toLowerCase() === 'delivered';
+            const isOut = liveStatus.toLowerCase() === 'out for delivery';
+
+            const statusText = isDelivered
+              ? 'DELIVERED ✅'
+              : isOut
+                ? 'OUT FOR DELIVERY 🚚'
+                : 'ACTIVE / ASSIGNED TO RIDER 🛵';
+
+            const statusColorClass = isDelivered
+              ? 'text-emerald-700 font-black'
+              : isOut
+                ? 'text-blue-700 font-black'
+                : 'text-amber-800 font-black';
+
+            return (
+              <section className="container mx-auto px-3 sm:px-4 py-2">
+                <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 font-sans text-left">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 shadow-sm mt-0.5">
+                      🥛
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#0A1128] text-amber-400 text-[10px] font-black uppercase px-2.5 py-0.5 rounded">
+                          📅 Scheduled Subscription Order
+                        </span>
+                        <span className="text-xs text-amber-800 font-extrabold">Slot: {sub0.deliverySlot || '06:00 AM - 07:00 AM'}</span>
+                      </div>
+                      <h3 className="font-black text-base text-slate-900 mt-1">
+                        {sub0.productName || 'Idols & Spiritual - Fresh & Premium Grade (1 Pkt/Item)'}
+                      </h3>
+                      <p className="text-xs text-slate-600 font-medium">
+                        Run #{String(sub0._id || sub0.id || '6a740a').slice(-6)} • Frequency: {sub0.frequency || 'Alternate Days'} • Status: <span className={`uppercase ${statusColorClass}`}>{statusText}</span>
+                      </p>
+                      <div className="flex gap-2 text-[10px] font-bold mt-2 overflow-x-auto">
+                        <span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-300 shrink-0">08-06: Delivered</span>
+                        <span className={`px-2.5 py-0.5 rounded border shrink-0 font-black ${isDelivered ? 'bg-emerald-200 text-emerald-950 border-emerald-400' : isOut ? 'bg-blue-200 text-blue-950 border-blue-400' : 'bg-amber-200 text-amber-950 border-amber-400'}`}>
+                          08-08 Today: {liveStatus.toUpperCase()}
+                        </span>
+                        <span className="bg-white text-slate-600 px-2.5 py-0.5 rounded border border-slate-300 shrink-0">08-10: Scheduled</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto">
+                    <Button
+                      onClick={() => navigate("/my-orders")}
+                      className="w-full sm:w-auto bg-[#0A1128] hover:bg-[#101F42] text-amber-400 font-black text-xs px-5 py-2.5 rounded-xl shadow-md"
+                    >
+                      Manage Roster & Orders &rarr;
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* 2. Explore Categories (Placed FIRST after Hero Banner) */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
@@ -1213,16 +1904,17 @@ const Home = () => {
                     onClick={() => navigate(category.to)}
                     className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
                   >
-                    <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 rounded-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-md border-2 border-slate-100 group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
+                    {/* CLEAN PURE IMAGE ONLY — NO BACKGROUND, NO BORDER, NO BOX */}
+                    <div className="w-20 h-20 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 overflow-hidden shrink-0 transition duration-300 flex items-center justify-center">
                       <img
                         src={category.image || "/placeholder.svg"}
                         alt={category.label}
-                        className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
                     </div>
-                    <div className="w-full text-center px-0.5">
-                      <p className="text-xs sm:text-xs font-extrabold text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
+                    <div className="w-full text-center px-0.5 mt-1">
+                      <p className="text-xs sm:text-xs font-black text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
                         {category.label.includes(" & ") ? (
                           <>
                             {category.label.split(" & ")[0]} &<br />
@@ -1239,28 +1931,26 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 3. Quick Shortcuts Grid (4 items per row on mobile) */}
-          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
-            <div className="flex items-center justify-between mb-2 sm:mb-4">
-              <h2 className="text-lg sm:text-xl font-extrabold text-navy">Quick Shortcuts</h2>
-              <button onClick={() => navigate("/categories")} className="text-xs text-primary font-bold hover:underline bg-transparent border-none cursor-pointer">
+          {/* 3. Quick Shortcuts Bar (4 PER ROW GRID ON MOBILE) */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <h2 className="text-base sm:text-lg font-black text-[#0A1128]">Quick Shortcuts</h2>
+              <button onClick={() => navigate("/categories")} className="text-xs text-amber-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer">
                 View All →
               </button>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-2 sm:gap-4">
+
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-9 gap-2.5 sm:gap-4 py-2 px-0.5 justify-items-center">
               {[
                 { label: "Earn With Us", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn-with-apexbee" },
                 { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/grocery" },
-                { label: "Food & Dining", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/category/🍽 Food & Dining" },
-                { label: "Local Stores", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e293b)", to: "/local-stores" },
+                { label: "Food & Dining", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/food" },
+                { label: "Local Stores", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e3c72)", to: "/local-stores" },
                 { label: "Services", icon: ToolIcon, gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
-                { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/❤ Health & Wellness" },
-                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/categories" },
-                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/categories" },
-                { label: "Academy", icon: BookOpen, gradient: "linear-gradient(135deg,#711c91,#a8c0ff)", to: "/academy" },
-                { label: "Refer & Earn", icon: Gift, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/referrals" },
-                { label: "Community", icon: Users, gradient: "linear-gradient(135deg,#00c6ff,#3f2b96)", to: "/community" },
-                { label: "Offers & Promos", icon: BadgePercent, gradient: "linear-gradient(135deg,#f12711,#f5af19)", to: "/categories" },
+                { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/Health & Wellness" },
+                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/Fashion & Boutique" },
+                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/Electronics & Gadgets" },
+                { label: "Community", icon: Users, gradient: "linear-gradient(135deg,#3f2b96,#a8c0ff)", to: "/community" },
               ].map((item) => {
                 const IconComponent = item.icon;
                 return (
@@ -1278,24 +1968,49 @@ const Home = () => {
                         navigate(item.to);
                       }
                     }}
-                    className="flex flex-col items-center justify-center gap-1 p-1.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer border-none"
+                    className="flex flex-col items-center justify-start gap-1.5 group cursor-pointer border-none bg-transparent w-full"
                   >
                     <div
-                      className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-300"
+                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 transform-gpu"
                       style={{ background: item.gradient }}
                     >
                       <IconComponent className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2px]" />
                     </div>
-                    <div className="text-center">
-                      <p className="font-black text-navy text-[10px] sm:text-sm leading-tight group-hover:text-accent transition-colors line-clamp-2">
-                        {item.label}
-                      </p>
-                    </div>
+                    <p className="font-black text-[#0A1128] text-[10px] sm:text-xs leading-tight group-hover:text-amber-600 transition-colors text-center break-words line-clamp-2">
+                      {item.label}
+                    </p>
                   </button>
                 );
               })}
             </div>
           </section>
+
+          {/* REAL BACKEND FEATURED PRODUCTS SHOWCASE (300x400 Cards) */}
+          {dbProducts.length > 0 && (
+            <section className="container mx-auto px-3 sm:px-4 py-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
+                  <h2 className="text-lg sm:text-xl font-black text-[#0A1128]">
+                    Trending Products
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/category/All")}
+                  className="text-xs font-bold text-amber-600 hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  View All Products →
+                </button>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none">
+                {dbProducts.map((p: any) => (
+                  <ProductCard key={p._id || p.id} product={p} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* 4. Today's Schedule Card Widget */}
           {loggedInUser && (
@@ -1462,21 +2177,27 @@ const Home = () => {
           </section>
 
           {/* 6. Deals & Featured Products */}
-          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-left">
-                <h2 className="text-xl font-bold text-navy">Featured Products</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Handpicked best items for you.</p>
+          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 border border-amber-200/80 rounded-[32px] shadow-sm font-sans">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div>
+                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-[#0A1128] px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                  <span>✨ HANDPICKED SELECTION</span>
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <span>🔥</span>
+                  <span>Featured Products &amp; Top Bestsellers</span>
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Top-rated items handpicked for quality with fast local delivery</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("/products")}>
-                View All
+              <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-[#0A1128] font-extrabold text-xs hover:bg-[#0A1128] hover:text-amber-400 cursor-pointer shadow-xs transition" onClick={() => navigate("/products")}>
+                View All →
               </Button>
             </div>
 
-            <div className="relative group">
+            <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("featured-products-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-slate-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
                 aria-label="Scroll Left"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -1495,26 +2216,408 @@ const Home = () => {
                   ))}
                 </div>
               ) : featuredProducts.length === 0 ? (
-                <div className="rounded-2xl border bg-muted/20 p-10 text-center text-muted-foreground text-sm">
-                  No featured products available.
+                <div className="rounded-2xl border border-amber-200 bg-white/60 p-10 text-center text-muted-foreground text-sm">
+                  No featured products available right now.
                 </div>
               ) : (
-                <div id="featured-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
+                <div id="featured-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth transform-gpu">
                   {featuredProducts.map((p) => (
-                    <div key={p._id} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 flex flex-col">
-                      {renderProductCard(p)}
-                    </div>
+                    <ProductCard key={p._id || (p as any).id} product={p} />
                   ))}
                 </div>
               )}
 
               <button
                 onClick={() => scrollHorizontally("featured-products-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-slate-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
                 aria-label="Scroll Right"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
+            </div>
+          </section>
+
+          {/* 🛒 1. DAILY NEEDS CATEGORY PRODUCTS */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-200/60 rounded-[32px] shadow-sm">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div>
+                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                  <span>🥦 FRESH &amp; FAST</span>
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <span>🛒</span>
+                  <span>Daily Needs &amp; Essentials</span>
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh milk, water cans, vegetables &amp; groceries in 15 mins</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-2xl border-emerald-300 bg-white text-emerald-800 font-extrabold text-xs hover:bg-emerald-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/🛒 Daily Needs")}>
+                View All →
+              </Button>
+            </div>
+
+            <div className="relative group px-1">
+              <button
+                onClick={() => scrollHorizontally("daily-needs-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 flex items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div id="daily-needs-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                {dailyNeedsProducts.map((p) => (
+                  <ProductCard key={p._id || (p as any).id} product={p} />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollHorizontally("daily-needs-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 flex items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+
+          {/* 📦 DUAL BANNER: GROCERY & MORNING ESSENTIALS */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* MORNING DAIRY & MILK CARD */}
+              <div
+                onClick={() => navigate("/category/Daily Needs & Grocery")}
+                className="bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                    🥛 6 AM Morning Delivery
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Fresh Milk & Daily Dairy</h3>
+                  <p className="text-xs text-emerald-100 font-medium">Daily fresh milk, curd, paneer & morning tiffin supplies delivered by 7 AM.</p>
+                  <span className="inline-flex items-center gap-1 bg-white text-emerald-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    🥛 Order Fresh Dairy &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80" alt="Dairy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+
+              {/* MONTHLY GROCERY MEGA SALE CARD */}
+              <div
+                onClick={() => navigate("/category/Daily Needs & Grocery")}
+                className="bg-gradient-to-r from-green-700 via-emerald-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    🛒 Up to 50% OFF
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Monthly Grocery Store</h3>
+                  <p className="text-xs text-slate-300 font-medium">Atta, Rice, Cooking Oils, Dal & Spices from top verified local merchants.</p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    🛒 Shop Monthly Grocery &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80" alt="Grocery" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+            </div>
+          </section>
+
+          {/* 🏛️ 2. DEVOTIONAL & PUJA PRODUCTS */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/10 border border-amber-300/60 rounded-[32px] shadow-sm">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div>
+                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                  <span>🌸 VEDIC &amp; SACRED</span>
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <span>🏛️</span>
+                  <span>Devotional &amp; Puja Samagri</span>
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh flowers, agarbatti, brass diyas &amp; complete pooja kits</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-amber-900 font-extrabold text-xs hover:bg-amber-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/Devotional")}>
+                View All →
+              </Button>
+            </div>
+
+            <div className="relative group px-1">
+              <button
+                onClick={() => scrollHorizontally("devotional-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div id="devotional-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                {devotionalProducts.map((p) => (
+                  <ProductCard key={p._id || (p as any).id} product={p} />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollHorizontally("devotional-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+
+          {/* 🪔 VARALAKSHMI VRATHAM FESTIVAL BANNER */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 text-left">
+            <div className="relative rounded-[32px] overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-700 text-white shadow-xl border border-amber-400/40">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-300/20 rounded-full blur-[90px] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-xl">
+                  <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-black text-amber-200 border border-white/20 shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>FESTIVAL SPECIAL</span>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3.5xl font-black font-heading tracking-tight text-white leading-tight">
+                    🪔 Varalakshmi Vratham is coming up!
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-amber-100 font-medium leading-relaxed">
+                    Ensure complete puja preparation. Instantly book your bundle or custom items with 30-min guaranteed doorstep delivery.
+                  </p>
+
+                  {/* QUICK ITEM CHIPS */}
+                  <div className="flex flex-wrap gap-2 pt-1 font-sans">
+                    {[
+                      { icon: "🌼", label: "Flowers" },
+                      { icon: "🍎", label: "Fruits" },
+                      { icon: "🛍", label: "Pooja Kit" },
+                      { icon: "🥥", label: "Coconut" },
+                      { icon: "🍌", label: "Banana" },
+                      { icon: "🪔", label: "Deepam" },
+                    ].map((item, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center space-x-1 bg-white/15 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-bold text-white border border-white/15 shadow-xs"
+                      >
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex flex-col items-center md:items-end justify-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/category/Devotional")}
+                    className="w-full sm:w-auto px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-xl flex items-center justify-center space-x-2 cursor-pointer border-none"
+                  >
+                    <ShoppingCart className="w-4 h-4 text-slate-950" />
+                    <span>Order Puja Bundle</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <span className="text-[10px] font-bold text-amber-200">⚡ 30-Min Guaranteed Delivery</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 🍔 3. FOOD & DINING SPECIALS */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-orange-500/15 via-red-500/10 to-amber-500/10 border border-orange-300/60 rounded-[32px] shadow-sm">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div>
+                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                  <span>🔥 SIZZLING HOT</span>
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <span>🍔</span>
+                  <span>Food &amp; Dining Specials</span>
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Authentic biryani, dosas, thalis &amp; gourmet tiffins</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-2xl border-orange-300 bg-white text-orange-900 font-extrabold text-xs hover:bg-orange-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/food")}>
+                View All →
+              </Button>
+            </div>
+
+            <div className="relative group px-1">
+              <button
+                onClick={() => scrollHorizontally("food-products-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 flex items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div id="food-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                {foodProducts.map((p) => (
+                  <ProductCard key={p._id || (p as any).id} product={p} />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollHorizontally("food-products-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 flex items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+
+          {/* 🎁 RAKSHA BANDHAN FESTIVAL OFFERS BANNER */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 text-left">
+            <div className="relative rounded-[32px] overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-rose-700 via-purple-700 to-indigo-900 text-white shadow-xl border border-rose-400/40">
+              <div className="absolute -bottom-10 right-10 w-72 h-72 bg-pink-400/20 rounded-full blur-[80px] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-xl">
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full shadow-md animate-pulse">
+                      ✨ 20% OFF
+                    </span>
+                    <span className="text-xs font-mono font-bold bg-white/20 px-3 py-1 rounded-full border border-white/20">
+                      CODE: <span className="text-amber-300 font-extrabold">RAKHI20</span>
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3.5xl font-black font-heading tracking-tight text-white leading-tight">
+                    Festival Raksha Bandhan Offers 🎁
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-rose-100 font-medium leading-relaxed">
+                    Send local sweet boxes, Kaju Katli, Motichoor Ladoos &amp; handcrafted designer rakhis to siblings. Get flat 20% off from verified local sweet shops near you.
+                  </p>
+                </div>
+
+                <div className="shrink-0 flex flex-col items-center md:items-end justify-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/food")}
+                    className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-rose-50 text-rose-950 font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-xl flex items-center justify-center space-x-2 cursor-pointer border-none"
+                  >
+                    <span>🎁 Send Sweets &amp; Rakhis</span>
+                    <ChevronRight className="w-4 h-4 text-rose-950" />
+                  </button>
+                  <span className="text-[10px] font-bold text-rose-200">🚚 Same-day Doorstep Delivery</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 👗 4. SHOPPING & FASHION PRODUCTS */}
+          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 border border-purple-200/60 rounded-[32px] shadow-sm">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div>
+                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-purple-700 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                  <span>✨ BOUTIQUE &amp; TRENDS</span>
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                  <span>👗</span>
+                  <span>Shopping &amp; Fashion Trends</span>
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Silk sarees, oxford shirts, electronics &amp; boutique apparel</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-2xl border-purple-300 bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-700 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/categories")}>
+                View All →
+              </Button>
+            </div>
+
+            <div className="relative group px-1">
+              <button
+                onClick={() => scrollHorizontally("shopping-products-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 flex items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div id="shopping-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                {shoppingProducts.map((p) => (
+                  <ProductCard key={p._id || (p as any).id} product={p} />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollHorizontally("shopping-products-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 flex items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+
+          {/* 👕 DUAL BANNER: FASHION & LIFESTYLE */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ETHNIC SAREES & FESTIVE WEAR */}
+              <div
+                onClick={() => navigate("/category/Fashion & Boutique")}
+                className="bg-gradient-to-r from-purple-700 via-pink-700 to-rose-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-amber-300 text-purple-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    ✨ Flat 60% OFF
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Ethnic Sarees & Wear</h3>
+                  <p className="text-xs text-pink-100 font-medium">Silk sarees, festive kurtis, and designer ethnic wear from local boutiques.</p>
+                  <span className="inline-flex items-center gap-1 bg-white text-purple-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    👗 Explore Ethnic Wear &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80" alt="Fashion" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+
+              {/* FOOTWEAR & WATCHES */}
+              <div
+                onClick={() => navigate("/category/Fashion & Boutique")}
+                className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    👟 Buy 1 Get 1 Free
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Footwear & Accessories</h3>
+                  <p className="text-xs text-slate-300 font-medium">Trendy sneakers, formal shoes, smartwatches, and sunglasses at outlet prices.</p>
+                  <span className="inline-flex items-center gap-1 bg-cyan-400 text-slate-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    👟 Shop Accessories &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&auto=format&fit=crop&q=80" alt="Shoes" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+            </div>
+          </section>
+
+          {/* 💊 DUAL BANNER: PHARMACY & LOCAL HOME SERVICES */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* EXPRESS PHARMACY & MEDICINES */}
+              <div
+                onClick={() => navigate("/category/Health & Wellness")}
+                className="bg-gradient-to-r from-teal-700 via-emerald-800 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-teal-100">
+                    💊 15-Min Pharmacy
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Essential Medicines</h3>
+                  <p className="text-xs text-teal-100 font-medium">Prescription medicines, daily vitamins & baby care from certified chemists.</p>
+                  <span className="inline-flex items-center gap-1 bg-white text-teal-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    💊 Order Medicines &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80" alt="Pharmacy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
+
+              {/* HOME SERVICES & REPAIR */}
+              <div
+                onClick={() => navigate("/services")}
+                className="bg-gradient-to-r from-[#0A1128] via-[#1e3c72] to-[#2a5298] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+              >
+                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
+                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    🔧 Verified Professionals
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Home Repair & Cleaning</h3>
+                  <p className="text-xs text-slate-300 font-medium">Electricians, plumbers, AC repair mechanics & home deep cleaning.</p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                    🛠️ Book Expert Service &rarr;
+                  </span>
+                </div>
+                <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80" alt="Services" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+              </div>
             </div>
           </section>
 
@@ -1564,9 +2667,7 @@ const Home = () => {
                 ) : (
                   <div id="deals-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
                     {dealProducts.map((p) => (
-                      <div key={p._id} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 flex flex-col">
-                        {renderProductCard(p)}
-                      </div>
+                      <ProductCard key={p._id || (p as any).id} product={p} />
                     ))}
                   </div>
                 )}
@@ -1617,178 +2718,280 @@ const Home = () => {
             </section>
           )}
 
-          {/* 7. Nearby Stores */}
-          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8">
-            <div className="flex items-center justify-between mb-3 sm:mb-6">
+          {/* 7. Nearby Stores (Premium Cards Layout) */}
+          <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
               <div className="text-left">
-                <h2 className="text-lg sm:text-xl font-bold text-navy">Nearby Stores</h2>
-                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
-                  Top vendors serving{" "}
-                  <span className="font-semibold text-navy">
+                <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
+                    <Store className="w-4 h-4" />
+                  </div>
+                  <span>Nearby Local Stores &amp; Essentials</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1 font-medium">
+                  Verified neighborhood merchants delivering same-day to{" "}
+                  <strong className="text-[#0A1128] font-black">
                     {userLocation?.colony ? `${userLocation.colony} - ` : ""}
-                    {userLocation?.pincode || "your location"}
-                  </span>
+                    {userLocation?.pincode || "your area"}
+                  </strong>
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("/local-stores")}>
-                View All Stores
+              <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/local-stores")}>
+                Explore Local Market →
               </Button>
             </div>
 
             {shopsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-12 w-12 rounded-xl" />
-                      <div className="flex-1 space-y-1.5">
-                        <Skeleton className="h-4 w-2/3" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-3 w-5/6" />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
                 ))}
               </div>
             ) : nearbyShops.length === 0 ? (
-              <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-center text-muted-foreground text-sm">
-                No stores registered near your pincode. Set location to Bangalore 560001 or 560038 to see demo stores!
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-2">
+                <Store className="w-10 h-10 text-slate-300 mx-auto" />
+                <h4 className="font-extrabold text-slate-800 text-sm">No Local Stores Found Near Location</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">Try setting your location via GPS or search in nearby pincodes.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {nearbyShops.slice(0, 3).map((shop) => (
-                  <div
-                    key={shop._id}
-                    onClick={() => navigate(`/business/${shop._id}`)}
-                    className="group rounded-2xl border bg-white p-4 hover:shadow-md cursor-pointer transition flex gap-3 text-left animate-fade-in"
-                  >
-                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
-                      <img
-                        src={getImageUrl(shop.logo) || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100"}
-                        alt={shop.businessName}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-bold text-navy text-sm leading-tight truncate group-hover:text-accent transition-colors">
-                          {shop.businessName}
-                        </h3>
-                        <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-light text-navy">
-                          OPEN
-                        </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
+                {nearbyShops.slice(0, 6).map((shop: any) => {
+                  const defaultImage = "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop";
+                  const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
+                  const ratingAvg = shop.rating?.average || 4.8;
+                  const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
+                  const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
+                  const firstOffer = shop.offers?.[0];
+                  const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
+
+                  return (
+                    <div
+                      key={shop._id}
+                      onClick={() => navigate(`/business/${shop._id}`)}
+                      className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
+                    >
+                      <div>
+                        {/* COVER IMAGE WITH GRADIENT OVERLAY */}
+                        <div className="h-48 bg-slate-100 relative overflow-hidden">
+                          <img
+                            src={displayImage}
+                            alt={shop.businessName}
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
+
+                          {/* STATUS & OFFER BADGES */}
+                          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                              <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
+                            </span>
+
+                            {firstOffer && (
+                              <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                <Tag className="w-3 h-3 text-slate-950" />
+                                <span>{firstOffer.title}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* RATING BADGE */}
+                          <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span>{ratingAvg}</span>
+                          </div>
+
+                          {/* DISTANCE & TIME FLOATING STRIP */}
+                          <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
+                            <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>{deliveryTime}</span>
+                            </span>
+                            <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                              <MapPin className="w-3 h-3 text-amber-400" />
+                              <span>{distance}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* STORE DETAILS */}
+                        <div className="p-5 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5 min-w-0">
+                              <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
+                                {shop.businessName}
+                              </h3>
+                              <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                                {shop.industryType || shop.businessTypes?.join(', ') || 'Local Store & Daily Essentials'}
+                              </p>
+                            </div>
+
+                            {(shop.verifiedBadge || shop.isVerified !== false) && (
+                              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="Verified Store">
+                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                            <span>📍 {shop.locality || shop.city || 'Hyderabad'}</span>
+                            <span className="text-amber-600 font-bold">Same-Day Express</span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 truncate">
-                        {shop.address || `${shop.city}, ${shop.state}`}
-                      </p>
-                      <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px] text-slate-500 font-bold">
-                        <span>📍 600m</span>
-                        <span>•</span>
-                        <span>⚡ 15 mins</span>
-                        <span>•</span>
-                        <span>Min ₹100</span>
+
+                      {/* ACTION BUTTON */}
+                      <div className="px-5 pb-5 pt-1">
+                        <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
+                          <span>Visit Store &amp; Shop</span>
+                          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                        </div>
                       </div>
-                      <p className="text-[11px] text-accent font-extrabold mt-1">
-                        ★ {typeof shop.rating === 'object' ? (shop.rating?.totalReviews > 0 ? shop.rating.average : "New") : (shop.rating || "New")} • {(() => {
-                          const cat = (shop.category || shop.primaryCategory || (shop.categories && shop.categories[0]) || "").toLowerCase();
-                          const name = (shop.businessName || "").toLowerCase();
-                          if (cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("bistro") || name.includes("cafe") || name.includes("biryani") || name.includes("kitchen") || name.includes("dine")) {
-                            return "Food & Restaurant 🍽️";
-                          }
-                          if (cat.includes("grocery") || cat.includes("daily") || cat.includes("milk") || name.includes("grocery") || name.includes("supermarket") || name.includes("mart")) {
-                            return "Daily Needs & Grocery 🛒";
-                          }
-                          if (cat.includes("fashion") || cat.includes("apparel") || cat.includes("boutique") || name.includes("fashion") || name.includes("boutique")) {
-                            return "Fashion & Boutique 👗";
-                          }
-                          if (cat.includes("service") || cat.includes("repair") || name.includes("service") || name.includes("repair")) {
-                            return "Home Services 🛠️";
-                          }
-                          if (cat.includes("devotional") || cat.includes("puja") || name.includes("pooja") || name.includes("temple")) {
-                            return "Devotional & Puja 🏛️";
-                          }
-                          return shop.category || shop.primaryCategory || "Local Merchant 🏬";
-                        })()}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
 
-          {/* 8. Nearby Restaurants (Dynamic Backend API Vendors) */}
-          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-8 text-left">
-            <div className="flex items-center justify-between mb-3 sm:mb-6">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
-                  <span>🍽️ Nearby Restaurants</span>
-                  <span className="text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-extrabold px-2 py-0.5 rounded-full">Backend Live</span>
+          {/* 8. Nearby Restaurants & Food Outlets (Premium Cards Layout) */}
+          <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+              <div className="text-left">
+                <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
+                    <Utensils className="w-4 h-4" />
+                  </div>
+                  <span>Nearby Restaurants &amp; Food Outlets</span>
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">Order delicious meals from top rated diners nearby.</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Piping hot food &amp; gourmet tiffins delivered in 25 mins</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("/category/Pets")}>
-                View All Diners
+              <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/food")}>
+                Explore Food &amp; Dining →
               </Button>
             </div>
 
             {(() => {
-              // Combine real food vendors from nearbyShops or homeRestaurants
-              const foodVendors = (nearbyShops || []).filter(s => {
-                const cat = (s.category || (s.categories && s.categories[0]) || "").toLowerCase();
-                const name = (s.businessName || "").toLowerCase();
-                return cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") || name.includes("cafe") || name.includes("diner");
-              });
+              const displayList = nearbyRestaurantsList.length > 0
+                ? nearbyRestaurantsList
+                : (nearbyShops || []).filter(s => {
+                  const cat = (s.category || (s.categories && s.categories[0]) || "").toLowerCase();
+                  const name = (s.businessName || "").toLowerCase();
+                  return cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") || name.includes("cafe") || name.includes("diner");
+                });
 
-              const displayList = foodVendors.length > 0 ? foodVendors.map(v => ({
-                id: v._id,
-                name: v.businessName,
-                food: v.category || "Food & Restaurant 🍽️",
-                rating: v.rating?.totalReviews > 0 ? String(v.rating.average) : (v.rating?.average ? String(v.rating.average) : "New"),
-                eta: `${v.estimatedDeliveryMinutes || 20} mins`,
-                distance: v.pincode ? `Pin: ${v.pincode}` : "800m",
-                min: `₹${v.minOrder || 100}`,
-                image: v.storeDesign?.logoUrl || v.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300"
-              })) : (homeRestaurants || []).filter(r => r.id && !r.id.startsWith("mock-"));
+              if (restaurantsLoading) {
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
+                    ))}
+                  </div>
+                );
+              }
 
               if (displayList.length === 0) {
                 return (
-                  <div className="rounded-3xl border border-amber-200/60 bg-amber-50/40 p-8 text-center text-muted-foreground">
-                    <span className="text-3xl block mb-2">🍽️</span>
-                    <h4 className="font-extrabold text-navy text-sm">No Restaurant Vendors Registered Near Location Yet</h4>
-                    <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">Registered food vendors will automatically appear here once approved by Admin in the Approval Center.</p>
-                    <Button onClick={() => navigate("/earn-with-apexbee")} size="sm" className="mt-4 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl border-none">
-                      🏪 Register a Food Store Partner
-                    </Button>
+                  <div className="rounded-3xl border border-amber-200/60 bg-amber-50/40 p-8 text-center text-muted-foreground space-y-2">
+                    <Utensils className="w-10 h-10 text-amber-500 mx-auto" />
+                    <h4 className="font-extrabold text-slate-800 text-sm">No Nearby Food Outlets Registered Yet</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">Food partner outlets will appear live as soon as they are approved by Admin.</p>
                   </div>
                 );
               }
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {displayList.map((rest: any, idx: number) => (
-                    <div key={rest.id || idx} className="group rounded-2xl border bg-white p-4 hover:shadow-md cursor-pointer transition flex gap-3 text-left" onClick={() => navigate(`/business/${rest.id}`)}>
-                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
-                        <img src={rest.image} alt={rest.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-bold text-navy text-sm leading-tight truncate group-hover:text-accent transition-colors">{rest.name}</h3>
-                          <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-light text-navy">OPEN</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
+                  {displayList.slice(0, 6).map((rest: any, idx: number) => {
+                    const defaultImage = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop";
+                    const displayImage = rest.bannerImage || rest.coverImage || rest.logo || rest.image || defaultImage;
+                    const ratingAvg = rest.rating?.average ? rest.rating.average : (typeof rest.rating === 'string' ? rest.rating : '4.8');
+                    const name = rest.name || rest.businessName || "Restaurant Partner";
+                    const cuisines = Array.isArray(rest.cuisines) ? rest.cuisines.join(', ') : (rest.cuisines || rest.food || 'Multi-Cuisine');
+                    const eta = `${rest.averagePreparationMinutes || rest.estimatedDeliveryMinutes || 20} mins`;
+                    const locality = rest.locality || rest.city || 'Hyderabad';
+                    const isOpen = rest.isOpen !== false;
+                    const id = rest.id || rest._id;
+
+                    return (
+                      <div
+                        key={id || idx}
+                        onClick={() => navigate(`/food/restaurant/${id}`)}
+                        className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
+                      >
+                        <div>
+                          {/* BANNER COVER */}
+                          <div className="h-48 bg-slate-100 relative overflow-hidden">
+                            <img
+                              src={displayImage}
+                              alt={name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
+
+                            {/* STATUS & ACTIVE OFFER BADGES */}
+                            <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                                <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
+                              </span>
+
+                              {rest.activeOfferSummary && (
+                                <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                  <Tag className="w-3 h-3 text-slate-950" />
+                                  <span>{rest.activeOfferSummary}</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* RATING BADGE */}
+                            <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              <span>{ratingAvg}</span>
+                            </div>
+
+                            {/* FLOATING PREP TIME STRIP */}
+                            <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
+                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                <Clock className="w-3 h-3 text-amber-400" />
+                                <span>{eta}</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* BODY DETAILS */}
+                          <div className="p-5 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-0.5 min-w-0">
+                                <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
+                                  {name}
+                                </h3>
+                                <p className="text-xs text-amber-600 font-bold line-clamp-1">
+                                  {cuisines}
+                                </p>
+                              </div>
+                              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="FSSAI Verified">
+                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                              </span>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                              <span>📍 {locality}</span>
+                              <span className="text-emerald-600 font-bold">Express Delivery</span>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-1 truncate">{rest.food}</p>
-                        <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px] text-slate-500 font-bold">
-                          <span>📍 {rest.distance}</span>
-                          <span>•</span>
-                          <span>⚡ {rest.eta}</span>
-                          <span>•</span>
-                          <span>Min {rest.min}</span>
+
+                        {/* ACTION BUTTON */}
+                        <div className="px-5 pb-5 pt-1">
+                          <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
+                            <span>Explore Menu &amp; Order</span>
+                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                          </div>
                         </div>
-                        <p className="text-[11px] text-amber-600 font-extrabold mt-1">★ {rest.rating} • Food & Restaurant 🍽️</p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -1898,102 +3101,7 @@ const Home = () => {
             </div>
           </section>
 
-          {/* Pets Corner */}
-          {(personalization?.hasPets || petProducts.length > 0 || true) && (
-            <section className="container mx-auto px-3 sm:px-4 py-2 text-left">
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-navy flex items-center gap-1.5">🐶 Pets Corner</h3>
-                  <span className="text-[9px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded uppercase tracking-wider">Pet Profile Active</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-3 bg-white rounded-2xl border border-orange-100/50 flex items-center justify-between shadow-sm">
-                    <div>
-                      <p className="font-extrabold text-navy text-xs">Pet Food Reminder</p>
-                      <p className="text-[10px] text-slate-500 mt-1 font-medium">Next scheduled check tomorrow</p>
-                    </div>
-                    <Button size="sm" onClick={() => navigate("/categories")} className="bg-orange-500 text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Buy Now</Button>
-                  </div>
-                  <div className="p-3 bg-white rounded-2xl border border-orange-100/50 flex items-center justify-between shadow-sm">
-                    <div>
-                      <p className="font-extrabold text-navy text-xs">Vaccination Due</p>
-                      <p className="text-[10px] text-red-500 font-bold mt-1">⚠️ In 3 Days</p>
-                    </div>
-                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Book Clinic</Button>
-                  </div>
-                  <div className="p-3 bg-white rounded-2xl border border-orange-100/50 flex items-center justify-between shadow-sm">
-                    <div>
-                      <p className="font-extrabold text-navy text-xs">Pet Grooming</p>
-                      <p className="text-[10px] text-slate-500 mt-1 font-medium">Spa styling at home</p>
-                    </div>
-                    <Button size="sm" onClick={() => navigate("/services")} className="bg-navy text-white font-bold text-[10px] py-1 rounded-lg border-none cursor-pointer">Book Salon</Button>
-                  </div>
-                </div>
 
-                {/* Real Live Pet Products Row if available */}
-                {petProducts.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-xs font-extrabold text-orange-900 mb-2">🐾 Recommended Pet Products</p>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
-                      {petProducts.map((p) => (
-                        <div key={p._id} className="min-w-[170px] max-w-[170px] shrink-0 bg-white border rounded-2xl p-2 shadow-xs">
-                          {renderProductCard(p)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Kids Corner */}
-          {(personalization?.hasKids || kidsProducts.length > 0 || true) && (
-            <section className="container mx-auto px-3 sm:px-4 py-2 text-left">
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-navy flex items-center gap-1.5">👶 Kids Corner</h3>
-                  <span className="text-[9px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded uppercase tracking-wider">Birthday in 5 Days! 🎉</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
-                    <p className="font-extrabold text-navy text-xs">Return Gifts</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-medium">Pack of 12 gift items</p>
-                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Browse Gifts</Button>
-                  </div>
-                  <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
-                    <p className="font-extrabold text-navy text-xs">Decorations</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-medium">Balloons & Party themes</p>
-                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">View Themes</Button>
-                  </div>
-                  <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
-                    <p className="font-extrabold text-navy text-xs">Birthday Cake</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-medium">Flavor & custom print selection</p>
-                    <Button size="sm" onClick={() => navigate("/category/🍽 Food & Dining")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Order Cake</Button>
-                  </div>
-                  <div className="p-3 bg-white rounded-2xl border border-rose-100/50 shadow-sm text-left">
-                    <p className="font-extrabold text-navy text-xs">Birthday Outfits</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-medium">Kids ethnic & casual section</p>
-                    <Button size="sm" onClick={() => navigate("/categories")} className="w-full mt-3 bg-accent text-white text-[10px] font-bold py-1.5 rounded-xl border-none cursor-pointer">Browse Outfits</Button>
-                  </div>
-                </div>
-
-                {/* Real Live Kids Products Row if available */}
-                {kidsProducts.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-xs font-extrabold text-rose-900 mb-2">🎁 Featured Kids Products & Toys</p>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
-                      {kidsProducts.map((p) => (
-                        <div key={p._id} className="min-w-[170px] max-w-[170px] shrink-0 bg-white border rounded-2xl p-2 shadow-xs">
-                          {renderProductCard(p)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
 
 
 
@@ -2118,35 +3226,10 @@ const Home = () => {
             <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
               📦 Continue Shopping
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {continueShoppingProducts.map((p: any) => {
-                const title = getProductTitle(p);
-                const img = getProductImage(p);
-                const { price } = getDisplayPrices(p);
-                const brandName = p.brand || "ApexBee Seller";
-                return (
-                  <div key={p._id} className="border border-slate-100 bg-white rounded-3xl p-4 flex flex-col justify-between hover:shadow-premium-hover shadow-sm transition cursor-pointer" onClick={() => navigate(p._id.startsWith("mock-") ? "/products" : `/product/${p._id}`)}>
-                    <div>
-                      <div className="h-28 bg-slate-50 rounded-2xl overflow-hidden mb-3 flex items-center justify-center">
-                        <img src={img} alt={title} className="max-h-full max-w-full object-contain p-2" />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{brandName}</p>
-                      <h4 className="font-extrabold text-navy text-xs mt-1 leading-tight line-clamp-2 min-h-[32px]">{title}</h4>
-                      <p className="font-black text-navy text-sm mt-2">₹{price}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="w-full mt-3 bg-accent hover:bg-accent/90 text-white font-bold text-xs rounded-xl border-none cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBuyAgainAdd(p);
-                      }}
-                    >
-                      Continue →
-                    </Button>
-                  </div>
-                );
-              })}
+            <div className="flex gap-4 overflow-x-auto scrollbar-none pb-4 pt-1 scroll-smooth">
+              {continueShoppingProducts.map((p: any) => (
+                <ProductCard key={p._id || p.id} product={p} />
+              ))}
             </div>
           </section>
 
@@ -2223,54 +3306,27 @@ const Home = () => {
 
           {/* 16. Community updates & rewards */}
           <section className="container mx-auto px-4 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+            <div className="text-left">
               {/* Rewards Card */}
-              <div className="p-5 rounded-3xl border bg-gradient-to-r from-amber-50 to-yellow-50 flex items-center justify-between gap-4 shadow-sm">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 text-amber-800 bg-white/70 px-2.5 py-1 rounded-full text-xs font-bold">
-                    <Gift className="h-3.5 w-3.5" /> Rewards & Cashbacks
+              <div className="p-5 sm:p-6 rounded-3xl border bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border-amber-300/60 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                <div className="space-y-2 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 text-amber-900 bg-amber-100 px-3 py-1 rounded-full text-xs font-black">
+                    <Gift className="h-3.5 w-3.5 text-amber-600" /> Rewards & Cashbacks
                   </div>
-                  <h3 className="text-lg font-extrabold text-navy font-sans">KYC Complete Reward</h3>
-                  <p className="text-xs text-muted-foreground leading-normal font-medium">Complete your profile and verify KYC to lock in your first ₹50 sign-up bonus.</p>
-                  <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold border-none" onClick={() => navigate("/profile")}>
-                    Verify Profile
+                  <h3 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading">KYC Verification Reward</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                    Complete your profile and verify KYC to lock in your first ₹50 sign-up bonus credited directly to your wallet.
+                  </p>
+                  <Button size="sm" className="bg-[#0A1128] hover:bg-amber-500 text-amber-400 hover:text-[#0A1128] font-black text-xs rounded-xl border-none cursor-pointer px-5 py-2.5 shadow-sm transition" onClick={() => navigate("/profile")}>
+                    Verify Profile & Claim Bonus
                   </Button>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-amber-800 font-bold uppercase tracking-wider font-mono">Available Balance</p>
-                  <p className="text-3xl font-extrabold text-navy mt-1">₹5,000</p>
-                  <p className="text-[10px] text-green-700 font-semibold mt-1">✓ Wallet Loaded</p>
-                </div>
-              </div>
-
-              {/* Referral Program Widget */}
-              <div className="p-5 rounded-3xl border bg-gradient-to-r from-purple-50 to-blue-50 flex flex-col justify-between min-h-[160px] shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="inline-flex items-center gap-1.5 text-purple-800 bg-white/70 px-2.5 py-1 rounded-full text-xs font-bold">
-                      <Share2 className="h-3.5 w-3.5" /> Refer & Earn MLM Income
-                    </div>
-                    <h3 className="text-lg font-extrabold text-navy mt-2 font-sans">Team MLM Network</h3>
-                    <p className="text-xs text-muted-foreground mt-1 leading-normal font-medium">Invite friends and earn lifetime commission on every purchase they make up to 3 levels.</p>
-                  </div>
-                  <div className="bg-white px-3 py-1.5 rounded-xl border text-center font-bold text-xs text-purple-800 shrink-0">
-                    Code: APEXBEE123
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center gap-3">
-                  <Button size="sm" className="bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold border-none" onClick={() => navigate("/referrals")}>
-                    Referral Dashboard
-                  </Button>
-                  <button
-                    type="button"
-                    className="text-xs font-bold text-purple-800 hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/register?ref=APEXBEE123`);
-                      alert("Referral link copied!");
-                    }}
-                  >
-                    Copy Invite Link
-                  </button>
+                <div className="text-right bg-white p-4 rounded-2xl border border-amber-200 shrink-0 shadow-xs min-w-[140px]">
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider font-mono">Available Balance</p>
+                  <p className="text-2xl sm:text-3xl font-black text-[#0A1128] mt-0.5">₹5,000</p>
+                  <p className="text-[10px] text-emerald-600 font-black mt-0.5 flex items-center justify-end gap-1">
+                    <span>✓</span> Wallet Loaded
+                  </p>
                 </div>
               </div>
             </div>
@@ -2365,7 +3421,7 @@ const Home = () => {
           {/* Support Drawer */}
           <SupportDrawer isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
         </div>
-      </main >
+      </main>
     </>
   );
 };

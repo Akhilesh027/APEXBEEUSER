@@ -1,9 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
-import { ShoppingCart, Search, Filter, Star, Sparkles, MapPin, Tag, Compass, Calendar, RefreshCw, ChevronRight, Award } from "lucide-react";
+import { ShoppingCart, Search, Filter, Star, Sparkles, MapPin, Tag, Compass, Calendar, RefreshCw, ChevronRight, Award, Clock, Flame, ChevronLeft, LayoutGrid, List, CheckCircle2, ShieldCheck, Zap, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -574,12 +575,31 @@ const Category = () => {
     } catch { }
   }, []);
 
+  // Redirect Food & Dining categories to /food
+  useEffect(() => {
+    if (categoryName) {
+      const lower = decodeURIComponent(categoryName).toLowerCase();
+      if (lower.includes("food") || lower.includes("dining") || lower.includes("restaurant")) {
+        navigate("/food", { replace: true });
+      }
+    }
+  }, [categoryName, navigate]);
+
   // ── Discovery state ──
   const [allCats, setAllCats] = useState<CategoryType[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<{ id: string; name: string; icon: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeCategoryTab, setActiveCategoryTab] = useState<string>("ALL");
+  const [activeBanner, setActiveBanner] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % 4);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   // ── Detail state ──
   const [category, setCategory] = useState<CategoryType | null>(null);
@@ -588,7 +608,13 @@ const Category = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
   const [selectedChildCategoryId, setSelectedChildCategoryId] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<string>("relevance");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(12);
+  const rightScrollRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   // ── Left Filter State ──
   const [filters, setFilters] = useState({
@@ -871,6 +897,24 @@ const Category = () => {
         }
 
         if (fetchedProds.length === 0) {
+          try {
+            const fallbackDbRes = await axios.get(`${API_BASE}/products?limit=100`);
+            const allDbProds: Product[] = fallbackDbRes?.data?.products || Array.isArray(fallbackDbRes?.data) ? fallbackDbRes.data : [];
+            const reqCatName = (mainCategory.name || categoryName || '').toLowerCase();
+            const matchedDb = allDbProds.filter((p: any) => {
+              const cName = (p.categoryName || p.category || '').toString().toLowerCase();
+              const pName = (p.itemName || p.name || '').toString().toLowerCase();
+              return cName.includes(reqCatName) || reqCatName.includes(cName) || pName.includes(reqCatName);
+            });
+            if (matchedDb.length > 0) {
+              fetchedProds = matchedDb;
+            }
+          } catch (dbErr) {
+            console.error("DB product search fallback error:", dbErr);
+          }
+        }
+
+        if (fetchedProds.length === 0) {
           fetchedProds = getDemoProducts(categoryName, mainCategory, finalSubs, builtChildCategories);
         }
 
@@ -923,8 +967,43 @@ const Category = () => {
       });
     }
 
+    // Apply sorting
+    switch (sortOption) {
+      case "price_low":
+        list = [...list].sort((a, b) => (Number(a.baseSellingPrice ?? a.afterDiscount ?? 0)) - (Number(b.baseSellingPrice ?? b.afterDiscount ?? 0)));
+        break;
+      case "price_high":
+        list = [...list].sort((a, b) => (Number(b.baseSellingPrice ?? b.afterDiscount ?? 0)) - (Number(a.baseSellingPrice ?? a.afterDiscount ?? 0)));
+        break;
+      case "popularity":
+        list = [...list].sort((a, b) => (b.reviews ?? 0) - (a.reviews ?? 0));
+        break;
+      case "newest":
+        list = [...list].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        break;
+      default:
+        break;
+    }
+
     return list;
-  }, [allProducts, selectedSubcategoryId, selectedChildCategoryId, subcategories, childCategories]);
+  }, [allProducts, selectedSubcategoryId, selectedChildCategoryId, subcategories, childCategories, sortOption]);
+
+  // Pagination & Scroll resetting
+  useEffect(() => {
+    setCurrentPage(1);
+    rightScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [selectedSubcategoryId, selectedChildCategoryId, sortOption]);
+
+  useEffect(() => {
+    rightScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
+  const totalPages = useMemo(() => Math.ceil(filteredProducts.length / itemsPerPage) || 1, [filteredProducts.length, itemsPerPage]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   const selectedSubName = useMemo(
     () => subcategories.find((s) => String(s._id) === String(selectedSubcategoryId))?.name ?? null,
@@ -941,6 +1020,22 @@ const Category = () => {
         (c.children || []).some((s) => s.name.toLowerCase().includes(q))
     );
   }, [allCats, searchQuery]);
+
+  const filteredCategoriesByTab = useMemo(() => {
+    let list = filteredParents;
+    if (activeCategoryTab !== "ALL") {
+      list = list.filter((cat) => {
+        const name = cat.name.toLowerCase();
+        if (activeCategoryTab === "GROCERY") return name.includes("daily") || name.includes("grocery") || name.includes("food") || name.includes("dining");
+        if (activeCategoryTab === "FASHION") return name.includes("fashion") || name.includes("shopping") || name.includes("saree") || name.includes("boutique");
+        if (activeCategoryTab === "SERVICES") return name.includes("service") || name.includes("repair") || name.includes("cleaning") || name.includes("plumb");
+        if (activeCategoryTab === "HEALTH") return name.includes("health") || name.includes("pharmacy") || name.includes("wellness");
+        if (activeCategoryTab === "DEVOTIONAL") return name.includes("devotional") || name.includes("puja") || name.includes("pooja");
+        return true;
+      });
+    }
+    return list;
+  }, [filteredParents, activeCategoryTab]);
 
   // Accent gradients
   const GRADIENTS = [
@@ -979,7 +1074,7 @@ const Category = () => {
   }
 
   // ═══════════════════════════════════════════════════════
-  // CATEGORY DETAIL VIEW (Shopping categories with products)
+  // CATEGORY DETAIL VIEW — FLIPKART DESKTOP STYLE
   // ═══════════════════════════════════════════════════════
   if (categoryName && category) {
     const discountPct = (p: Product) => {
@@ -989,259 +1084,468 @@ const Category = () => {
     };
 
     return (
-      <div className="min-h-screen bg-background font-sans">
+      <div className="min-h-screen bg-[#f1f3f6] font-sans text-slate-900">
         <Navbar />
 
-        {/* ── Banner ── */}
-        <section className="container mx-auto px-4 pt-6 text-left">
-          <div className="overflow-hidden rounded-3xl border shadow-md bg-muted/20 relative">
-            <div className="relative h-48 md:h-72">
-              <img
-                src={category.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800"}
-                alt={category.name}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-5 left-5 md:bottom-7 md:left-7">
-                <div className="inline-flex items-center gap-3 rounded-2xl bg-white/95 px-4 py-2 shadow-lg">
-                  <span className="text-2xl">{getSubIcon(category.name)}</span>
-                  <span className="text-navy font-black text-lg capitalize">{category.name}</span>
-                </div>
-              </div>
-            </div>
-            {/* Breadcrumb */}
-            <div className="px-5 py-3 bg-white/80 backdrop-blur flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/" className="hover:text-primary transition font-bold">Home</Link>
-              <span className="font-bold">/</span>
-              <Link to="/category" className="hover:text-primary transition font-bold">Categories</Link>
-              <span className="font-bold">/</span>
-              <span className="text-navy font-black">{category.name}</span>
-            </div>
+        {/* ── Flipkart-style Breadcrumb Strip ── */}
+        <div className="bg-white border-b border-slate-200 py-2.5 px-3 sm:px-6 lg:px-8">
+          <div className="max-w-[1400px] mx-auto flex items-center space-x-2 text-xs font-medium text-slate-500">
+            <Link to="/" className="hover:text-amber-600 transition">Home</Link>
+            <ChevronRight className="w-3 h-3 text-slate-400" />
+            <Link to="/categories" className="hover:text-amber-600 transition">Categories</Link>
+            <ChevronRight className="w-3 h-3 text-slate-400" />
+            <span className="text-slate-900 font-bold capitalize">{category.name}</span>
           </div>
-        </section>
+        </div>
 
-        {/* ── Subcategory circular tiles & Child Category Filters ── */}
-        <section className="container mx-auto px-4 py-6 text-left">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black text-navy">Shop by Subcategory</h2>
-            <Link to="/category" className="text-xs text-primary font-black hover:underline">All Categories →</Link>
-          </div>
-          <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none">
-            {[{ _id: "__all__", name: "All Products" }, ...subcategories].map((s) => {
-              const isAll = s._id === "__all__";
-              const active = isAll ? !selectedSubcategoryId : selectedSubcategoryId === s._id;
-              const imageUrl = isAll
-                ? "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=150&auto=format&fit=crop&q=60"
-                : (s.image || getSubcategoryImage(s.name, s.slug));
+        {/* ═══════════════ MAIN CATEGORY CONTAINER ═══════════════ */}
+        <div className="w-full max-w-[1400px] mx-auto px-1.5 sm:px-4 lg:px-8 flex flex-row items-start gap-1.5 sm:gap-3 lg:gap-5 py-2 sm:py-3 lg:py-4 h-[calc(100vh-125px)] overflow-hidden font-sans">
 
-              return (
-                <button
-                  key={s._id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubcategoryId(isAll ? null : s._id);
-                    setSelectedChildCategoryId(null);
-                  }}
-                  className="flex-shrink-0 flex flex-col items-center gap-2 group cursor-pointer focus:outline-none bg-transparent border-none p-0"
-                >
-                  <div
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 transition-all duration-300 relative shadow-sm"
-                    style={{
-                      borderColor: active ? "#0ea5e9" : "#e2e8f0",
-                      transform: active ? "scale(1.05)" : "scale(1)",
-                      boxShadow: active ? "0 4px 12px rgba(14,165,233,0.25)" : "none"
-                    }}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt={s.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    {active && (
-                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                        <div className="bg-[#0ea5e9] text-white rounded-full p-1 shadow-md">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className="text-xs font-black tracking-tight transition-colors group-hover:text-[#0ea5e9] max-w-[84px] text-center line-clamp-2"
-                    style={{
-                      color: active ? "#0ea5e9" : "#334155"
-                    }}
-                  >
-                    {s.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {/* ── LEFT SIDEBAR (ALWAYS VISIBLE DIRECTLY ON MOBILE & DESKTOP — NO DRAWERS/TABS) ── */}
+          <div className="w-[84px] sm:w-[110px] lg:w-[260px] shrink-0 bg-white rounded-xl shadow-xs h-full overflow-y-auto border border-slate-200/80 font-sans divide-y divide-slate-100">
 
-          {/* ── Level 3 Child Category Filter Pills ── */}
-          {activeChildCategories.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none font-sans">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 bg-slate-100 px-2.5 py-1 rounded-md">
-                Child Categories:
+            {/* Sidebar Header */}
+            <div className="flex flex-col lg:flex-row items-center justify-between px-2 lg:px-5 py-2.5 lg:py-4 border-b border-slate-100 text-center lg:text-left">
+              <h3 className="text-[11px] lg:text-sm font-black text-slate-900 uppercase tracking-wider line-clamp-1">
+                {category.name}
+              </h3>
+              <span className="text-[9px] lg:text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 lg:px-2 py-0.5 rounded-md mt-0.5 lg:mt-0">
+                {subcategories.length} Subs
               </span>
-              <button
-                type="button"
-                onClick={() => setSelectedChildCategoryId(null)}
-                className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none ${!selectedChildCategoryId
-                  ? "bg-navy text-white shadow-xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-              >
-                All {selectedSubName || "Subtypes"}
-              </button>
-              {activeChildCategories.map((child) => {
-                const active = selectedChildCategoryId === child._id;
+            </div>
+
+            {/* Subcategory List */}
+            <div className="divide-y divide-slate-100">
+              {[{ _id: "__all__", name: "All Items" }, ...subcategories].map((s) => {
+                const isAll = s._id === "__all__";
+                const active = isAll ? !selectedSubcategoryId : selectedSubcategoryId === s._id;
+                const imageUrl = isAll
+                  ? "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=150&auto=format&fit=crop&q=60"
+                  : (s.image || getSubcategoryImage(s.name, s.slug));
+
                 return (
                   <button
-                    key={child._id}
+                    key={s._id}
                     type="button"
-                    onClick={() => setSelectedChildCategoryId(active ? null : child._id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border-none flex items-center gap-1 ${active
-                      ? "bg-accent text-white shadow-xs scale-105"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    onClick={() => {
+                      setSelectedSubcategoryId(isAll ? null : s._id);
+                      setSelectedChildCategoryId(null);
+                    }}
+                    className={`w-full flex flex-col lg:flex-row items-center py-2.5 lg:py-3.5 px-1.5 lg:px-5 gap-1 lg:gap-3 transition cursor-pointer border-none text-center lg:text-left ${active
+                        ? "bg-amber-50/90 border-l-[3px] border-l-[#F3BA12] text-[#0A1128] font-black"
+                        : "bg-white text-slate-700 hover:bg-slate-50 font-medium"
                       }`}
                   >
-                    <span>{child.name}</span>
+                    {/* 3D Circular Thumbnail */}
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 shrink-0 transition shadow-xs ${active ? "border-[#F3BA12] ring-2 lg:ring-4 ring-amber-400/30 scale-105" : "border-slate-200"
+                      }`}>
+                      <img src={imageUrl} alt={s.name} className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+
+                    {/* Label */}
+                    <span className={`text-[10px] sm:text-[11px] lg:text-[13px] leading-tight line-clamp-2 lg:line-clamp-1 ${active ? "font-black text-[#0A1128]" : "font-semibold text-slate-700"
+                      }`}>
+                      {s.name}
+                    </span>
+
+                    {/* Desktop Active Indicator */}
+                    {active && (
+                      <ChevronRight className="hidden lg:block w-3.5 h-3.5 text-[#F3BA12] ml-auto shrink-0" />
+                    )}
                   </button>
                 );
               })}
             </div>
-          )}
-        </section>
-
-        {/* ── Cashback strip ── */}
-        <section className="container mx-auto px-4 mb-2">
-          <div
-            className="rounded-2xl py-3 px-6 text-center font-bold text-sm shadow-sm flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(90deg,#fef9c3,#fde68a)", color: "#92400e" }}
-          >
-            🎉 Earn <strong className="font-extrabold">10% Cashback</strong> on every order placed through the app
-          </div>
-        </section>
-
-        {/* ── Products grid ── */}
-        <section className="container mx-auto px-4 py-8 text-left">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-black text-navy">
-                {selectedSubName ? `${selectedSubName} Products` : "Featured Products"}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5 font-bold">{filteredProducts.length} item(s) found</p>
-            </div>
           </div>
 
-          {filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-muted-foreground/30 bg-muted/20">
-              <div className="text-6xl mb-4 animate-bounce">⏳</div>
-              <h3 className="text-2xl font-black text-navy mb-2">Products Coming Soon!</h3>
-              <p className="text-muted-foreground text-center max-w-md px-4 mb-6 font-medium">
-                We're busy stocking the best items. Check back shortly for amazing deals!
-              </p>
-              <Link to="/category" className="px-6 py-3 rounded-2xl bg-navy text-white font-bold hover:bg-navy/90 transition">
-                Explore Other Categories
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filteredProducts.map((product) => {
-                const title = product.name || product.itemName || "Product";
-                const img = product.images?.[0] || product.thumbnail || "/placeholder-product.png";
-                const afterDiscount = product.baseSellingPrice ?? product.afterDiscount;
-                const userPrice = product.baseMrp ?? product.userPrice;
-                const price = typeof afterDiscount === "number"
-                  ? `₹${afterDiscount.toLocaleString("en-IN")}`
-                  : "Price N/A";
-                const dp = discountPct(product);
+          {/* ── RIGHT MAIN CONTENT AREA ── */}
+          <div className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden bg-white rounded-xl border border-slate-200 shadow-sm">
 
-                const isCourier = product.isCourierShipping || (product.calculatedDistanceKm && product.calculatedDistanceKm > 20);
-                const shippingFee = product.shippingCharge || product.adminPricing?.shippingCharge || 0;
+            {/* ── FLIPKART-STYLE SORT / FILTER TOOLBAR ── */}
+            <div className="bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex items-center justify-between gap-3 shrink-0 z-10">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-none shrink min-w-0">
+                {/* Section Title */}
+                <div className="shrink-0">
+                  <h2 className="text-sm lg:text-base font-black text-slate-900 leading-tight whitespace-nowrap">
+                    {selectedSubName || "All Products"}
+                  </h2>
+                  <p className="text-[10px] lg:text-xs text-slate-500 font-semibold whitespace-nowrap">
+                    (Showing {filteredProducts.length} products)
+                  </p>
+                </div>
 
-                return (
-                  <div
-                    key={product._id}
-                    onClick={() => navigate(`/product/${product._id}`)}
-                    className="bg-white border border-gray-150 rounded-2xl p-3 relative flex flex-col justify-between hover:shadow-md cursor-pointer transition text-left group"
+                {/* Separator */}
+                <div className="hidden lg:block w-px h-8 bg-slate-200 shrink-0" />
+
+                {/* Sort Chips — Desktop */}
+                <div className="hidden lg:flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-bold text-slate-500">Sort By</span>
+                  {[
+                    { label: "Relevance", value: "relevance" },
+                    { label: "Popularity", value: "popularity" },
+                    { label: "Price – Low to High", value: "price_low" },
+                    { label: "Price – High to Low", value: "price_high" },
+                    { label: "Newest First", value: "newest" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border-none whitespace-nowrap ${sortOption === opt.value
+                          ? "bg-[#0A1128] text-[#F3BA12] shadow-sm"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      onClick={() => setSortOption(opt.value)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* View Mode Switcher & Clear Filter */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    title="List View (Detailed)"
+                    className={`p-1.5 rounded-md transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "list"
+                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
-                    <div className="relative h-32 bg-white overflow-hidden flex items-center justify-center mb-2">
-                      <img
-                        src={img} alt={title}
-                        className="max-h-full max-w-full object-contain"
-                        loading="lazy"
-                      />
-                      {dp > 0 && (
-                        <span className="absolute left-2.5 top-2.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-600 z-10">
-                          {dp}% OFF
-                        </span>
-                      )}
-                      {product.tag && (
-                        <div className="absolute top-2 right-2 text-navy text-xs font-bold px-2 py-0.5 rounded-lg"
-                          style={{ background: "#fde68a" }}>
-                          {product.tag}
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2.5">
-                      <h4 className="font-extrabold text-gray-700 text-xs sm:text-sm leading-tight line-clamp-2 min-h-[36px]">{title}</h4>
-                      <div className="mt-2.5 flex items-baseline gap-1">
-                        <span className="font-black text-[#0A1128] text-sm sm:text-base">{price}</span>
-                        {typeof userPrice === "number" && (
-                          <span className="text-xs text-muted-foreground line-through">
-                            ₹{userPrice.toLocaleString("en-IN")}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5 font-bold">
-                        <StarRating rating={product.rating ?? 4} />
-                        <span className="text-xs text-muted-foreground">({product.reviews ?? 0})</span>
-                      </div>
+                    <List className="w-4 h-4" />
+                    <span className="text-[10px] font-bold hidden sm:inline">List</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    title="Grid View (Compact)"
+                    className={`p-1.5 rounded-md transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "grid"
+                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                      }`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="text-[10px] font-bold hidden sm:inline">Grid</span>
+                  </button>
+                </div>
 
-                      {/* Delivery Badge */}
-                      <div className="space-y-0.5 bg-slate-50 rounded-xl p-1.5 text-[9px] text-slate-600 font-bold mt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-orange-500 shrink-0 font-extrabold">
-                            {isCourier ? "🌐 Courier [2-4 Days]" : "⚡ Fast Delivery (15-30 Mins)"}
-                          </span>
-                          <span className="text-[8px] font-black uppercase bg-blue-50 text-blue-700 px-1 rounded">
-                            {product.deliveryMode === "platform_delivery" ? "Platform" : "Vendor"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-[8px] text-slate-500 border-t border-slate-100 pt-0.5">
-                          <span className="font-bold">
-                            {isCourier
-                              ? `📦 ${product.vendorLocationName ? `${product.vendorLocationName} Seller` : "Pan India Courier"}`
-                              : "📍 Nearby You (Local Store)"}
-                          </span>
-                          <span className="font-extrabold text-emerald-600">
-                            {shippingFee > 0 ? `₹${shippingFee}` : "FREE"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Add button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/product/${product._id}`);
-                        }}
-                        className="w-full bg-[#F3BA12] hover:bg-[#e0ab10] text-[#0A1128] font-black text-xs py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 mt-2 transition active:scale-95 shadow-sm border-none cursor-pointer"
-                      >
-                        <ShoppingCart className="h-3.5 w-3.5" />
-                        <span>Add to Cart</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                {selectedSubcategoryId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubcategoryId(null);
+                      setSelectedChildCategoryId(null);
+                    }}
+                    className="text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition border-none cursor-pointer whitespace-nowrap"
+                  >
+                    ✕ Clear Filter
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </section>
+
+            {/* ── SCROLLABLE PRODUCT LISTING CONTAINER ── */}
+            <div ref={rightScrollRef} className="flex-1 overflow-y-auto bg-white p-0 rounded-b-xl min-h-0 touch-pan-y">
+
+              {/* ── 2-ROW CHILD SUBCATEGORIES GRID (SCROLLS WITH CONTENT & ENLARGED HEIGHT) ── */}
+              {activeChildCategories.length > 0 && (
+                <div className="bg-gradient-to-r from-slate-50 via-amber-50/25 to-slate-50 px-3.5 lg:px-6 py-4 border-b border-slate-200 shrink-0 font-sans">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                        Explore {selectedSubName || "Types"}:
+                      </span>
+                    </div>
+                    {selectedChildCategoryId && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedChildCategoryId(null)}
+                        className="text-xs font-black text-rose-600 hover:underline cursor-pointer border-none bg-transparent"
+                      >
+                        ✕ Clear Filter
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 2-Row Vertical-Tile Grid Container (Enlarged Height) */}
+                  <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-3 sm:gap-3.5 overflow-x-auto scrollbar-none pb-1.5 pt-0.5">
+                    {/* "All" Card */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChildCategoryId(null)}
+                      className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${!selectedChildCategoryId
+                          ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
+                          : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
+                        }`}
+                    >
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 mb-1.5 shrink-0 transition shadow-xs ${!selectedChildCategoryId ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-200 group-hover:border-amber-400"
+                        }`}>
+                        <img
+                          src="https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=150&auto=format&fit=crop&q=60"
+                          alt="All"
+                          className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                        />
+                      </div>
+                      <span className="text-xs sm:text-[12px] font-bold line-clamp-1 leading-tight">
+                        All {selectedSubName || "Items"}
+                      </span>
+                    </button>
+
+                    {/* Child Subcategory Tiles (Enlarged Image & Height) */}
+                    {activeChildCategories.map((child) => {
+                      const isActive = selectedChildCategoryId === child._id;
+                      const childImg = child.image || getSubcategoryImage(child.name, child.slug);
+
+                      return (
+                        <button
+                          key={child._id}
+                          type="button"
+                          onClick={() => setSelectedChildCategoryId(isActive ? null : child._id)}
+                          className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${isActive
+                              ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
+                              : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
+                            }`}
+                        >
+                          {/* ENLARGED IMAGE ON TOP */}
+                          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 mb-1.5 shrink-0 transition shadow-xs ${isActive ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-200 group-hover:border-amber-400"
+                            }`}>
+                            <img
+                              src={childImg}
+                              alt={child.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          {/* NAME DOWN */}
+                          <span className="text-[11px] sm:text-xs leading-tight line-clamp-2 text-center w-full px-0.5">
+                            {child.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {filteredProducts.length === 0 ? (
+                <div className="py-20 text-center p-8 space-y-3">
+                  <div className="text-5xl">🔍</div>
+                  <h3 className="text-lg font-black text-slate-800">No items available</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">Try choosing a different subcategory from the left menu.</p>
+                </div>
+              ) : viewMode === "grid" ? (
+                /* ════════════════════════════════════════════
+                   TYPE 1: VERTICAL GRID CARDS (2-COL ON MOBILE)
+                   ════════════════════════════════════════════ */
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-3 sm:p-4 lg:p-6 justify-items-center w-full">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product._id || product.id} product={product} className="w-full max-w-full shrink" />
+                  ))}
+                </div>
+              ) : (
+                /* ════════════════════════════════════════════
+                   TYPE 2: HORIZONTAL LIST CARDS (COMPACT ROW ON MOBILE)
+                   ════════════════════════════════════════════ */
+                <div className="divide-y divide-slate-100 lg:divide-y lg:divide-slate-200/60">
+                  {paginatedProducts.map((product) => {
+                    const title = product.name || product.itemName || "Product";
+                    const img = product.images?.[0] || product.thumbnail || "/placeholder-product.png";
+                    const afterDiscount = product.baseSellingPrice ?? product.afterDiscount;
+                    const userPrice = product.baseMrp ?? product.userPrice;
+                    const priceNum = typeof afterDiscount === "number" ? afterDiscount : 0;
+                    const mrpNum = typeof userPrice === "number" ? userPrice : 0;
+                    const priceStr = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "Price N/A";
+                    const dp = discountPct(product);
+                    const rating = product.rating ?? 4.8;
+                    const reviews = product.reviews ?? 45;
+                    const shippingFee = product.shippingCharge || product.adminPricing?.shippingCharge || 0;
+
+                    return (
+                      <div
+                        key={product._id}
+                        onClick={() => navigate(`/product/${product._id}`)}
+                        className="group flex flex-row items-center p-2.5 sm:p-4 lg:p-5 gap-2.5 sm:gap-4 cursor-pointer hover:bg-slate-50/60 transition-colors duration-200"
+                      >
+                        {/* PRODUCT IMAGE - COMPACT 24x24 BOX ON MOBILE */}
+                        <div className="relative w-20 h-20 sm:w-40 sm:h-40 lg:w-[220px] lg:h-[180px] shrink-0 flex items-center justify-center bg-white rounded-lg sm:rounded-xl p-1 sm:p-3 border border-slate-100">
+                          <img
+                            src={img}
+                            alt={title}
+                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                          {dp > 0 && (
+                            <span className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-rose-500 text-white text-[8px] sm:text-[10px] font-black px-1 sm:px-2 py-0.2 rounded shadow-xs">
+                              {dp}% off
+                            </span>
+                          )}
+                        </div>
+
+                        {/* PRODUCT INFO */}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <h4 className="text-xs sm:text-base font-semibold text-slate-800 line-clamp-2 leading-snug group-hover:text-amber-600 transition font-heading">
+                            {title}
+                          </h4>
+
+                          {/* Rating + Brand Row */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className="inline-flex items-center gap-0.5 bg-amber-500 text-[#0A1128] px-1.5 py-[1px] rounded text-[10px] font-bold">
+                              <span>{rating}</span>
+                              <Star className="w-2.5 h-2.5 fill-[#0A1128] text-[#0A1128]" />
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold truncate">
+                              ({reviews} Reviews)
+                            </span>
+                            {product.brand && (
+                              <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded truncate">
+                                {product.brand}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Middle feature badges (hidden on mobile, visible on tablet+) */}
+                          <div className="hidden sm:flex flex-wrap items-center gap-1.5 my-1.5">
+                            <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                              100% Quality Assured
+                            </span>
+                            <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700">
+                              <ShieldCheck className="w-3 h-3 text-blue-600 shrink-0" />
+                              Hygienically Sealed
+                            </span>
+                          </div>
+
+                          {/* Price + Delivery + CTA Row */}
+                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                            <div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-xs sm:text-lg font-black text-slate-900">{priceStr}</span>
+                                {mrpNum > priceNum && (
+                                  <span className="text-[9px] sm:text-xs text-slate-400 line-through font-medium">
+                                    ₹{mrpNum.toLocaleString("en-IN")}
+                                  </span>
+                                )}
+                                {dp > 0 && (
+                                  <span className="text-[10px] sm:text-xs font-bold text-rose-600">
+                                    {dp}% off
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5 text-[9px] sm:text-[11px] font-semibold">
+                                <span className="text-emerald-600 font-bold">
+                                  {shippingFee > 0 ? `Delivery ₹${shippingFee}` : "FREE Delivery"}
+                                </span>
+                                <span className="text-slate-400">·</span>
+                                <span className="text-slate-500">
+                                  ⚡ 15–30 Mins
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/product/${product._id}`);
+                              }}
+                              className="bg-[#0A1128] hover:bg-[#F3BA12] text-white hover:text-[#0A1128] font-bold text-xs px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1 transition shadow-xs border-none cursor-pointer shrink-0"
+                            >
+                              <ShoppingCart className="w-3 h-3" />
+                              <span className="text-[10px] sm:text-xs">Add</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── BOTTOM PAGINATION BAR ── */}
+            {filteredProducts.length > 0 && (
+              <div className="bg-white border-t border-slate-200 px-4 lg:px-6 py-2.5 shrink-0 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-600">
+                {/* Count Summary */}
+                <div className="flex items-center gap-1.5 text-slate-500 text-[11px] sm:text-xs">
+                  <span>Showing</span>
+                  <span className="font-black text-slate-900">
+                    {Math.min((currentPage - 1) * itemsPerPage + 1, filteredProducts.length)} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)}
+                  </span>
+                  <span>of</span>
+                  <span className="font-black text-slate-900">{filteredProducts.length}</span>
+                  <span>items</span>
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-3">
+                  {/* Items per page selector */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-slate-400">Per page:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold px-2 py-1 focus:outline-none cursor-pointer"
+                    >
+                      <option value={8}>8</option>
+                      <option value={12}>12</option>
+                      <option value={24}>24</option>
+                      <option value={36}>36</option>
+                    </select>
+                  </div>
+
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      className="px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      ← Prev
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .map((p, idx, arr) => {
+                        const prev = arr[idx - 1];
+                        return (
+                          <span key={p} className="flex items-center">
+                            {prev && p - prev > 1 && <span className="px-1 text-slate-400">…</span>}
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(p)}
+                              className={`w-7 h-7 rounded-lg text-xs font-black transition cursor-pointer border-none ${currentPage === p
+                                  ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                }`}
+                            >
+                              {p}
+                            </button>
+                          </span>
+                        );
+                      })}
+
+                    <button
+                      type="button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                      className="px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         <Footer />
       </div>
@@ -1249,406 +1553,267 @@ const Category = () => {
   }
 
   // ═══════════════════════════════════════════════════════
-  // DISCOVERY LANDING PAGE (Enhanced Dashboard)
+  // DISCOVERY LANDING PAGE (Clean Category Directory)
   // ═══════════════════════════════════════════════════════
+  const CATEGORY_TABS = [
+    { id: "ALL", label: "All Categories", icon: "✨" },
+    { id: "GROCERY", label: "Groceries & Food", icon: "🛒" },
+    { id: "FASHION", label: "Fashion & Lifestyle", icon: "👗" },
+    { id: "SERVICES", label: "Home & Services", icon: "🛠️" },
+    { id: "HEALTH", label: "Health & Wellness", icon: "💊" },
+    { id: "DEVOTIONAL", label: "Devotional & Puja", icon: "🏛️" },
+  ];
+
+  const CATEGORY_HERO_BANNERS = [
+    {
+      id: 1,
+      title: 'Daily Needs & Instant Grocery Delivery',
+      subtitle: 'Milk, fresh vegetables, 20L water cans & household essentials delivered fast',
+      discount: 'FLAT 25% OFF',
+      code: 'DAILYNEEDS25',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200&auto=format&fit=crop',
+      gradient: 'from-amber-600 via-amber-700 to-orange-900',
+      tag: '🛒 FAST 15-MIN DELIVERY',
+    },
+    {
+      id: 2,
+      title: 'Puja Flowers & Devotional Samagri',
+      subtitle: 'Fresh marigold garlands, Bhimseni kapoor, brass diyas & complete puja kits',
+      discount: 'SPECIAL DISCOUNTS',
+      code: 'PUJAFLOWERS',
+      image: 'https://images.unsplash.com/photo-1606293926075-69a00dbfde81?q=80&w=1200&auto=format&fit=crop',
+      gradient: 'from-orange-600 via-rose-700 to-amber-900',
+      tag: '🌸 FRESH HARVEST',
+    },
+    {
+      id: 3,
+      title: 'Certified Doorstep Home & AC Services',
+      subtitle: 'AC repair, gas refilling, home deep cleaning & certified electrician service',
+      discount: 'UP TO ₹300 OFF',
+      code: 'HOMESERVICE',
+      image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200&auto=format&fit=crop',
+      gradient: 'from-indigo-700 via-blue-800 to-slate-950',
+      tag: '🛠️ DOORSTEP CERTIFIED',
+    },
+    {
+      id: 4,
+      title: 'Trendy Fashion & Boutique Apparel',
+      subtitle: 'Designer silk sarees, kids party outfits & premium ethnic wear',
+      discount: 'MIN 30% OFF',
+      code: 'FASHIONFEST',
+      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop',
+      gradient: 'from-pink-700 via-purple-800 to-slate-950',
+      tag: '👗 TRENDY COLLECTION',
+    },
+  ];
+
+  const currentHeroBanner = CATEGORY_HERO_BANNERS[activeBanner];
+
   return (
-    <div className="min-h-screen bg-background font-sans">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Navbar />
 
-      {/* ── Rich Hero Banner ── */}
-      <section className="relative py-12 overflow-hidden bg-navy text-white text-left">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
-        <div className="absolute -right-32 -top-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+      {/* ── DYNAMIC ANIMATED HERO SLIDER BANNER (LIKE /food) ── */}
+      <div className="relative bg-[#0A1128] text-white overflow-hidden text-left">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/15 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-20 left-10 w-96 h-96 bg-orange-500/15 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="container mx-auto px-4 grid md:grid-cols-12 gap-8 items-center relative z-10">
-
-          {/* Left panel showing stats summary */}
-          <div className="md:col-span-7 space-y-4">
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-black tracking-wider uppercase text-yellow-300 bg-white/10 border border-white/15 px-3 py-1 rounded-full">
-              <Sparkles className="w-3 h-3 text-yellow-300" /> Browse All Categories
-            </span>
-            <h1 className="text-3xl md:text-5xl font-black leading-tight">
-              Hyperlocal Categories Hub
-            </h1>
-            <p className="text-white/70 text-xs sm:text-sm max-w-xl font-medium leading-relaxed">
-              Discover verified stores, instant doorstep services, dynamic academy certifications, and wholesale deals near you.
-            </p>
-
-            {/* Live catalog counters */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-center">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
-                <p className="text-lg font-black text-yellow-300">16</p>
-                <p className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Main Categories</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
-                <p className="text-lg font-black text-yellow-300">500+</p>
-                <p className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Sub Categories</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
-                <p className="text-lg font-black text-yellow-300">50,000+</p>
-                <p className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Products Live</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
-                <p className="text-lg font-black text-yellow-300">300+</p>
-                <p className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Services Listed</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right panel showing trust stats */}
-          <div className="md:col-span-5 bg-gradient-to-br from-white/10 to-white/5 border border-white/15 backdrop-blur p-6 rounded-3xl space-y-4">
-            <h3 className="font-extrabold text-sm flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-yellow-300" /> DELIVERING IN BUCHIREDDYPALEM
-            </h3>
-            <p className="text-xs text-white/80 font-medium">Our ecosystem partners are verified for fast delivery and direct-to-door customer satisfaction.</p>
-            <div className="space-y-2.5">
-              <div className="flex justify-between text-xs font-bold border-b border-white/10 pb-2">
-                <span>Verified Local Vendors</span>
-                <span className="text-yellow-300">500 Vendors</span>
-              </div>
-              <div className="flex justify-between text-xs font-bold border-b border-white/10 pb-2">
-                <span>Available Local Products</span>
-                <span className="text-yellow-300">10,000 Products</span>
-              </div>
-              <div className="flex justify-between text-xs font-bold">
-                <span>Home & Salon Services</span>
-                <span className="text-yellow-300">1,000 Services</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── Search & Trending Section ── */}
-      <section className="bg-white border-b border-slate-100 py-6 text-left">
-        <div className="container mx-auto px-4 max-w-4xl space-y-4 relative">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-            <input
-              id="cat-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search groceries, services, courses..."
-              className="w-full rounded-full border border-gray-200 pl-11 pr-5 py-3.5 text-sm text-navy placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-accent bg-slate-50 focus:bg-white transition-all font-medium"
+        <div className="container mx-auto px-4 sm:px-8 pt-6 pb-10 relative z-10">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group min-h-[320px] sm:min-h-[380px] flex items-center">
+            <img
+              key={currentHeroBanner.id}
+              src={currentHeroBanner.image}
+              alt={currentHeroBanner.title}
+              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out scale-105 group-hover:scale-100"
             />
-            {searchQuery && (
+            <div className={`absolute inset-0 bg-gradient-to-r ${currentHeroBanner.gradient} opacity-85 mix-blend-multiply`} />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+            {/* SLIDER CONTENT */}
+            <div className="relative z-20 p-6 sm:p-10 max-w-2xl space-y-3.5 text-left">
+              <div className="inline-flex items-center space-x-2 bg-amber-400 text-slate-950 px-3 py-1 rounded-full font-black text-xs shadow-lg animate-bounce">
+                <Flame className="w-3.5 h-3.5 text-slate-950" />
+                <span>{currentHeroBanner.tag}</span>
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl font-black text-white font-heading leading-tight tracking-tight drop-shadow-md">
+                {currentHeroBanner.title}
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-lg leading-relaxed">
+                {currentHeroBanner.subtitle}
+              </p>
+
+              <div className="pt-1 flex flex-wrap items-center gap-3">
+                <div className="px-4 py-2 bg-amber-500 text-slate-950 font-black rounded-2xl text-xs sm:text-sm shadow-xl flex items-center space-x-2">
+                  <Tag className="w-4 h-4" />
+                  <span>{currentHeroBanner.discount}</span>
+                </div>
+                <div className="px-3.5 py-2 bg-white/20 backdrop-blur-md text-white font-mono font-bold text-xs rounded-2xl border border-white/30">
+                  CODE: <span className="text-amber-300 font-extrabold">{currentHeroBanner.code}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CAROUSEL DOTS & CONTROLS */}
+            <div className="absolute bottom-4 right-6 z-30 flex items-center space-x-2">
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl font-bold bg-transparent border-none cursor-pointer"
+                onClick={() => setActiveBanner((prev) => (prev === 0 ? CATEGORY_HERO_BANNERS.length - 1 : prev - 1))}
+                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white flex items-center justify-center transition border-none cursor-pointer"
               >
-                ×
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            )}
-          </div>
-
-          {/* Autocomplete dropdown suggestions popup */}
-          {suggestions.length > 0 && (
-            <div className="absolute left-4 right-4 bg-white rounded-2xl shadow-xl border border-slate-150 z-40 max-h-60 overflow-y-auto p-2">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider px-3.5 py-1 text-left">Autocomplete Suggestions</p>
-              {suggestions.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSearchQuery(item.substring(2));
-                  }}
-                  className="w-full px-3.5 py-2.5 text-xs text-navy font-bold text-left hover:bg-slate-50 rounded-xl transition flex items-center justify-between border-none bg-transparent cursor-pointer"
-                >
-                  <span>{item}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Trending Searches chips */}
-          <div className="flex items-center gap-2 flex-wrap pt-1 font-sans">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Trending:</span>
-            {[
-              { label: "Water Can", icon: "💧" },
-              { label: "Flowers", icon: "🌼" },
-              { label: "AC Repair", icon: "🔧" },
-              { label: "Grocery", icon: "🛒" },
-              { label: "Milk", icon: "🥛" },
-              { label: "Restaurant", icon: "🍔" }
-            ].map((chip) => (
-              <button
-                key={chip.label}
-                onClick={() => setSearchQuery(chip.label)}
-                className="px-3.5 py-1.5 rounded-full border border-slate-200 bg-white hover:border-accent hover:text-accent text-navy text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-              >
-                <span>{chip.icon}</span>
-                <span>{chip.label}</span>
-              </button>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── Main Layout: Sidebar + Grid ── */}
-      <section className="container mx-auto px-4 py-8 text-left">
-        <div className="grid md:grid-cols-12 gap-8">
-
-          {/* Left Side Filter Panel (Desktop only) */}
-          <div className="md:col-span-3 space-y-6 hidden md:block">
-            <div className="bg-white border rounded-3xl p-5 shadow-sm space-y-5">
-              <div className="flex items-center gap-2 border-b pb-3">
-                <Filter className="w-4 h-4 text-navy" />
-                <h3 className="font-extrabold text-navy text-sm">Directory Filters</h3>
-              </div>
-
-              {/* Checkbox filters */}
-              <div className="space-y-3.5">
-                {[
-                  { key: "products", label: "Products Catalog" },
-                  { key: "services", label: "Instant Services" },
-                  { key: "nearby", label: "Nearby Shops" },
-                  { key: "offers", label: "Active Offers" },
-                  { key: "scheduled", label: "Scheduled Deliveries" },
-                  { key: "subscription", label: "Subscribed Items" },
-                ].map((item) => (
-                  <label key={item.key} className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-navy select-none">
-                    <input
-                      type="checkbox"
-                      checked={filters[item.key as keyof typeof filters]}
-                      onChange={() => handleFilterToggle(item.key as keyof typeof filters)}
-                      className="rounded border-slate-300 text-accent focus:ring-accent w-4 h-4"
-                    />
-                    <span>{item.label}</span>
-                  </label>
+              <div className="flex space-x-1.5 px-2">
+                {CATEGORY_HERO_BANNERS.map((b, idx) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => setActiveBanner(idx)}
+                    className={`h-2 rounded-full transition-all border-none cursor-pointer ${activeBanner === idx ? "w-6 bg-amber-400" : "w-2 bg-white/40"
+                      }`}
+                  />
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setActiveBanner((prev) => (prev + 1) % CATEGORY_HERO_BANNERS.length)}
+                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white flex items-center justify-center transition border-none cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <div className="pt-3 border-t border-slate-100">
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex items-start gap-2">
-                  <Award className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <div className="text-[10px] text-slate-600 leading-tight">
-                    <strong>ApexBee Guarantee:</strong> Same day delivery or service cashback credits on all verified listings.
-                  </div>
-                </div>
-              </div>
+      {/* ── Clean Light Page Header ── */}
+      <section className="bg-white border-b border-slate-200 py-6 text-left">
+        <div className="container mx-auto px-4 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight font-heading">
+                All Marketplace Categories
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                Explore local products, fresh groceries, daily needs, fashion, and certified doorstep services near you.
+              </p>
+            </div>
+
+            {/* Search Input Bar */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search category (e.g. Daily Needs, Flowers)..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 pl-10 pr-9 py-2.5 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-sm font-black bg-transparent border-none cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Right Side Categories Grid */}
-          <div className="md:col-span-9">
-
-            {/* Recently Viewed (if any) */}
-            {recentlyViewed.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">🕐 Recently Visited Categories</h2>
-                <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-                  {recentlyViewed.map((item) => (
-                    <Link
-                      key={item.id}
-                      to={`/category/${encodeURIComponent(item.name)}`}
-                      className="flex-shrink-0 flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 shadow-sm hover:shadow hover:border-accent transition-all text-xs font-black text-navy"
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      <span>{item.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {discoveryLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
-              </div>
-            ) : filteredParents.length === 0 ? (
-              <div className="py-24 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
-                <div className="text-5xl mb-4">🔍</div>
-                <h3 className="text-lg font-black text-navy mb-1">No categories matched</h3>
-                <p className="text-xs text-muted-foreground mb-4">We couldn't find matches. Try adjusting your search query.</p>
-                <Button
-                  onClick={() => setSearchQuery("")}
-                  className="bg-navy hover:bg-navy/90 text-white text-xs font-bold"
+          {/* Category Filter Tabs */}
+          <div className="pt-2 flex items-center gap-2 overflow-x-auto scrollbar-none font-sans">
+            {CATEGORY_TABS.map((tab) => {
+              const active = activeCategoryTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveCategoryTab(tab.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center space-x-1.5 cursor-pointer border-none ${active
+                      ? "bg-[#0A1128] text-amber-400 shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
                 >
-                  Clear Filter
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {filteredParents.map((cat, idx) => {
-                  const gradient = GRADIENTS[idx % GRADIENTS.length];
-                  const isExpanded = expandedId === cat._id;
-                  const subs = cat.children || [];
-                  const details = getCategoryDetails(cat.name);
-
-                  return (
-                    <div
-                      key={cat._id}
-                      id={`cat-card-${cat._id}`}
-                      className="group rounded-3xl overflow-hidden border border-slate-150 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative flex flex-col justify-between w-full"
-                    >
-
-                      {/* Image section with hover Explore Overlay */}
-                      <div className="relative h-32 sm:h-44 overflow-hidden cursor-pointer" onClick={() => {
-                        if (cat.experienceType === 'coming_soon_lead_capture' && cat.experienceRoute) {
-                          navigate(cat.experienceRoute);
-                        } else {
-                          navigate(`/category/${encodeURIComponent(cat.name)}`);
-                        }
-                      }}>
-                        <img
-                          src={cat.image || "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&h=300&q=80"}
-                          alt={cat.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                        <div
-                          className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/30 to-transparent transition-opacity duration-300"
-                        />
-
-                        {/* DESKTOP HOVER EXPLORE OVERLAY PANEL */}
-                        <div className="absolute inset-0 bg-navy/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center p-3 text-center space-y-1.5 hidden sm:flex">
-                          <p className="text-yellow-300 text-xs font-black tracking-wider uppercase">Explore {cat.name}</p>
-                          <div className="flex flex-col gap-1 w-full max-w-[150px]">
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🛒 Products</span>
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🔧 Services</span>
-                            <span className="text-[10px] text-white/90 bg-white/10 rounded-lg py-1 font-bold">🔥 Direct Offers</span>
-                          </div>
-                        </div>
-
-                        {/* Top banner tag */}
-                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur text-navy font-bold text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                          <span>{details.subs}</span>
-                        </div>
-
-                        {/* Category Title bottom label */}
-                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-                          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-xl px-2 sm:px-3 py-1 shadow">
-                            <span className="text-sm sm:text-lg shrink-0">{getSubIcon(cat.name)}</span>
-                            <span className="font-extrabold text-navy text-[10px] sm:text-xs leading-none capitalize truncate max-w-[85px] sm:max-w-[120px]">{cat.name}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card Body */}
-                      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between bg-white">
-
-                        {/* Popular subcategory tags list */}
-                        <div className="mb-4">
-                          <div className="flex flex-wrap gap-1">
-                            {details.tags.map((tag, tIdx) => (
-                              <span
-                                key={tIdx}
-                                className="text-[8px] font-black px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded text-slate-500 uppercase tracking-wider"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between border-t border-dashed pt-3 mt-auto">
-                          <Link
-                            to={cat.experienceType === 'coming_soon_lead_capture' && cat.experienceRoute ? cat.experienceRoute : `/category/${encodeURIComponent(cat.name)}`}
-                            onClick={() => addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) })}
-                            className="text-xs font-black text-navy hover:text-accent transition flex items-center gap-1"
-                          >
-                            Explore Directory <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
-
-                          {subs.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedId(isExpanded ? null : cat._id)}
-                              className="text-[9px] font-black px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
-                              style={isExpanded
-                                ? { background: "#0A1128", color: "#fff", borderColor: "#0A1128" }
-                                : { background: "#f8fafc", color: "#475569", borderColor: "#e2e8f0" }
-                              }
-                            >
-                              {isExpanded ? "Hide ▲" : "Subcategories ▼"}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Collapsible Subcategory Row */}
-                        {isExpanded && <SubRow subs={subs} parentName={cat.name} />}
-                      </div>
-
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── Flat subcategories panel for quick access ── */}
-      {!discoveryLoading && allCats.length > 0 && !searchQuery && (
-        <section className="container mx-auto px-4 pb-12 text-left">
-          <div
-            className="rounded-[32px] overflow-hidden shadow-xl"
-            style={{ background: "linear-gradient(135deg,#0A1128 0%,#152042 100%)" }}
-          >
-            <div className="p-6 md:p-8">
-              <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                📂 All Subcategories flat directory
-              </h2>
-              <p className="text-white/60 text-xs mt-1">Directly jump to subcategory product listings</p>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-6">
-                {allCats.flatMap((p) =>
-                  (p.children || []).map((s) => (
-                    <Link
-                      key={s._id}
-                      to={`/category/${encodeURIComponent(s.name)}`}
-                      onClick={() => addRecentlyViewed({ id: s._id, name: s.name, icon: getSubIcon(s.name) })}
-                      className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 flex flex-col p-3 text-left justify-between h-20"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg shrink-0">{getSubIcon(s.name)}</span>
-                        <span className="text-[10px] font-bold text-white line-clamp-2 leading-tight">{s.name}</span>
-                      </div>
-                      <span className="text-[8px] text-white/40 block mt-1 uppercase tracking-wider">{p.name}</span>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Partnership Earn CTA ── */}
-      <section className="container mx-auto px-4 pb-16 text-left">
-        <div
-          className="rounded-[32px] p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 shadow-xl overflow-hidden relative"
-          style={{ background: "linear-gradient(135deg,#78350f 0%,#b45309 60%,#d97706 100%)" }}
-        >
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-
-          <div className="flex-1 relative">
-            <p className="text-yellow-300 text-xs font-black tracking-widest uppercase mb-2">Unlimited Earning Potential</p>
-            <h2 className="text-2xl md:text-3.5xl font-black text-white leading-tight">🐝 Earn With ApexBee</h2>
-            <p className="text-white/80 mt-3 text-xs md:text-sm max-w-md leading-relaxed font-medium">
-              Refer friends, build a 3-level team network, list your products or services, and earn unlimited passive income.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0 relative">
-            <Link
-              to="/earn-with-apexbee"
-              className="bg-white hover:bg-slate-50 text-amber-900 font-black px-6 py-3.5 rounded-2xl transition text-center shadow text-xs uppercase tracking-wider shrink-0"
-            >
-              Start Earning 🚀
-            </Link>
-            <Link
-              to="/referrals"
-              className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-6 py-3 rounded-2xl transition text-center text-xs uppercase tracking-wider shrink-0"
-            >
-              Refer &amp; Get ₹50 🎁
-            </Link>
-          </div>
+      {/* ── Category Cards Grid Container — 2-COLUMN ON MOBILE ── */}
+      <section className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 text-left">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 font-heading">
+            {activeCategoryTab === "ALL" ? "Main Categories" : CATEGORY_TABS.find(t => t.id === activeCategoryTab)?.label}
+          </h2>
+          <span className="text-xs font-extrabold bg-slate-200 text-slate-800 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full">
+            {filteredCategoriesByTab.length} Categories
+          </span>
         </div>
+
+        {discoveryLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : filteredCategoriesByTab.length === 0 ? (
+          <div className="py-20 text-center border border-dashed border-slate-300 rounded-3xl bg-white p-8 space-y-3">
+            <Search className="w-10 h-10 text-slate-300 mx-auto" />
+            <h3 className="text-lg font-black text-slate-800">No categories found matching "{searchQuery}"</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">Try clearing your search query or choosing another tab.</p>
+            <Button
+              onClick={() => {
+                setSearchQuery("");
+                setActiveCategoryTab("ALL");
+              }}
+              className="bg-[#0A1128] hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl px-5 py-2.5 cursor-pointer border-none"
+            >
+              Clear Search Filter
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 pt-4">
+            {filteredCategoriesByTab.map((cat) => {
+              const isComingSoon = cat.experienceType === 'coming_soon_lead_capture';
+              const isFoodCat = cat.name.toLowerCase().includes("food") || cat.name.toLowerCase().includes("dining") || cat.name.toLowerCase().includes("restaurant");
+              const targetRoute = isFoodCat ? "/food" : (isComingSoon && cat.experienceRoute ? cat.experienceRoute : `/category/${encodeURIComponent(cat.name)}`);
+              const defaultImage = "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop";
+              const image = cat.image || defaultImage;
+
+              return (
+                <div
+                  key={cat._id}
+                  onClick={() => {
+                    addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) });
+                    navigate(targetRoute);
+                  }}
+                  className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1.5 transition duration-500"
+                >
+                  {/* BIG HD PURE IMAGE ONLY — NO BACKGROUND, NO BORDER, NO SHAPE */}
+                  <div className="w-full h-56 sm:h-72 lg:h-80 overflow-hidden flex items-center justify-center">
+                    <img
+                      src={image}
+                      alt={cat.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition duration-500 ease-out"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* PROMINENT CATEGORY NAME BELOW */}
+                  <h3 className="font-black text-base sm:text-xl text-[#0A1128] group-hover:text-amber-600 transition leading-tight mt-3">
+                    {cat.name}
+                  </h3>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <Footer />

@@ -6,6 +6,17 @@
 All colors MUST be HSL.
 */
 
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gpu-scroll {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

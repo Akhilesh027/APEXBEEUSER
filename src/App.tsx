@@ -37,6 +37,8 @@ import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
 import AbhiAssistant from "./components/AbhiAssistant";
 import LocalStores from "./pages/LocalStores";
+import { FoodDining } from "./pages/FoodDining";
+import { RestaurantDetail } from "./pages/RestaurantDetail";
 import BottomNav from "./components/BottomNav";
 import InstallPwaBanner from "./components/InstallPwaBanner";
 
@@ -101,6 +103,8 @@ const App = () => (
           <Route path="/academy/skill-development" element={<Academy />} />
           <Route path="/services" element={<Services />} />
           <Route path="/travel" element={<Travel />} />
+          <Route path="/food" element={<FoodDining />} />
+          <Route path="/food/restaurant/:id" element={<RestaurantDetail />} />
           <Route path="/community" element={<Community />} />
 
           {/* ===== Protected Routes — require login ===== */}

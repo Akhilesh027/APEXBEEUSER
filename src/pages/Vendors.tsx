@@ -104,6 +104,7 @@ const StorePage = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'products' | 'about' | 'gallery' | 'policies' | 'hours' | 'reviews'>('products');
+  const [quickViewProduct, setQuickViewProduct] = useState<any | null>(null);
 
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -259,6 +260,9 @@ const StorePage = () => {
   const [subFrequency, setSubFrequency] = useState<"daily" | "alternate" | "weekly" | "monthly" | "custom">("daily");
   const [subCustomDays, setSubCustomDays] = useState<string[]>(["Mon", "Wed", "Fri"]);
   const [subSlot, setSubSlot] = useState("06:00 AM - 07:00 AM");
+  const [subCustomerName, setSubCustomerName] = useState("");
+  const [subCustomerPhone, setSubCustomerPhone] = useState("");
+  const [subDeliveryAddress, setSubDeliveryAddress] = useState("");
   const [subSuccess, setSubSuccess] = useState(false);
   const [submittingSub, setSubmittingSub] = useState(false);
   const [cartAddingId, setCartAddingId] = useState<string | null>(null);
@@ -571,12 +575,44 @@ const StorePage = () => {
     setSubQuantity(1);
     setSubFrequency("daily");
     setSubSuccess(false);
+
+    let storedName = "";
+    let storedPhone = "";
+    let storedAddress = "";
+
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        storedName = u.name || u.fullName || "";
+        storedPhone = u.phone || u.mobile || "";
+        storedAddress = u.address || "";
+      }
+      const savedLoc = localStorage.getItem("user_location");
+      if (savedLoc) {
+        const loc = JSON.parse(savedLoc);
+        if (loc.address && !storedAddress) {
+          storedAddress = loc.address;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setSubCustomerName(storedName || "K. Ananya Reddy");
+    setSubCustomerPhone(storedPhone || "9550379505");
+    setSubDeliveryAddress(storedAddress || "Flat 402, Sri Sai Nivas Apartments, Road No. 3, Vasavi Colony, LB Nagar, Hyderabad - 500074");
+
     setIsSubModalOpen(true);
   };
 
   // Submit subscription
   const handleConfirmSubscription = async () => {
     if (!selectedProduct) return;
+    if (!subCustomerName.trim() || !subCustomerPhone.trim() || !subDeliveryAddress.trim()) {
+      alert("Please fill in all delivery contact and address details.");
+      return;
+    }
     setSubmittingSub(true);
 
     let userLocation = null;
@@ -601,6 +637,10 @@ const StorePage = () => {
       customDays: subFrequency === "custom" ? subCustomDays : undefined,
       deliverySlot: subSlot,
       autoRenew: true,
+      customerName: subCustomerName.trim(),
+      customerPhone: subCustomerPhone.trim(),
+      address: subDeliveryAddress.trim(),
+      deliveryAddress: subDeliveryAddress.trim(),
       userLocation
     };
 
@@ -1057,73 +1097,135 @@ const StorePage = () => {
                         p.isSubscriptionAvailable === true &&
                         (p.status === 'Live' || p.status === undefined) &&
                         p.isStoreProduct !== false;
+
+                      const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
+                      const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
+                      const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+                      const rating = p.ratings || p.rating || 4.8;
+                      const reviewCount = p.numberOfRatings || p.reviews || 0;
+                      const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
+                      const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
+                      const title = p.itemName || p.name || "Product";
+                      const img = p.images?.[0] || p.thumbnail || "/placeholder-product.png";
+                      const brandName = p.brand || store?.businessName || "Verified Store";
+
                       return (
                         <div
                           key={p._id}
-                          className="group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-100 bg-white overflow-hidden hover:shadow-xl transition duration-300 relative"
+                          className="group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all duration-300 relative text-left"
                         >
                           <div>
-                            {/* Image */}
-                            <div className="h-36 sm:h-48 bg-slate-50 overflow-hidden relative border-b border-slate-100">
+                            {/* Product Image Stage */}
+                            <div
+                              className="h-40 sm:h-52 bg-slate-50 relative overflow-hidden flex items-center justify-center p-3 border-b border-slate-100 cursor-pointer"
+                              onClick={() => setQuickViewProduct(p)}
+                            >
                               <img
-                                src={p.images?.[0] || "/placeholder-product.png"}
-                                alt={p.itemName}
-                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                src={img}
+                                alt={title}
+                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
                                 loading="lazy"
                               />
-                              <div className="absolute top-2 left-2 flex flex-col gap-1">
+
+                              {/* Badges */}
+                              <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+                                {percentOff > 0 && (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black uppercase shadow-sm">
+                                    {percentOff}% OFF
+                                  </span>
+                                )}
                                 {subAvailable && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[9px] sm:text-[10px] font-extrabold uppercase shadow-sm">
                                     <Sparkles className="h-2.5 w-2.5 fill-white" />
                                     Subscribe
                                   </span>
                                 )}
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy text-white text-[8px] sm:text-[10px] font-extrabold tracking-wide uppercase shadow-sm">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  Fast Delivery
-                                </span>
+                              </div>
+
+                              {/* Rating Badge */}
+                              <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-xl text-[10px] font-black text-amber-600 flex items-center space-x-1 shadow-sm border border-amber-200 z-10">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                <span>{rating}</span>
+                                {reviewCount > 0 && <span className="text-[9px] text-slate-400 font-medium">({reviewCount})</span>}
                               </div>
                             </div>
 
-                            <div className="p-3 sm:p-5 text-left">
-                              <p className="text-[9px] sm:text-[10px] font-bold text-accent uppercase tracking-wider mb-1 hidden md:block">
-                                {p.brand || "Fresh & Local"}
-                              </p>
-                              <h3 className="font-extrabold text-navy line-clamp-2 min-h-[32px] sm:min-h-[44px] leading-tight text-xs sm:text-base hover:text-accent transition">
-                                {p.itemName}
+                            {/* Product Content Details */}
+                            <div className="p-3.5 sm:p-5 space-y-2">
+                              <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span className="truncate max-w-[70%]">🏪 {brandName}</span>
+                                <span className="text-emerald-600 font-extrabold flex items-center gap-0.5">
+                                  <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified
+                                </span>
+                              </div>
+
+                              <h3
+                                onClick={() => setQuickViewProduct(p)}
+                                className="font-extrabold text-[#0A1128] line-clamp-2 min-h-[36px] leading-tight text-xs sm:text-base hover:text-amber-600 transition cursor-pointer font-heading"
+                              >
+                                {title}
                               </h3>
 
-                              <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5">
-                                <span className="text-base sm:text-xl font-black text-navy">
-                                  {formatPrice(p.afterDiscount)}
+                              {/* Price & Savings */}
+                              <div className="pt-1 flex flex-wrap items-baseline gap-2">
+                                <span className="text-base sm:text-xl font-black text-[#0A1128]">
+                                  {formatPrice(sellingPrice)}
                                 </span>
-                                {p.userPrice && p.userPrice > (p.afterDiscount || 0) ? (
-                                  <span className="text-[10px] sm:text-xs text-muted-foreground line-through font-semibold">
-                                    {formatPrice(p.userPrice)}
+                                {mrp > sellingPrice && (
+                                  <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                                    {formatPrice(mrp)}
                                   </span>
-                                ) : null}
+                                )}
+                                {mrp > sellingPrice && (
+                                  <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                    Save {formatPrice(mrp - sellingPrice)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Shipping & Packing Charges Badges */}
+                              <div className="space-y-1 bg-slate-50 rounded-xl p-2 text-[10px] text-slate-600 font-bold border border-slate-100">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-amber-600 font-extrabold flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-amber-500" /> Fast Delivery (15-30m)
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between text-[9px] text-slate-500 pt-1 border-t border-slate-200/60">
+                                  <span>🚚 Shipping: <strong className="text-emerald-600">{shippingFee > 0 ? formatPrice(shippingFee) : 'FREE'}</strong></span>
+                                  <span>📦 Packing: <strong className="text-slate-700">{packingFee > 0 ? formatPrice(packingFee) : '₹0'}</strong></span>
+                                </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="px-3 pb-3 sm:px-5 sm:pb-5 pt-0 flex flex-col gap-1.5 sm:gap-2">
-                            <Button
-                              className="w-full bg-navy hover:bg-navy/90 text-white rounded-xl py-1.5 sm:py-2 flex items-center justify-center gap-1.5 font-bold transition shadow-sm text-[10px] sm:text-xs"
-                              disabled={cartAddingId === p._id}
-                              onClick={(e) => handleOpenCustomizer(p, e)}
-                            >
-                              {cartAddingId === p._id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <ShoppingBag className="h-3 w-3" />
-                              )}
-                              Buy Now
-                            </Button>
+                          {/* Actions */}
+                          <div className="px-3.5 pb-3.5 sm:px-5 sm:pb-5 pt-0 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                variant="outline"
+                                className="w-full border-slate-200 hover:bg-slate-100 text-slate-800 font-bold rounded-xl py-1.5 text-[10px] sm:text-xs cursor-pointer"
+                                onClick={() => setQuickViewProduct(p)}
+                              >
+                                View Detail
+                              </Button>
+                              <Button
+                                className="w-full bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black rounded-xl py-1.5 flex items-center justify-center gap-1 transition shadow-sm text-[10px] sm:text-xs cursor-pointer border-none"
+                                disabled={cartAddingId === p._id}
+                                onClick={(e) => handleOpenCustomizer(p, e)}
+                              >
+                                {cartAddingId === p._id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <ShoppingBag className="h-3 w-3" />
+                                )}
+                                Buy Now
+                              </Button>
+                            </div>
 
                             {subAvailable && (
                               <Button
                                 variant="outline"
-                                className="w-full border-orange-500/30 bg-orange-50/20 text-accent hover:bg-orange-50 hover:text-accent-dark rounded-xl py-1.5 sm:py-2 font-extrabold transition text-[10px] sm:text-xs border flex items-center justify-center gap-1 shadow-sm"
+                                className="w-full border-orange-500/30 bg-orange-50/30 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl py-1.5 font-extrabold transition text-[10px] sm:text-xs border flex items-center justify-center gap-1 shadow-sm cursor-pointer"
                                 onClick={(e) => openSubscribeModal(p, e)}
                               >
                                 <CalendarDays className="h-3 w-3" />
@@ -1664,6 +1766,54 @@ const StorePage = () => {
                   </div>
                 </div>
 
+                {/* Delivery Address & Subscriber Contact Details */}
+                <div className="mt-6 space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-orange-500" />
+                    <h4 className="text-xs font-extrabold text-navy uppercase tracking-wider">
+                      Delivery Address & Contact Details
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="font-bold text-navy block mb-1">Subscriber Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. K. Ananya Reddy"
+                        value={subCustomerName}
+                        onChange={(e) => setSubCustomerName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none font-bold text-navy focus:border-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-navy block mb-1">Mobile Number for Deliveries *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="e.g. 9550379505"
+                        value={subCustomerPhone}
+                        onChange={(e) => setSubCustomerPhone(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none font-bold text-navy focus:border-accent"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-navy block mb-1">Complete Dropoff Address (House/Flat No., Building, Area, Pincode) *</label>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Enter complete delivery address for daily subscription dropoff..."
+                      value={subDeliveryAddress}
+                      onChange={(e) => setSubDeliveryAddress(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none text-xs font-medium text-slate-800 focus:border-accent resize-none"
+                    />
+                  </div>
+                </div>
+
                 {/* Billing Summary Preview */}
                 <div className="mt-6 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
                   <div className="flex justify-between items-center text-xs font-bold text-navy">
@@ -1853,6 +2003,154 @@ const StorePage = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          PRODUCT QUICK VIEW MODAL
+         ═══════════════════════════════════════════════════════ */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 relative shadow-2xl space-y-5 text-left border border-slate-100 max-h-[90vh] overflow-y-auto">
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setQuickViewProduct(null)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition border-none cursor-pointer z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {(() => {
+              const p = quickViewProduct;
+              const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
+              const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
+              const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+              const rating = p.ratings || p.rating || 4.8;
+              const reviewCount = p.numberOfRatings || p.reviews || 0;
+              const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
+              const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
+              const title = p.itemName || p.name || "Product Details";
+              const img = p.images?.[0] || p.thumbnail || "/placeholder-product.png";
+              const brandName = p.brand || store?.businessName || "Verified Store";
+              const subAvailable = p.isSubscriptionAvailable === true && (p.status === 'Live' || p.status === undefined);
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  {/* LEFT IMAGE GALLERY */}
+                  <div className="space-y-3">
+                    <div className="h-64 sm:h-72 bg-slate-50 rounded-2xl p-4 flex items-center justify-center border border-slate-100 relative overflow-hidden">
+                      <img src={img} alt={title} className="max-h-full max-w-full object-contain" />
+                      {percentOff > 0 && (
+                        <span className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-md">
+                          {percentOff}% OFF
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT PRODUCT INFO */}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="bg-amber-100 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          🏪 {brandName}
+                        </span>
+                        <span className="bg-emerald-50 text-emerald-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified Merchant
+                        </span>
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-black text-[#0A1128] font-heading leading-snug">
+                        {title}
+                      </h2>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex items-center space-x-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 font-bold text-xs">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>{rating}</span>
+                        </div>
+                        <span className="text-xs text-slate-400 font-semibold">({reviewCount > 0 ? `${reviewCount} customer reviews` : 'Verified Quality'})</span>
+                      </div>
+                    </div>
+
+                    {/* PRICING BLOCK */}
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1.5">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="text-2xl font-black text-[#0A1128]">{formatPrice(sellingPrice)}</span>
+                        {mrp > sellingPrice && (
+                          <span className="text-sm text-slate-400 line-through font-semibold">{formatPrice(mrp)}</span>
+                        )}
+                        {mrp > sellingPrice && (
+                          <span className="text-xs font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            You Save {formatPrice(mrp - sellingPrice)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-semibold">Inclusive of all local taxes &amp; store discounts</p>
+                    </div>
+
+                    {/* DELIVERY & PACKING CHARGES BREAKDOWN */}
+                    <div className="space-y-2 text-xs">
+                      <h4 className="font-extrabold text-[#0A1128] flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-500" /> Doorstep Delivery Details
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 font-medium text-slate-700 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-bold">SHIPPING CHARGE</span>
+                          <span className="font-extrabold text-emerald-600">
+                            {shippingFee > 0 ? formatPrice(shippingFee) : "🚚 FREE Delivery"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-bold">PACKING CHARGE</span>
+                          <span className="font-extrabold text-slate-800">
+                            {packingFee > 0 ? formatPrice(packingFee) : "📦 ₹0.00"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* DESCRIPTION */}
+                    {p.description && (
+                      <div className="space-y-1 text-xs">
+                        <h4 className="font-extrabold text-[#0A1128]">Product Description</h4>
+                        <p className="text-slate-600 leading-relaxed font-medium text-xs max-h-24 overflow-y-auto">
+                          {p.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ACTION BUTTONS */}
+                    <div className="pt-2 space-y-2">
+                      <Button
+                        className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-md flex items-center justify-center space-x-2 border-none cursor-pointer"
+                        disabled={cartAddingId === p._id}
+                        onClick={(e) => {
+                          handleOpenCustomizer(p, e);
+                          setQuickViewProduct(null);
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Buy Now ({formatPrice(sellingPrice)})</span>
+                      </Button>
+
+                      {subAvailable && (
+                        <Button
+                          variant="outline"
+                          className="w-full py-2.5 border-orange-500/40 bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white font-extrabold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                          onClick={(e) => {
+                            openSubscribeModal(p, e);
+                            setQuickViewProduct(null);
+                          }}
+                        >
+                          <CalendarDays className="w-4 h-4" />
+                          <span>Subscribe Daily / Weekly</span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

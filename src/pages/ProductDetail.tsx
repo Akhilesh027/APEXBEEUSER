@@ -4,6 +4,7 @@ import { Star, Share2, Image as ImageIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 // Helper function for currency formatting
 const formatCurrency = (amount: any) => {
@@ -48,6 +49,7 @@ type Review = {
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [product, setProduct] = useState<any>(initialProduct);
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
@@ -231,12 +233,26 @@ const ProductDetail = () => {
   }, [product.thumbnail, product.images]);
   const images = variantImages || productImages;
 
-  const shippingCharge = product.adminPricing?.shippingCharge ?? product.deliveryFee ?? 0;
-  const packingCharge = product.adminPricing?.packingCharge ?? 0;
+  const shippingCharge = Number(
+    product.adminPricing?.shippingCharge ??
+    product.shippingCharge ??
+    product.deliveryFee ??
+    product.shipping ??
+    product.shippingFee ??
+    0
+  );
+  const packingCharge = Number(
+    product.adminPricing?.packingCharge ??
+    product.packingCharge ??
+    product.packageCharge ??
+    product.packagingCharge ??
+    product.packingFee ??
+    0
+  );
 
   const baseSellingPrice = selectedVariant
     ? (selectedVariant.sellingPrice ?? selectedVariant.price ?? 0)
-    : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? 0);
+    : (product.adminPricing?.customerSellingAmount ?? product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? 0);
 
   const afterDiscount = baseSellingPrice;
 
@@ -421,7 +437,11 @@ const ProductDetail = () => {
   // ⭐ Review stats
   const reviewStats = useMemo(() => {
     const count = reviews.length || 0;
-    if (!count) return { avg: Number(product?.rating || 0) || 0, count: 0 };
+    const fallbackAvg = typeof product?.rating === "object"
+      ? (product.rating.average ?? product.rating.averageRating ?? 0)
+      : Number(product?.rating || 0);
+
+    if (!count) return { avg: fallbackAvg || 0, count: 0 };
 
     const sum = reviews.reduce((acc, r) => acc + Number(r.rating || 0), 0);
     const avg = sum / count;
@@ -447,7 +467,7 @@ const ProductDetail = () => {
 
   const copyLink = () => {
     navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    alert("Referral link copied!");
+    toast({ title: "Copied! 🔗", description: "Referral link copied to clipboard." });
   };
 
   const whatsappShare = () => {
@@ -465,25 +485,29 @@ const ProductDetail = () => {
   };
 
   // ✅ Add to Cart – now includes deliveryFee & MOQ check
-  const handleAddToCart = async () => {
-    if (quantity < moq) {
-      alert(`⚠️ Minimum order quantity for this item is ${moq} units.`);
-      setQuantity(moq);
-      return;
-    }
-
+  const handleAddToCart = async (showAlert = true) => {
     const item = {
       productId: product._id,
-      name: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
+      itemName: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
       price: afterDiscount,
+      originalPrice: userPrice,
+      sellingPrice: selectedVariant
+        ? selectedVariant.sellingPrice
+        : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0),
       image: images[0],
-      quantity: Math.max(quantity, moq),
+      images: images,
+      quantity,
       selectedColor: selectedAttrs.color || "default",
       selectedSize: selectedAttrs.size || "default",
       selectedAttributes: selectedAttrs,
       sku: selectedVariant?.sku || product.sku,
       vendorId: product.vendorId || product.sellerId?._id || product.sellerId,
       deliveryFee: deliveryFee,
+      shippingCharge: shippingCharge,
+      packingCharge: packingCharge,
+      packageCharge: packingCharge,
+      adminPricing: product.adminPricing,
+      product: product
     };
 
     if (!user?.id && !user?._id) {
@@ -503,7 +527,7 @@ const ProductDetail = () => {
       localStorage.setItem("local_cart", JSON.stringify(list));
       localStorage.setItem("cart_updated", Date.now().toString());
       window.dispatchEvent(new Event("storage"));
-      alert("Added to guest cart successfully!");
+      if (showAlert) toast({ title: "Added to Cart! 🛒", description: "Item added to guest cart successfully." });
       return;
     }
 
@@ -521,65 +545,29 @@ const ProductDetail = () => {
         body: JSON.stringify(dbItem),
       });
       const data = await res.json();
-      if (!res.ok) return alert(data.error || "Failed to add to cart.");
+      if (!res.ok) {
+        if (showAlert) toast({ title: "Cart Error", description: data.error || "Failed to add to cart.", variant: "destructive" });
+        return;
+      }
 
       window.dispatchEvent(new Event("storage"));
-      alert("Added to cart successfully!");
+      if (showAlert) toast({ title: "Added to Cart! 🛒", description: "Item added to cart successfully." });
     } catch {
-      alert("Server error");
+      if (showAlert) toast({ title: "Server Error", description: "Failed to connect to cart service.", variant: "destructive" });
     }
   };
 
-  // ✅ Buy Now – uses product's delivery fee instead of fixed ₹50 & enforces MOQ
-  const handleBuyNow = () => {
-    if (!user) {
-      alert("Please login first.");
-      navigate("/login");
-      return;
-    }
-
+  // ✅ Buy Now – adds item to cart and navigates to /cart
+  const handleBuyNow = async () => {
     const buyQuantity = Math.max(quantity, moq);
 
     if (quantity < moq) {
-      alert(`⚠️ Minimum order quantity for this item is ${moq} units.`);
+      toast({ title: "Minimum Order Quantity", description: `Minimum order quantity for this item is ${moq} units.`, variant: "destructive" });
       setQuantity(moq);
     }
 
-    const baseSellingPrice = selectedVariant
-      ? selectedVariant.sellingPrice
-      : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0);
-
-    const subtotal = baseSellingPrice * buyQuantity;
-    const discount = Math.max(0, userPrice - baseSellingPrice) * buyQuantity;
-    const totalPacking = packingCharge * buyQuantity;
-    const totalShipping = deliveryFee * buyQuantity;
-    const taxableAmount = subtotal + totalPacking + totalShipping;
-    const gstAmount = Math.round(taxableAmount * 0.05);
-    const total = taxableAmount + gstAmount;
-
-    navigate("/checkout", {
-      state: {
-        cartItems: [{
-          _id: product._id,
-          productId: product._id,
-          itemName: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
-          price: afterDiscount,
-          afterDiscount: afterDiscount,
-          originalPrice: userPrice,
-          salesPrice: userPrice,
-          deliveryFee: deliveryFee,
-          packingCharge: packingCharge,
-          sellingPrice: baseSellingPrice,
-          images,
-          quantity: buyQuantity
-        }],
-        subtotal,
-        discount,
-        deliveryFee: totalShipping,
-        total,
-        fromBuyNow: true,
-      },
-    });
+    await handleAddToCart(false);
+    navigate("/cart");
   };
 
   if (loading) {

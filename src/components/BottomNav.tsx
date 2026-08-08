@@ -46,7 +46,7 @@ export const BottomNav = () => {
       isBee: false,
     },
     {
-      label: "ApexBee",
+      label: "BeeHub",
       path: "",
       isBee: true,
     },
@@ -65,6 +65,18 @@ export const BottomNav = () => {
     },
   ];
 
+  // Auto-close BeeHub menu when page is scrolled
+  useEffect(() => {
+    if (!isBeeMenuOpen) return;
+
+    const handleScroll = () => {
+      setIsBeeMenuOpen(false);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isBeeMenuOpen]);
+
   const handleOpenWhatsApp = () => {
     setIsBeeMenuOpen(false);
     window.open("https://wa.me/919999999999?text=Hello%20ApexBee%20Support!", "_blank");
@@ -82,11 +94,11 @@ export const BottomNav = () => {
 
   return (
     <>
-      {/* Backdrop overlay when speed dial is open */}
+      {/* 🔮 Deep Backdrop Blur Overlay when BeeHub menu is open */}
       {isBeeMenuOpen && (
         <div
           onClick={() => setIsBeeMenuOpen(false)}
-          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in cursor-pointer"
         />
       )}
 
@@ -170,7 +182,7 @@ export const BottomNav = () => {
                     🐝
                   </div>
                   <span className="text-[10px] mt-1 tracking-tight leading-none font-black text-amber-600">
-                    ApexBee
+                    BeeHub
                   </span>
                 </button>
               );

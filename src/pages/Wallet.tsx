@@ -1,955 +1,975 @@
-// src/pages/Wallet.tsx — Module 8: Wallet, Rewards, Cashback & Referral
-import { useState, useEffect, useCallback } from "react";
+// src/pages/Wallet.tsx — Fully Mobile-Responsive ApexBee Customer Wallet (Balances, Topup, Withdrawals & Transactions)
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Wallet as WalletIcon,
-  Star,
-  Users,
-  TrendingUp,
+  PlusCircle,
   ArrowUpRight,
-  ArrowDownRight,
-  Gift,
-  ShoppingBag,
-  Award,
-  Trophy,
-  Copy,
-  Share2,
-  QrCode,
-  ChevronRight,
-  Loader2,
+  ArrowDownLeft,
   Clock,
-  CheckCircle,
-  Coins,
-  Crown,
-  Shield,
-  Target,
-  Zap,
+  CheckCircle2,
+  XCircle,
+  QrCode,
+  CreditCard,
+  Building2,
+  Send,
+  RefreshCw,
+  Search,
+  AlertCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
-type Transaction = {
-  _id: string;
-  type: string;
-  description: string;
+type LedgerEntry = {
+  _id?: string;
+  transactionId?: string;
+  type: "credit" | "debit";
   amount: number;
-  date: string;
-  status: string;
+  category?: string;
+  source?: string;
+  remarks?: string;
+  description?: string;
+  status?: string;
+  createdAt?: string;
+  date?: string;
 };
 
-type RewardEntry = {
+type WithdrawalRecord = {
   _id: string;
-  action: string;
-  description: string;
-  points: number;
-  type: string;
-  date: string;
+  amount: number;
+  status: "pending" | "approved" | "rejected";
+  note?: string;
+  feeAmount?: number;
+  netAmount?: number;
+  createdAt?: string;
+  date?: string;
 };
 
-type LeaderboardEntry = {
-  rank: number;
-  name: string;
-  avatar: string;
-  referrals?: number;
-  earnings?: number;
-  orders?: number;
-  spent?: number;
-  team?: number;
+const formatCurrency = (val: number) =>
+  `₹${Number(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return "Just now";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateStr;
+  }
 };
 
-// ─────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────
-const TABS = [
-  { key: "overview", label: "Overview", icon: "📊" },
-  { key: "transactions", label: "Transactions", icon: "📋" },
-  { key: "rewards", label: "Rewards", icon: "⭐" },
-  { key: "referrals", label: "Referrals", icon: "👥" },
-  { key: "achievements", label: "Achievements", icon: "🏆" },
-  { key: "leaderboard", label: "Leaderboard", icon: "🏅" },
-];
-
-const EARN_POINTS = [
-  { action: "Purchase Products", points: "1 point per ₹20", icon: <ShoppingBag className="w-5 h-5" />, color: "bg-blue-100 text-blue-600" },
-  { action: "Book a Service", points: "1 point per ₹25", icon: <Zap className="w-5 h-5" />, color: "bg-purple-100 text-purple-600" },
-  { action: "Complete a Course", points: "50 points", icon: <Award className="w-5 h-5" />, color: "bg-green-100 text-green-600" },
-  { action: "Write a Review", points: "10 points", icon: <Star className="w-5 h-5" />, color: "bg-yellow-100 text-yellow-600" },
-  { action: "Refer a Friend", points: "100 points", icon: <Users className="w-5 h-5" />, color: "bg-pink-100 text-pink-600" },
-  { action: "Daily Login", points: "5 points/day", icon: <Target className="w-5 h-5" />, color: "bg-indigo-100 text-indigo-600" },
-  { action: "Complete Profile", points: "50 points", icon: <Shield className="w-5 h-5" />, color: "bg-orange-100 text-orange-600" },
-];
-
-const REDEEM_OPTIONS = [
-  { title: "Wallet Credit", desc: "Convert points to wallet balance", rate: "100 pts = ₹100", icon: <WalletIcon className="w-5 h-5" /> },
-  { title: "Discount Coupons", desc: "Get exclusive discount codes", rate: "200 pts = ₹250 coupon", icon: <Gift className="w-5 h-5" /> },
-  { title: "Free Delivery", desc: "Waive delivery charges", rate: "50 pts = Free delivery", icon: <ShoppingBag className="w-5 h-5" /> },
-  { title: "Premium Benefits", desc: "Unlock premium features", rate: "500 pts = 1 month", icon: <Crown className="w-5 h-5" /> },
-];
-
-const ACHIEVEMENTS = [
-  { tier: "Bronze", icon: "🥉", color: "from-orange-200 to-orange-300", min: 0, benefits: ["Basic cashback", "Standard delivery"] },
-  { tier: "Silver", icon: "🥈", color: "from-gray-200 to-gray-400", min: 500, benefits: ["2% cashback", "Priority support", "Free delivery on ₹499+"] },
-  { tier: "Gold", icon: "🥇", color: "from-yellow-200 to-yellow-400", min: 2000, benefits: ["5% cashback", "Express delivery", "Early access to deals"] },
-  { tier: "Platinum", icon: "💎", color: "from-blue-200 to-blue-400", min: 5000, benefits: ["7% cashback", "Free delivery", "Exclusive offers", "Dedicated support"] },
-  { tier: "Diamond", icon: "👑", color: "from-purple-300 to-purple-500", min: 15000, benefits: ["10% cashback", "Free delivery", "VIP deals", "Personal account manager"] },
-];
-
-const TXN_FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "today", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-];
-
-const TXN_TYPE_ICONS: Record<string, { icon: any; color: string }> = {
-  cashback: { icon: <TrendingUp className="w-4 h-4" />, color: "text-green-600 bg-green-50" },
-  referral: { icon: <Users className="w-4 h-4" />, color: "text-blue-600 bg-blue-50" },
-  order_payment: { icon: <ShoppingBag className="w-4 h-4" />, color: "text-red-600 bg-red-50" },
-  refund: { icon: <ArrowDownRight className="w-4 h-4" />, color: "text-purple-600 bg-purple-50" },
-  reward_redeem: { icon: <Star className="w-4 h-4" />, color: "text-yellow-600 bg-yellow-50" },
-  manual_credit: { icon: <Gift className="w-4 h-4" />, color: "text-pink-600 bg-pink-50" },
-};
-
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
-const formatCurrency = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(v);
-const formatDate = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-
-const getAuth = () => {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  const token = localStorage.getItem("token");
-  return { user, token };
-};
-
-// ─────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────
-const WalletPage = () => {
+const WalletPage: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
 
-  // Balances
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [rewardPoints, setRewardPoints] = useState(0);
-  const [referralEarnings, setReferralEarnings] = useState(0);
-  const [pendingEarnings, setPendingEarnings] = useState(0);
-  const [lifetimeEarnings, setLifetimeEarnings] = useState(0);
-  const [cashbackBalance, setCashbackBalance] = useState(0);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [pendingBalance, setPendingBalance] = useState(0);
+  const [totalCredits, setTotalCredits] = useState(0);
+  const [totalDebits, setTotalDebits] = useState(0);
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
 
-  const [challenges, setChallenges] = useState([
-    { id: "chal-1", title: "🏪 Local Store Supporter", desc: "Order 3 times from local merchants", progress: 2, target: 3, reward: 150, claimed: false },
-    { id: "chal-2", title: "👥 Network Builder", desc: "Invite 2 new users using your referral code", progress: 0, target: 2, reward: 300, claimed: false },
-    { id: "chal-3", title: "🎟️ Smart Shopper", desc: "Apply dynamic coupon codes on checkout", progress: 1, target: 1, reward: 100, claimed: false }
-  ]);
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<"transactions" | "withdrawals">("transactions");
+  const [txFilter, setTxFilter] = useState<"all" | "credit" | "debit">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleClaimChallenge = (id: string, reward: number) => {
-    setChallenges(prev => prev.map(c => c.id === id ? { ...c, claimed: true } : c));
-    setRewardPoints(pts => pts + reward);
-    alert(`Congratulations! You earned ${reward} Loyalty Points!`);
-  };
+  // Modals state
+  const [addFundsOpen, setAddFundsOpen] = useState(false);
+  const [addAmount, setAddAmount] = useState<string>("500");
+  const [addMethod, setAddMethod] = useState<"upi" | "card" | "netbanking">("upi");
+  const [submittingAdd, setSubmittingAdd] = useState(false);
+  const [addSuccessMsg, setAddSuccessMsg] = useState("");
 
-  // Transaction
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [txnFilter, setTxnFilter] = useState("all");
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
+  const [withdrawMethod, setWithdrawMethod] = useState<"upi" | "bank">("upi");
+  const [withdrawUpiId, setWithdrawUpiId] = useState("");
+  const [withdrawAccountName, setWithdrawAccountName] = useState("");
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState("");
+  const [withdrawIfsc, setWithdrawIfsc] = useState("");
+  const [withdrawNote, setWithdrawNote] = useState("");
+  const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
+  const [withdrawMsg, setWithdrawMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Rewards
-  const [rewardHistory, setRewardHistory] = useState<RewardEntry[]>([]);
-
-  // Referral
-  const [refCode, setRefCode] = useState("APEXBEE123");
-  const [copied, setCopied] = useState(false);
-  const [refStats, setRefStats] = useState<any>(null);
-
-  // Leaderboard
-  const [leaderboard, setLeaderboard] = useState<any>(null);
-
-  // QR Dialog
-  const [showQR, setShowQR] = useState(false);
-
-  // Add Money Dialog states
-  const [showAddMoney, setShowAddMoney] = useState(false);
-  const [addAmount, setAddAmount] = useState("");
-  const [depositing, setDepositing] = useState(false);
-  const [depositError, setDepositError] = useState("");
-
-  const handleDeposit = async () => {
-    setDepositing(true);
-    setDepositError("");
-    const { user, token } = getAuth();
-    if (!user || !token) { navigate("/login"); return; }
+  // Fetch Wallet Data
+  const fetchWalletData = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+    if (!token || !userRaw) {
+      setLoading(false);
+      return;
+    }
 
     try {
+      setLoading(true);
+      const user = JSON.parse(userRaw);
+      const userId = user._id || user.id;
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // 1. Fetch wallet status
+      let walletObj: any = null;
+      try {
+        const res = await fetch(`${API_BASE}/wallet/my-wallet`, { headers });
+        const json = await res.json();
+        if (json?.success && json?.wallet) {
+          walletObj = json.wallet;
+        }
+      } catch (e) {
+        console.error("my-wallet endpoint error:", e);
+      }
+
+      if (!walletObj && userId) {
+        try {
+          const res = await fetch(`${API_BASE}/user/wallet/${userId}`, { headers });
+          const json = await res.json();
+          if (json?.wallet) {
+            walletObj = json.wallet;
+          } else if (json?.walletBalance !== undefined) {
+            setAvailableBalance(Number(json.walletBalance));
+          }
+        } catch (e) {
+          console.error("user wallet fallback error:", e);
+        }
+      }
+
+      if (walletObj) {
+        setAvailableBalance(Number(walletObj.balance || walletObj.withdrawableBalance || 0));
+        setPendingBalance(Number(walletObj.pendingBalance || 0));
+        setTotalCredits(Number(walletObj.totalEarned || walletObj.totalCredited || 0));
+        setTotalDebits(Number(walletObj.totalWithdrawn || walletObj.totalDebited || 0));
+
+        if (Array.isArray(walletObj.transactions) && walletObj.transactions.length > 0) {
+          const mappedTx: LedgerEntry[] = walletObj.transactions.map((tx: any, idx: number) => ({
+            id: tx._id || `tx-${idx}`,
+            type: tx.type === "credit" || tx.type === "CREDIT" || tx.amount > 0 ? "credit" : "debit",
+            amount: Math.abs(Number(tx.amount || 0)),
+            description: tx.description || tx.reason || "Wallet Transaction",
+            category: tx.category || "General",
+            status: tx.status?.toLowerCase() === "success" || tx.status?.toLowerCase() === "completed" ? "completed" : "pending",
+            referenceId: tx.referenceId || tx.orderId || "",
+            createdAt: tx.createdAt || new Date().toISOString(),
+          }));
+          setLedgerEntries(mappedTx);
+        }
+
+        if (Array.isArray(walletObj.withdrawals) && walletObj.withdrawals.length > 0) {
+          const mappedWd: WithdrawalRecord[] = walletObj.withdrawals.map((wd: any, idx: number) => ({
+            id: wd._id || `wd-${idx}`,
+            amount: Number(wd.amount || 0),
+            payoutMethod: wd.payoutMethod || wd.method || "bank",
+            status: wd.status || "pending",
+            requestedAt: wd.requestedAt || wd.createdAt || new Date().toISOString(),
+            processedAt: wd.processedAt,
+            rejectionReason: wd.rejectionReason,
+            accountDetails: wd.accountDetails,
+          }));
+          setWithdrawals(mappedWd);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching wallet:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWalletData();
+  }, [fetchWalletData]);
+
+  // Handle Add Funds Submit
+  const handleAddFunds = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const numAmt = Number(addAmount);
+    if (isNaN(numAmt) || numAmt <= 0) {
+      toast({ title: "Invalid Amount", description: "Please enter a valid amount to add.", variant: "destructive" });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast({ title: "Authentication Required", description: "Please login to add funds.", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setSubmittingAdd(true);
       const res = await fetch(`${API_BASE}/wallet/add-funds`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount: Number(addAmount) })
+        body: JSON.stringify({
+          amount: numAmt,
+          paymentMethod: addMethod,
+        }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setDepositError(data?.message || "Failed to add funds. Please try again.");
-        setDepositing(false);
-        return;
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setAddSuccessMsg(`Successfully added ${formatCurrency(numAmt)} to your ApexWallet!`);
+        toast({ title: "Wallet Top-up Successful! 💰", description: `Added ${formatCurrency(numAmt)} to your wallet.` });
+        setTimeout(() => {
+          setAddFundsOpen(false);
+          setAddSuccessMsg("");
+          fetchWalletData();
+        }, 1500);
+      } else {
+        toast({ title: "Top-up Failed", description: json.message || "Failed to add funds. Please try again.", variant: "destructive" });
       }
-
-      // Success!
-      setShowAddMoney(false);
-      setAddAmount("");
-      // Refresh balance and transaction list
-      fetchAll();
     } catch (err: any) {
-      setDepositError(err.message || "An error occurred. Please try again.");
+      toast({ title: "Error", description: err.message || "Error adding funds to wallet.", variant: "destructive" });
     } finally {
-      setDepositing(false);
+      setSubmittingAdd(false);
     }
   };
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    const { user, token } = getAuth();
-    if (!user || !token) { navigate("/login"); return; }
-    const uid = user._id || user.id;
-    const headers = { Authorization: `Bearer ${token}` };
+  // Handle Withdrawal Request Submit
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWithdrawMsg(null);
+    const numAmt = Number(withdrawAmount);
+    if (isNaN(numAmt) || numAmt <= 0) {
+      setWithdrawMsg({ type: "error", text: "Please enter a valid withdrawal amount." });
+      return;
+    }
+
+    if (numAmt > availableBalance) {
+      setWithdrawMsg({ type: "error", text: `Requested amount exceeds available balance (${formatCurrency(availableBalance)}).` });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setWithdrawMsg({ type: "error", text: "Please login to request withdrawal." });
+      return;
+    }
+
+    const noteDetails =
+      withdrawMethod === "upi"
+        ? `UPI Payout to ${withdrawUpiId || "Registered UPI"}`
+        : `Bank Transfer to ${withdrawAccountName} (${withdrawAccountNumber}, IFSC: ${withdrawIfsc})`;
 
     try {
-      const [walletRes, rewardsRes, refStatsRes, refCodeRes, txnRes, rewardHistRes, leaderRes] = await Promise.all([
-        fetch(`${API_BASE}/user/wallet/${uid}`, { headers }),
-        fetch(`${API_BASE}/user/rewards/${uid}`, { headers }),
-        fetch(`${API_BASE}/referrals/stats`, { headers }),
-        fetch(`${API_BASE}/referrals/code`, { headers }),
-        fetch(`${API_BASE}/wallet/transactions`, { headers }),
-        fetch(`${API_BASE}/rewards/history`, { headers }),
-        fetch(`${API_BASE}/leaderboard`, { headers }),
-      ]);
+      setSubmittingWithdraw(true);
+      const res = await fetch(`${API_BASE}/wallet/withdrawals`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: numAmt,
+          note: `${withdrawNote ? withdrawNote + " - " : ""}${noteDetails}`,
+          bankDetails: {
+            accountName: withdrawAccountName,
+            accountNumber: withdrawAccountNumber,
+            ifscCode: withdrawIfsc,
+            upiId: withdrawUpiId,
+          },
+        }),
+      });
 
-      const walletData = await walletRes.json();
-      const rewardsData = await rewardsRes.json();
-      const refStatsData = await refStatsRes.json();
-      const refCodeData = await refCodeRes.json();
-      const txnData = await txnRes.json();
-      const rewardHistData = await rewardHistRes.json();
-      const leaderData = await leaderRes.json();
-
-      setWalletBalance(walletData?.walletBalance ?? 0);
-      setRewardPoints(rewardsData?.rewardPoints ?? 0);
-      setRefStats(refStatsData?.stats || refStatsData);
-      setRefCode(refCodeData?.referralCode || refCodeData?.code || "APEXBEE123");
-      const txnList = txnData?.transactions || [];
-      setTransactions(txnList);
-      setRewardHistory(rewardHistData?.history || []);
-      setLeaderboard(leaderData?.leaderboard || null);
-
-      const statsObj = refStatsData?.stats || {};
-      setReferralEarnings(statsObj.totalEarned ?? 0);
-      setPendingEarnings(statsObj.pendingBalance ?? 0);
-      setLifetimeEarnings(statsObj.totalEarned ?? 0);
-      setCashbackBalance(txnList.filter((t: any) => t.type === "cashback" && t.amount > 0).reduce((s: number, t: any) => s + t.amount, 0) || 0);
-    } catch (e) {
-      console.error("Wallet fetch error:", e);
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setWithdrawMsg({ type: "success", text: `Withdrawal request for ${formatCurrency(numAmt)} submitted successfully!` });
+        setTimeout(() => {
+          setWithdrawOpen(false);
+          setWithdrawMsg(null);
+          setWithdrawAmount("");
+          fetchWalletData();
+        }, 1800);
+      } else {
+        setWithdrawMsg({ type: "error", text: json.message || "Failed to submit withdrawal request." });
+      }
+    } catch (err: any) {
+      setWithdrawMsg({ type: "error", text: err.message || "Error submitting withdrawal request." });
     } finally {
-      setLoading(false);
+      setSubmittingWithdraw(false);
     }
-  }, [navigate]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  const copyRefCode = () => {
-    navigator.clipboard.writeText(`https://apexbee.in/register?ref=${refCode}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
-  const shareRef = (platform: string) => {
-    const link = `https://apexbee.in/register?ref=${refCode}`;
-    const msg = `Join ApexBee and start earning! Use my code ${refCode}: ${link}`;
-    const urls: Record<string, string> = {
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(msg)}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(msg)}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`,
-    };
-    window.open(urls[platform], "_blank");
-  };
+  // Filtered Transactions
+  const filteredTransactions = useMemo(() => {
+    return ledgerEntries.filter((tx) => {
+      const matchType =
+        txFilter === "all" ? true : tx.type?.toLowerCase() === txFilter.toLowerCase();
 
-  // Filter transactions
-  const filteredTxns = transactions.filter((t) => {
-    if (txnFilter === "all") return true;
-    const d = new Date(t.date);
-    const now = new Date();
-    if (txnFilter === "today") return d.toDateString() === now.toDateString();
-    if (txnFilter === "week") return now.getTime() - d.getTime() < 7 * 86400000;
-    if (txnFilter === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    return true;
-  });
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        tx.transactionId?.toLowerCase().includes(q) ||
+        tx.remarks?.toLowerCase().includes(q) ||
+        tx.description?.toLowerCase().includes(q) ||
+        tx.category?.toLowerCase().includes(q);
 
-  // Current achievement tier
-  const currentTier = ACHIEVEMENTS.slice().reverse().find((a) => lifetimeEarnings >= a.min) || ACHIEVEMENTS[0];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="flex justify-center items-center h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
-        <Footer />
-      </div>
-    );
-  }
+      return matchType && matchSearch;
+    });
+  }, [ledgerEntries, txFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold text-navy mb-6">💰 Wallet & Rewards</h1>
+      <main className="flex-1 container mx-auto px-3.5 sm:px-6 py-5 sm:py-8 max-w-6xl">
+        {/* Header Title Section */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <span className="p-2 bg-navy text-white rounded-2xl shadow-xs shrink-0">
+                <WalletIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+              </span>
+              <h1 className="text-xl sm:text-3xl font-black text-navy tracking-tight">
+                ApexWallet & Balances
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Manage your balance, top-up funds for instant order payments, and request payouts.
+            </p>
+          </div>
 
-        {/* ── Tab Navigation ── */}
-        <div className="flex gap-1 overflow-x-auto pb-2 mb-6 border-b scrollbar-none">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === tab.key ? "bg-navy text-white" : "text-muted-foreground hover:text-navy hover:bg-navy/5"
-                }`}
+          <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+            <Button
+              onClick={fetchWalletData}
+              variant="outline"
+              size="sm"
+              className="rounded-2xl border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px] sm:text-xs gap-1 py-2"
             >
-              <span>{tab.icon}</span> {tab.label}
-            </button>
-          ))}
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden xs:inline">Refresh</span>
+            </Button>
+
+            <Button
+              onClick={() => setAddFundsOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl px-3 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 shadow-md"
+            >
+              <PlusCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>+ Add Funds</span>
+            </Button>
+
+            <Button
+              onClick={() => setWithdrawOpen(true)}
+              className="bg-navy hover:bg-navy/90 text-white font-extrabold rounded-2xl px-3 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 shadow-md"
+            >
+              <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Withdraw</span>
+            </Button>
+          </div>
         </div>
 
-        {/* ════════════════════════════════════════════ */}
-        {/* OVERVIEW TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "overview" && (
-          <div className="space-y-6">
-            {/* Balance Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {[
-                { label: "Available Balance", value: formatCurrency(walletBalance), icon: <WalletIcon className="w-5 h-5" />, color: "from-navy to-blue-700", text: "text-white" },
-                { label: "Cashback", value: formatCurrency(cashbackBalance), icon: <TrendingUp className="w-5 h-5" />, color: "from-green-500 to-emerald-600", text: "text-white" },
-                { label: "Reward Points", value: `${rewardPoints} pts`, icon: <Star className="w-5 h-5" />, color: "from-yellow-400 to-orange-500", text: "text-white" },
-                { label: "Referral Earnings", value: formatCurrency(referralEarnings), icon: <Users className="w-5 h-5" />, color: "from-purple-500 to-indigo-600", text: "text-white" },
-                { label: "Pending", value: formatCurrency(pendingEarnings), icon: <Clock className="w-5 h-5" />, color: "from-orange-400 to-red-500", text: "text-white" },
-                { label: "Lifetime", value: formatCurrency(lifetimeEarnings), icon: <Trophy className="w-5 h-5" />, color: "from-pink-500 to-rose-600", text: "text-white" },
-              ].map((card, i) => (
-                <div key={i} className={`bg-gradient-to-br ${card.color} rounded-xl p-4 ${card.text} shadow-sm flex flex-col justify-between`}>
-                  <div>
-                    <div className="flex items-center gap-2 opacity-80 mb-2">{card.icon}<span className="text-xs font-medium">{card.label}</span></div>
-                    <p className="text-xl font-bold">{card.value}</p>
-                  </div>
-                  {i === 0 && (
-                    <button
-                      onClick={() => setShowAddMoney(true)}
-                      className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white font-semibold text-xs py-1.5 px-3 rounded-lg transition-colors flex items-center justify-center gap-1"
-                    >
-                      Add Money
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Current Tier */}
-            <Card className="border-2 border-yellow-300">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className="text-4xl">{currentTier.icon}</div>
-                <div className="flex-1">
-                  <p className="font-bold text-navy text-lg">{currentTier.tier} Member</p>
-                  <p className="text-sm text-muted-foreground">Current tier based on lifetime activity</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {currentTier.benefits.map((b, i) => (
-                      <Badge key={i} className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs">{b}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab("achievements")}>
-                  View All <ChevronRight className="w-3 h-3 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <div className="grid sm:grid-cols-3 gap-3">
-              <Button className="bg-navy hover:bg-navy/90 text-white h-auto py-3" onClick={() => setActiveTab("referrals")}>
-                <Gift className="w-4 h-4 mr-2" /> Refer & Earn ₹500
-              </Button>
-              <Button variant="outline" className="h-auto py-3" onClick={() => setActiveTab("rewards")}>
-                <Star className="w-4 h-4 mr-2" /> Redeem Points
-              </Button>
-              <Button variant="outline" className="h-auto py-3" onClick={() => setActiveTab("transactions")}>
-                <TrendingUp className="w-4 h-4 mr-2" /> Transaction History
-              </Button>
-            </div>
-
-            {/* Recent Transactions */}
-            <Card>
-              <CardContent className="p-5">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-navy">Recent Transactions</h3>
-                  <button onClick={() => setActiveTab("transactions")} className="text-sm text-navy font-medium hover:underline">View All →</button>
-                </div>
-                <div className="space-y-3">
-                  {transactions.slice(0, 5).map((txn) => {
-                    const typeInfo = TXN_TYPE_ICONS[txn.type] || TXN_TYPE_ICONS.manual_credit;
-                    return (
-                      <div key={txn._id} className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${typeInfo.color}`}>{typeInfo.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{txn.description}</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(txn.date)}</p>
-                        </div>
-                        <span className={`text-sm font-bold ${txn.amount >= 0 ? "text-green-600" : "text-red-500"}`}>
-                          {txn.amount >= 0 ? "+" : ""}{formatCurrency(txn.amount)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Gift Card Redemption */}
-            <Card className="border-2 border-dashed border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white">
-                    <Gift className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-navy text-lg">Gift Cards</h3>
-                    <p className="text-xs text-muted-foreground">Redeem or purchase gift cards</p>
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="bg-white rounded-xl p-4 border shadow-sm">
-                    <p className="text-xs font-bold text-navy mb-2">🎁 Redeem Gift Card</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Enter gift card code"
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-300 focus:border-pink-400 outline-none"
-                      />
-                      <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white text-xs px-4">
-                        Redeem
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 border shadow-sm">
-                    <p className="text-xs font-bold text-navy mb-2">🛍 Buy Gift Card</p>
-                    <div className="flex gap-2">
-                      {[250, 500, 1000, 2000].map(amt => (
-                        <button key={amt} className="flex-1 border rounded-lg py-2 text-xs font-bold text-navy hover:bg-pink-50 hover:border-pink-300 transition-colors">
-                          ₹{amt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Cashback Ledger Summary */}
-            <Card>
-              <CardContent className="p-5">
-                <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-green-600" /> Cashback Ledger
-                </h3>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-green-50 rounded-xl p-4">
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(cashbackBalance)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Available Cashback</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-xl p-4">
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(pendingEarnings)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Pending Credits</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-xl p-4">
-                    <p className="text-2xl font-bold text-purple-600">{formatCurrency(lifetimeEarnings)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total Earned</p>
-                  </div>
-                </div>
-                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="text-xs font-medium text-yellow-800">💡 <strong>Tip:</strong> Earn up to 10% cashback on every order when you reach Diamond tier!</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════ */}
-        {/* TRANSACTIONS TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "transactions" && (
-          <div className="space-y-4">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {TXN_FILTER_TABS.map((f) => (
-                <button key={f.key} onClick={() => setTxnFilter(f.key)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${txnFilter === f.key ? "bg-navy text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                >{f.label}</button>
-              ))}
-            </div>
-            {filteredTxns.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <WalletIcon className="w-16 h-16 mx-auto opacity-30 mb-3" />
-                <p>No transactions found for this period.</p>
+        {/* Balance Cards Summary Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mb-6 sm:mb-8">
+          {/* Card 1: Main Available Balance */}
+          <Card className="border border-emerald-500/30 bg-gradient-to-br from-emerald-600 to-teal-800 text-white rounded-3xl shadow-xl overflow-hidden relative">
+            <CardContent className="p-4 sm:p-6 text-left">
+              <div className="flex items-center justify-between opacity-90 mb-1.5">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-100">
+                  Available Balance
+                </span>
+                <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-200" />
               </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredTxns.map((txn) => {
-                  const typeInfo = TXN_TYPE_ICONS[txn.type] || TXN_TYPE_ICONS.manual_credit;
-                  return (
-                    <Card key={txn._id}>
-                      <CardContent className="p-4 flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${typeInfo.color}`}>{typeInfo.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{txn.description}</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(txn.date)} • <span className="capitalize">{txn.type.replace("_", " ")}</span></p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`font-bold ${txn.amount >= 0 ? "text-green-600" : "text-red-500"}`}>
-                            {txn.amount >= 0 ? "+" : ""}{formatCurrency(txn.amount)}
-                          </p>
-                          <Badge className={`text-xs ${txn.status === "credited" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{txn.status}</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                {formatCurrency(availableBalance)}
+              </h2>
+              <p className="text-[10px] sm:text-[11px] text-emerald-100 mt-1.5 flex items-center gap-1">
+                <span>Instant 1-Click Payments Enabled</span>
+              </p>
+
+              <div className="mt-3.5 pt-3 border-t border-white/20 flex gap-2">
+                <button
+                  onClick={() => setAddFundsOpen(true)}
+                  className="flex-1 py-1.5 sm:py-2 bg-white text-emerald-800 hover:bg-emerald-50 font-black rounded-xl text-[11px] sm:text-xs transition cursor-pointer"
+                >
+                  + Add Money
+                </button>
+                <button
+                  onClick={() => setWithdrawOpen(true)}
+                  className="flex-1 py-1.5 sm:py-2 bg-emerald-900/50 hover:bg-emerald-900/80 text-white font-extrabold rounded-xl text-[11px] sm:text-xs border border-white/20 transition cursor-pointer"
+                >
+                  Withdraw
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Pending Balance */}
+          <Card className="border border-amber-200 bg-white rounded-3xl shadow-xs text-left">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between text-slate-500 mb-1.5">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                  Pending / Hold
+                </span>
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-navy">
+                {formatCurrency(pendingBalance)}
+              </h3>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Reserved for active orders & pending payouts.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 3: Total Credits */}
+          <Card className="border border-slate-200 bg-white rounded-3xl shadow-xs text-left">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between text-slate-500 mb-1.5">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                  Total Credits (+)
+                </span>
+                <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-emerald-600">
+                {formatCurrency(totalCredits)}
+              </h3>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Lifetime wallet top-ups & refunds.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 4: Total Debits */}
+          <Card className="border border-slate-200 bg-white rounded-3xl shadow-xs text-left">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between text-slate-500 mb-1.5">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                  Total Debits (-)
+                </span>
+                <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                {formatCurrency(totalDebits)}
+              </h3>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Lifetime subscription & order payments.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tab Controls & Filters */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto">
+              <button
+                onClick={() => setActiveTab("transactions")}
+                className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${activeTab === "transactions"
+                  ? "bg-navy text-white shadow-xs"
+                  : "text-slate-600 hover:text-navy"
+                  }`}
+              >
+                📜 All Transactions ({ledgerEntries.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab("withdrawals")}
+                className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${activeTab === "withdrawals"
+                  ? "bg-navy text-white shadow-xs"
+                  : "text-slate-600 hover:text-navy"
+                  }`}
+              >
+                💸 Withdrawals ({withdrawals.length})
+              </button>
+            </div>
+
+            {activeTab === "transactions" && (
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                <div className="relative w-full sm:w-60">
+                  <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 sm:py-2 border rounded-xl text-xs bg-slate-50 outline-none focus:border-navy"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 border rounded-xl p-1 bg-slate-50 text-[11px] w-full sm:w-auto justify-center">
+                  {(["all", "credit", "debit"] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setTxFilter(type)}
+                      className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg font-bold capitalize transition ${txFilter === type
+                        ? "bg-white text-navy font-black shadow-2xs border"
+                        : "text-slate-500 hover:text-navy"
+                        }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        )}
 
-        {/* ════════════════════════════════════════════ */}
-        {/* REWARDS TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "rewards" && (
-          <div className="space-y-6">
-            {/* Points Balance */}
-            <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
-              <CardContent className="p-6 text-center">
-                <Star className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                <p className="text-4xl font-bold">{rewardPoints}</p>
-                <p className="text-sm opacity-80 mt-1">Reward Points Available</p>
-                <p className="text-xs opacity-60 mt-1">= {formatCurrency(rewardPoints)}</p>
-              </CardContent>
-            </Card>
-
-            {/* Earn Points */}
+          {/* TAB 1: TRANSACTIONS LIST */}
+          {activeTab === "transactions" && (
             <div>
-              <h3 className="font-semibold text-navy text-lg mb-3">🎯 Ways to Earn Points</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {EARN_POINTS.map((ep, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${ep.color}`}>{ep.icon}</div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{ep.action}</p>
-                        <p className="text-xs text-muted-foreground">{ep.points}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Redeem Options */}
-            <div>
-              <h3 className="font-semibold text-navy text-lg mb-3">🎁 Redeem Points</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {REDEEM_OPTIONS.map((opt, i) => (
-                  <Card key={i} className="hover:border-yellow-300 transition-colors cursor-pointer">
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center">{opt.icon}</div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{opt.title}</p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                        <p className="text-xs text-navy font-medium mt-0.5">{opt.rate}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Points History */}
-            <div>
-              <h3 className="font-semibold text-navy text-lg mb-3">📜 Points History</h3>
-              <div className="space-y-2">
-                {rewardHistory.map((rh) => (
-                  <Card key={rh._id}>
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${rh.type === "earned" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                        {rh.type === "earned" ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{rh.action}</p>
-                        <p className="text-xs text-muted-foreground">{rh.description} • {formatDate(rh.date)}</p>
-                      </div>
-                      <span className={`font-bold text-sm ${rh.points >= 0 ? "text-green-600" : "text-red-500"}`}>
-                        {rh.points >= 0 ? "+" : ""}{rh.points} pts
-                      </span>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════ */}
-        {/* REFERRALS TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "referrals" && (
-          <div className="space-y-6">
-            {/* Referral Code Card */}
-            <Card className="bg-gradient-to-r from-navy to-blue-700 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-center mb-4">
-                  <Gift className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                  <h2 className="text-2xl font-bold">Refer & Earn Up to ₹500!</h2>
-                  <p className="text-sm opacity-80 mt-1">Share your code and earn when friends join & shop</p>
+              {loading ? (
+                <div className="text-center py-12 space-y-3">
+                  <RefreshCw className="h-8 w-8 animate-spin text-navy mx-auto opacity-40" />
+                  <p className="text-xs text-slate-500 font-bold">Loading wallet ledger transactions...</p>
                 </div>
-                <div className="bg-white/10 rounded-xl p-4 text-center">
-                  <p className="text-xs opacity-60 uppercase tracking-wider mb-1">Your Referral Code</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-3xl font-bold tracking-widest">{refCode}</span>
-                    <button onClick={copyRefCode} className="bg-white/20 hover:bg-white/30 rounded-lg p-2 transition-colors">
-                      {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs opacity-60 mt-2">apexbee.in/register?ref={refCode}</p>
+              ) : filteredTransactions.length === 0 ? (
+                <div className="text-center py-12 sm:py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 px-4">
+                  <WalletIcon className="h-10 w-10 sm:h-12 sm:w-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="text-sm font-bold text-navy">No Transactions Found</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    {searchQuery || txFilter !== "all"
+                      ? "No ledger entries matched your search criteria."
+                      : "You haven't made any wallet transactions yet. Top-up funds to get started."}
+                  </p>
+                  <Button
+                    onClick={() => setAddFundsOpen(true)}
+                    className="mt-4 bg-emerald-600 text-white font-extrabold text-xs rounded-xl px-4 py-2"
+                  >
+                    + Add Funds Now
+                  </Button>
                 </div>
+              ) : (
+                <div className="space-y-2.5 sm:space-y-3">
+                  {filteredTransactions.map((tx, idx) => {
+                    const isCredit = tx.type?.toLowerCase() === "credit";
 
-                {/* Share Buttons */}
-                <div className="flex justify-center gap-3 mt-4">
-                  {[
-                    { name: "WhatsApp", key: "whatsapp", emoji: "💬" },
-                    { name: "Telegram", key: "telegram", emoji: "✈️" },
-                    { name: "Facebook", key: "facebook", emoji: "📘" },
-                  ].map((p) => (
-                    <button key={p.key} onClick={() => shareRef(p.key)}
-                      className="bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm flex items-center gap-1.5 transition-colors">
-                      <span>{p.emoji}</span> {p.name}
-                    </button>
-                  ))}
-                  <button onClick={() => setShowQR(true)}
-                    className="bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm flex items-center gap-1.5 transition-colors">
-                    <QrCode className="w-4 h-4" /> QR
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Referral Stats */}
-            <div className="grid sm:grid-cols-3 gap-3">
-              {[
-                { label: "Total Referrals", value: refStats?.totalReferrals ?? 0, color: "text-navy" },
-                { label: "Successful", value: refStats?.completedReferrals ?? 0, color: "text-green-600" },
-                { label: "Pending", value: refStats?.pendingReferrals ?? 0, color: "text-orange-500" },
-              ].map((s, i) => (
-                <Card key={i}>
-                  <CardContent className="p-4 text-center">
-                    <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Referral Levels */}
-            <Card>
-              <CardContent className="p-5">
-                <h3 className="font-semibold text-navy mb-4">📊 Referral Network</h3>
-                <div className="space-y-4">
-                  {[
-                    { level: "Level 1 – Direct Referrals", desc: "Friends you invited directly", total: refStats?.totalDirectReferrals ?? 0, completed: refStats?.completedDirectReferrals ?? 0, earnings: refStats?.level1?.totalEarned ?? 0 },
-                    { level: "Level 2 – Friend's Referrals", desc: "Friends of your friends", total: refStats?.totalIndirectReferrals ?? 0, completed: refStats?.completedIndirectReferrals ?? 0, earnings: refStats?.level2?.totalEarned ?? 0 },
-                    { level: "Level 3 – Extended Network", desc: "Deep network referrals", total: refStats?.totalLevel3Referrals ?? 0, completed: refStats?.completedLevel3Referrals ?? 0, earnings: refStats?.level3?.totalEarned ?? 0 },
-                  ].map((lvl, i) => (
-                    <div key={i} className="p-3 border rounded-lg">
-                      <div className="flex justify-between items-start mb-1">
-                        <div>
-                          <p className="font-medium text-sm">{lvl.level}</p>
-                          <p className="text-xs text-muted-foreground">{lvl.desc}</p>
-                        </div>
-                        <span className="text-sm font-bold text-navy">{formatCurrency(lvl.earnings)}</span>
-                      </div>
-                      <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>Total: <strong className="text-navy">{lvl.total}</strong></span>
-                        <span>Active: <strong className="text-green-600">{lvl.completed}</strong></span>
-                        <span>Pending: <strong className="text-orange-500">{lvl.total - lvl.completed}</strong></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button className="w-full bg-navy hover:bg-navy/90 text-white" onClick={() => navigate("/referrals")}>
-              <Users className="w-4 h-4 mr-2" /> View Full Referral Dashboard
-            </Button>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════ */}
-        {/* ACHIEVEMENTS TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "achievements" && (
-          <div className="space-y-6 text-left">
-            {/* Loyalty Levels Progress Card */}
-            <Card className="bg-gradient-to-r from-navy to-blue-900 text-white border-0 overflow-hidden relative shadow-premium">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-wider">ApexBee Loyalty Club</span>
-                    <h3 className="text-xl font-extrabold mt-1">Level 4: {currentTier.tier} Member</h3>
-                    <p className="text-xs text-white/80 mt-1">Earn points through shopping, services, and downline MLM referrals.</p>
-                  </div>
-                  <span className="text-3xl animate-bounce">🏆</span>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mt-6 space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span>2,450 XP Points</span>
-                    <span className="opacity-90">5,000 XP to Platinum</span>
-                  </div>
-                  <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: "49%" }} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mt-6 text-center border-t border-white/10 pt-4 text-xs">
-                  <div>
-                    <p className="opacity-75 text-[9px] uppercase">Cashback Rate</p>
-                    <p className="font-extrabold text-sm mt-0.5">5% Direct</p>
-                  </div>
-                  <div>
-                    <p className="opacity-75 text-[9px] uppercase">Active Referrals</p>
-                    <p className="font-extrabold text-sm mt-0.5">14 Members</p>
-                  </div>
-                  <div>
-                    <p className="opacity-75 text-[9px] uppercase">Tier Reward</p>
-                    <p className="font-extrabold text-sm mt-0.5">Free Delivery</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Monthly Challenges Checklist */}
-            <Card className="border border-slate-100 shadow-premium">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <div>
-                    <h4 className="font-extrabold text-navy text-sm">🎯 Monthly Challenges</h4>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Complete goals to unlock bonus wallet points.</p>
-                  </div>
-                  <Badge className="bg-amber-100 text-amber-800 font-bold text-[10px] border-none">July Goals</Badge>
-                </div>
-
-                <div className="space-y-4">
-                  {challenges.map((c) => {
-                    const isCompleted = c.progress >= c.target;
-                    const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
                     return (
-                      <div key={c.id} className="p-3 bg-slate-50 border rounded-xl flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-bold text-navy text-xs leading-none">{c.title}</h5>
-                          <p className="text-[10px] text-muted-foreground mt-1 leading-normal">{c.desc}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-navy rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                      <div
+                        key={tx._id || tx.transactionId || idx}
+                        className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4 hover:border-slate-300 transition shadow-2xs text-left"
+                      >
+                        <div className="flex items-start sm:items-center gap-3">
+                          <div
+                            className={`p-2.5 sm:p-3 rounded-2xl shrink-0 ${isCredit ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                              }`}
+                          >
+                            {isCredit ? (
+                              <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                            ) : (
+                              <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                            )}
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <h4 className="font-extrabold text-navy text-xs sm:text-sm">
+                                {tx.remarks || tx.description || (isCredit ? "Wallet Credit" : "Wallet Debit")}
+                              </h4>
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] uppercase font-extrabold border-slate-200 py-0"
+                              >
+                                {tx.category || tx.source || "Wallet"}
+                              </Badge>
                             </div>
-                            <span className="text-[9px] font-black text-slate-500 shrink-0">{c.progress}/{c.target}</span>
+
+                            <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono">
+                              ID: {tx.transactionId || tx._id || "TXN-SYSTEM"} • {formatDate(tx.createdAt || tx.date)}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                          <span className="text-[10px] text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full font-bold">+{c.reward} pts</span>
-                          {c.claimed ? (
-                            <span className="text-[9px] font-bold text-slate-400">✓ Claimed</span>
-                          ) : isCompleted ? (
-                            <button
-                              onClick={() => handleClaimChallenge(c.id, c.reward)}
-                              className="text-[9px] font-black bg-accent hover:bg-accent/95 text-white px-3 py-1 rounded-lg border-none cursor-pointer shadow-sm animate-pulse transition active:scale-95"
-                            >
-                              Claim
-                            </button>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">In Progress</span>
-                          )}
+
+                        <div className="text-right w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                          <span
+                            className={`text-sm sm:text-base font-black ${isCredit ? "text-emerald-600" : "text-slate-900"
+                              }`}
+                          >
+                            {isCredit ? "+" : "-"}{formatCurrency(tx.amount)}
+                          </span>
+
+                          <span
+                            className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full mt-0.5 ${tx.status === "completed" || !tx.status
+                              ? "bg-emerald-100 text-emerald-800"
+                              : tx.status === "pending"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-red-100 text-red-800"
+                              }`}
+                          >
+                            {tx.status || "Completed"}
+                          </span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Achievements details */}
-            <div className="space-y-3.5">
-              <h4 className="font-extrabold text-navy text-sm">Achievements Milestone Tiers</h4>
-              {ACHIEVEMENTS.map((ach, i) => {
-                const unlocked = lifetimeEarnings >= ach.min;
-                const isCurrent = ach.tier === currentTier.tier;
-                return (
-                  <Card key={i} className={`${isCurrent ? "border-2 border-yellow-400 shadow-md" : unlocked ? "border-green-200" : "opacity-60"}`}>
-                    <CardContent className="p-5 flex items-start gap-4">
-                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${ach.color} flex items-center justify-center text-2xl flex-shrink-0`}>
-                        {ach.icon}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-navy text-xs">{ach.tier} Member</h4>
-                          {isCurrent && <Badge className="bg-yellow-100 text-yellow-700 text-[10px] font-bold border-none">Current</Badge>}
-                          {unlocked && !isCurrent && <Badge className="bg-green-100 text-green-700 text-[10px] font-bold border-none">Unlocked</Badge>}
-                          {!unlocked && <Badge className="bg-gray-100 text-gray-500 text-[10px] font-bold border-none">Locked</Badge>}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Requires ₹{ach.min.toLocaleString()} lifetime activity</p>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {ach.benefits.map((b, j) => (
-                            <span key={j} className="text-[9px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{b}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ════════════════════════════════════════════ */}
-        {/* LEADERBOARD TAB */}
-        {/* ════════════════════════════════════════════ */}
-        {activeTab === "leaderboard" && leaderboard && (
-          <div className="space-y-6">
-            {[
-              { title: "🏆 Top Referrers", data: leaderboard.topReferrers, metricLabel: "referrals", earningsLabel: "earnings" },
-              { title: "🛒 Top Customers", data: leaderboard.topCustomers, metricLabel: "orders", earningsLabel: "spent" },
-              { title: "🤝 Top Business Partners", data: leaderboard.topPartners, metricLabel: "team", earningsLabel: "earnings" },
-            ].map((section, si) => (
-              <Card key={si}>
-                <CardContent className="p-5">
-                  <h3 className="font-semibold text-navy mb-4">{section.title}</h3>
-                  <div className="space-y-3">
-                    {(section.data || []).map((entry: any) => (
-                      <div key={entry.rank} className={`flex items-center gap-3 p-3 rounded-lg ${entry.rank <= 3 ? "bg-yellow-50/50" : "bg-gray-50"}`}>
-                        <span className="text-2xl w-8 text-center flex-shrink-0">{entry.avatar}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{entry.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{(entry as any)[section.metricLabel]} {section.metricLabel}</p>
+          {/* TAB 2: WITHDRAWALS HISTORY LIST */}
+          {activeTab === "withdrawals" && (
+            <div>
+              {withdrawals.length === 0 ? (
+                <div className="text-center py-12 sm:py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 px-4">
+                  <Send className="h-10 w-10 sm:h-12 sm:w-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="text-sm font-bold text-navy">No Withdrawal Requests</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    You haven't requested any payouts yet. You can withdraw your available wallet funds anytime.
+                  </p>
+                  <Button
+                    onClick={() => setWithdrawOpen(true)}
+                    className="mt-4 bg-navy text-white font-extrabold text-xs rounded-xl px-4 py-2"
+                  >
+                    Withdraw Available Balance
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2.5 sm:space-y-3">
+                  {withdrawals.map((w) => {
+                    const isApproved = w.status === "approved";
+                    const isRejected = w.status === "rejected";
+
+                    return (
+                      <div
+                        key={w._id}
+                        className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-left shadow-2xs"
+                      >
+                        <div className="flex items-start sm:items-center gap-3">
+                          <div
+                            className={`p-2.5 sm:p-3 rounded-2xl shrink-0 ${isApproved
+                              ? "bg-emerald-50 text-emerald-600"
+                              : isRejected
+                                ? "bg-red-50 text-red-600"
+                                : "bg-amber-50 text-amber-600"
+                              }`}
+                          >
+                            {isApproved ? (
+                              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                            ) : isRejected ? (
+                              <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                            ) : (
+                              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                            )}
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <h4 className="font-extrabold text-navy text-xs sm:text-sm">
+                                Withdrawal Request: {formatCurrency(w.amount)}
+                              </h4>
+                              <Badge
+                                className={`text-[9px] sm:text-[10px] font-black uppercase ${isApproved
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : isRejected
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-amber-100 text-amber-800"
+                                  }`}
+                              >
+                                {w.status === "approved"
+                                  ? "Approved & Transferred"
+                                  : w.status === "rejected"
+                                    ? "Rejected"
+                                    : "Pending Approval"}
+                              </Badge>
+                            </div>
+
+                            <p className="text-[10px] sm:text-[11px] text-slate-500 leading-snug">
+                              {w.note || "Payout Request"} • Submitted on {formatDate(w.createdAt || w.date)}
+                            </p>
+                          </div>
                         </div>
-                        <span className="font-bold text-sm text-navy">{formatCurrency((entry as any)[section.earningsLabel])}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* QR Dialog */}
-      <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="sm:max-w-sm text-center">
-          <DialogHeader><DialogTitle>Your Referral QR Code</DialogTitle></DialogHeader>
-          <div className="p-6 bg-white rounded-xl border-2 border-dashed border-navy/20 mx-auto">
-            <div className="w-48 h-48 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-              <QrCode className="w-24 h-24 text-navy/40" />
+                        <div className="text-right w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                          <span className="text-sm sm:text-base font-black text-navy">
+                            Net Payout: {formatCurrency(w.netAmount ?? w.amount)}
+                          </span>
+                          {w.feeAmount && w.feeAmount > 0 ? (
+                            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold">
+                              TDS/Fee: {formatCurrency(w.feeAmount)} ({w.feePercent || 15}%)
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground mt-3">Scan to join with code <strong className="text-navy">{refCode}</strong></p>
-          </div>
-          <p className="text-xs text-muted-foreground">QR code generation will be available when the app goes live</p>
+          )}
+        </div>
+      </main>
+
+      {/* ➕ MODAL 1: ADD FUNDS / TOPUP WALLET */}
+      <Dialog open={addFundsOpen} onOpenChange={setAddFundsOpen}>
+        <DialogContent className="w-[92vw] max-w-md bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 text-left max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-3">
+            <DialogTitle className="text-base sm:text-lg font-black text-navy flex items-center gap-2">
+              <PlusCircle className="h-5 w-5 text-emerald-600" />
+              Add Money to ApexWallet
+            </DialogTitle>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Top up your wallet balance for instant 1-click payments on subscriptions & orders.
+            </p>
+          </DialogHeader>
+
+          {addSuccessMsg ? (
+            <div className="py-8 text-center space-y-3 animate-in fade-in">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
+              <h4 className="text-base font-black text-navy">{addSuccessMsg}</h4>
+            </div>
+          ) : (
+            <form onSubmit={handleAddFunds} className="space-y-4 pt-2 text-xs">
+              <div>
+                <label className="font-bold text-navy block mb-1">Enter Top-up Amount (₹) *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 font-extrabold text-slate-500 text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    placeholder="Enter amount (e.g. 500)"
+                    value={addAmount}
+                    onChange={(e) => setAddAmount(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2.5 border rounded-xl bg-slate-50 outline-none text-base font-black text-navy focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              {/* Preset Buttons */}
+              <div>
+                <label className="font-bold text-slate-600 block mb-1.5">Quick Presets</label>
+                <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
+                  {["100", "250", "500", "1000", "2000"].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setAddAmount(preset)}
+                      className={`py-2 rounded-xl text-[11px] sm:text-xs font-black border transition cursor-pointer ${addAmount === preset
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                    >
+                      +₹{preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Method Select */}
+              <div>
+                <label className="font-bold text-navy block mb-1.5">Select Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: "upi", label: "UPI / QR", icon: <QrCode className="h-4 w-4" /> },
+                    { key: "card", label: "Card", icon: <CreditCard className="h-4 w-4" /> },
+                    { key: "netbanking", label: "NetBanking", icon: <Building2 className="h-4 w-4" /> },
+                  ].map((method) => (
+                    <button
+                      key={method.key}
+                      type="button"
+                      onClick={() => setAddMethod(method.key as any)}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-center flex flex-col items-center gap-1 font-extrabold transition cursor-pointer ${addMethod === method.key
+                        ? "bg-navy/5 border-navy text-navy ring-2 ring-navy/20"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                    >
+                      {method.icon}
+                      <span className="text-[10px]">{method.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 rounded-xl py-2.5 text-xs"
+                  onClick={() => setAddFundsOpen(false)}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={submittingAdd}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl py-2.5 text-xs border-none shadow-md"
+                >
+                  {submittingAdd ? "Processing..." : `Pay ₹${addAmount || "0"} & Add Funds`}
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Add Money Dialog */}
-      <Dialog open={showAddMoney} onOpenChange={setShowAddMoney}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-navy font-bold flex items-center gap-2">
-              <span>💰</span> Add Money to Wallet
+      {/* 💸 MODAL 2: WITHDRAW FUNDS */}
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent className="w-[92vw] max-w-md bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 text-left max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-3">
+            <DialogTitle className="text-base sm:text-lg font-black text-navy flex items-center gap-2">
+              <Send className="h-5 w-5 text-navy" />
+              Withdraw Wallet Balance
             </DialogTitle>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Transfer available wallet balance directly to your Bank Account or UPI.
+            </p>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Enter Amount (₹)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-slate-400 font-bold text-lg">₹</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={addAmount}
-                  onChange={(e) => setAddAmount(e.target.value)}
-                  className="pl-8 pr-4 py-2 w-full border border-slate-200 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Quick selectors */}
-            <div className="grid grid-cols-4 gap-2">
-              {[100, 500, 1000, 2000].map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setAddAmount(String(amt))}
-                  className="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-navy font-medium text-xs rounded-lg transition-colors border border-transparent hover:border-slate-300"
-                >
-                  +₹{amt}
-                </button>
-              ))}
-            </div>
-
-            {depositError && (
-              <p className="text-xs text-red-500 font-medium">{depositError}</p>
-            )}
-          </div>
-
-          <div className="flex gap-3 justify-end mt-4">
-            <Button
-              variant="outline"
-              disabled={depositing}
-              onClick={() => {
-                setShowAddMoney(false);
-                setAddAmount("");
-                setDepositError("");
-              }}
+          {withdrawMsg && (
+            <div
+              className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${withdrawMsg.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+                }`}
             >
-              Cancel
-            </Button>
-            <Button
-              className="bg-navy hover:bg-navy/90 text-white flex items-center gap-1.5"
-              disabled={depositing || !addAmount || Number(addAmount) <= 0}
-              onClick={handleDeposit}
-            >
-              {depositing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
+              {withdrawMsg.type === "success" ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
               ) : (
-                "Add Money"
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
               )}
-            </Button>
-          </div>
+              <span>{withdrawMsg.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleWithdrawSubmit} className="space-y-3.5 pt-2 text-xs">
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+              <span className="font-bold text-slate-600">Withdrawable Balance:</span>
+              <span className="font-black text-emerald-600 text-sm">
+                {formatCurrency(availableBalance)}
+              </span>
+            </div>
+
+            <div>
+              <label className="font-bold text-navy block mb-1">Withdrawal Amount (₹) *</label>
+              <input
+                type="number"
+                min="1"
+                max={availableBalance}
+                required
+                placeholder={`Max ₹${availableBalance}`}
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-sm font-black text-navy focus:border-navy"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-navy block mb-1">Payout Destination</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setWithdrawMethod("upi")}
+                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${withdrawMethod === "upi"
+                    ? "bg-navy text-white border-navy"
+                    : "bg-white text-slate-600 border-slate-200"
+                    }`}
+                >
+                  Instant UPI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWithdrawMethod("bank")}
+                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${withdrawMethod === "bank"
+                    ? "bg-navy text-white border-navy"
+                    : "bg-white text-slate-600 border-slate-200"
+                    }`}
+                >
+                  Bank Transfer
+                </button>
+              </div>
+
+              {withdrawMethod === "upi" ? (
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">UPI ID (e.g. mobile@upi) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 9848012345@ybl"
+                    value={withdrawUpiId}
+                    onChange={(e) => setWithdrawUpiId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none font-bold text-navy"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div>
+                    <label className="font-bold text-slate-600 block mb-0.5">Account Holder Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Full Name as in Bank"
+                      value={withdrawAccountName}
+                      onChange={(e) => setWithdrawAccountName(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none font-bold text-navy"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-bold text-slate-600 block mb-0.5">Account Number *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Bank Account No."
+                        value={withdrawAccountNumber}
+                        onChange={(e) => setWithdrawAccountNumber(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none font-mono text-navy"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-600 block mb-0.5">IFSC Code *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. SBIN0001234"
+                        value={withdrawIfsc}
+                        onChange={(e) => setWithdrawIfsc(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none font-mono uppercase text-navy"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="font-bold text-slate-600 block mb-1">Remarks / Note (Optional)</label>
+              <input
+                type="text"
+                placeholder="Reason or notes..."
+                value={withdrawNote}
+                onChange={(e) => setWithdrawNote(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none"
+              />
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 rounded-xl py-2.5 text-xs"
+                onClick={() => setWithdrawOpen(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                disabled={submittingWithdraw}
+                className="flex-1 bg-navy hover:bg-navy/90 text-white font-extrabold rounded-xl py-2.5 text-xs border-none shadow-md"
+              >
+                {submittingWithdraw ? "Submitting..." : "Submit Withdrawal Request"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -959,4 +979,3 @@ const WalletPage = () => {
 };
 
 export default WalletPage;
-

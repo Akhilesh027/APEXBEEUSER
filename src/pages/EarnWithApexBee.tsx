@@ -48,12 +48,14 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api"
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
   vendor: "http://localhost:5177",
+  food_partner: "http://localhost:5179",
   franchise: "http://localhost:5175",
   state_franchise: "http://localhost:5175",
   district_franchise: "http://localhost:5175",
   mandal_franchise: "http://localhost:5175",
   service_provider: "http://localhost:5176",
   course_provider: "http://localhost:5174",
+  delivery_partner: "http://localhost:5178",
 };
 
 type Opportunity = {
@@ -119,6 +121,57 @@ const OPPORTUNITIES: Opportunity[] = [
       { q: "How long does vendor approval take?", a: "Typically 24-48 hours after document verification." },
       { q: "What are the fees?", a: "Zero for the first 3 months, then 5-10% per order depending on category." },
       { q: "Can I sell multiple categories?", a: "Yes, you can list products across multiple categories." },
+    ],
+    investment: "Low",
+    difficulty: "Medium",
+    timeCommitment: "Full-Time"
+  },
+  {
+    id: "food_partner",
+    role: "Become a Restaurant / Food Partner",
+    emoji: "🍳",
+    tagline: "List your restaurant, cafe, bakery or street food & receive live orders",
+    incomePotential: "₹40,000 – ₹3,00,000/month",
+    color: "#F59E0B",
+    gradient: "from-amber-500 to-orange-600",
+    requirements: [
+      "Valid FSSAI license or registration",
+      "Active kitchen / food business (Restaurant, Cafe, Bakery, Street Food, Sweets)",
+      "GSTIN or basic business KYC",
+      "Bank account for weekly settlements",
+      "Smartphone or tablet for live kitchen order display"
+    ],
+    benefits: [
+      "Dedicated Food Partner Portal & Kitchen Operating System",
+      "Live order alerts with preparation time controls",
+      "1-click Sold Out & busy mode management",
+      "Zero listing fees & custom menu customisations",
+      "ApexBee delivery partner integration & marketing boost"
+    ],
+    overview: "Partner with ApexBee Food & Dining to reach thousands of hungry customers in your city. Receive live food orders, customize preparation times, manage menu availability, and track settlements seamlessly.",
+    responsibilities: [
+      "Accept incoming live food orders promptly",
+      "Prepare quality food adhering to FSSAI standards",
+      "Update preparation time & mark order ready for pickup",
+      "Keep menu item stock & sold-out availability updated"
+    ],
+    incomeModel: [
+      "Direct revenue from food sales",
+      "0% listing fee for initial promotional period",
+      "Transparent platform commission structure",
+      "Weekly settlements directly to your bank account",
+      "Performance bonuses for top-rated kitchens"
+    ],
+    trainingProcess: [
+      "Food Partner Portal orientation (30 mins)",
+      "Live Kitchen order management walkthrough",
+      "Menu setup & add-ons masterclass",
+      "Packaging & hygiene compliance guide"
+    ],
+    faqs: [
+      { q: "What food business types are supported?", a: "Restaurants, Street Food, Cafés, Bakery & Beverages, Sweets & Desserts." },
+      { q: "Do I need FSSAI registration?", a: "Yes, FSSAI registration/license is required for food safety compliance." },
+      { q: "How do I receive live order alerts?", a: "Through the dedicated ApexBee Food Partner Portal on tablet, phone, or laptop with audio chime alerts." }
     ],
     investment: "Low",
     difficulty: "Medium",
@@ -559,6 +612,11 @@ const EarnWithApexBee = () => {
   const [sampleVideoLink, setSampleVideoLink] = useState("");
   const [vehicleType, setVehicleType] = useState("Two-Wheeler");
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [restaurantName, setRestaurantName] = useState("");
+  const [foodBusinessType, setFoodBusinessType] = useState("RESTAURANT");
+  const [fssaiNumber, setFssaiNumber] = useState("");
+  const [cuisines, setCuisines] = useState("");
+  const [foodPreference, setFoodPreference] = useState("Both");
 
   useEffect(() => {
     const fetchTerritories = async () => {
@@ -752,6 +810,11 @@ const EarnWithApexBee = () => {
     setSampleVideoLink("");
     setVehicleType("Two-Wheeler");
     setLicenseNumber("");
+    setRestaurantName("");
+    setFoodBusinessType("RESTAURANT");
+    setFssaiNumber("");
+    setCuisines("");
+    setFoodPreference("Both");
     setActiveView("apply");
     setSelectedState("");
     setSelectedDistrict("");
@@ -802,6 +865,11 @@ const EarnWithApexBee = () => {
         alert("Please fill in Vehicle Type, Driving License Number, and Aadhaar Number.");
         return;
       }
+    } else if (type === "food_partner") {
+      if (!restaurantName.trim() || !fssaiNumber.trim() || !cuisines.trim()) {
+        alert("Please fill in Restaurant Name, FSSAI License Number, and Cuisines Offered.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -820,18 +888,21 @@ const EarnWithApexBee = () => {
         location: formLocation,
         experience: formExperience,
         remarks: formRemarks,
-        businessName: businessName || formName || "Business Opportunity",
+        businessName: restaurantName || businessName || formName + " Kitchen",
+        restaurantName: restaurantName || businessName || formName + " Kitchen",
+        foodBusinessType: foodBusinessType || "RESTAURANT",
+        fssaiNumber,
+        cuisines: cuisines ? cuisines.split(",").map(c => c.trim()).filter(Boolean) : [],
+        foodPreference,
         ownerName: formName,
         address: formLocation,
-        pincode: "504312",
+        pincode: "500001",
         state: selectedState,
         district: selectedDistrict,
         mandal: selectedMandal,
-        primaryCategory: primaryCategory,
-        category: primaryCategory,
-        subCategory: activeSubs[0] || "",
-        approvedSubcategories: activeSubs,
-        subCategories: activeSubs,
+        primaryCategory: "Food & Dining",
+        category: "Food & Dining",
+        subCategory: foodBusinessType,
         gstNumber,
         panNumber,
         aadhaarNumber,
@@ -1494,7 +1565,7 @@ const EarnWithApexBee = () => {
             : rolesList.includes(opp.id);
 
           const matchingApp = applications.find(
-            (app) => app.role === opp.id
+            (app) => app.role === opp.id || app.applicationType === opp.id || app.roleId === opp.id
           );
 
           const isPending = matchingApp && (matchingApp.status === "pending" || matchingApp.status === "under_review");
@@ -1820,6 +1891,93 @@ const EarnWithApexBee = () => {
               </div>
             ) : null}
 
+            {selectedOpp.id === "food_partner" ? (
+              <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
+                <h4 className="text-sm font-semibold text-navy">Food & Dining Partner Details</h4>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Restaurant / Kitchen Name *</label>
+                  <input
+                    type="text"
+                    value={restaurantName}
+                    onChange={(e) => setRestaurantName(e.target.value)}
+                    placeholder="e.g. Hyderabad Spice Kitchen"
+                    className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-medium"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Food Business Type *</label>
+                    <select
+                      value={foodBusinessType}
+                      onChange={(e) => setFoodBusinessType(e.target.value)}
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
+                    >
+                      <option value="RESTAURANT">Restaurant / Fine Dining</option>
+                      <option value="STREET_FOOD">Street Food / Fast Food Stall</option>
+                      <option value="CAFE_BAKERY">Café, Bakery & Beverages</option>
+                      <option value="SWEETS_DESSERTS">Sweets & Desserts Shop</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Food Preference *</label>
+                    <select
+                      value={foodPreference}
+                      onChange={(e) => setFoodPreference(e.target.value)}
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
+                    >
+                      <option value="Both">Pure Veg & Non-Veg</option>
+                      <option value="Veg">Pure Veg Only</option>
+                      <option value="Non-Veg">Non-Veg Specialty</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">FSSAI License / Registration No. *</label>
+                    <input
+                      type="text"
+                      value={fssaiNumber}
+                      onChange={(e) => setFssaiNumber(e.target.value)}
+                      placeholder="14-digit FSSAI Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Cuisines Offered *</label>
+                    <input
+                      type="text"
+                      value={cuisines}
+                      onChange={(e) => setCuisines(e.target.value)}
+                      placeholder="e.g. Biryani, South Indian, Chinese, Bakery"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">GSTIN (Optional)</label>
+                    <input
+                      type="text"
+                      value={gstNumber}
+                      onChange={(e) => setGstNumber(e.target.value)}
+                      placeholder="15-digit GSTIN Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number (Optional)</label>
+                    <input
+                      type="text"
+                      value={panNumber}
+                      onChange={(e) => setPanNumber(e.target.value)}
+                      placeholder="10-digit PAN Number"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {selectedOpp.id === "service_provider" ? (
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Service Provider & Entity Details</h4>
@@ -2043,6 +2201,10 @@ const EarnWithApexBee = () => {
               appRoleKey = "course_provider";
               portalLabel = "Digital Academy Portal";
               portalUrl = PORTAL_LINKS.course_provider || "http://localhost:5174";
+            } else if (roleStr.includes("food")) {
+              appRoleKey = "food_partner";
+              portalLabel = "Food Partner Operating System";
+              portalUrl = PORTAL_LINKS.food_partner || "http://localhost:5179";
             } else if (roleStr.includes("wholesaler") || roleStr.includes("manufacturer")) {
               appRoleKey = "vendor";
               portalLabel = "B2B Merchant Portal";

@@ -18,6 +18,7 @@ import {
   Store,
   CalendarDays,
   Navigation,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Dialog,
@@ -115,9 +116,68 @@ const readItemFlags = (item: any) => {
   return { allowPickup, isPreOrder, availableOn, shopPincode, pincodeMatchOnly };
 };
 
-/** ✅ robust price picker */
+/** ✅ Extract robust shipping/delivery fee per item */
+export const getItemShippingFee = (item: any): number => {
+  if (!item) return 0;
+  const val = Number(
+    item.deliveryFee ??
+    item.shippingCharge ??
+    item.shipping ??
+    item.shippingFee ??
+    item.adminPricing?.shippingCharge ??
+    item.adminPricing?.deliveryFee ??
+    item.product?.adminPricing?.shippingCharge ??
+    item.product?.shippingCharge ??
+    item.product?.deliveryFee ??
+    item.productId?.adminPricing?.shippingCharge ??
+    item.productId?.adminPricing?.deliveryFee ??
+    item.productId?.shippingCharge ??
+    item.productId?.deliveryFee ??
+    item.productId?.shipping ??
+    0
+  );
+  return Number.isFinite(val) && val > 0 ? val : 0;
+};
+
+/** ✅ Extract robust package/packing fee per item */
+export const getItemPackingFee = (item: any): number => {
+  if (!item) return 0;
+  const val = Number(
+    item.packingCharge ??
+    item.packageCharge ??
+    item.packagingCharge ??
+    item.packingFee ??
+    item.packageFee ??
+    item.packagingFee ??
+    item.handlingCharge ??
+    item.adminPricing?.packingCharge ??
+    item.adminPricing?.packageCharge ??
+    item.adminPricing?.packagingFee ??
+    item.product?.adminPricing?.packingCharge ??
+    item.product?.packingCharge ??
+    item.product?.packageCharge ??
+    item.productId?.adminPricing?.packingCharge ??
+    item.productId?.adminPricing?.packageCharge ??
+    item.productId?.packingCharge ??
+    item.productId?.packageCharge ??
+    item.productId?.packagingCharge ??
+    item.productId?.packingFee ??
+    0
+  );
+  return Number.isFinite(val) && val > 0 ? val : 0;
+};
+
+/** ✅ robust price picker (base selling price before shipping & packing) */
 const getItemPrice = (item: any) => {
-  const p = item?.afterDiscount ?? item?.price ?? item?.finalPrice ?? 0;
+  const p =
+    item?.sellingPrice ??
+    item?.adminPricing?.sellingPrice ??
+    item?.product?.adminPricing?.sellingPrice ??
+    item?.productId?.adminPricing?.sellingPrice ??
+    item?.afterDiscount ??
+    item?.price ??
+    item?.finalPrice ??
+    0;
   const n = Number(p);
   return Number.isFinite(n) ? n : 0;
 };
@@ -125,10 +185,10 @@ const getItemPrice = (item: any) => {
 /** ✅ Calculate total delivery fee from items */
 const calculateDeliveryFee = (items: CartItem[]) => {
   if (!items || items.length === 0) return 0;
-  return items.reduce((sum, item) => {
-    const deliveryFee = item.deliveryFee ?? 0;
+  return items.reduce((sum, item: any) => {
+    const fee = getItemShippingFee(item);
     const quantity = Number(item.quantity || 1);
-    return sum + (deliveryFee * quantity);
+    return sum + (fee * quantity);
   }, 0);
 };
 
@@ -212,12 +272,14 @@ const Checkout = () => {
     new Date(Date.now() + 86400000).toISOString().split("T")[0]
   );
 
-  // Calculate initial delivery fee
+  // Calculate initial delivery fee from items if cartData.deliveryFee is not set or 0
   const initialDeliveryFee = useMemo(() => {
-    if (cartData.deliveryFee !== undefined && cartData.deliveryFee !== null) {
-      return cartData.deliveryFee;
+    const calc = calculateDeliveryFee(initialItems);
+    if (calc > 0) return calc;
+    if (cartData.deliveryFee !== undefined && cartData.deliveryFee !== null && Number(cartData.deliveryFee) > 0) {
+      return Number(cartData.deliveryFee);
     }
-    return calculateDeliveryFee(initialItems);
+    return calc;
   }, [cartData.deliveryFee, initialItems]);
 
   // Order details
@@ -231,9 +293,30 @@ const Checkout = () => {
     rewardsDeduction: 0,
   });
 
+  // Sync location.state cartItems when navigating directly via Buy Now or Cart
+  useEffect(() => {
+    if (cartData.cartItems && Array.isArray(cartData.cartItems) && cartData.cartItems.length > 0) {
+      const items = cartData.cartItems as CartItem[];
+      const calcShipping = calculateDeliveryFee(items);
+      setOrderDetails((prev) => ({
+        ...prev,
+        items,
+        shipping: calcShipping > 0 ? calcShipping : (Number(cartData.deliveryFee) || prev.shipping),
+      }));
+    }
+  }, [location.state, cartData.cartItems]);
+
   const totalMrp = useMemo(() => {
     return orderDetails.items.reduce((sum, item: any) => {
-      const originalPrice = item.originalPrice || item.salesPrice || item.price || 0;
+      const originalPrice = Number(
+        item.originalPrice ||
+        item.salesPrice ||
+        item.mrp ||
+        item.adminPricing?.mrp ||
+        item.product?.adminPricing?.mrp ||
+        item.productId?.adminPricing?.mrp ||
+        getItemPrice(item)
+      );
       return sum + (originalPrice * (item.quantity || 1));
     }, 0);
   }, [orderDetails.items]);
@@ -942,7 +1025,7 @@ const Checkout = () => {
 
     // GST Tax applied on the discounted price + packing + shipping (after coupon discount)
     const discountedPrice = Math.max(0, calculatedSubtotal - disc);
-    const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + ((item.packingCharge || 0) * (item.quantity || 1)), 0);
+    const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
     const taxableAmount = discountedPrice + totalPacking + currentShipping;
     const gstAmount = Math.round(taxableAmount * 0.05);
 
@@ -1041,7 +1124,7 @@ const Checkout = () => {
 
     // GST Tax applied on the discounted price + packing + shipping (after coupon discount)
     const discountedPrice = Math.max(0, calculatedSubtotal - finalCouponDiscount);
-    const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + ((item.packingCharge || 0) * (item.quantity || 1)), 0);
+    const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
     const taxableAmount = discountedPrice + totalPacking + finalShipping;
     const gstAmount = Math.round(taxableAmount * 0.05);
 
@@ -1108,7 +1191,10 @@ const Checkout = () => {
           itemTotal: price * quantity,
           fulfillment: item.fulfillment || null,
           preOrder: item.preOrder || null,
-          deliveryFee: item.deliveryFee || 0,
+          deliveryFee: getItemShippingFee(item),
+          shippingCharge: getItemShippingFee(item),
+          packingCharge: getItemPackingFee(item),
+          packageCharge: getItemPackingFee(item),
         };
       });
 
@@ -1389,7 +1475,7 @@ const Checkout = () => {
 
   const totalPackageCharges = useMemo(() => {
     return orderDetails.items.reduce((sum: number, item: any) => {
-      const packing = item.packingCharge ?? 0;
+      const packing = getItemPackingFee(item);
       return sum + (packing * (item.quantity || 1));
     }, 0);
   }, [orderDetails.items]);
@@ -1401,13 +1487,31 @@ const Checkout = () => {
   }, [orderDetails.subtotal, couponDiscount, totalPackageCharges, orderDetails.shipping]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 lg:mb-8 px-2 sm:px-0">
-          Checkout
-        </h1>
+      {/* BRAND HEADER BANNER */}
+      <div className="bg-[#0A1128] text-white py-8 px-4 sm:px-8 border-b border-amber-500/20 mb-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-extrabold border border-amber-500/30">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>APEXBEE SECURE CHECKOUT</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-black text-white font-heading">Complete Your Order</h1>
+          </div>
+
+          <div className="flex items-center space-x-3 text-xs text-amber-300 font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur">
+            <span>1. Address</span>
+            <span>→</span>
+            <span>2. Delivery</span>
+            <span>→</span>
+            <span className="text-white underline font-extrabold">3. Payment</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 space-y-8">
 
         {/* Pre-order banner */}
         {preOrderInfo.hasPreOrder && preOrderInfo.availableOnMax && (
@@ -1954,9 +2058,9 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Right: Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-muted/30 rounded-lg p-4 sm:p-6 sticky top-4">
+          {/* Right: Summary - STICKY FIXED WHILE SCROLLING */}
+          <div className="lg:col-span-1 self-start sticky top-24 z-30">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-200">
               <div className="mb-4 sm:mb-6">
                 <h3 className="font-semibold text-lg mb-3 sm:mb-4">Product Details</h3>
 
@@ -1994,15 +2098,23 @@ const Checkout = () => {
                               {item.size && <span>• Size: {item.size}</span>}
                             </div>
 
-                            <p className="font-semibold text-sm">₹{itemTotal.toFixed(2)}</p>
-                            <p className="text-xs text-muted-foreground">₹{price.toFixed(2)} each</p>
-
-                            {/* Show delivery fee per item if applicable */}
-                            {(item.deliveryFee ?? 0) > 0 && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Delivery Fee: ₹{item.deliveryFee} per item
-                              </p>
-                            )}
+                            <p className="font-semibold text-sm">₹{itemTotal.toFixed(2)}
+                              {/* Show delivery fee & packing charge per item if applicable */}
+                              {(getItemShippingFee(item) > 0 || getItemPackingFee(item) > 0) && (
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
+                                  {getItemShippingFee(item) > 0 && (
+                                    <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200/80 font-medium">
+                                      🚚 Delivery Fee: ₹{getItemShippingFee(item)}
+                                    </span>
+                                  )}
+                                  {getItemPackingFee(item) > 0 && (
+                                    <span className="bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200/80 font-medium">
+                                      📦 Package Charge: ₹{getItemPackingFee(item)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -2082,7 +2194,7 @@ const Checkout = () => {
               </div>
 
               <Button
-                className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-2.5 sm:py-3"
+                className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-3 sm:py-3.5 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer"
                 onClick={() => {
                   if (selectedPayment === "upi") setShowUPIDialog(true);
                   else handlePlaceOrder();
