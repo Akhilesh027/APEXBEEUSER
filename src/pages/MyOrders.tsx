@@ -114,6 +114,17 @@ type Order = {
     expectedDelivery?: string;
     shippingMethod?: string;
   };
+  fulfillment?: {
+    type?: string;
+    pickupLocationId?: string;
+    pickupSlot?: { date?: string; time?: string };
+    userPincode?: string;
+  };
+  pickupVerification?: {
+    otp?: string;
+    verified?: boolean;
+  };
+  deliveryType?: string;
   coupon?: { code?: string } | null;
   metadata?: { source?: string };
 };
@@ -239,6 +250,13 @@ const getStatusConfig = (status?: string) => {
     payment_pending: { icon: Clock, color: "text-orange-500", label: "Payment Pending", bgColor: "bg-orange-50", borderColor: "border-orange-200" },
     payment_verified: { icon: CheckCircle, color: "text-green-600", label: "Payment Verified", bgColor: "bg-green-50", borderColor: "border-green-200" },
     payment_failed: { icon: AlertCircle, color: "text-red-500", label: "Payment Failed", bgColor: "bg-red-50", borderColor: "border-red-200" },
+    accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+    Accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+    assigned: { icon: Truck, color: "text-amber-600", label: "Rider Assigned 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+    Assigned: { icon: Truck, color: "text-amber-600", label: "Rider Assigned 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+    'Reached Vendor': { icon: Store, color: "text-purple-600", label: "Rider at Store 🏬", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+    'Picked Up': { icon: Package, color: "text-indigo-600", label: "Picked Up 📦", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
+    'Reached Customer': { icon: MapPin, color: "text-sky-600", label: "Rider Arrived 📍", bgColor: "bg-sky-50", borderColor: "border-sky-200" },
   };
   return map[status || ""] || { icon: Package, color: "text-gray-500", label: status || "Unknown", bgColor: "bg-gray-50", borderColor: "border-gray-200" };
 };
@@ -252,12 +270,22 @@ const isActiveOrder = (o: Order) => {
 // ─────────────────────────────────────────────
 // Tracking Timeline Component
 // ─────────────────────────────────────────────
+const PICKUP_TRACKING_STEPS = [
+  { key: "pending", label: "Order Placed", icon: "📦" },
+  { key: "confirmed", label: "Confirmed", icon: "✅" },
+  { key: "processing", label: "Packed at Store", icon: "📫" },
+  { key: "ready_for_pickup", label: "Ready for Pickup", icon: "🏪" },
+  { key: "delivered", label: "Picked Up", icon: "🎉" },
+];
+
 const TrackingTimeline = ({ order }: { order: Order }) => {
+  const isPickup = order.fulfillment?.type === "pickup" || order.deliveryType === "pickup";
+  const steps = isPickup ? PICKUP_TRACKING_STEPS : TRACKING_STEPS;
   const currentStatus = order.orderStatus?.currentStatus || "pending";
   const normalizedStatus = currentStatus === 'payment_pending' ? 'pending' :
     currentStatus === 'payment_verified' ? 'confirmed' :
       currentStatus;
-  const currentIdx = TRACKING_STEPS.findIndex((s) => s.key === normalizedStatus);
+  const currentIdx = Math.max(0, steps.findIndex((s) => s.key === normalizedStatus));
 
   return (
     <div className="relative py-2">
@@ -266,9 +294,9 @@ const TrackingTimeline = ({ order }: { order: Order }) => {
         <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 z-0" />
         <div
           className="absolute top-5 left-0 h-1 bg-green-500 z-0 transition-all duration-700"
-          style={{ width: `${Math.max(0, (currentIdx / (TRACKING_STEPS.length - 1)) * 100)}%` }}
+          style={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100)}%` }}
         />
-        {TRACKING_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const done = i <= currentIdx;
           const active = i === currentIdx;
           return (
@@ -291,7 +319,7 @@ const TrackingTimeline = ({ order }: { order: Order }) => {
 
       {/* Vertical for mobile */}
       <div className="sm:hidden space-y-3">
-        {TRACKING_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const done = i <= currentIdx;
           return (
             <div key={step.key} className="flex items-center gap-3">
@@ -875,8 +903,8 @@ const MyOrders = () => {
           <button
             onClick={() => setViewMode("orders")}
             className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "orders"
-                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-                : "bg-transparent text-slate-600 hover:text-slate-900"
+              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+              : "bg-transparent text-slate-600 hover:text-slate-900"
               }`}
           >
             <Package className="w-4 h-4" /> Standard Orders ({orders.length})
@@ -884,8 +912,8 @@ const MyOrders = () => {
           <button
             onClick={() => setViewMode("schedules")}
             className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "schedules"
-                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-                : "bg-transparent text-slate-600 hover:text-slate-900"
+              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+              : "bg-transparent text-slate-600 hover:text-slate-900"
               }`}
           >
             <Calendar className="w-4 h-4" /> Subscription Schedules ({subscriptions.length})
@@ -893,8 +921,8 @@ const MyOrders = () => {
           <button
             onClick={() => setViewMode("tables")}
             className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "tables"
-                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-                : "bg-transparent text-slate-600 hover:text-slate-900"
+              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+              : "bg-transparent text-slate-600 hover:text-slate-900"
               }`}
           >
             <Utensils className="w-4 h-4" /> Reserved Tables ({tableBookings.length})
@@ -912,8 +940,8 @@ const MyOrders = () => {
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all border cursor-pointer ${isActive
-                        ? "bg-[#0A1128] border-[#0A1128] text-[#F3BA12] shadow-sm"
-                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                      ? "bg-[#0A1128] border-[#0A1128] text-[#F3BA12] shadow-sm"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
                       }`}
                   >
                     <span>{tab.label}</span>
@@ -965,7 +993,12 @@ const MyOrders = () => {
                             <p className="text-xs text-muted-foreground">{formatDate(order.createdAt)} • {(order.orderItems || []).length} item(s)</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 sm:ml-auto">
+                        <div className="flex items-center gap-2 sm:ml-auto">
+                          {(order.fulfillment?.type === "pickup" || order.deliveryType === "pickup") && (
+                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-bold text-xs flex items-center gap-1">
+                              🏪 Self Pickup
+                            </Badge>
+                          )}
                           <Badge className={`${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor} font-medium text-xs`}>
                             {statusConfig.label}
                           </Badge>
@@ -1147,29 +1180,55 @@ const MyOrders = () => {
                               </div>
                             )}
 
-                            {/* Address + Payment + Delivery */}
+                            {/* Address + Payment + Fulfillment Details */}
                             <div className="grid sm:grid-cols-2 gap-4">
-                              <div className="p-3 border rounded-lg">
-                                <h4 className="font-medium text-sm mb-2 flex items-center gap-1.5">
-                                  <MapPin className="w-4 h-4 text-navy" /> Delivery Address
+                              {(order.fulfillment?.type === "pickup" || order.deliveryType === "pickup") ? (
+                                <div className="p-3.5 border-2 border-amber-500/30 bg-amber-500/5 rounded-xl space-y-1.5">
+                                  <h4 className="font-bold text-sm mb-1 text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                                    <Store className="w-4 h-4 text-amber-600" /> In-Store Self Pickup Location
+                                  </h4>
+                                  <p className="text-sm font-bold text-slate-900">ApexBee Partner Storefront</p>
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-amber-600" /> {order.shippingAddress?.address || "Main Market Storefront, Verified ApexBee Hub"}
+                                  </p>
+                                  {order.fulfillment?.pickupSlot && (
+                                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2.5 py-1 rounded-md w-fit mt-1">
+                                      🗓️ Pickup Slot: {order.fulfillment.pickupSlot.date} • {order.fulfillment.pickupSlot.time}
+                                    </p>
+                                  )}
+                                  {order.pickupVerification?.otp && (
+                                    <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 font-extrabold text-xs flex items-center justify-between">
+                                      <span>STORE PICKUP OTP:</span>
+                                      <span className="font-mono text-sm tracking-widest text-emerald-800 font-black">{order.pickupVerification.otp}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-3.5 border rounded-xl bg-slate-50/50">
+                                  <h4 className="font-bold text-sm mb-1.5 flex items-center gap-1.5 text-navy">
+                                    <MapPin className="w-4 h-4 text-navy" /> Home Delivery Address
+                                  </h4>
+                                  <p className="text-sm font-semibold text-slate-900">{order.shippingAddress?.name}</p>
+                                  <p className="text-xs text-muted-foreground">{order.shippingAddress?.phone}</p>
+                                  <p className="text-xs text-muted-foreground">{order.shippingAddress?.address}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {order.shippingAddress?.city}, {order.shippingAddress?.state} — {order.shippingAddress?.pincode}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="p-3.5 border rounded-xl bg-slate-50/50 space-y-1">
+                                <h4 className="font-bold text-sm mb-1.5 flex items-center gap-1.5 text-navy">
+                                  <CreditCard className="w-4 h-4 text-navy" /> Payment &amp; Fulfillment
                                 </h4>
-                                <p className="text-sm font-medium">{order.shippingAddress?.name}</p>
-                                <p className="text-xs text-muted-foreground">{order.shippingAddress?.phone}</p>
-                                <p className="text-xs text-muted-foreground">{order.shippingAddress?.address}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {order.shippingAddress?.city}, {order.shippingAddress?.state} — {order.shippingAddress?.pincode}
-                                </p>
-                              </div>
-                              <div className="p-3 border rounded-lg">
-                                <h4 className="font-medium text-sm mb-2 flex items-center gap-1.5">
-                                  <CreditCard className="w-4 h-4 text-navy" /> Payment & Delivery
-                                </h4>
-                                <p className="text-xs text-muted-foreground">Method: <strong className="text-navy">{paymentLabel[order.paymentDetails?.method || ""] || order.paymentDetails?.method || "—"}</strong></p>
-                                <p className="text-xs text-muted-foreground mt-0.5">Status: <strong className="capitalize">{order.paymentDetails?.status || "—"}</strong></p>
-                                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" /> Est. Delivery: <strong>{formatDate(order.deliveryDetails?.expectedDelivery)}</strong>
-                                </p>
-                                <p className="text-xs text-muted-foreground">Method: {order.deliveryDetails?.shippingMethod || "Standard Delivery"}</p>
+                                <p className="text-xs text-muted-foreground">Fulfillment: <strong className="text-navy font-bold">{order.fulfillment?.type === 'pickup' || order.deliveryType === 'pickup' ? '🏬 In-Store Self Pickup' : '🚚 Home Delivery'}</strong></p>
+                                <p className="text-xs text-muted-foreground">Payment Method: <strong className="text-navy">{paymentLabel[order.paymentDetails?.method || ""] || order.paymentDetails?.method || "—"}</strong></p>
+                                <p className="text-xs text-muted-foreground">Payment Status: <strong className="capitalize text-emerald-600 font-bold">{order.paymentDetails?.status || "—"}</strong></p>
+                                {order.fulfillment?.type !== 'pickup' && order.deliveryType !== 'pickup' && (
+                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" /> Est. Delivery: <strong>{formatDate(order.deliveryDetails?.expectedDelivery)}</strong>
+                                  </p>
+                                )}
                               </div>
                             </div>
 

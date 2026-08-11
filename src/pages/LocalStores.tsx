@@ -508,8 +508,8 @@ export const LocalStores: React.FC = () => {
             <button
               onClick={() => setMainTab("explore")}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${mainTab === "explore"
-                  ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-lg"
-                  : "text-slate-600 hover:bg-slate-100"
+                ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-lg"
+                : "text-slate-600 hover:bg-slate-100"
                 }`}
             >
               <Store className="w-4 h-4" />
@@ -519,8 +519,8 @@ export const LocalStores: React.FC = () => {
             <button
               onClick={() => setMainTab("subscriptions")}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${mainTab === "subscriptions"
-                  ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-lg"
-                  : "text-slate-600 hover:bg-slate-100"
+                ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-lg"
+                : "text-slate-600 hover:bg-slate-100"
                 }`}
             >
               <Package className="w-4 h-4" />
@@ -561,8 +561,8 @@ export const LocalStores: React.FC = () => {
                     key={c.key}
                     onClick={() => setCategoryFilter(c.key)}
                     className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition duration-300 flex items-center space-x-2 cursor-pointer shrink-0 border hover:-translate-y-0.5 ${categoryFilter === c.key
-                        ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-lg scale-105'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-lg scale-105'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                   >
                     <span className="text-base">{c.icon}</span>

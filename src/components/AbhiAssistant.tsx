@@ -454,8 +454,8 @@ export const AbhiAssistant = () => {
                       >
                         <div
                           className={`max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm shadow-2xs ${isBot
-                              ? "bg-white text-[#0A1128] border border-gray-150 rounded-tl-none"
-                              : "bg-[#0A1128] text-white rounded-tr-none font-medium"
+                            ? "bg-white text-[#0A1128] border border-gray-150 rounded-tl-none"
+                            : "bg-[#0A1128] text-white rounded-tr-none font-medium"
                             }`}
                         >
                           <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>

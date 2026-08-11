@@ -366,8 +366,8 @@ const Community = () => {
           <button
             onClick={() => setActiveTab("feed")}
             className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer ${activeTab === "feed"
-                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
-                : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
+              ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+              : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
               }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -377,8 +377,8 @@ const Community = () => {
           <button
             onClick={() => setActiveTab("support")}
             className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer ${activeTab === "support"
-                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
-                : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
+              ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+              : "bg-transparent text-slate-600 border-transparent hover:bg-slate-100"
               }`}
           >
             <HelpCircle className="w-4 h-4" />

@@ -1132,8 +1132,8 @@ const ProductsPage = () => {
                                     window.scrollTo({ top: 0, behavior: "smooth" });
                                   }}
                                   className={`w-7 h-7 rounded-lg text-xs font-black transition cursor-pointer border-none ${currentPage === p
-                                      ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                    ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                     }`}
                                 >
                                   {p}

@@ -797,7 +797,8 @@ const EarnWithApexBee = () => {
     setFormLocation("");
     setFormExperience("");
     setFormRemarks("");
-    setPrimaryCategory("Devotional & Puja");
+    const defaultCat = parentCategoryList[0]?.name || "Devotional & Puja";
+    setPrimaryCategory(defaultCat);
     setSubCategory("");
     setSelectedSubcategories([]);
     setBusinessName("");
@@ -823,7 +824,7 @@ const EarnWithApexBee = () => {
 
   const handleSubmitApplication = async () => {
     if (!formName.trim() || !formMobile.trim() || !formEmail.trim() || !formLocation.trim()) {
-      alert("Please fill in all basic required fields (Name, Mobile, Email, Location).");
+      alert("Please fill in Name, Mobile, Email, and Full Address.");
       return;
     }
 
@@ -877,6 +878,23 @@ const EarnWithApexBee = () => {
       const { user, token } = getAuth();
       if (!user || !token) { navigate("/login"); return; }
       const activeSubs = selectedSubcategories.length > 0 ? selectedSubcategories : (subCategory ? [subCategory] : []);
+      const isFood = selectedOpp?.id === "food_partner";
+      const isVendorGroup = selectedOpp?.id === "vendor" || selectedOpp?.id === "wholesaler" || selectedOpp?.id === "manufacturer";
+
+      const assignedCategory = isFood
+        ? "Food & Dining"
+        : isVendorGroup
+          ? (primaryCategory || "General Retail")
+          : (serviceType || primaryCategory || selectedOpp?.role || "General");
+
+      const assignedSubCategory = isFood
+        ? (foodBusinessType || "RESTAURANT")
+        : (subCategory || activeSubs[0] || "");
+
+      const assignedApprovedSubcategories = isFood
+        ? [foodBusinessType || "RESTAURANT"]
+        : activeSubs;
+
       const payload = {
         userId: user._id || user.id,
         role: selectedOpp?.role || "",
@@ -888,21 +906,23 @@ const EarnWithApexBee = () => {
         location: formLocation,
         experience: formExperience,
         remarks: formRemarks,
-        businessName: restaurantName || businessName || formName + " Kitchen",
-        restaurantName: restaurantName || businessName || formName + " Kitchen",
-        foodBusinessType: foodBusinessType || "RESTAURANT",
-        fssaiNumber,
-        cuisines: cuisines ? cuisines.split(",").map(c => c.trim()).filter(Boolean) : [],
-        foodPreference,
+        businessName: isFood ? (restaurantName || businessName || formName + " Kitchen") : (businessName || formName + " Business"),
+        restaurantName: isFood ? (restaurantName || businessName || formName + " Kitchen") : "",
+        foodBusinessType: isFood ? (foodBusinessType || "RESTAURANT") : "",
+        fssaiNumber: isFood ? fssaiNumber : "",
+        cuisines: isFood && cuisines ? cuisines.split(",").map(c => c.trim()).filter(Boolean) : [],
+        foodPreference: isFood ? foodPreference : "Both",
         ownerName: formName,
         address: formLocation,
         pincode: "500001",
         state: selectedState,
         district: selectedDistrict,
         mandal: selectedMandal,
-        primaryCategory: "Food & Dining",
-        category: "Food & Dining",
-        subCategory: foodBusinessType,
+        primaryCategory: assignedCategory,
+        category: assignedCategory,
+        subCategory: assignedSubCategory,
+        subCategories: assignedApprovedSubcategories,
+        approvedSubcategories: assignedApprovedSubcategories,
         gstNumber,
         panNumber,
         aadhaarNumber,

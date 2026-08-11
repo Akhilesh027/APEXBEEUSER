@@ -395,8 +395,8 @@ export const RestaurantDetail: React.FC = () => {
               <button
                 onClick={() => setActiveCategory('ALL')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer shrink-0 border ${activeCategory === 'ALL'
-                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
               >
                 All ({allItems.length})
@@ -406,8 +406,8 @@ export const RestaurantDetail: React.FC = () => {
                   key={cat._id}
                   onClick={() => setActiveCategory(cat._id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer shrink-0 border ${activeCategory === cat._id
-                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                 >
                   {cat.name} ({cat.items?.length || 0})
@@ -570,8 +570,8 @@ export const RestaurantDetail: React.FC = () => {
                         type="button"
                         onClick={() => setBookingGuests(g === '6+' ? '6' : g)}
                         className={`py-2 rounded-xl text-xs font-black transition cursor-pointer border ${(bookingGuests === g || (g === '6+' && Number(bookingGuests) >= 6))
-                            ? 'bg-[#0A1128] text-amber-400 border-[#0A1128]'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          ? 'bg-[#0A1128] text-amber-400 border-[#0A1128]'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                       >
                         {g} {g === '1' ? 'Guest' : 'Guests'}

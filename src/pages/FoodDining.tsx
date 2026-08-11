@@ -670,8 +670,8 @@ export const FoodDining: React.FC = () => {
           <button
             onClick={() => setActiveMainTab('items')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'items'
-                ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
+              ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+              : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
               }`}
           >
             <span className="text-sm sm:text-lg">🍱</span>
@@ -681,8 +681,8 @@ export const FoodDining: React.FC = () => {
           <button
             onClick={() => setActiveMainTab('restaurants')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'restaurants'
-                ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
+              ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+              : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
               }`}
           >
             <span className="text-sm sm:text-lg">🏪</span>
@@ -692,8 +692,8 @@ export const FoodDining: React.FC = () => {
           <button
             onClick={() => setActiveMainTab('dineout')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'dineout'
-                ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
+              ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+              : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
               }`}
           >
             <span className="text-sm sm:text-lg">🍽️</span>
@@ -714,8 +714,8 @@ export const FoodDining: React.FC = () => {
             <button
               onClick={() => setDietaryFilter('VEG')}
               className={`px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition flex items-center space-x-1 cursor-pointer border ${dietaryFilter === 'VEG'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-extrabold'
-                  : 'text-slate-600 hover:bg-slate-100 border-transparent'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-extrabold'
+                : 'text-slate-600 hover:bg-slate-100 border-transparent'
                 }`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -724,8 +724,8 @@ export const FoodDining: React.FC = () => {
             <button
               onClick={() => setDietaryFilter('NON_VEG')}
               className={`px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition flex items-center space-x-1 cursor-pointer border ${dietaryFilter === 'NON_VEG'
-                  ? 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold'
-                  : 'text-slate-600 hover:bg-slate-100 border-transparent'
+                ? 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold'
+                : 'text-slate-600 hover:bg-slate-100 border-transparent'
                 }`}
             >
               <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -752,8 +752,8 @@ export const FoodDining: React.FC = () => {
                   key={cat.value}
                   onClick={() => setSelectedItemCat(cat.value)}
                   className={`px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition duration-300 flex items-center space-x-1.5 cursor-pointer shrink-0 border ${selectedItemCat === cat.value
-                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                     }`}
                 >
                   <span className="text-sm sm:text-base">{cat.icon}</span>
@@ -871,8 +871,8 @@ export const FoodDining: React.FC = () => {
                   key={c.value}
                   onClick={() => setSelectedCuisine(c.value)}
                   className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition duration-300 flex items-center space-x-2 cursor-pointer shrink-0 border ${selectedCuisine === c.value
-                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md scale-105'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md scale-105'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
                   <span className="text-base">{c.icon}</span>

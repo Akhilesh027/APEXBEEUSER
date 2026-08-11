@@ -1132,8 +1132,8 @@ const Category = () => {
                       setSelectedChildCategoryId(null);
                     }}
                     className={`w-full flex flex-col lg:flex-row items-center py-2.5 lg:py-3.5 px-1.5 lg:px-5 gap-1 lg:gap-3 transition cursor-pointer border-none text-center lg:text-left ${active
-                        ? "bg-amber-50/90 border-l-[3px] border-l-[#F3BA12] text-[#0A1128] font-black"
-                        : "bg-white text-slate-700 hover:bg-slate-50 font-medium"
+                      ? "bg-amber-50/90 border-l-[3px] border-l-[#F3BA12] text-[#0A1128] font-black"
+                      : "bg-white text-slate-700 hover:bg-slate-50 font-medium"
                       }`}
                   >
                     {/* 3D Circular Thumbnail */}
@@ -1191,8 +1191,8 @@ const Category = () => {
                       key={opt.value}
                       type="button"
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border-none whitespace-nowrap ${sortOption === opt.value
-                          ? "bg-[#0A1128] text-[#F3BA12] shadow-sm"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-[#0A1128] text-[#F3BA12] shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                       onClick={() => setSortOption(opt.value)}
                     >
@@ -1210,8 +1210,8 @@ const Category = () => {
                     onClick={() => setViewMode("list")}
                     title="List View (Detailed)"
                     className={`p-1.5 rounded-md transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "list"
-                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
+                      ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
                       }`}
                   >
                     <List className="w-4 h-4" />
@@ -1222,8 +1222,8 @@ const Category = () => {
                     onClick={() => setViewMode("grid")}
                     title="Grid View (Compact)"
                     className={`p-1.5 rounded-md transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "grid"
-                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
+                      ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
                       }`}
                   >
                     <LayoutGrid className="w-4 h-4" />
@@ -1277,8 +1277,8 @@ const Category = () => {
                       type="button"
                       onClick={() => setSelectedChildCategoryId(null)}
                       className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${!selectedChildCategoryId
-                          ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
-                          : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
+                        ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
+                        : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
                         }`}
                     >
                       <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 mb-1.5 shrink-0 transition shadow-xs ${!selectedChildCategoryId ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-200 group-hover:border-amber-400"
@@ -1305,8 +1305,8 @@ const Category = () => {
                           type="button"
                           onClick={() => setSelectedChildCategoryId(isActive ? null : child._id)}
                           className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${isActive
-                              ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
-                              : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
+                            ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
+                            : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
                             }`}
                         >
                           {/* ENLARGED IMAGE ON TOP */}
@@ -1522,8 +1522,8 @@ const Category = () => {
                               type="button"
                               onClick={() => setCurrentPage(p)}
                               className={`w-7 h-7 rounded-lg text-xs font-black transition cursor-pointer border-none ${currentPage === p
-                                  ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                 }`}
                             >
                               {p}
@@ -1732,8 +1732,8 @@ const Category = () => {
                   type="button"
                   onClick={() => setActiveCategoryTab(tab.id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center space-x-1.5 cursor-pointer border-none ${active
-                      ? "bg-[#0A1128] text-amber-400 shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                    ? "bg-[#0A1128] text-amber-400 shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                     }`}
                 >
                   <span>{tab.icon}</span>
