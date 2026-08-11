@@ -160,27 +160,54 @@ const ProductDetail = () => {
   }, [product?.deliveryScope, product?.isPanIndia, product?.isLocalDelivery]);
 
   useEffect(() => {
-    if (product?.attributes) {
-      const initial: Record<string, string> = {};
-      Object.keys(product.attributes).forEach((key) => {
-        const vals = product.attributes[key];
-        if (Array.isArray(vals) && vals.length > 0) {
-          initial[key] = vals[0];
-        } else if (typeof vals === "string") {
-          initial[key] = vals;
+    const initial: Record<string, string> = {};
+
+    // 1. Initialize from first variant's attributes if present
+    if (product?.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      const firstV = product.variants[0];
+      if (firstV?.attributes && typeof firstV.attributes === 'object') {
+        Object.entries(firstV.attributes).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) initial[k] = String(v);
+        });
+      }
+    }
+
+    // 2. Supplement from product.attributes
+    if (product?.attributes && typeof product.attributes === 'object') {
+      Object.entries(product.attributes).forEach((keyVal) => {
+        const [key, vals] = keyVal;
+        if (!initial[key]) {
+          if (Array.isArray(vals) && vals.length > 0) {
+            initial[key] = String(vals[0]);
+          } else if (vals !== undefined && vals !== null) {
+            initial[key] = String(vals);
+          }
         }
       });
-      setSelectedAttrs(initial);
     }
+
+    setSelectedAttrs(initial);
   }, [product]);
 
   const selectedVariant = useMemo(() => {
-    if (!product?.variants || product.variants.length === 0) return null;
-    return product.variants.find((variant: any) => {
-      return Object.keys(selectedAttrs).every((key) => {
-        return String(variant.attributes?.[key]) === String(selectedAttrs[key]);
+    if (!product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return null;
+
+    // 1. Find variant where ALL variant.attributes match selectedAttrs
+    const match = product.variants.find((variant: any) => {
+      if (!variant.attributes || typeof variant.attributes !== 'object') return false;
+      const vKeys = Object.keys(variant.attributes);
+      if (vKeys.length === 0) return false;
+
+      return vKeys.every((key) => {
+        const selVal = selectedAttrs[key] ?? selectedAttrs[key.toLowerCase()];
+        return selVal !== undefined && String(variant.attributes[key]) === String(selVal);
       });
     });
+
+    if (match) return match;
+
+    // 2. Fallback to first variant
+    return product.variants[0];
   }, [product?.variants, selectedAttrs]);
 
   // MOQ - update quantity to MOQ when product loads or variant changes
@@ -736,6 +763,66 @@ const ProductDetail = () => {
                 <span>{deliveryReachText.badge}</span>
               </div>
             </div>
+
+            {/* Direct Variant Selection Cards (if product.variants exist) */}
+            {product?.variants && Array.isArray(product.variants) && product.variants.length > 1 && (
+              <div className="my-6 space-y-3 border-t border-b py-4 border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-navy uppercase tracking-wider">
+                    Select Product Variant / Pack ({product.variants.length} options):
+                  </span>
+                  {selectedVariant && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      In Stock ({selectedVariant.stock ?? product.stock ?? 0} left)
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {product.variants.map((v: any, idx: number) => {
+                    let vLabel = v.name || v.title || v.sku;
+                    if (v.attributes && typeof v.attributes === 'object') {
+                      const attrStr = Object.entries(v.attributes).map(([k, val]) => `${val}`).join(' / ');
+                      if (attrStr) vLabel = attrStr;
+                    }
+                    if (!vLabel) vLabel = `Option ${idx + 1}`;
+
+                    const isSelected = selectedVariant ? (selectedVariant.sku === v.sku || selectedVariant === v) : idx === 0;
+                    const vPrice = v.sellingPrice ?? v.price ?? v.afterDiscount ?? 0;
+                    const vMrp = v.mrp ?? v.userPrice ?? 0;
+
+                    return (
+                      <button
+                        key={v.sku || idx}
+                        type="button"
+                        onClick={() => {
+                          if (v.attributes && typeof v.attributes === 'object') {
+                            setSelectedAttrs((prev) => ({ ...prev, ...v.attributes }));
+                          }
+                        }}
+                        className={`px-3.5 py-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-w-[110px] ${isSelected
+                          ? "bg-[#0A1128] text-white border-amber-400 ring-2 ring-amber-400/40 shadow-md scale-105"
+                          : "bg-white text-slate-800 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 shadow-2xs font-medium"
+                          }`}
+                      >
+                        <span className={`text-xs font-black line-clamp-1 ${isSelected ? "text-amber-400" : "text-slate-900"}`}>
+                          {vLabel}
+                        </span>
+                        <div className="flex items-baseline gap-1 mt-1">
+                          <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                            {formatCurrency(vPrice)}
+                          </span>
+                          {vMrp > vPrice && (
+                            <span className={`text-[10px] line-through ${isSelected ? "text-slate-300" : "text-slate-400"}`}>
+                              {formatCurrency(vMrp)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Attribute/Variant Selectors */}
             {formattedAttributes.length > 0 && (

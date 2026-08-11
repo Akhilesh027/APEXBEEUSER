@@ -363,10 +363,14 @@ const Referrals = () => {
   };
 
   const allReferredUsers = useMemo(() => {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserId = String(userObj.id || userObj._id || "");
+    const isNotSelf = (u: any) => !currentUserId || String(u._id || u.id) !== currentUserId;
+
     const list: any[] = [];
-    level1Users.forEach(u => list.push({ ...u, levelNum: 1 }));
-    level2Users.forEach(u => list.push({ ...u, levelNum: 2 }));
-    level3Users.forEach(u => list.push({ ...u, levelNum: 3 }));
+    level1Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 1 }));
+    level2Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 2 }));
+    level3Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 3 }));
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [level1Users, level2Users, level3Users]);
 
@@ -514,9 +518,13 @@ const Referrals = () => {
         if (networkRes.ok) {
           const rawNetwork = await networkRes.json();
           if (rawNetwork.success) {
-            const lvl1 = rawNetwork.level1 || [];
-            const lvl2 = rawNetwork.level2 || [];
-            const lvl3 = rawNetwork.level3 || [];
+            const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+            const currentUserId = String(userObj.id || userObj._id || meData?.userId || "");
+            const isNotSelf = (u: any) => !currentUserId || String(u._id || u.id) !== currentUserId;
+
+            const lvl1 = (rawNetwork.level1 || []).filter(isNotSelf);
+            const lvl2 = (rawNetwork.level2 || []).filter(isNotSelf);
+            const lvl3 = (rawNetwork.level3 || []).filter(isNotSelf);
 
             setLevel1Users(lvl1);
             setLevel2Users(lvl2);
@@ -547,7 +555,6 @@ const Referrals = () => {
               };
             });
 
-            const userObj = JSON.parse(localStorage.getItem('user') || '{}');
             const structuredNetwork = {
               user: {
                 id: meData.userId || userObj.id || userObj._id || "",

@@ -14,22 +14,23 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch listener required for PWA install prompt eligibility
 self.addEventListener("fetch", (event) => {
-  const url = event.request.url;
-  // Always let live network handle API and dev server HMR requests
+  const url = new URL(event.request.url);
+  // Always let live network handle API, dev server HMR, non-GET, and cross-origin requests
   if (
     event.request.method !== "GET" ||
-    url.includes("/api/") ||
-    url.includes("/@vite") ||
-    url.includes("/@fs") ||
-    url.includes("/src/")
+    url.pathname.startsWith("/api/") ||
+    url.pathname.includes("/@vite") ||
+    url.pathname.includes("/@fs") ||
+    url.pathname.includes("/src/") ||
+    url.origin !== self.location.origin
   ) {
     return;
   }
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).catch(() => cached);
+      if (cached) return cached;
+      return fetch(event.request).catch(() => Response.error());
     })
   );
 });

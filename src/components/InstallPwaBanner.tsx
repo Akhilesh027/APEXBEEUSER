@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Download, X, Smartphone, Sparkles } from "lucide-react";
-import logo from "../Web images/Web images/logo.png";
+const logo = "/logo.png";
 
 export const InstallPwaBanner = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);

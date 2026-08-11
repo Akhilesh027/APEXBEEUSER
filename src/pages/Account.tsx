@@ -65,6 +65,11 @@ const Account = () => {
               <div className="text-left">
                 <h2 className="text-xl sm:text-2xl font-black text-navy">{user.name || "User"}</h2>
                 <p className="text-xs sm:text-sm text-gray-500">{user.email || user.mobile || "Welcome to your account"}</p>
+                {userId && (
+                  <p className="text-xs font-mono font-bold text-navy mt-1 bg-slate-100 px-2.5 py-1 rounded-md inline-block border border-gray-200">
+                    🆔 Customer ID: <span className="font-extrabold">{userId}</span>
+                  </p>
+                )}
               </div>
             </div>
             <button

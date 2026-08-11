@@ -43,7 +43,7 @@ import LocationModal from "@/components/LocationModal";
 import SupportDrawer from "@/components/SupportDrawer";
 import ProductCard from "@/components/ProductCard";
 import { ApexBeeWelcomeIntro } from "../components/welcome-intro/ApexBeeWelcomeIntro";
-import logo from "../Web images/Web images/logo.png";
+const logo = "/logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

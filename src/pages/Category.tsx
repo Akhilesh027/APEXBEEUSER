@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { ShoppingCart, Search, Filter, Star, Sparkles, MapPin, Tag, Compass, Calendar, RefreshCw, ChevronRight, Award, Clock, Flame, ChevronLeft, LayoutGrid, List, CheckCircle2, ShieldCheck, Zap, X } from "lucide-react";
@@ -215,6 +215,169 @@ function getDemoProducts(catName: string, mainCat: CategoryType | null, subs: an
         childCategoryId: `child-${pAcc}-3`,
         childCategoryName: "Chew & Interactive Toys",
         images: ["https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=400&auto=format&fit=crop&q=80"]
+      }
+    ];
+  }
+
+  if (clean.includes("devotional") || clean.includes("puja") || clean.includes("pooja") || clean.includes("temple") || clean.includes("god")) {
+    const pEss = getSubId("essential", "sub-devotional-essentials");
+    const pFlow = getSubId("flower", "sub-devotional-flowers");
+    const pKits = getSubId("kit", "sub-devotional-kits");
+    const pIdols = getSubId("idol", "sub-devotional-idols");
+    const pFest = getSubId("festival", "sub-devotional-festival");
+
+    return [
+      {
+        _id: "dev-prod-1",
+        itemName: "Mangaldeep Sandalwood Agarbatti (Pack of 4 x 100g)",
+        name: "Mangaldeep Sandalwood Agarbatti (Pack of 4 x 100g)",
+        userPrice: 220,
+        afterDiscount: 180,
+        baseMrp: 220,
+        baseSellingPrice: 180,
+        rating: 4.9,
+        reviews: 210,
+        brand: "Mangaldeep",
+        tag: "Pure Fragrance",
+        subCategoryId: pEss,
+        subcategory: pEss,
+        subCategoryName: "Pooja Essentials",
+        childCategoryId: `child-${pEss}-1`,
+        childCategoryName: "Agarbatti & Incense",
+        images: ["https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-2",
+        itemName: "Pure Bhimseni Camphor (Bhimseni Kapoor 250g Jar)",
+        name: "Pure Bhimseni Camphor (Bhimseni Kapoor 250g Jar)",
+        userPrice: 350,
+        afterDiscount: 299,
+        baseMrp: 350,
+        baseSellingPrice: 299,
+        rating: 4.8,
+        reviews: 165,
+        brand: "ApexDevotional",
+        tag: "100% Organic",
+        subCategoryId: pEss,
+        subcategory: pEss,
+        subCategoryName: "Pooja Essentials",
+        childCategoryId: `child-${pEss}-2`,
+        childCategoryName: "Camphor & Dhoop",
+        images: ["https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-3",
+        itemName: "Fresh Orange Marigold Flowers Garland (3 Feet)",
+        name: "Fresh Orange Marigold Flowers Garland (3 Feet)",
+        userPrice: 150,
+        afterDiscount: 120,
+        baseMrp: 150,
+        baseSellingPrice: 120,
+        rating: 4.9,
+        reviews: 94,
+        brand: "Fresh Harvest",
+        tag: "Daily Fresh",
+        subCategoryId: pFlow,
+        subcategory: pFlow,
+        subCategoryName: "Flowers & Garlands",
+        childCategoryId: `child-${pFlow}-1`,
+        childCategoryName: "Fresh Marigold Garlands",
+        images: ["https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-4",
+        itemName: "Fragrant Jasmine & Pink Rose Flower String (Set of 5)",
+        name: "Fragrant Jasmine & Pink Rose Flower String (Set of 5)",
+        userPrice: 250,
+        afterDiscount: 199,
+        baseMrp: 250,
+        baseSellingPrice: 199,
+        rating: 4.8,
+        reviews: 78,
+        brand: "Fresh Harvest",
+        tag: "Handpicked",
+        subCategoryId: pFlow,
+        subcategory: pFlow,
+        subCategoryName: "Flowers & Garlands",
+        childCategoryId: `child-${pFlow}-2`,
+        childCategoryName: "Jasmine & Rose Strings",
+        images: ["https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-5",
+        itemName: "Complete Satyanarayana Vratham Pooja Samagri Kit",
+        name: "Complete Satyanarayana Vratham Pooja Samagri Kit",
+        userPrice: 1250,
+        afterDiscount: 999,
+        baseMrp: 1250,
+        baseSellingPrice: 999,
+        rating: 5.0,
+        reviews: 140,
+        brand: "PavitraSamagri",
+        tag: "All-in-One Kit",
+        subCategoryId: pKits,
+        subcategory: pKits,
+        subCategoryName: "Pooja Kits & Ritual Kits",
+        childCategoryId: `child-${pKits}-2`,
+        childCategoryName: "Satyanarayana Vratham Kit",
+        images: ["https://images.unsplash.com/photo-1621849400072-f554417f7051?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-6",
+        itemName: "Premium Heavy Brass Kuber Diya Set of 2",
+        name: "Premium Heavy Brass Kuber Diya Set of 2",
+        userPrice: 699,
+        afterDiscount: 499,
+        baseMrp: 699,
+        baseSellingPrice: 499,
+        rating: 4.9,
+        reviews: 112,
+        brand: "HandicraftsIndia",
+        tag: "Pure Brass",
+        subCategoryId: pIdols,
+        subcategory: pIdols,
+        subCategoryName: "Idols & Brass Decor",
+        childCategoryId: `child-${pIdols}-1`,
+        childCategoryName: "Pure Brass Diyas & Lamps",
+        images: ["https://images.unsplash.com/photo-1590076175571-c5e7e616d82d?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-7",
+        itemName: "Handcrafted Panchaloha Lord Ganesha Idol (6 Inches)",
+        name: "Handcrafted Panchaloha Lord Ganesha Idol (6 Inches)",
+        userPrice: 1800,
+        afterDiscount: 1499,
+        baseMrp: 1800,
+        baseSellingPrice: 1499,
+        rating: 4.9,
+        reviews: 88,
+        brand: "DivineStatues",
+        tag: "Blessings",
+        subCategoryId: pIdols,
+        subcategory: pIdols,
+        subCategoryName: "Idols & Brass Decor",
+        childCategoryId: `child-${pIdols}-2`,
+        childCategoryName: "Marble & Brass Idols",
+        images: ["https://images.unsplash.com/photo-1567591414441-9430c4516709?w=400&auto=format&fit=crop&q=80"]
+      },
+      {
+        _id: "dev-prod-8",
+        itemName: "Grand Festival Deepavali Pooja Thali & Sweet Combo",
+        name: "Grand Festival Deepavali Pooja Thali & Sweet Combo",
+        userPrice: 1500,
+        afterDiscount: 1199,
+        baseMrp: 1500,
+        baseSellingPrice: 1199,
+        rating: 4.8,
+        reviews: 62,
+        brand: "ApexCombos",
+        tag: "Festive Special",
+        subCategoryId: pFest,
+        subcategory: pFest,
+        subCategoryName: "Festival Combos",
+        childCategoryId: `child-${pFest}-1`,
+        childCategoryName: "Grand Festival Puja Thali Combo",
+        images: ["https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=400&auto=format&fit=crop&q=80"]
       }
     ];
   }
@@ -564,6 +727,8 @@ const LOCATION_KEY = "apexbee_user_location";
 const Category = () => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // ── User Location state ──
   const [userLocation, setUserLocation] = useState<{ lat?: number; lng?: number; pincode?: string; district?: string } | null>(null);
@@ -758,8 +923,12 @@ const Category = () => {
           return;
         }
 
+        // Read URL query params
+        const subParam = searchParams.get("sub");
+        const childParam = searchParams.get("child");
+
         let mainCategory = found;
-        let selectedSubId = null;
+        let selectedSubId: string | null = subParam || null;
 
         const getParentIdStr = (pId: any): string | null => {
           if (!pId) return null;
@@ -768,7 +937,7 @@ const Category = () => {
         };
 
         const foundPId = getParentIdStr(found.parentId);
-        if (foundPId) {
+        if (foundPId && !subParam) {
           const parent = flat.find((c) => String(c._id) === foundPId);
           if (parent) {
             mainCategory = parent;
@@ -785,7 +954,6 @@ const Category = () => {
           return pId === String(mainCategory._id);
         });
         const mappedSubs = subs.map((s) => ({ _id: String(s._id), name: s.name, image: s.image, slug: s.slug }));
-        setSelectedSubcategoryId(selectedSubId);
 
         // Fetch active subcategories from the Subcategory collection via API
         let finalSubs = mappedSubs;
@@ -807,7 +975,7 @@ const Category = () => {
           console.error("Error fetching database subcategories:", subErr);
         }
 
-        // Fallback subcategories if empty for Pets
+        // Fallback subcategories if empty for Pets or Devotional
         if (finalSubs.length === 0 && cleanName(mainCategory.name).includes("pet")) {
           finalSubs = [
             { _id: "sub-pet-food", name: "Pet Food", image: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=200&auto=format&fit=crop&q=60" },
@@ -816,7 +984,24 @@ const Category = () => {
             { _id: "sub-pet-vet", name: "Veterinary Care", image: "https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=200&auto=format&fit=crop&q=60" },
             { _id: "sub-pet-boarding", name: "Pet Boarding", image: "https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=200&auto=format&fit=crop&q=60" },
           ];
+        } else if (finalSubs.length === 0 && (cleanName(mainCategory.name).includes("devotional") || cleanName(mainCategory.name).includes("puja") || cleanName(mainCategory.name).includes("pooja"))) {
+          finalSubs = [
+            { _id: "sub-devotional-essentials", name: "Pooja Essentials", image: "https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-devotional-flowers", name: "Flowers & Garlands", image: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-devotional-kits", name: "Pooja Kits & Ritual Kits", image: "https://images.unsplash.com/photo-1621849400072-f554417f7051?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-devotional-idols", name: "Idols & Brass Decor", image: "https://images.unsplash.com/photo-1590076175571-c5e7e616d82d?w=200&auto=format&fit=crop&q=60" },
+            { _id: "sub-devotional-festival", name: "Festival Combos", image: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=200&auto=format&fit=crop&q=60" },
+          ];
         }
+
+        // Match selected subcategory from URL if provided
+        if (subParam) {
+          const matchedSub = finalSubs.find(s => String(s._id) === subParam || s.slug === subParam || s.name.toLowerCase() === subParam.toLowerCase() || s.name.toLowerCase().includes(subParam.toLowerCase()));
+          if (matchedSub) selectedSubId = String(matchedSub._id);
+        }
+
+        setSelectedSubcategoryId(selectedSubId);
+        if (childParam) setSelectedChildCategoryId(childParam);
 
         setSubcategories(finalSubs);
 
@@ -854,6 +1039,35 @@ const Category = () => {
                 { _id: `child-${sub._id}-1`, name: "Flea & Tick Powders", parentId: sub._id },
                 { _id: `child-${sub._id}-2`, name: "Health Supplements", parentId: sub._id },
                 { _id: `child-${sub._id}-3`, name: "Deworming & First Aid", parentId: sub._id }
+              );
+            } else if (sName.includes("essential")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Agarbatti & Incense", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Camphor & Dhoop", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Deepam Oil & Wicks", parentId: sub._id },
+                { _id: `child-${sub._id}-4`, name: "Kumkum & Turmeric", parentId: sub._id }
+              );
+            } else if (sName.includes("flower") || sName.includes("garland")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Fresh Marigold Garlands", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Jasmine & Rose Strings", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Fresh Lotus & Hibiscus", parentId: sub._id }
+              );
+            } else if (sName.includes("kit") || sName.includes("ritual")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Daily Pooja Kit", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Satyanarayana Vratham Kit", parentId: sub._id },
+                { _id: `child-${sub._id}-3`, name: "Ayudha & Vehicle Pooja Kit", parentId: sub._id }
+              );
+            } else if (sName.includes("idol") || sName.includes("decor") || sName.includes("brass")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Pure Brass Diyas & Lamps", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Marble & Brass Idols", parentId: sub._id }
+              );
+            } else if (sName.includes("festival") || sName.includes("combo")) {
+              builtChildCategories.push(
+                { _id: `child-${sub._id}-1`, name: "Grand Festival Puja Thali Combo", parentId: sub._id },
+                { _id: `child-${sub._id}-2`, name: "Special Vrat Samagri Combo", parentId: sub._id }
               );
             }
           });
@@ -927,7 +1141,7 @@ const Category = () => {
       }
     };
     go();
-  }, [categoryName]);
+  }, [categoryName, searchParams]);
 
   const activeChildCategories = useMemo(() => {
     if (selectedSubcategoryId) {
@@ -1074,6 +1288,97 @@ const Category = () => {
   }
 
   // ═══════════════════════════════════════════════════════
+  // SUBCATEGORIES GRID VIEW PAGE (e.g. /category/Devotional/subcategories)
+  // ═══════════════════════════════════════════════════════
+  const isSubRoute = location.pathname.includes("/subcategories");
+  const subQuery = searchParams.get("sub");
+  if (categoryName && category && (isSubRoute || (!selectedSubcategoryId && !subQuery))) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        <Navbar />
+
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8">
+          <div className="max-w-[1400px] mx-auto flex items-center space-x-2 text-xs font-medium text-slate-500">
+            <Link to="/" className="hover:text-amber-600 transition">Home</Link>
+            <ChevronRight className="w-3 h-3 text-slate-400" />
+            <Link to="/categories" className="hover:text-amber-600 transition">Categories</Link>
+            <ChevronRight className="w-3 h-3 text-slate-400" />
+            <span className="text-slate-900 font-bold capitalize">{category.name} Subcategories</span>
+          </div>
+        </div>
+
+        {/* Hero Header */}
+        <div className="bg-[#0A1128] text-white py-10 px-4 sm:px-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="max-w-[1400px] mx-auto text-center space-y-3 relative z-10">
+            <div className="text-6xl mb-2 animate-bounce inline-block">{getSubIcon(category.name)}</div>
+            <h1 className="text-2xl sm:text-4xl font-black text-white font-heading">
+              {category.name} Subcategories
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-lg mx-auto leading-relaxed">
+              Explore curated subcategories below. Select any subcategory to view child categories and products.
+            </p>
+          </div>
+        </div>
+
+        {/* Subcategories Grid */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-10">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-heading">
+                All Subcategories ({subcategories.length})
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">Click any subcategory to browse child categories and products</p>
+            </div>
+            <Link
+              to="/categories"
+              className="text-xs font-extrabold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-xl border border-amber-200 transition"
+            >
+              ← All Categories
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4 lg:gap-6 pt-2 sm:pt-4">
+            {subcategories.map((sub) => {
+              const subImg = sub.image || getSubcategoryImage(sub.name, sub.slug);
+
+              return (
+                <div
+                  key={sub._id}
+                  onClick={() => {
+                    setSelectedSubcategoryId(sub._id);
+                    setSelectedChildCategoryId(null);
+                    navigate(`/category/${encodeURIComponent(category.name)}?sub=${encodeURIComponent(sub._id)}`);
+                  }}
+                  className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1 transition duration-300"
+                >
+                  {/* BIG HD PURE IMAGE ONLY — 4 PER ROW ON MOBILE */}
+                  <div className="w-full h-20 sm:h-36 md:h-48 lg:h-56 overflow-hidden flex items-center justify-center p-1 bg-white rounded-2xl border border-slate-100/80 shadow-2xs group-hover:border-amber-400 group-hover:shadow-md transition">
+                    <img
+                      src={subImg}
+                      alt={sub.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition duration-500 ease-out"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* PROMINENT SUBCATEGORY NAME BELOW */}
+                  <h3 className="font-black text-[11px] sm:text-sm lg:text-base text-[#0A1128] group-hover:text-amber-600 transition leading-tight mt-1.5 line-clamp-2">
+                    {sub.name}
+                  </h3>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
   // CATEGORY DETAIL VIEW — FLIPKART DESKTOP STYLE
   // ═══════════════════════════════════════════════════════
   if (categoryName && category) {
@@ -1101,60 +1406,78 @@ const Category = () => {
         {/* ═══════════════ MAIN CATEGORY CONTAINER ═══════════════ */}
         <div className="w-full max-w-[1400px] mx-auto px-1.5 sm:px-4 lg:px-8 flex flex-row items-start gap-1.5 sm:gap-3 lg:gap-5 py-2 sm:py-3 lg:py-4 h-[calc(100vh-125px)] overflow-hidden font-sans">
 
-          {/* ── LEFT SIDEBAR (ALWAYS VISIBLE DIRECTLY ON MOBILE & DESKTOP — NO DRAWERS/TABS) ── */}
-          <div className="w-[84px] sm:w-[110px] lg:w-[260px] shrink-0 bg-white rounded-xl shadow-xs h-full overflow-y-auto border border-slate-200/80 font-sans divide-y divide-slate-100">
+          {/* ── LEFT SIDEBAR (SHOWS ONLY CHILD CATEGORIES OF ACTIVE SUBCATEGORY) ── */}
+          <div className="w-[100px] sm:w-[140px] lg:w-[260px] shrink-0 bg-white rounded-xl shadow-xs h-full overflow-y-auto border border-slate-200/80 font-sans flex flex-col divide-y divide-slate-100">
 
             {/* Sidebar Header */}
-            <div className="flex flex-col lg:flex-row items-center justify-between px-2 lg:px-5 py-2.5 lg:py-4 border-b border-slate-100 text-center lg:text-left">
-              <h3 className="text-[11px] lg:text-sm font-black text-slate-900 uppercase tracking-wider line-clamp-1">
-                {category.name}
-              </h3>
-              <span className="text-[9px] lg:text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 lg:px-2 py-0.5 rounded-md mt-0.5 lg:mt-0">
-                {subcategories.length} Subs
-              </span>
+            <div className="flex flex-col items-start px-2.5 lg:px-5 py-3 lg:py-4 border-b border-slate-100 gap-1 bg-slate-50/60">
+              <button
+                type="button"
+                onClick={() => navigate(`/category/${encodeURIComponent(category.name)}/subcategories`)}
+                className="text-[10px] lg:text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 border-none bg-transparent cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Subcategories</span>
+              </button>
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between w-full mt-1 gap-1">
+                <h3 className="text-xs lg:text-sm font-black text-slate-900 leading-tight">
+                  {selectedSubName || category.name}
+                </h3>
+                <span className="text-[9px] lg:text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full w-fit">
+                  {activeChildCategories.length} Child Categories
+                </span>
+              </div>
             </div>
 
-            {/* Subcategory List */}
-            <div className="divide-y divide-slate-100">
-              {[{ _id: "__all__", name: "All Items" }, ...subcategories].map((s) => {
-                const isAll = s._id === "__all__";
-                const active = isAll ? !selectedSubcategoryId : selectedSubcategoryId === s._id;
-                const imageUrl = isAll
-                  ? "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=150&auto=format&fit=crop&q=60"
-                  : (s.image || getSubcategoryImage(s.name, s.slug));
+            {/* Child Categories List Only */}
+            <div className="p-1.5 lg:p-3 flex flex-col gap-1.5 flex-1">
+              <span className="hidden lg:block text-[10px] font-black text-slate-400 uppercase tracking-wider px-2 py-1">
+                Child Categories:
+              </span>
+
+              {/* "All [Subcategory]" Button */}
+              <button
+                type="button"
+                onClick={() => setSelectedChildCategoryId(null)}
+                className={`w-full flex items-center justify-between py-2.5 px-2 lg:px-4 rounded-xl text-left transition cursor-pointer border-none ${!selectedChildCategoryId
+                  ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-sm"
+                  : "bg-slate-50 text-slate-700 hover:bg-slate-100 font-semibold"
+                  }`}
+              >
+                <span className="text-[11px] lg:text-xs line-clamp-1">All {selectedSubName || "Items"}</span>
+                {!selectedChildCategoryId && <span className="text-amber-400 text-xs">●</span>}
+              </button>
+
+              {/* Child Category Items */}
+              {activeChildCategories.map((child) => {
+                const isActive = selectedChildCategoryId === child._id;
+                const childImg = child.image || getSubcategoryImage(child.name, child.slug);
 
                 return (
                   <button
-                    key={s._id}
+                    key={child._id}
                     type="button"
-                    onClick={() => {
-                      setSelectedSubcategoryId(isAll ? null : s._id);
-                      setSelectedChildCategoryId(null);
-                    }}
-                    className={`w-full flex flex-col lg:flex-row items-center py-2.5 lg:py-3.5 px-1.5 lg:px-5 gap-1 lg:gap-3 transition cursor-pointer border-none text-center lg:text-left ${active
-                      ? "bg-amber-50/90 border-l-[3px] border-l-[#F3BA12] text-[#0A1128] font-black"
-                      : "bg-white text-slate-700 hover:bg-slate-50 font-medium"
+                    onClick={() => setSelectedChildCategoryId(isActive ? null : child._id)}
+                    className={`w-full flex items-center gap-2.5 py-2.5 px-2 lg:px-4 rounded-xl text-left transition cursor-pointer border-none ${isActive
+                      ? "bg-[#0A1128] text-amber-400 font-extrabold shadow-sm"
+                      : "bg-white text-slate-800 hover:bg-slate-50 font-semibold border border-slate-100"
                       }`}
                   >
-                    {/* 3D Circular Thumbnail */}
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 shrink-0 transition shadow-xs ${active ? "border-[#F3BA12] ring-2 lg:ring-4 ring-amber-400/30 scale-105" : "border-slate-200"
-                      }`}>
-                      <img src={imageUrl} alt={s.name} className="w-full h-full object-cover" loading="lazy" />
+                    <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-lg overflow-hidden shrink-0 border ${isActive ? "border-amber-400" : "border-slate-200"}`}>
+                      <img src={childImg} alt={child.name} className="w-full h-full object-cover" />
                     </div>
-
-                    {/* Label */}
-                    <span className={`text-[10px] sm:text-[11px] lg:text-[13px] leading-tight line-clamp-2 lg:line-clamp-1 ${active ? "font-black text-[#0A1128]" : "font-semibold text-slate-700"
-                      }`}>
-                      {s.name}
-                    </span>
-
-                    {/* Desktop Active Indicator */}
-                    {active && (
-                      <ChevronRight className="hidden lg:block w-3.5 h-3.5 text-[#F3BA12] ml-auto shrink-0" />
-                    )}
+                    <span className="text-[11px] lg:text-xs line-clamp-2 leading-tight flex-1">{child.name}</span>
+                    {isActive && <span className="text-amber-400 text-xs shrink-0">●</span>}
                   </button>
                 );
               })}
+
+              {activeChildCategories.length === 0 && (
+                <div className="py-8 text-center text-slate-400 space-y-1">
+                  <p className="text-xs font-bold">No child categories</p>
+                  <p className="text-[10px]">Showing all subcategory items</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1248,88 +1571,6 @@ const Category = () => {
 
             {/* ── SCROLLABLE PRODUCT LISTING CONTAINER ── */}
             <div ref={rightScrollRef} className="flex-1 overflow-y-auto bg-white p-0 rounded-b-xl min-h-0 touch-pan-y">
-
-              {/* ── 2-ROW CHILD SUBCATEGORIES GRID (SCROLLS WITH CONTENT & ENLARGED HEIGHT) ── */}
-              {activeChildCategories.length > 0 && (
-                <div className="bg-gradient-to-r from-slate-50 via-amber-50/25 to-slate-50 px-3.5 lg:px-6 py-4 border-b border-slate-200 shrink-0 font-sans">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                        Explore {selectedSubName || "Types"}:
-                      </span>
-                    </div>
-                    {selectedChildCategoryId && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedChildCategoryId(null)}
-                        className="text-xs font-black text-rose-600 hover:underline cursor-pointer border-none bg-transparent"
-                      >
-                        ✕ Clear Filter
-                      </button>
-                    )}
-                  </div>
-
-                  {/* 2-Row Vertical-Tile Grid Container (Enlarged Height) */}
-                  <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-3 sm:gap-3.5 overflow-x-auto scrollbar-none pb-1.5 pt-0.5">
-                    {/* "All" Card */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedChildCategoryId(null)}
-                      className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${!selectedChildCategoryId
-                        ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
-                        : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
-                        }`}
-                    >
-                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 mb-1.5 shrink-0 transition shadow-xs ${!selectedChildCategoryId ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-200 group-hover:border-amber-400"
-                        }`}>
-                        <img
-                          src="https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=150&auto=format&fit=crop&q=60"
-                          alt="All"
-                          className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                        />
-                      </div>
-                      <span className="text-xs sm:text-[12px] font-bold line-clamp-1 leading-tight">
-                        All {selectedSubName || "Items"}
-                      </span>
-                    </button>
-
-                    {/* Child Subcategory Tiles (Enlarged Image & Height) */}
-                    {activeChildCategories.map((child) => {
-                      const isActive = selectedChildCategoryId === child._id;
-                      const childImg = child.image || getSubcategoryImage(child.name, child.slug);
-
-                      return (
-                        <button
-                          key={child._id}
-                          type="button"
-                          onClick={() => setSelectedChildCategoryId(isActive ? null : child._id)}
-                          className={`group flex flex-col items-center justify-center p-2.5 rounded-2xl w-24 sm:w-28 h-[102px] sm:h-[114px] shrink-0 transition-all duration-300 cursor-pointer text-center border ${isActive
-                            ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-md scale-105 ring-2 ring-amber-400/30 font-black"
-                            : "bg-white text-slate-700 border-slate-200/90 hover:border-amber-400 hover:bg-amber-50/60 shadow-2xs font-bold"
-                            }`}
-                        >
-                          {/* ENLARGED IMAGE ON TOP */}
-                          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 mb-1.5 shrink-0 transition shadow-xs ${isActive ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-200 group-hover:border-amber-400"
-                            }`}>
-                            <img
-                              src={childImg}
-                              alt={child.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                              loading="lazy"
-                            />
-                          </div>
-
-                          {/* NAME DOWN */}
-                          <span className="text-[11px] sm:text-xs leading-tight line-clamp-2 text-center w-full px-0.5">
-                            {child.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
               {filteredProducts.length === 0 ? (
                 <div className="py-20 text-center p-8 space-y-3">
                   <div className="text-5xl">🔍</div>
@@ -1778,7 +2019,7 @@ const Category = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 pt-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 lg:gap-6 pt-2 sm:pt-4">
             {filteredCategoriesByTab.map((cat) => {
               const isComingSoon = cat.experienceType === 'coming_soon_lead_capture';
               const isFoodCat = cat.name.toLowerCase().includes("food") || cat.name.toLowerCase().includes("dining") || cat.name.toLowerCase().includes("restaurant");
@@ -1791,12 +2032,16 @@ const Category = () => {
                   key={cat._id}
                   onClick={() => {
                     addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) });
-                    navigate(targetRoute);
+                    if (isFoodCat) {
+                      navigate("/food");
+                    } else {
+                      navigate(`/category/${encodeURIComponent(cat.name)}/subcategories`);
+                    }
                   }}
-                  className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1.5 transition duration-500"
+                  className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1 transition duration-300"
                 >
-                  {/* BIG HD PURE IMAGE ONLY — NO BACKGROUND, NO BORDER, NO SHAPE */}
-                  <div className="w-full h-56 sm:h-72 lg:h-80 overflow-hidden flex items-center justify-center">
+                  {/* BIG HD PURE IMAGE ONLY — 3 PER ROW ON MOBILE */}
+                  <div className="w-full h-24 sm:h-44 md:h-60 lg:h-72 overflow-hidden flex items-center justify-center p-1 bg-white rounded-2xl border border-slate-100/80 shadow-2xs group-hover:border-amber-400 group-hover:shadow-md transition">
                     <img
                       src={image}
                       alt={cat.name}
@@ -1806,7 +2051,7 @@ const Category = () => {
                   </div>
 
                   {/* PROMINENT CATEGORY NAME BELOW */}
-                  <h3 className="font-black text-base sm:text-xl text-[#0A1128] group-hover:text-amber-600 transition leading-tight mt-3">
+                  <h3 className="font-black text-xs sm:text-base lg:text-xl text-[#0A1128] group-hover:text-amber-600 transition leading-tight mt-1.5 line-clamp-2">
                     {cat.name}
                   </h3>
                 </div>

@@ -734,6 +734,11 @@ const Profile = () => {
                                     <h1 className="text-3xl font-bold mb-2">{userData?.name}</h1>
                                     <p className="text-muted-foreground">{userData?.email}</p>
                                     <p className="text-muted-foreground font-semibold mt-0.5">{userData?.phone || "📱 Mobile: Not set"}</p>
+                                    {userData?._id && (
+                                        <p className="text-xs font-mono font-bold text-navy dark:text-amber-400 mt-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-block border border-slate-200 dark:border-slate-700 shadow-xs">
+                                            🆔 Customer ID: <span className="font-extrabold text-foreground">{userData._id}</span>
+                                        </p>
+                                    )}
                                     {userData?.bio && (
                                         <p className="text-muted-foreground mt-2 italic">"{userData.bio}"</p>
                                     )}

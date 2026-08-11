@@ -17,7 +17,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import logo from "../Web images/Web images/logo.png";
+const logo = "/logo.png";
 import FormModal from "./FormModal.tsx";
 import LocationModal from "./LocationModal";
 

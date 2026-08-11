@@ -97,6 +97,8 @@ const App = () => (
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:categoryName" element={<CategoryPage />} />
+          <Route path="/category/:categoryName/subcategories" element={<CategoryPage />} />
+          <Route path="/subcategories/:categoryName" element={<CategoryPage />} />
           <Route path="/earn-with-apexbee" element={<EarnWithApexBee />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/academy/become-an-entrepreneur" element={<Academy />} />
