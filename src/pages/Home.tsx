@@ -1769,41 +1769,41 @@ const Home = () => {
 
           {/* 🍱 DUAL BANNER: FOOD DELIVERY & DINEOUT RESERVATION */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
               {/* FOOD DELIVERY CARD */}
               <div
                 onClick={() => navigate("/food")}
-                className="bg-gradient-to-r from-amber-500 via-orange-600 to-rose-700 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-700 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-100">
                     ⚡ 30-Min Fast Delivery
                   </span>
                   <h3 className="text-xl sm:text-2xl font-black leading-tight">Craving Hot Food?</h3>
-                  <p className="text-xs text-amber-100 font-medium">Order Biryanis, Pizzas, Burgers & Tiffins from top local restaurants.</p>
+                  <p className="text-xs text-amber-100 font-medium">Order Biryanis, Pizzas, Burgers &amp; Tiffins from top local restaurants.</p>
                   <span className="inline-flex items-center gap-1 bg-[#0A1128] text-amber-400 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     🍱 Order Food Now &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80" alt="Food" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Food" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
 
               {/* DINEOUT TABLE RESERVATION CARD */}
               <div
                 onClick={() => navigate("/food")}
-                className="bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
                     👑 Up to 40% OFF Bills
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Dineout & Table Booking</h3>
-                  <p className="text-xs text-slate-300 font-medium">Reserve tables at luxury fine dining & rooftop lounges with zero booking fees.</p>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Dineout &amp; Table Booking</h3>
+                  <p className="text-xs text-slate-300 font-medium">Reserve tables at luxury fine dining &amp; rooftop lounges with zero booking fees.</p>
                   <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     🍽️ Reserve Table &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&auto=format&fit=crop&q=80" alt="Dineout" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Dineout" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
             </div>
           </section>
@@ -1931,7 +1931,7 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 3. Quick Shortcuts Bar (4 PER ROW GRID ON MOBILE) */}
+          {/* 3. Quick Shortcuts Bar (WITH LEFT & RIGHT NAV ARROWS) */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <h2 className="text-base sm:text-lg font-black text-[#0A1128]">Quick Shortcuts</h2>
@@ -1940,48 +1940,66 @@ const Home = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-9 gap-2.5 sm:gap-4 py-2 px-0.5 justify-items-center">
-              {[
-                { label: "Earn With Us", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn-with-apexbee" },
-                { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/grocery" },
-                { label: "Food & Dining", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/food" },
-                { label: "Local Stores", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e3c72)", to: "/local-stores" },
-                { label: "Services", icon: ToolIcon, gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
-                { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/Health & Wellness" },
-                { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/Fashion & Boutique" },
-                { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/Electronics & Gadgets" },
-                { label: "Community", icon: Users, gradient: "linear-gradient(135deg,#3f2b96,#a8c0ff)", to: "/community" },
-              ].map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => {
-                      trackCategoryClick({
-                        categoryName: item.label,
-                        targetPath: item.to,
-                        source: 'shortcut_grid',
-                      });
-                      if (item.to.startsWith("http")) {
-                        window.location.href = item.to;
-                      } else {
-                        navigate(item.to);
-                      }
-                    }}
-                    className="flex flex-col items-center justify-start gap-1.5 group cursor-pointer border-none bg-transparent w-full"
-                  >
-                    <div
-                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 transform-gpu"
-                      style={{ background: item.gradient }}
+            <div className="relative group px-1">
+              <button
+                onClick={() => scrollHorizontally("quick-shortcuts-scroll", "left")}
+                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+
+              <div id="quick-shortcuts-scroll" className="flex md:grid md:grid-cols-9 gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 px-1 sm:px-2 scroll-smooth">
+                {[
+                  { label: "Earn With Us", icon: Coins, gradient: "linear-gradient(135deg,#f59e0b,#f97316)", to: "/earn-with-apexbee" },
+                  { label: "Groceries", icon: ShoppingBag, gradient: "linear-gradient(135deg,#FF416C,#FF4B2B)", to: "/grocery" },
+                  { label: "Food & Dining", icon: Utensils, gradient: "linear-gradient(135deg,#f857a6,#ff5858)", to: "/food" },
+                  { label: "Local Stores", icon: Store, gradient: "linear-gradient(135deg,#0A1128,#1e3c72)", to: "/local-stores" },
+                  { label: "Services", icon: ToolIcon, gradient: "linear-gradient(135deg,#1e3c72,#2a5298)", to: "/services" },
+                  { label: "Pharmacy", icon: HeartPulse, gradient: "linear-gradient(135deg,#11998e,#38ef7d)", to: "/category/Health & Wellness" },
+                  { label: "Fashion", icon: Shirt, gradient: "linear-gradient(135deg,#ea00d9,#711c91)", to: "/category/Fashion & Boutique" },
+                  { label: "Electronics", icon: Smartphone, gradient: "linear-gradient(135deg,#00c6ff,#0072ff)", to: "/category/Electronics & Gadgets" },
+                  { label: "Community", icon: Users, gradient: "linear-gradient(135deg,#3f2b96,#a8c0ff)", to: "/community" },
+                ].map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        trackCategoryClick({
+                          categoryName: item.label,
+                          targetPath: item.to,
+                          source: 'shortcut_grid',
+                        });
+                        if (item.to.startsWith("http")) {
+                          window.location.href = item.to;
+                        } else {
+                          navigate(item.to);
+                        }
+                      }}
+                      className="flex flex-col items-center justify-start gap-1.5 group cursor-pointer border-none bg-transparent shrink-0 min-w-[70px] sm:min-w-[80px] md:min-w-0 md:w-full"
                     >
-                      <IconComponent className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2px]" />
-                    </div>
-                    <p className="font-black text-[#0A1128] text-[10px] sm:text-xs leading-tight group-hover:text-amber-600 transition-colors text-center break-words line-clamp-2">
-                      {item.label}
-                    </p>
-                  </button>
-                );
-              })}
+                      <div
+                        className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 transform-gpu"
+                        style={{ background: item.gradient }}
+                      >
+                        <IconComponent className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2px]" />
+                      </div>
+                      <p className="font-black text-[#0A1128] text-[10px] sm:text-xs leading-tight group-hover:text-amber-600 transition-colors text-center break-words line-clamp-2">
+                        {item.label}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => scrollHorizontally("quick-shortcuts-scroll", "right")}
+                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
             </div>
           </section>
 
@@ -2012,12 +2030,12 @@ const Home = () => {
             </section>
           )}
 
-          {/* 4. Today's Schedule Card Widget */}
+          {/* 4. Today's Schedule Card Widget (HORIZONTAL SLIDING ON MOBILE) */}
           {loggedInUser && (
             <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3 text-left">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="flex md:grid md:grid-cols-3 gap-4 sm:gap-5 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
                 {/* Today’s Schedule */}
-                <div className="bg-gradient-to-br from-blue-50/40 to-indigo-50/50 border border-indigo-100/70 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+                <div className="w-[85%] sm:w-[80%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-br from-blue-50/40 to-indigo-50/50 border border-indigo-100/70 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider">📅 Today’s Schedule</span>
                     <span className="text-[10px] font-bold text-slate-500 font-mono">{personalization?.todaySchedule?.slot || "6:00 AM Slot"}</span>
@@ -2056,7 +2074,7 @@ const Home = () => {
                 </div>
 
                 {/* Tomorrow’s Schedule Card */}
-                <div className="bg-gradient-to-br from-emerald-50/30 to-teal-50/40 border border-emerald-100/70 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+                <div className="w-[85%] sm:w-[80%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-br from-emerald-50/30 to-teal-50/40 border border-emerald-100/70 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider">🌟 Tomorrow’s Schedule</span>
                     <span className="text-[10px] font-bold text-emerald-700">Before 7:00 AM</span>
@@ -2086,7 +2104,7 @@ const Home = () => {
                 </div>
 
                 {/* Today’s Overview */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+                <div className="w-[85%] sm:w-[80%] md:w-auto snap-center shrink-0 md:shrink-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">📊 Quick Overview</span>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-3 bg-blue-50/40 rounded-2xl border border-blue-50/50 hover:bg-blue-50 transition-colors duration-200">
@@ -2143,10 +2161,10 @@ const Home = () => {
             </section>
           )}
 
-          {/* 5.5 Feature Badges Bar (3 Pillars matching mobile UI) */}
+          {/* 5.5 Feature Badges Bar (3 Pillars with Horizontal Mobile Scroll) */}
           <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-3">
-            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-2.5 sm:p-3 flex items-center justify-around text-center text-[10px] sm:text-xs font-extrabold text-[#0A1128]">
-              <div className="flex items-center gap-1.5">
+            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between sm:justify-around overflow-x-auto scrollbar-none gap-3 text-center text-[10px] sm:text-xs font-extrabold text-[#0A1128]">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm sm:text-base">🚀</span>
                 <div className="text-left leading-tight">
                   <p className="font-black">Fast Delivery</p>
@@ -2154,9 +2172,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="h-6 w-px bg-amber-200" />
+              <div className="h-6 w-px bg-amber-200 shrink-0" />
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm sm:text-base">🏷️</span>
                 <div className="text-left leading-tight">
                   <p className="font-black">Best Prices</p>
@@ -2164,9 +2182,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="h-6 w-px bg-amber-200" />
+              <div className="h-6 w-px bg-amber-200 shrink-0" />
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm sm:text-base">🏪</span>
                 <div className="text-left leading-tight">
                   <p className="font-black">Local Stores</p>
@@ -2280,41 +2298,41 @@ const Home = () => {
 
           {/* 📦 DUAL BANNER: GROCERY & MORNING ESSENTIALS */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
               {/* MORNING DAIRY & MILK CARD */}
               <div
                 onClick={() => navigate("/category/Daily Needs & Grocery")}
-                className="bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-100">
                     🥛 6 AM Morning Delivery
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Fresh Milk & Daily Dairy</h3>
-                  <p className="text-xs text-emerald-100 font-medium">Daily fresh milk, curd, paneer & morning tiffin supplies delivered by 7 AM.</p>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Fresh Milk &amp; Daily Dairy</h3>
+                  <p className="text-xs text-emerald-100 font-medium">Daily fresh milk, curd, paneer &amp; morning tiffin supplies delivered by 7 AM.</p>
                   <span className="inline-flex items-center gap-1 bg-white text-emerald-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     🥛 Order Fresh Dairy &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80" alt="Dairy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Dairy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
 
               {/* MONTHLY GROCERY MEGA SALE CARD */}
               <div
                 onClick={() => navigate("/category/Daily Needs & Grocery")}
-                className="bg-gradient-to-r from-green-700 via-emerald-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-green-700 via-emerald-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
                     🛒 Up to 50% OFF
                   </span>
                   <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Monthly Grocery Store</h3>
-                  <p className="text-xs text-slate-300 font-medium">Atta, Rice, Cooking Oils, Dal & Spices from top verified local merchants.</p>
+                  <p className="text-xs text-slate-300 font-medium">Atta, Rice, Cooking Oils, Dal &amp; Spices from top verified local merchants.</p>
                   <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     🛒 Shop Monthly Grocery &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80" alt="Grocery" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Grocery" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
             </div>
           </section>
@@ -2541,82 +2559,82 @@ const Home = () => {
 
           {/* 👕 DUAL BANNER: FASHION & LIFESTYLE */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
               {/* ETHNIC SAREES & FESTIVE WEAR */}
               <div
                 onClick={() => navigate("/category/Fashion & Boutique")}
-                className="bg-gradient-to-r from-purple-700 via-pink-700 to-rose-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-purple-700 via-pink-700 to-rose-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-amber-300 text-purple-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
                     ✨ Flat 60% OFF
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Ethnic Sarees & Wear</h3>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Ethnic Sarees &amp; Wear</h3>
                   <p className="text-xs text-pink-100 font-medium">Silk sarees, festive kurtis, and designer ethnic wear from local boutiques.</p>
                   <span className="inline-flex items-center gap-1 bg-white text-purple-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     👗 Explore Ethnic Wear &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80" alt="Fashion" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Fashion" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
 
               {/* FOOTWEAR & WATCHES */}
               <div
                 onClick={() => navigate("/category/Fashion & Boutique")}
-                className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
                     👟 Buy 1 Get 1 Free
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Footwear & Accessories</h3>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Footwear &amp; Accessories</h3>
                   <p className="text-xs text-slate-300 font-medium">Trendy sneakers, formal shoes, smartwatches, and sunglasses at outlet prices.</p>
                   <span className="inline-flex items-center gap-1 bg-cyan-400 text-slate-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     👟 Shop Accessories &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&auto=format&fit=crop&q=80" alt="Shoes" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Shoes" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
             </div>
           </section>
 
           {/* 💊 DUAL BANNER: PHARMACY & LOCAL HOME SERVICES */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
               {/* EXPRESS PHARMACY & MEDICINES */}
               <div
                 onClick={() => navigate("/category/Health & Wellness")}
-                className="bg-gradient-to-r from-teal-700 via-emerald-800 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-teal-700 via-emerald-800 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-teal-100">
                     💊 15-Min Pharmacy
                   </span>
                   <h3 className="text-xl sm:text-2xl font-black leading-tight">Essential Medicines</h3>
-                  <p className="text-xs text-teal-100 font-medium">Prescription medicines, daily vitamins & baby care from certified chemists.</p>
+                  <p className="text-xs text-teal-100 font-medium">Prescription medicines, daily vitamins &amp; baby care from certified chemists.</p>
                   <span className="inline-flex items-center gap-1 bg-white text-teal-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     💊 Order Medicines &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80" alt="Pharmacy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Pharmacy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
 
               {/* HOME SERVICES & REPAIR */}
               <div
                 onClick={() => navigate("/services")}
-                className="bg-gradient-to-r from-[#0A1128] via-[#1e3c72] to-[#2a5298] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-[#0A1128] via-[#1e3c72] to-[#2a5298] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
                     🔧 Verified Professionals
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Home Repair & Cleaning</h3>
-                  <p className="text-xs text-slate-300 font-medium">Electricians, plumbers, AC repair mechanics & home deep cleaning.</p>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Home Repair &amp; Cleaning</h3>
+                  <p className="text-xs text-slate-300 font-medium">Electricians, plumbers, AC repair mechanics &amp; home deep cleaning.</p>
                   <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
                     🛠️ Book Expert Service &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80" alt="Services" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Services" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
               </div>
             </div>
           </section>

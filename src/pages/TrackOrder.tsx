@@ -46,9 +46,10 @@ const TrackOrder = () => {
 
           // Map status index
           let step = 0;
-          if (t.status === "preparing") step = 1;
-          else if (t.status === "out_for_delivery") step = 2;
-          else if (t.status === "delivered") step = 3;
+          const s = (t.status || "").toLowerCase().trim();
+          if (s === "delivered" || s === "completed") step = 3;
+          else if (["out_for_delivery", "shipped", "accepted", "assigned", "reached vendor", "picked up", "reached customer"].includes(s)) step = 2;
+          else if (["preparing", "packed", "processing", "confirmed"].includes(s)) step = 1;
           setActiveStep(step);
 
           // Calculate visual SVG bike coords

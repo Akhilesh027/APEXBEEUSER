@@ -308,24 +308,39 @@ export default function ProductCustomizerModal({
 
           {/* 4. Grocery Subscription Option */}
           {(isGrocery || product?.isSubscriptionAvailable) && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-1.5 font-extrabold text-xs text-amber-950">
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-600" /> Daily Delivery Subscription
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 font-extrabold text-xs text-amber-950">
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600" /> Daily Delivery Subscription
+                  </div>
+                  <p className="text-[11px] text-amber-900/80 mt-0.5">
+                    Schedule daily or alternate day automatic doorstep delivery (10% OFF + Free Delivery).
+                  </p>
                 </div>
-                <p className="text-[11px] text-amber-900/80 mt-0.5">
-                  Schedule daily or alternate day automatic doorstep delivery.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsSubscription(!isSubscription)}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all cursor-pointer ${
+                    isSubscription ? "bg-amber-500 text-white border-amber-600 shadow-sm" : "bg-white text-slate-700 border-slate-300"
+                  }`}
+                >
+                  {isSubscription ? "Selected" : "Subscribe"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsSubscription(!isSubscription)}
-                className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
-                  isSubscription ? "bg-amber-500 text-white border-amber-600" : "bg-white text-slate-700 border-slate-300"
-                }`}
-              >
-                {isSubscription ? "Selected" : "Subscribe"}
-              </button>
+
+              {isSubscription && (
+                <div className="p-3 rounded-xl bg-slate-950 text-white text-[11px] space-y-1.5 border border-amber-500/40">
+                  <div className="font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                    <span>📜</span> Subscription Fulfillment & Delivery Rules:
+                  </div>
+                  <ul className="list-disc pl-4 text-slate-300 space-y-1 text-[10px]">
+                    <li><strong>Modification Cut-off:</strong> Pause/skip dates before 10:00 PM on previous day.</li>
+                    <li><strong>Doorstep Delivery:</strong> Early Morning slot (6:00 AM - 8:00 AM) drop-off.</li>
+                    <li><strong>Zero Lock-in:</strong> Pause, modify or cancel anytime with zero penalty.</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

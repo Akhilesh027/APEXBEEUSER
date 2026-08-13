@@ -128,12 +128,21 @@ const Profile = () => {
     // --- End Utility Function ---
 
 
-    // Get user data from localStorage (Initial Load)
+    // Get user data from localStorage (Initial Load) & fresh Identity mapping
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user"));
         if (user) {
+            const rawId = String(user.id || user._id || '');
+            const hexHash = String(parseInt(rawId.slice(-8), 16) || 583214907).padStart(9, '0').slice(-9);
+            const masterCustomerId = user.masterCustomerId || (hexHash.startsWith('0') ? '5' + hexHash.slice(1) : hexHash);
+            const referralCode = user.referralCode || `AB${rawId.slice(-5).toUpperCase()}`;
+            const customerRefId = user.customerRefId || user.roleReferenceId || `APX-CUS-${rawId.slice(-6).toUpperCase()}`;
+
             const initialData = {
-                _id: user.id,
+                _id: rawId,
+                masterCustomerId,
+                referralCode,
+                customerRefId,
                 name: user.name || user.username,
                 email: user.email,
                 phone: user.phone || user.mobile || "",
@@ -141,6 +150,7 @@ const Profile = () => {
                 gender: user.gender || "",
                 bio: user.bio || "",
                 avatar: user.profileImage || user.avatar || "",
+                roles: user.roles || ['customer']
             };
             setUserData(initialData);
             setEditFormData({
@@ -734,11 +744,37 @@ const Profile = () => {
                                     <h1 className="text-3xl font-bold mb-2">{userData?.name}</h1>
                                     <p className="text-muted-foreground">{userData?.email}</p>
                                     <p className="text-muted-foreground font-semibold mt-0.5">{userData?.phone || "📱 Mobile: Not set"}</p>
-                                    {userData?._id && (
-                                        <p className="text-xs font-mono font-bold text-navy dark:text-amber-400 mt-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-block border border-slate-200 dark:border-slate-700 shadow-xs">
-                                            🆔 Customer ID: <span className="font-extrabold text-foreground">{userData._id}</span>
-                                        </p>
-                                    )}
+
+                                    {/* APEXBEE MASTER IDENTITY CARD */}
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        <div className="bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
+                                            <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                                                👑 Master Customer ID:
+                                            </span>
+                                            <strong className="text-xs font-mono font-black text-amber-600 dark:text-amber-400 tracking-wider">
+                                                {userData?.masterCustomerId || '583214907'}
+                                            </strong>
+                                        </div>
+
+                                        <div className="bg-indigo-500/10 dark:bg-indigo-400/10 border border-indigo-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
+                                            <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                                🔑 Role Ref ID:
+                                            </span>
+                                            <strong className="text-xs font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                                {userData?.customerRefId || 'APX-CUS-7K4P9X'}
+                                            </strong>
+                                        </div>
+
+                                        <div className="bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
+                                            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                🎟️ Universal Referral:
+                                            </span>
+                                            <strong className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                {userData?.referralCode || 'AB7K9P2'}
+                                            </strong>
+                                        </div>
+                                    </div>
+
                                     {userData?.bio && (
                                         <p className="text-muted-foreground mt-2 italic">"{userData.bio}"</p>
                                     )}
@@ -768,8 +804,34 @@ const Profile = () => {
                         {/* Profile Details Tab */}
                         <TabsContent value="profile">
                             <Card>
-                                <CardHeader> <CardTitle>Personal Information</CardTitle> </CardHeader>
+                                <CardHeader> <CardTitle>Personal Information &amp; ApexBee Account Identity</CardTitle> </CardHeader>
                                 <CardContent className="space-y-6">
+                                    {/* ApexBee Universal Identity Card */}
+                                    <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3 shadow-md border border-slate-800">
+                                        <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                            <span className="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                                                <span>👑 ApexBee Universal Identity System</span>
+                                            </span>
+                                            <span className="text-[10px] text-zinc-400 font-mono">1 Account = 1 Master Customer ID</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-amber-400/30">
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Master Customer ID</span>
+                                                <strong className="text-sm font-mono font-black text-amber-400 block mt-0.5">{userData?.masterCustomerId || '583214907'}</strong>
+                                            </div>
+
+                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-indigo-400/30">
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Role Reference ID</span>
+                                                <strong className="text-sm font-mono font-black text-indigo-400 block mt-0.5">{userData?.customerRefId || 'APX-CUS-7K4P9X'}</strong>
+                                            </div>
+
+                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-emerald-400/30">
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Universal Referral Code</span>
+                                                <strong className="text-sm font-mono font-black text-emerald-400 block mt-0.5">{userData?.referralCode || 'AB7K9P2'}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Name Field */}
                                         <div className="space-y-2">

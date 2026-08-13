@@ -74,7 +74,7 @@ const App = () => (
       <Toaster />
       <Sonner />
 
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         {/* Automatically scrolls to top on every route change */}
         <ScrollToTop />
 

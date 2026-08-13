@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Star, Share2, Image as ImageIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -188,6 +189,28 @@ const ProductDetail = () => {
 
     setSelectedAttrs(initial);
   }, [product]);
+
+  // Distinct valid variants check - only return array if product contains > 1 valid distinct variants
+  const validVariants = useMemo(() => {
+    if (!product?.variants || !Array.isArray(product.variants) || product.variants.length <= 1) return [];
+
+    const setOfKeys = new Set<string>();
+    const result = product.variants.filter((v: any, idx: number) => {
+      if (!v) return false;
+      let vLabel = v.name || v.title || v.sku;
+      if (v.attributes && typeof v.attributes === 'object') {
+        const attrStr = Object.entries(v.attributes).map(([k, val]) => `${val}`).join(' / ');
+        if (attrStr) vLabel = attrStr;
+      }
+      if (!vLabel || vLabel === 'default') vLabel = `Option ${idx + 1}`;
+      const uniqueKey = `${vLabel}-${v.sku || idx}`;
+      if (setOfKeys.has(uniqueKey)) return false;
+      setOfKeys.add(uniqueKey);
+      return true;
+    });
+
+    return result.length > 1 ? result : [];
+  }, [product?.variants]);
 
   const selectedVariant = useMemo(() => {
     if (!product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return null;
@@ -409,8 +432,8 @@ const ProductDetail = () => {
             console.error("Error tracking product:", e);
           }
 
-          // fetch similar
-          fetchSimilarProducts(prodData.categoryId?.name || prodData.categoryName || "", prodData._id);
+          // fetch similar category products
+          fetchSimilarProducts(prodData);
 
           // ✅ fetch reviews
           fetchReviews(prodData._id);
@@ -422,15 +445,40 @@ const ProductDetail = () => {
       }
     };
 
-    const fetchSimilarProducts = async (categoryName: string, currentId: string) => {
+    const fetchSimilarProducts = async (prodData: any) => {
       try {
-        const res = await fetch(
-          `${API_BASE}/products?category=${encodeURIComponent(
-            categoryName || ""
-          )}&excludeId=${currentId}&limit=4`
-        );
+        const categoryName = prodData.categoryId?.name || prodData.categoryName || prodData.category || "";
+        const categoryId = prodData.categoryId?._id || prodData.categoryId;
+        const currentId = prodData._id;
+
+        let query = `${API_BASE}/products?limit=12&excludeId=${currentId}`;
+        if (categoryName) {
+          query += `&category=${encodeURIComponent(categoryName)}`;
+        } else if (categoryId && typeof categoryId === 'string') {
+          query += `&categoryId=${encodeURIComponent(categoryId)}`;
+        }
+
+        const res = await fetch(query);
         const data = await res.json();
-        setSimilarProducts(data.products || []);
+        let list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
+
+        // Filter out current product
+        list = list.filter((p: any) => (p._id || p.id) !== currentId);
+
+        // Fallback: If category query returns fewer than 4 items, fetch latest products as fallback
+        if (list.length < 4) {
+          const fallbackRes = await fetch(`${API_BASE}/products?limit=12`);
+          const fallbackData = await fallbackRes.json();
+          const fallbackList = Array.isArray(fallbackData?.products) ? fallbackData.products : Array.isArray(fallbackData?.data) ? fallbackData.data : [];
+          fallbackList.forEach((p: any) => {
+            const pId = p._id || p.id;
+            if (pId !== currentId && !list.some((existing: any) => (existing._id || existing.id) === pId)) {
+              list.push(p);
+            }
+          });
+        }
+
+        setSimilarProducts(list);
       } catch (error) {
         console.error("Error fetching similar products:", error);
       }
@@ -511,6 +559,15 @@ const ProductDetail = () => {
     );
   };
 
+  // Check if product has subscription enabled
+  const isSubscriptionAvailable = useMemo(() => {
+    if (!product) return false;
+    if (product.isSubscriptionAvailable === true) return true;
+    if (product.isSubscriptionAvailable === false) return false;
+    const cat = (product.categoryName || product.categoryId?.name || '').toLowerCase();
+    return cat.includes('grocery') || cat.includes('milk') || cat.includes('dairy') || cat.includes('daily') || product.isGrocery === true;
+  }, [product]);
+
   // ✅ Add to Cart – now includes deliveryFee & MOQ check
   const handleAddToCart = async (showAlert = true) => {
     const item = {
@@ -526,6 +583,8 @@ const ProductDetail = () => {
       quantity,
       selectedColor: selectedAttrs.color || "default",
       selectedSize: selectedAttrs.size || "default",
+      color: selectedAttrs.color || "default",
+      size: selectedAttrs.size || "default",
       selectedAttributes: selectedAttrs,
       sku: selectedVariant?.sku || product.sku,
       vendorId: product.vendorId || product.sellerId?._id || product.sellerId,
@@ -533,7 +592,12 @@ const ProductDetail = () => {
       shippingCharge: shippingCharge,
       packingCharge: packingCharge,
       packageCharge: packingCharge,
+      platformFeeAmount: product.adminPricing?.platformFeeAmount ?? 0,
+      platformFeePercent: product.adminPricing?.platformFeePercent ?? 0,
+      distributedFrom: product.adminPricing?.distributedFrom ?? 'platform_fee',
+      commissionType: product.adminPricing?.commissionType ?? product.attributes?.commissionType ?? 'vendor',
       adminPricing: product.adminPricing,
+      isSubscriptionAvailable: isSubscriptionAvailable,
       product: product
     };
 
@@ -747,14 +811,10 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Packing charge */}
-              {packingCharge > 0 ? (
+              {/* Packing charge - Only show when > 0 */}
+              {packingCharge > 0 && (
                 <div className="text-xs font-semibold text-orange-700 bg-orange-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-200">
                   📦 Packing: {formatCurrency(packingCharge)}
-                </div>
-              ) : (
-                <div className="text-xs font-semibold text-green-600 bg-green-50 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-green-200">
-                  📦 Free Packing
                 </div>
               )}
 
@@ -764,12 +824,12 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Direct Variant Selection Cards (if product.variants exist) */}
-            {product?.variants && Array.isArray(product.variants) && product.variants.length > 1 && (
+            {/* Direct Variant Selection Cards (ONLY displayed if product contains > 1 valid distinct variants) */}
+            {validVariants.length > 1 && (
               <div className="my-6 space-y-3 border-t border-b py-4 border-slate-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-navy uppercase tracking-wider">
-                    Select Product Variant / Pack ({product.variants.length} options):
+                    Select Product Variant / Pack ({validVariants.length} options):
                   </span>
                   {selectedVariant && (
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -778,7 +838,7 @@ const ProductDetail = () => {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2.5">
-                  {product.variants.map((v: any, idx: number) => {
+                  {validVariants.map((v: any, idx: number) => {
                     let vLabel = v.name || v.title || v.sku;
                     if (v.attributes && typeof v.attributes === 'object') {
                       const attrStr = Object.entries(v.attributes).map(([k, val]) => `${val}`).join(' / ');
@@ -824,8 +884,8 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Attribute/Variant Selectors */}
-            {formattedAttributes.length > 0 && (
+            {/* Attribute/Variant Selectors (Shown only if validVariants cards are not displayed above) */}
+            {validVariants.length <= 1 && formattedAttributes.length > 0 && (
               <div className="my-6 space-y-4 border-t border-b py-4 border-border">
                 {formattedAttributes.map(({ key, label, values }) => {
                   if (!Array.isArray(values) || values.length === 0) return null;
@@ -895,11 +955,28 @@ const ProductDetail = () => {
               )}
             </div>
 
+            {/* 🔄 SUBSCRIPTION AVAILABILITY STATUS BADGE */}
+            {isSubscriptionAvailable && (
+              <div className="mb-4 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 via-amber-50 to-amber-100/60 border border-amber-300/80 rounded-2xl p-3.5 shadow-2xs">
+                <span className="text-amber-600 text-xl font-bold bg-white p-2 rounded-xl border border-amber-200 shadow-xs">🔄</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-xs text-amber-950">Subscription Order Available</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded">10% OFF</span>
+                  </div>
+                  <span className="text-[11px] text-amber-900/90 font-semibold block mt-0.5">
+                    This item supports daily, weekly, or monthly doorstep recurring deliveries.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ACTION BUTTONS */}
             <div className="flex gap-4">
-              <Button onClick={handleAddToCart} className="flex-1 bg-accent text-white font-bold" disabled={isOutOfStock}>
+              <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-bold h-12 rounded-xl shadow-md cursor-pointer" disabled={isOutOfStock}>
                 Add to Cart
               </Button>
-              <Button onClick={handleBuyNow} className="flex-1 bg-navy text-white font-bold" disabled={isOutOfStock}>
+              <Button onClick={handleBuyNow} className="flex-1 bg-navy hover:bg-navy/90 text-white font-bold h-12 rounded-xl shadow-md cursor-pointer" disabled={isOutOfStock}>
                 Buy Now
               </Button>
             </div>
@@ -1069,6 +1146,41 @@ const ProductDetail = () => {
           </div>
         )}
       </section>
+
+      {/* 🛍️ RELATED CATEGORY PRODUCTS */}
+      {similarProducts.length > 0 && (
+        <section className="container mx-auto px-4 py-8 text-left border-t border-slate-200/80 mt-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-3 py-0.5 rounded-full shadow-xs">
+                ✨ SIMILAR ITEMS
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading mt-1.5 flex items-center gap-2">
+                <span>🛍️</span>
+                <span>Related Category Products</span>
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Explore more products from {product.categoryId?.name || product.categoryName || product.category || "this category"}
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-2xl border-slate-300 text-[#0A1128] font-extrabold text-xs hover:bg-[#0A1128] hover:text-white transition cursor-pointer self-start sm:self-auto"
+              onClick={() => navigate(`/category/${encodeURIComponent(product.categoryId?.name || product.categoryName || product.category || "All")}`)}
+            >
+              Explore Category &rarr;
+            </Button>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth">
+            {similarProducts.map((p) => (
+              <ProductCard key={p._id || p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* SHARE POPUP */}
       {showShare && (

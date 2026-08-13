@@ -178,6 +178,82 @@ export const getItemPackingFee = (item: any): number => {
   return Number.isFinite(val) && val > 0 ? val : 0;
 };
 
+export const getItemPlatformFee = (item: any): number => {
+  if (!item) return 0;
+
+  let distFrom =
+    item.distributedFrom ||
+    item.adminPricing?.distributedFrom ||
+    item.product?.adminPricing?.distributedFrom ||
+    item.productId?.adminPricing?.distributedFrom ||
+    item.attributes?.distributedFrom ||
+    item.product?.attributes?.distributedFrom ||
+    item.productId?.attributes?.distributedFrom ||
+    item.commissionType ||
+    item.adminPricing?.commissionType ||
+    item.product?.adminPricing?.commissionType ||
+    item.productId?.adminPricing?.commissionType;
+
+  const vendorCommPct = Number(
+    item.vendorCommissionPercent ??
+    item.adminPricing?.vendorCommissionPercent ??
+    item.product?.adminPricing?.vendorCommissionPercent ??
+    item.productId?.adminPricing?.vendorCommissionPercent ??
+    0
+  );
+
+  const platformFeePct = Number(
+    item.platformFeePercent ??
+    item.adminPricing?.platformFeePercent ??
+    item.product?.adminPricing?.platformFeePercent ??
+    item.productId?.adminPricing?.platformFeePercent ??
+    0
+  );
+
+  const directFee = Number(
+    item.platformFeeAmount ??
+    item.platformFee ??
+    item.adminPricing?.platformFeeAmount ??
+    item.product?.adminPricing?.platformFeeAmount ??
+    item.productId?.adminPricing?.platformFeeAmount ??
+    0
+  );
+
+  // Smart fallback: if distFrom not set, check if vendorCommissionPercent is set without a platform fee
+  if (!distFrom) {
+    if (vendorCommPct > 0 && directFee === 0 && platformFeePct === 0) {
+      distFrom = 'apexbee_commission';
+    } else {
+      distFrom = 'platform_fee';
+    }
+  }
+
+  // If commission is apexbee_commission / vendor, taken from vendor -> customer pays ₹0 platform fee
+  if (distFrom === 'apexbee_commission' || distFrom === 'vendor' || distFrom === 'vendor_commission') {
+    return 0;
+  }
+
+  // If commission is platform_fee or both:
+  if (Number.isFinite(directFee) && directFee > 0) return directFee;
+
+  const price = getItemPrice(item);
+
+  if (platformFeePct > 0 && price > 0) {
+    return (price * platformFeePct) / 100;
+  }
+
+  const fixedFee = Number(
+    item.commissionAmount ??
+    item.adminPricing?.vendorCommissionAmount ??
+    0
+  );
+  if ((distFrom === 'platform_fee' || distFrom === 'platform' || distFrom === 'both') && fixedFee > 0) {
+    return fixedFee;
+  }
+
+  return 0;
+};
+
 /** ✅ robust price picker (base selling price before shipping & packing) */
 const getItemPrice = (item: any) => {
   const p =
@@ -230,10 +306,21 @@ const Checkout = () => {
   const [locationFetching, setLocationFetching] = useState(false);
   const [locationError, setLocationError] = useState<string>("");
 
-  // Fulfillment
+  // Fulfillment & Delivery Preferences
   const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">(
     "delivery"
   );
+  const [deliveryMode, setDeliveryMode] = useState<"standard" | "express" | "same_day" | "scheduled">("standard");
+  const [deliveryInstruction, setDeliveryInstruction] = useState<string>("call_before");
+  const [customInstruction, setCustomInstruction] = useState<string>("");
+  const [deliverySlot, setDeliverySlot] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [deliveryScheduledDate, setDeliveryScheduledDate] = useState<string>(
+    new Date(Date.now() + 86400000).toISOString().split("T")[0]
+  );
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [pickupLocationId, setPickupLocationId] = useState<string>("");
   const [pickupSlot, setPickupSlot] = useState<PickupSlot | null>(null);
@@ -271,16 +358,6 @@ const Checkout = () => {
   const [pinError, setPinError] = useState<string>("");
   const [pinMeta, setPinMeta] = useState<{ charge: number; etaDays: number } | null>(
     null
-  );
-
-  // Delivery Instructions & Gift Wrap
-  const [deliveryInstructions, setDeliveryInstructions] = useState("");
-  const [giftWrap, setGiftWrap] = useState(false);
-  const [giftMessage, setGiftMessage] = useState("");
-  const [deliveryMode, setDeliveryMode] = useState<"express" | "same_day" | "next_day" | "scheduled">("next_day");
-  const [deliverySlot, setDeliverySlot] = useState<"morning" | "afternoon" | "evening">("morning");
-  const [deliveryScheduledDate, setDeliveryScheduledDate] = useState<string>(
-    new Date(Date.now() + 86400000).toISOString().split("T")[0]
   );
 
   // Calculate initial delivery fee from items if cartData.deliveryFee is not set or 0
@@ -400,6 +477,21 @@ const Checkout = () => {
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [availableCoupons, setAvailableCoupons] = useState<CouponRule[]>([]);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  const totalPackageCharges = useMemo(() => {
+    return orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
+  }, [orderDetails.items]);
+
+  const totalPlatformCharges = useMemo(() => {
+    return orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
+  }, [orderDetails.items]);
+
+  const totalGstAmount = useMemo(() => {
+    const finalShipping = fulfillmentType === "pickup" || preOrderInfo?.hasPreOrder ? 0 : orderDetails.shipping;
+    const discountedPrice = Math.max(0, orderDetails.subtotal - (couponDiscount || 0));
+    const taxable = discountedPrice + totalPackageCharges + finalShipping + totalPlatformCharges + (giftWrap ? 29 : 0);
+    return Math.round(taxable * 0.05);
+  }, [orderDetails.subtotal, couponDiscount, totalPackageCharges, orderDetails.shipping, totalPlatformCharges, giftWrap, fulfillmentType, preOrderInfo?.hasPreOrder]);
 
   useEffect(() => {
     setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
@@ -838,8 +930,44 @@ const Checkout = () => {
   };
 
   /** -----------------------------
-   * Address add/edit
+   * Address add/edit handlers
    * ---------------------------- */
+  const onOpenAddNewAddress = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const userName = user?.name || user?.username || "";
+    const userPhone = user?.phone || user?.mobile || "";
+
+    setEditingAddress(null);
+    setAddressForm({
+      name: userName,
+      phone: userPhone,
+      pincode: "",
+      address: "",
+      city: "",
+      state: "",
+      isDefault: addresses.length === 0,
+      type: "Home",
+    });
+    setLocationError("");
+    setShowAddressDialog(true);
+  };
+
+  const onOpenEditAddress = (addr: Address) => {
+    setEditingAddress(addr);
+    setAddressForm({
+      name: addr.name || "",
+      phone: addr.phone || "",
+      pincode: addr.pincode || "",
+      address: addr.address || "",
+      city: addr.city || "",
+      state: addr.state || "",
+      isDefault: addr.isDefault || false,
+      type: addr.type === "work" ? "Office" : addr.type === "other" ? "Other" : "Home",
+    });
+    setLocationError("");
+    setShowAddressDialog(true);
+  };
+
   const isAddressFormValid = () =>
     addressForm.name.trim() &&
     onlyDigits(addressForm.phone).length === 10 &&
@@ -1057,10 +1185,12 @@ const Checkout = () => {
 
     setCouponDiscount(disc);
 
-    // GST Tax applied on the discounted price + packing + shipping (after coupon discount)
+    // GST Tax applied on the discounted price + packing + shipping + platform fee + gift wrap (after coupon discount)
     const discountedPrice = Math.max(0, calculatedSubtotal - disc);
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
-    const taxableAmount = discountedPrice + totalPacking + currentShipping;
+    const totalPlatform = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
+    const giftWrapFee = giftWrap ? 29 : 0;
+    const taxableAmount = discountedPrice + totalPacking + currentShipping + totalPlatform + giftWrapFee;
     const gstAmount = Math.round(taxableAmount * 0.05);
 
     // Base Total = Taxable Amount + GST
@@ -1095,6 +1225,8 @@ const Checkout = () => {
     selectedPayment,
     isFirstOrder,
     fulfillmentType,
+    deliveryMode,
+    giftWrap,
     preOrderInfo.hasPreOrder,
     useWallet,
     useRewardPoints,
@@ -1156,10 +1288,11 @@ const Checkout = () => {
       finalCouponDiscount = couponDiscount;
     }
 
-    // GST Tax applied on the discounted price + packing + shipping (after coupon discount)
+    // GST Tax applied on the discounted price + packing + shipping + platform fee (after coupon discount)
     const discountedPrice = Math.max(0, calculatedSubtotal - finalCouponDiscount);
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
-    const taxableAmount = discountedPrice + totalPacking + finalShipping;
+    const totalPlatform = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
+    const taxableAmount = discountedPrice + totalPacking + finalShipping + totalPlatform;
     const gstAmount = Math.round(taxableAmount * 0.05);
 
     // Grand total = taxableAmount + GST
@@ -1237,6 +1370,13 @@ const Checkout = () => {
         0
       );
 
+      const calcMrpTotal = mappedItems.reduce(
+        (acc: number, it: any) => acc + (Number(it.originalPrice || it.price) * Number(it.quantity || 1)),
+        0
+      );
+
+      const mrpDiscount = Math.max(0, calcMrpTotal - finalSubtotal);
+
       let upiDetails: any = null;
       if (finalPaymentMethod === "upi") {
         upiDetails = {
@@ -1253,8 +1393,8 @@ const Checkout = () => {
             type: "delivery",
             deliveryFee: finalShipping,
             deliveryMode,
-            deliverySlot,
-            scheduledDate: deliveryMode === "scheduled" ? deliveryScheduledDate : null
+            deliveryInstruction,
+            customInstruction,
           };
 
       const orderData: any = {
@@ -1307,9 +1447,14 @@ const Checkout = () => {
             (acc: number, it: any) => acc + it.quantity,
             0
           ),
+          totalMrp: calcMrpTotal,
+          mrpDiscount,
           subtotal: finalSubtotal,
+          packageCharge: totalPacking,
+          platformFee: totalPlatform,
           shipping: finalShipping,
           discount: mrpDiscount + finalCouponDiscount,
+          couponDiscount: finalCouponDiscount,
           walletDeduction: walletDeducted,
           rewardsDeduction: pointsDeducted,
           tax: gstAmount,
@@ -1507,19 +1652,6 @@ const Checkout = () => {
     return "";
   }, [orderDetails.items, userPincode]);
 
-  const totalPackageCharges = useMemo(() => {
-    return orderDetails.items.reduce((sum: number, item: any) => {
-      const packing = getItemPackingFee(item);
-      return sum + (packing * (item.quantity || 1));
-    }, 0);
-  }, [orderDetails.items]);
-
-  const totalGstAmount = useMemo(() => {
-    const discountedPrice = Math.max(0, orderDetails.subtotal - couponDiscount);
-    const taxableAmount = discountedPrice + totalPackageCharges + orderDetails.shipping;
-    return Math.round(taxableAmount * 0.05);
-  }, [orderDetails.subtotal, couponDiscount, totalPackageCharges, orderDetails.shipping]);
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
       <Navbar />
@@ -1556,7 +1688,7 @@ const Checkout = () => {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-start relative">
           {/* Left */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Fulfillment */}
@@ -1726,7 +1858,7 @@ const Checkout = () => {
               <div className="bg-white rounded-lg border p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold">Delivery Address</h2>
-                  <Button variant="outline" size="sm" onClick={handleAddNewAddress} className="w-full sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={onOpenAddNewAddress} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" /> Add New
                   </Button>
                 </div>
@@ -1768,7 +1900,7 @@ const Checkout = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEditAddress(addr);
+                              onOpenEditAddress(addr);
                             }}
                             className="flex-shrink-0"
                           >
@@ -1778,6 +1910,110 @@ const Checkout = () => {
                       </div>
                     ))
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* 📝 Delivery Preferences */}
+            {fulfillmentType === "delivery" && (
+              <div className="bg-white rounded-lg border p-4 sm:p-6 text-left space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-navy flex items-center gap-2">
+                    <span>📝</span>
+                    <span>Delivery Preferences</span>
+                  </h2>
+                  <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300">
+                    {deliveryMode === "express" ? "🚀 Express 15-30 Min" : deliveryMode === "same_day" ? "🌆 Same Day" : "🚚 Standard"}
+                  </span>
+                </div>
+
+                {/* Delivery Speed / Slot selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Select Delivery Speed / Slot
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      {
+                        id: "standard",
+                        title: "Standard Delivery",
+                        desc: "Free / Normal local delivery",
+                        badge: "Standard",
+                        icon: "🚚",
+                      },
+                      {
+                        id: "express",
+                        title: "Express 15-30 Mins",
+                        desc: "+₹49 Superfast express delivery",
+                        badge: "🚀 15-30 Min",
+                        icon: "⚡",
+                      },
+                      {
+                        id: "same_day",
+                        title: "Same Day Slot",
+                        desc: "+₹19 Delivered by 9:00 PM today",
+                        badge: "🌆 Same Day",
+                        icon: "🕒",
+                      },
+                    ].map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={() => setDeliveryMode(opt.id as any)}
+                        className={`border rounded-xl p-3 cursor-pointer transition-all ${deliveryMode === opt.id
+                            ? "border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/30"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                          }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm">{opt.icon}</span>
+                          <span className="text-[9px] font-extrabold bg-navy/10 text-navy px-2 py-0.5 rounded">
+                            {opt.badge}
+                          </span>
+                        </div>
+                        <p className="font-bold text-xs text-navy">{opt.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Delivery Instructions Selection */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Delivery Instructions for Driver
+                  </Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { id: "call_before", label: "Call Before Delivery", icon: "📞" },
+                      { id: "ring_bell", label: "Ring Doorbell", icon: "🔔" },
+                      { id: "leave_gate", label: "Leave at Gate / Door", icon: "🚪" },
+                      { id: "contactless", label: "Contactless Drop-off", icon: "🛡️" },
+                    ].map((inst) => (
+                      <button
+                        type="button"
+                        key={inst.id}
+                        onClick={() => setDeliveryInstruction(inst.id)}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer text-left ${deliveryInstruction === inst.id
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-xs ring-1 ring-indigo-400/30"
+                            : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
+                          }`}
+                      >
+                        <span className="text-sm">{inst.icon}</span>
+                        <span className="truncate">{inst.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Note input */}
+                <div className="pt-2">
+                  <input
+                    type="text"
+                    placeholder="Add special instructions for delivery partner (e.g. Ring flat 302 bell)..."
+                    value={customInstruction}
+                    onChange={(e) => setCustomInstruction(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:border-navy focus:outline-none bg-slate-50 text-navy"
+                  />
                 </div>
               </div>
             )}
@@ -1872,121 +2108,35 @@ const Checkout = () => {
               )}
             </div>
 
-            {/* Delivery Instructions */}
+            {/* 🎁 Gift Wrap */}
             {fulfillmentType === "delivery" && (
-              <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  📝 Delivery Preferences
-                </h2>
-
-                {/* Delivery Instructions */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-navy">Delivery Instructions (optional)</Label>
-                  <Textarea
-                    value={deliveryInstructions}
-                    onChange={(e) => setDeliveryInstructions(e.target.value)}
-                    placeholder="E.g., Leave at door, Ring bell twice, Call before delivery..."
-                    rows={2}
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Fulfillment Speed selection */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-navy">Fulfillment Mode / Speed</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { key: "express", label: "Express ⚡", desc: "30-45 mins (+₹49)" },
-                      { key: "same_day", label: "Same Day 🛵", desc: "Delivered today (+₹19)" },
-                      { key: "next_day", label: "Next Day 📅", desc: "Delivered tomorrow (FREE)" },
-                      { key: "scheduled", label: "Scheduled ⏰", desc: "Select future date (FREE)" },
-                    ].map((mode) => (
-                      <button
-                        key={mode.key}
-                        type="button"
-                        onClick={() => setDeliveryMode(mode.key as any)}
-                        className={`border rounded-xl p-3 text-left transition-all ${deliveryMode === mode.key
-                          ? "border-accent bg-accent/5 shadow-sm"
-                          : "border-gray-200 hover:border-gray-300"
-                          }`}
-                      >
-                        <p className={`text-xs font-bold ${deliveryMode === mode.key ? "text-accent" : "text-navy"}`}>{mode.label}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-normal">{mode.desc}</p>
-                      </button>
-                    ))}
+              <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-navy flex items-center gap-1.5">🎁 Gift Wrap (+₹29)</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Add a premium gift wrap with a personal message card</p>
                   </div>
-                </div>
-
-                {/* Scheduled Delivery Date Picker */}
-                {deliveryMode === "scheduled" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-navy">Select Delivery Date</Label>
+                  <label className="relative inline-flex items-center cursor-pointer">
                     <input
-                      type="date"
-                      value={deliveryScheduledDate}
-                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                      onChange={(e) => setDeliveryScheduledDate(e.target.value)}
-                      className="w-full border rounded-xl text-xs px-3 py-2 bg-white font-medium text-navy focus:outline-none"
+                      type="checkbox"
+                      checked={giftWrap}
+                      onChange={(e) => setGiftWrap(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                  </label>
+                </div>
+                {giftWrap && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-navy">Gift Message (optional)</Label>
+                    <Input
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                      placeholder="Happy Birthday! 🎉 With love..."
+                      className="text-sm"
                     />
                   </div>
                 )}
-
-                {/* Delivery Time Slot Selector */}
-                {deliveryMode !== "express" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-navy">Select Delivery Slot Time</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { key: "morning", label: "Morning", desc: "9 AM - 12 PM" },
-                        { key: "afternoon", label: "Afternoon", desc: "12 PM - 4 PM" },
-                        { key: "evening", label: "Evening", desc: "4 PM - 8 PM" },
-                      ].map((slot) => (
-                        <button
-                          key={slot.key}
-                          type="button"
-                          onClick={() => setDeliverySlot(slot.key as any)}
-                          className={`border rounded-xl p-3 text-left transition-all ${deliverySlot === slot.key
-                            ? "border-accent bg-accent/5 shadow-sm"
-                            : "border-gray-200 hover:border-gray-300"
-                            }`}
-                        >
-                          <p className={`text-xs font-bold ${deliverySlot === slot.key ? "text-accent" : "text-navy"}`}>{slot.label}</p>
-                          <p className="text-[9px] text-muted-foreground mt-0.5">{slot.desc}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Gift Wrap */}
-                <div className="border-t pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-navy flex items-center gap-1.5">🎁 Gift Wrap (+₹29)</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Add a premium gift wrap with a personal message card</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={giftWrap}
-                        onChange={(e) => setGiftWrap(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
-                    </label>
-                  </div>
-                  {giftWrap && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-navy">Gift Message (optional)</Label>
-                      <Input
-                        value={giftMessage}
-                        onChange={(e) => setGiftMessage(e.target.value)}
-                        placeholder="Happy Birthday! 🎉 With love..."
-                        className="text-sm"
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
@@ -2092,13 +2242,21 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Right: Summary - STICKY FIXED WHILE SCROLLING */}
-          <div className="lg:col-span-1 self-start sticky top-24 z-30">
+          {/* Right: Summary & Product Details - STICKY FIXED WHILE SCROLLING */}
+          <div className="lg:col-span-1 lg:sticky lg:top-24 z-30 self-start">
             <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-200">
               <div className="mb-4 sm:mb-6">
-                <h3 className="font-semibold text-lg mb-3 sm:mb-4">Product Details</h3>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h3 className="font-extrabold text-lg text-navy font-heading flex items-center gap-2">
+                    <span>🛍️</span>
+                    <span>Product Details</span>
+                  </h3>
+                  <span className="text-[10px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full uppercase">
+                    {orderDetails.items.length} {orderDetails.items.length === 1 ? "Item" : "Items"}
+                  </span>
+                </div>
 
-                <div className="space-y-3 sm:space-y-4 max-h-60 sm:max-h-80 overflow-y-auto">
+                <div className="space-y-3 sm:space-y-4 max-h-72 sm:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
                   {orderDetails.items.map((item: any, index: number) => {
                     const price = getItemPrice(item);
                     const quantity = Number(item.quantity || 1);
@@ -2183,10 +2341,19 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Package Charges</span>
-                  <span>₹{totalPackageCharges.toFixed(2)}</span>
-                </div>
+                {totalPackageCharges > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">Package Charges</span>
+                    <span>₹{totalPackageCharges.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {totalPlatformCharges > 0 && (
+                  <div className="flex justify-between text-amber-800 font-bold bg-amber-50 p-2 rounded-xl border border-amber-200">
+                    <span className="text-sm">Platform Fee</span>
+                    <span>+₹{totalPlatformCharges.toFixed(2)}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground text-sm">Shipping Charges</span>
@@ -2278,29 +2445,64 @@ const Checkout = () => {
           </DialogHeader>
 
           <div className="grid gap-3 sm:gap-4 py-4">
-            {/* ── Live Location Button ── */}
-            <button
-              type="button"
-              onClick={fetchLiveLocation}
-              disabled={locationFetching}
-              className="group relative flex items-center justify-center gap-2.5 w-full rounded-xl border-2 border-dashed border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-950/40 dark:to-indigo-950/40 dark:border-blue-600 px-4 py-3 text-sm font-semibold text-blue-700 dark:text-blue-300 transition-all duration-200 hover:shadow-md hover:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {locationFetching ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Detecting your location…</span>
-                </>
-              ) : (
-                <>
+            {/* ── Current Detected GPS Location Banner ── */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
                   </span>
-                  <Navigation className="h-4 w-4" />
-                  <span>Use Live Location to Auto-fill</span>
-                </>
-              )}
-            </button>
+                  <span className="text-xs font-black uppercase text-blue-900 dark:text-blue-200 tracking-wider flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    Current Location
+                  </span>
+                </div>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchLiveLocation}
+                  disabled={locationFetching}
+                  className="h-7 text-[11px] font-extrabold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-2.5 rounded-lg flex items-center gap-1 cursor-pointer"
+                >
+                  {locationFetching ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Detecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="h-3 w-3 text-blue-600" />
+                      <span>Detect GPS Location</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/60 text-xs font-medium text-slate-800 dark:text-slate-200">
+                {addressForm.address || addressForm.city || addressForm.pincode ? (
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-base leading-none">📍</span>
+                    <div>
+                      <strong className="block text-navy dark:text-amber-400 font-bold">
+                        {[addressForm.address, addressForm.city, addressForm.state].filter(Boolean).join(", ")}
+                      </strong>
+                      {addressForm.pincode && (
+                        <span className="text-[10px] text-muted-foreground font-mono font-bold block mt-0.5">
+                          Pincode: {addressForm.pincode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-slate-500 text-[11px] italic flex items-center justify-between">
+                    <span>Click "Detect GPS Location" to auto-fetch your current address</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {locationError && (
               <p className="text-xs text-red-500 flex items-center gap-1">

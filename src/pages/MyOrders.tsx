@@ -278,22 +278,42 @@ const PICKUP_TRACKING_STEPS = [
   { key: "delivered", label: "Picked Up", icon: "🎉" },
 ];
 
+const getTrackingStepIndex = (status?: string, isPickup: boolean = false): number => {
+  if (!status) return 0;
+  const s = status.toLowerCase().trim();
+  if (s === 'delivered' || s === 'picked up' || s === 'completed') return 4;
+  if (['shipped', 'out_for_delivery', 'out for delivery', 'accepted', 'assigned', 'reached vendor', 'reached customer'].includes(s)) return 3;
+  if (['processing', 'packed', 'preparing', 'ready_for_pickup', 'ready for pickup', 'ready'].includes(s)) return 2;
+  if (['confirmed', 'payment_verified', 'approved'].includes(s)) return 1;
+  return 0; // pending, payment_pending, placed, etc.
+};
+
 const TrackingTimeline = ({ order }: { order: Order }) => {
   const isPickup = order.fulfillment?.type === "pickup" || order.deliveryType === "pickup";
   const steps = isPickup ? PICKUP_TRACKING_STEPS : TRACKING_STEPS;
   const currentStatus = order.orderStatus?.currentStatus || "pending";
-  const normalizedStatus = currentStatus === 'payment_pending' ? 'pending' :
-    currentStatus === 'payment_verified' ? 'confirmed' :
-      currentStatus;
-  const currentIdx = Math.max(0, steps.findIndex((s) => s.key === normalizedStatus));
+  const currentIdx = getTrackingStepIndex(currentStatus, isPickup);
+
+  // Deduplicate consecutive identical timeline logs
+  const rawTimeline = order.orderStatus?.timeline || [];
+  const deduplicatedTimeline = rawTimeline.reduce<TimelineEntry[]>((acc, item) => {
+    const last = acc[acc.length - 1];
+    const isDup = last &&
+      last.status.toLowerCase().trim() === item.status.toLowerCase().trim() &&
+      (last.description || "").trim() === (item.description || "").trim();
+    if (!isDup) {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
 
   return (
     <div className="relative py-2">
-      {/* Horizontal bar for desktop */}
+      {/* Upper Stepper Progress Bar (Desktop) */}
       <div className="hidden sm:flex items-start justify-between relative">
         <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 z-0" />
         <div
-          className="absolute top-5 left-0 h-1 bg-green-500 z-0 transition-all duration-700"
+          className="absolute top-5 left-0 h-1 bg-emerald-500 z-0 transition-all duration-700"
           style={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100)}%` }}
         />
         {steps.map((step, i) => {
@@ -303,13 +323,13 @@ const TrackingTimeline = ({ order }: { order: Order }) => {
             <div key={step.key} className="flex flex-col items-center z-10 flex-1">
               <div
                 className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-base transition-all ${done
-                  ? "bg-green-500 border-green-500 text-white shadow-md"
+                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md font-bold"
                   : "bg-white border-gray-300 text-gray-400"
-                  } ${active ? "ring-4 ring-green-200" : ""}`}
+                  } ${active ? "ring-4 ring-emerald-200 animate-pulse" : ""}`}
               >
                 {done ? "✓" : step.icon}
               </div>
-              <p className={`text-xs mt-2 text-center font-medium ${done ? "text-green-700" : "text-gray-400"}`}>
+              <p className={`text-xs mt-2 text-center font-bold ${done ? "text-emerald-700" : "text-gray-400"}`}>
                 {step.label}
               </p>
             </div>
@@ -317,34 +337,55 @@ const TrackingTimeline = ({ order }: { order: Order }) => {
         })}
       </div>
 
-      {/* Vertical for mobile */}
+      {/* Upper Stepper Progress Bar (Mobile) */}
       <div className="sm:hidden space-y-3">
         {steps.map((step, i) => {
           const done = i <= currentIdx;
           return (
             <div key={step.key} className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${done ? "bg-green-500 text-white" : "bg-gray-100 text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold ${done ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400"}`}>
                 {done ? "✓" : step.icon}
               </div>
-              <p className={`text-sm font-medium ${done ? "text-green-700" : "text-gray-400"}`}>{step.label}</p>
+              <p className={`text-sm font-bold ${done ? "text-emerald-700" : "text-gray-400"}`}>{step.label}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Timeline entries */}
-      {(order.orderStatus?.timeline || []).length > 0 && (
-        <div className="mt-4 space-y-2 border-t pt-4">
-          {(order.orderStatus?.timeline || []).map((t, i) => (
-            <div key={t._id || i} className="flex gap-3 text-sm">
-              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${i === 0 ? "bg-green-500" : "bg-gray-300"}`} />
-              <div>
-                <p className="font-medium capitalize">{t.status}</p>
-                {t.description && <p className="text-muted-foreground text-xs">{t.description}</p>}
-                <p className="text-xs text-muted-foreground">{formatDateTime(t.timestamp)}</p>
-              </div>
-            </div>
-          ))}
+      {/* Lower Detailed Activity Logs */}
+      {deduplicatedTimeline.length > 0 && (
+        <div className="mt-6 border-t pt-5 space-y-4">
+          <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <span>📋</span> Detailed Activity Log ({deduplicatedTimeline.length} verified events)
+          </h4>
+
+          <div className="relative pl-3 space-y-4">
+            {/* Vertical timeline connecting bar */}
+            <div className="absolute left-[17px] top-2 bottom-3 w-0.5 bg-emerald-500 z-0" />
+
+            {deduplicatedTimeline.map((t, i) => {
+              const isLatest = i === deduplicatedTimeline.length - 1;
+              return (
+                <div key={t._id || i} className="relative flex items-start gap-3.5 z-10">
+                  {/* Status Indicator Dot - ALL recorded timeline logs are completed (filled green!) */}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 transition-all ${isLatest ? "bg-emerald-600 text-white ring-4 ring-emerald-100 scale-110 shadow-sm" : "bg-emerald-500 text-white"
+                    }`}>
+                    ✓
+                  </div>
+
+                  <div className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl p-3 shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-1">
+                      <p className="font-extrabold text-xs text-navy capitalize">{t.status}</p>
+                      <span className="text-[10px] font-bold text-slate-400">{formatDateTime(t.timestamp)}</span>
+                    </div>
+                    {t.description && (
+                      <p className="text-[11px] font-medium text-slate-600 mt-1 leading-snug">{t.description}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -982,6 +1023,18 @@ const MyOrders = () => {
                   // Find return for this order (if any)
                   const orderReturn = returns.find((r) => r.orderId === order._id);
 
+                  const instructionLabels: Record<string, string> = {
+                    call_before: "📞 Call recipient before delivery",
+                    leave_at_door: "🚪 Leave package at doorstep",
+                    dont_ring_bell: "🔔 Do not ring doorbell",
+                  };
+                  const deliveryInstrStr = order.fulfillment?.deliveryInstruction
+                    ? instructionLabels[order.fulfillment.deliveryInstruction] || order.fulfillment.deliveryInstruction
+                    : "";
+
+                  const estDeliveryDateStr = order.deliveryDetails?.expectedDelivery ||
+                    (order.createdAt ? new Date(new Date(order.createdAt).getTime() + 48 * 60 * 60 * 1000).toISOString() : "");
+
                   return (
                     <Card key={order._id} className={`border ${statusConfig.borderColor} overflow-hidden`}>
                       {/* Card Header */}
@@ -1183,69 +1236,227 @@ const MyOrders = () => {
                             {/* Address + Payment + Fulfillment Details */}
                             <div className="grid sm:grid-cols-2 gap-4">
                               {(order.fulfillment?.type === "pickup" || order.deliveryType === "pickup") ? (
-                                <div className="p-3.5 border-2 border-amber-500/30 bg-amber-500/5 rounded-xl space-y-1.5">
-                                  <h4 className="font-bold text-sm mb-1 text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
-                                    <Store className="w-4 h-4 text-amber-600" /> In-Store Self Pickup Location
-                                  </h4>
-                                  <p className="text-sm font-bold text-slate-900">ApexBee Partner Storefront</p>
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 text-amber-600" /> {order.shippingAddress?.address || "Main Market Storefront, Verified ApexBee Hub"}
+                                <div className="p-4 border-2 border-amber-500/30 bg-amber-500/5 rounded-2xl space-y-2 text-left">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-extrabold text-xs text-amber-800 flex items-center gap-1.5 uppercase tracking-wider">
+                                      <Store className="w-4 h-4 text-amber-600" /> In-Store Self Pickup
+                                    </h4>
+                                    <Badge className="bg-amber-500 text-white font-bold text-[10px]">
+                                      🏪 Store Pickup
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm font-black text-slate-900">ApexBee Partner Storefront</p>
+                                  <p className="text-xs text-slate-600 flex items-start gap-1">
+                                    <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                    <span>{order.shippingAddress?.address || "Main Market Storefront, Verified ApexBee Hub"}</span>
                                   </p>
                                   {order.fulfillment?.pickupSlot && (
-                                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2.5 py-1 rounded-md w-fit mt-1">
-                                      🗓️ Pickup Slot: {order.fulfillment.pickupSlot.date} • {order.fulfillment.pickupSlot.time}
-                                    </p>
+                                    <div className="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl w-fit mt-1">
+                                      🗓️ Pickup Slot: <strong>{order.fulfillment.pickupSlot.date} • {order.fulfillment.pickupSlot.time}</strong>
+                                    </div>
                                   )}
                                   {order.pickupVerification?.otp && (
-                                    <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 font-extrabold text-xs flex items-center justify-between">
-                                      <span>STORE PICKUP OTP:</span>
-                                      <span className="font-mono text-sm tracking-widest text-emerald-800 font-black">{order.pickupVerification.otp}</span>
+                                    <div className="mt-2 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-800 font-extrabold text-xs flex items-center justify-between">
+                                      <span>STORE PICKUP VERIFICATION OTP:</span>
+                                      <span className="font-mono text-base tracking-[0.2em] text-emerald-900 font-black bg-white px-2 py-0.5 rounded border border-emerald-200">{order.pickupVerification.otp}</span>
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <div className="p-3.5 border rounded-xl bg-slate-50/50">
-                                  <h4 className="font-bold text-sm mb-1.5 flex items-center gap-1.5 text-navy">
-                                    <MapPin className="w-4 h-4 text-navy" /> Home Delivery Address
-                                  </h4>
-                                  <p className="text-sm font-semibold text-slate-900">{order.shippingAddress?.name}</p>
-                                  <p className="text-xs text-muted-foreground">{order.shippingAddress?.phone}</p>
-                                  <p className="text-xs text-muted-foreground">{order.shippingAddress?.address}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {order.shippingAddress?.city}, {order.shippingAddress?.state} — {order.shippingAddress?.pincode}
+                                <div className="p-4 border rounded-2xl bg-slate-50/70 text-left space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-extrabold text-xs text-navy flex items-center gap-1.5 uppercase tracking-wider">
+                                      <MapPin className="w-4 h-4 text-navy" /> Home Delivery Address
+                                    </h4>
+                                    {order.shippingAddress?.type && (
+                                      <Badge variant="outline" className="text-[10px] font-bold bg-white text-navy border-slate-300">
+                                        {order.shippingAddress.type.toUpperCase()}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm font-black text-slate-900">{order.shippingAddress?.name || "Recipient"}</p>
+                                  <p className="text-xs text-slate-600 font-semibold">📞 {order.shippingAddress?.phone || "Phone not provided"}</p>
+                                  <p className="text-xs text-slate-600 leading-relaxed">{order.shippingAddress?.address || "Delivery address registered"}</p>
+                                  <p className="text-xs font-bold text-slate-800">
+                                    {[order.shippingAddress?.city, order.shippingAddress?.state].filter(Boolean).join(", ")}
+                                    {order.shippingAddress?.pincode ? ` — ${order.shippingAddress.pincode}` : ""}
                                   </p>
                                 </div>
                               )}
 
-                              <div className="p-3.5 border rounded-xl bg-slate-50/50 space-y-1">
-                                <h4 className="font-bold text-sm mb-1.5 flex items-center gap-1.5 text-navy">
-                                  <CreditCard className="w-4 h-4 text-navy" /> Payment &amp; Fulfillment
+                              <div className="p-4 border rounded-2xl bg-slate-50/70 text-left space-y-2">
+                                <h4 className="font-extrabold text-xs text-navy flex items-center gap-1.5 uppercase tracking-wider">
+                                  <CreditCard className="w-4 h-4 text-navy" /> Payment &amp; Delivery Logistics
                                 </h4>
-                                <p className="text-xs text-muted-foreground">Fulfillment: <strong className="text-navy font-bold">{order.fulfillment?.type === 'pickup' || order.deliveryType === 'pickup' ? '🏬 In-Store Self Pickup' : '🚚 Home Delivery'}</strong></p>
-                                <p className="text-xs text-muted-foreground">Payment Method: <strong className="text-navy">{paymentLabel[order.paymentDetails?.method || ""] || order.paymentDetails?.method || "—"}</strong></p>
-                                <p className="text-xs text-muted-foreground">Payment Status: <strong className="capitalize text-emerald-600 font-bold">{order.paymentDetails?.status || "—"}</strong></p>
-                                {order.fulfillment?.type !== 'pickup' && order.deliveryType !== 'pickup' && (
-                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> Est. Delivery: <strong>{formatDate(order.deliveryDetails?.expectedDelivery)}</strong>
+
+                                <div className="space-y-1 text-xs text-slate-600">
+                                  <p className="flex justify-between">
+                                    <span>Fulfillment Mode:</span>
+                                    <strong className="text-navy font-bold">{order.fulfillment?.type === 'pickup' || order.deliveryType === 'pickup' ? '🏬 In-Store Self Pickup' : '🚚 Home Delivery'}</strong>
                                   </p>
-                                )}
+
+                                  {order.fulfillment?.deliveryMode && (
+                                    <p className="flex justify-between">
+                                      <span>Delivery Speed:</span>
+                                      <strong className="text-navy font-bold capitalize">
+                                        {order.fulfillment.deliveryMode === 'express' ? '🚀 Express (Within 24 Hrs)' :
+                                          order.fulfillment.deliveryMode === 'same_day' ? '⚡ Same Day Delivery' :
+                                            '📦 Standard (2-3 Days)'}
+                                      </strong>
+                                    </p>
+                                  )}
+
+                                  <p className="flex justify-between">
+                                    <span>Payment Method:</span>
+                                    <strong className="text-navy font-bold">{paymentLabel[order.paymentDetails?.method || ""] || order.paymentDetails?.method || "Cash on Delivery"}</strong>
+                                  </p>
+
+                                  <p className="flex justify-between">
+                                    <span>Payment Status:</span>
+                                    <strong className={`font-bold capitalize ${order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                      {order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' ? 'Verified / Paid ✅' : order.paymentDetails?.status || 'Pending Verification'}
+                                    </strong>
+                                  </p>
+
+                                  {order.fulfillment?.type !== 'pickup' && order.deliveryType !== 'pickup' && (
+                                    <p className="flex justify-between pt-1 border-t border-slate-200 text-slate-800 font-bold">
+                                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-navy" /> Est. Delivery:</span>
+                                      <span className="text-emerald-700 font-extrabold">{formatDate(order.deliveryDetails?.expectedDelivery || estDeliveryDateStr)}</span>
+                                    </p>
+                                  )}
+
+                                  {(order.fulfillment?.deliveryInstruction || order.fulfillment?.customInstruction) && (
+                                    <div className="mt-1.5 p-2 bg-blue-50/80 border border-blue-100 rounded-xl text-[11px] text-navy font-semibold">
+                                      <span>💬 Instruction: </span>
+                                      <span>{deliveryInstrStr || order.fulfillment?.customInstruction || order.fulfillment?.deliveryInstruction}</span>
+                                    </div>
+                                  )}
+
+                                  {order.deliveryVerification?.otp && (
+                                    <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 font-bold text-xs flex items-center justify-between">
+                                      <span>SECURE DELIVERY OTP:</span>
+                                      <span className="font-mono text-sm tracking-widest text-emerald-900 font-black">{order.deliveryVerification.otp}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
-                            {/* Order Summary */}
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <h4 className="font-semibold text-sm mb-3">Order Summary</h4>
-                              <div className="space-y-1.5 text-sm">
-                                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal ({order.orderSummary?.itemsCount || (order.orderItems || []).length} items)</span><span>{formatCurrency(order.orderSummary?.subtotal || 0)}</span></div>
-                                {(order.orderSummary?.discount || 0) > 0 && <div className="flex justify-between text-green-600"><span>Product Discount</span><span>-{formatCurrency(order.orderSummary?.discount)}</span></div>}
-                                {(order.orderSummary?.couponDiscount || 0) > 0 && <div className="flex justify-between text-green-600"><span>Coupon {order.coupon?.code ? `(${order.coupon.code})` : ""}</span><span>-{formatCurrency(order.orderSummary?.couponDiscount)}</span></div>}
-                                {(order.orderSummary?.walletDeduction || 0) > 0 && <div className="flex justify-between text-green-600"><span>Wallet Used</span><span>-{formatCurrency(order.orderSummary?.walletDeduction)}</span></div>}
-                                {(order.orderSummary?.rewardsDeduction || 0) > 0 && <div className="flex justify-between text-green-600"><span>Reward Points</span><span>-{formatCurrency(order.orderSummary?.rewardsDeduction)}</span></div>}
-                                <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span className={(order.orderSummary?.shipping || 0) === 0 ? "text-green-600" : ""}>{(order.orderSummary?.shipping || 0) === 0 ? "Free" : formatCurrency(order.orderSummary?.shipping)}</span></div>
-                                {(order.orderSummary?.tax || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">GST (5%)</span><span>{formatCurrency(order.orderSummary?.tax)}</span></div>}
-                                <div className="flex justify-between font-bold text-base pt-2 border-t text-navy"><span>Grand Total</span><span>{formatCurrency(order.orderSummary?.grandTotal || order.orderSummary?.total || 0)}</span></div>
-                              </div>
-                            </div>
+                            {/* Order Summary & Fee Breakdown (Matches Checkout Page) */}
+                            {(() => {
+                              const itemsCount = order.orderSummary?.itemsCount || (order.orderItems || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
+                              const calcMrpTotal = (order.orderItems || []).reduce((sum, item) => {
+                                const orig = item.originalPrice || item.price || 0;
+                                return sum + (orig * (item.quantity || 1));
+                              }, 0);
+                              const totalMrp = order.orderSummary?.totalMrp || (calcMrpTotal > (order.orderSummary?.subtotal || 0) ? calcMrpTotal : 0);
+                              const mrpDiscount = order.orderSummary?.mrpDiscount || (totalMrp > 0 ? Math.max(0, totalMrp - (order.orderSummary?.subtotal || 0)) : 0);
+
+                              const packageCharge = order.orderSummary?.packageCharge || order.orderSummary?.packingCharge || 0;
+                              const platformFee = order.orderSummary?.platformFee || 0;
+                              const shippingFee = order.orderSummary?.shipping ?? order.orderSummary?.deliveryFee ?? 0;
+                              const couponDisc = order.orderSummary?.couponDiscount || order.coupon?.discount || 0;
+                              const couponCodeStr = order.coupon?.code || "";
+                              const walletDeduction = order.orderSummary?.walletDeduction || 0;
+                              const rewardsDeduction = order.orderSummary?.rewardsDeduction || order.orderSummary?.rewardPointsUsed || 0;
+                              const taxAmt = order.orderSummary?.tax || 0;
+                              const grandTotalVal = order.orderSummary?.grandTotal || order.orderSummary?.total || order.paymentDetails?.amount || 0;
+
+                              const totalSavings = mrpDiscount + couponDisc + (shippingFee === 0 ? 40 : 0) + walletDeduction + rewardsDeduction;
+
+                              return (
+                                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-left space-y-3">
+                                  <div className="flex items-center justify-between border-b pb-2.5">
+                                    <h4 className="font-extrabold text-sm text-navy flex items-center gap-2">
+                                      <span>🧾</span> Detailed Order Summary &amp; Bill Breakdown
+                                    </h4>
+                                    <span className="text-xs font-bold text-slate-500">{itemsCount} {itemsCount === 1 ? 'item' : 'items'}</span>
+                                  </div>
+
+                                  <div className="space-y-2 text-xs font-medium text-slate-700">
+                                    {totalMrp > 0 && totalMrp > (order.orderSummary?.subtotal || 0) && (
+                                      <div className="flex justify-between text-slate-500">
+                                        <span>Total Items MRP</span>
+                                        <span className="line-through">{formatCurrency(totalMrp)}</span>
+                                      </div>
+                                    )}
+
+                                    <div className="flex justify-between">
+                                      <span>Items Subtotal</span>
+                                      <span className="font-bold text-slate-900">{formatCurrency(order.orderSummary?.subtotal || 0)}</span>
+                                    </div>
+
+                                    {mrpDiscount > 0 && (
+                                      <div className="flex justify-between text-emerald-600 font-bold">
+                                        <span>Product MRP Savings</span>
+                                        <span>-{formatCurrency(mrpDiscount)}</span>
+                                      </div>
+                                    )}
+
+                                    {packageCharge > 0 && (
+                                      <div className="flex justify-between">
+                                        <span>Packaging &amp; Box Charge</span>
+                                        <span>{formatCurrency(packageCharge)}</span>
+                                      </div>
+                                    )}
+
+                                    {platformFee > 0 && (
+                                      <div className="flex justify-between">
+                                        <span>Platform &amp; Handling Fee</span>
+                                        <span>{formatCurrency(platformFee)}</span>
+                                      </div>
+                                    )}
+
+                                    <div className="flex justify-between">
+                                      <span>Delivery / Shipping Charge</span>
+                                      <span className={shippingFee === 0 ? "text-emerald-600 font-bold" : "font-bold text-slate-900"}>
+                                        {shippingFee === 0 ? "FREE" : formatCurrency(shippingFee)}
+                                      </span>
+                                    </div>
+
+                                    {couponDisc > 0 && (
+                                      <div className="flex justify-between text-emerald-600 font-bold bg-emerald-50/60 p-1.5 rounded-lg border border-emerald-100">
+                                        <span>Coupon Discount {couponCodeStr ? `(${couponCodeStr})` : ""}</span>
+                                        <span>-{formatCurrency(couponDisc)}</span>
+                                      </div>
+                                    )}
+
+                                    {walletDeduction > 0 && (
+                                      <div className="flex justify-between text-emerald-600 font-bold">
+                                        <span>ApexBee Wallet Credit Used</span>
+                                        <span>-{formatCurrency(walletDeduction)}</span>
+                                      </div>
+                                    )}
+
+                                    {rewardsDeduction > 0 && (
+                                      <div className="flex justify-between text-emerald-600 font-bold">
+                                        <span>Reward Points Applied</span>
+                                        <span>-{formatCurrency(rewardsDeduction)}</span>
+                                      </div>
+                                    )}
+
+                                    {taxAmt > 0 && (
+                                      <div className="flex justify-between text-slate-500">
+                                        <span>Government Tax &amp; GST (5%)</span>
+                                        <span>{formatCurrency(taxAmt)}</span>
+                                      </div>
+                                    )}
+
+                                    {totalSavings > 0 && (
+                                      <div className="bg-emerald-100/70 text-emerald-900 font-extrabold text-xs px-3 py-2 rounded-xl flex items-center justify-between border border-emerald-300/50 mt-1">
+                                        <span>🎉 Total Order Savings</span>
+                                        <span>{formatCurrency(totalSavings)} Saved</span>
+                                      </div>
+                                    )}
+
+                                    <div className="flex justify-between font-black text-base pt-3 border-t border-slate-300 text-navy">
+                                      <span>Grand Total</span>
+                                      <span className="text-navy">{formatCurrency(grandTotalVal)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2 pt-2">
@@ -1267,7 +1478,7 @@ const MyOrders = () => {
 
                             {/* Coming Soon */}
                             <div className="text-xs text-center text-blue-600 bg-blue-50 rounded-lg py-2 px-3">
-                              🔔 Live driver tracking, WhatsApp & SMS updates coming soon!
+                              🔔 Live driver tracking, WhatsApp &amp; SMS updates active!
                             </div>
                           </div>
                         </CardContent>
@@ -1277,7 +1488,8 @@ const MyOrders = () => {
                 })}
               </div>
             )}
-          </>)}
+          </>
+        )}
 
         {/* ── Subscriptions & Schedules View Mode ── */}
         {viewMode === "schedules" && (
@@ -1636,27 +1848,32 @@ const MyOrders = () => {
               {/* Tracking Stepper */}
               <div className="space-y-4">
                 {(() => {
-                  const status = liveTracking?.status || "placed";
+                  const status = liveTracking?.status || trackingOrder?.orderStatus?.currentStatus || "placed";
                   const partnerName = liveTracking?.deliveryPartnerName;
-                  const statusOrder = ["placed", "preparing", "out_for_delivery", "delivered"];
-                  const currentIdx = statusOrder.indexOf(status);
+                  const s = status.toLowerCase().trim();
+                  let currentIdx = 0;
+                  if (s === 'delivered' || s === 'completed') currentIdx = 3;
+                  else if (['shipped', 'out_for_delivery', 'out for delivery', 'accepted', 'assigned', 'reached vendor', 'picked up', 'reached customer'].includes(s)) currentIdx = 2;
+                  else if (['processing', 'packed', 'preparing', 'ready_for_pickup', 'confirmed'].includes(s)) currentIdx = 1;
+
                   const steps = [
                     { title: "Order Placed", desc: "We've received your order" },
-                    { title: "Preparing Order", desc: "Seller is packaging your items" },
-                    { title: "Out for Delivery", desc: partnerName ? `${partnerName} is carrying your parcel` : "Waiting for delivery partner assignment" },
+                    { title: "Preparing & Packed", desc: "Seller is packaging your items" },
+                    { title: "Out for Delivery", desc: partnerName ? `${partnerName} is carrying your parcel` : "Out with delivery partner" },
                     { title: "Delivered", desc: "Delivered to your location" }
                   ];
+
                   return steps.map((step, idx) => {
-                    const done = idx < currentIdx;
-                    const active = idx === currentIdx;
+                    const done = idx < currentIdx || (idx === currentIdx && currentIdx === 3);
+                    const active = idx === currentIdx && currentIdx < 3;
                     const pending = idx > currentIdx;
                     return (
                       <div key={idx} className="flex gap-4 items-start relative">
                         {idx < 3 && (
-                          <div className={`absolute left-3 top-6 bottom-0 w-0.5 ${done ? "bg-green-600" : "bg-slate-200"}`} />
+                          <div className={`absolute left-3 top-6 bottom-0 w-0.5 ${done ? "bg-emerald-600" : "bg-slate-200"}`} />
                         )}
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 z-10 ${done ? "bg-green-600 text-white" :
-                          active ? "bg-accent text-white animate-pulse" :
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 z-10 ${done ? "bg-emerald-600 text-white font-black" :
+                          active ? "bg-amber-500 text-white animate-pulse" :
                             "bg-slate-100 text-slate-400"
                           }`}>
                           {done ? "✓" : idx + 1}

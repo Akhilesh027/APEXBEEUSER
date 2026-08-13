@@ -15,6 +15,166 @@ const formatCurrency = (amount: any) => {
   }).format(value);
 };
 
+export const getItemShippingFee = (item: any): number => {
+  if (!item) return 0;
+  const val = Number(
+    item.deliveryFee ??
+    item.shippingCharge ??
+    item.shipping ??
+    item.shippingFee ??
+    item.adminPricing?.shippingCharge ??
+    item.adminPricing?.deliveryFee ??
+    item.product?.adminPricing?.shippingCharge ??
+    item.product?.shippingCharge ??
+    item.product?.deliveryFee ??
+    item.productId?.adminPricing?.shippingCharge ??
+    item.productId?.adminPricing?.deliveryFee ??
+    item.productId?.shippingCharge ??
+    item.productId?.deliveryFee ??
+    item.productId?.shipping ??
+    0
+  );
+  return Number.isFinite(val) && val > 0 ? val : 0;
+};
+
+export const getItemPackingFee = (item: any): number => {
+  if (!item) return 0;
+  const val = Number(
+    item.packingCharge ??
+    item.packageCharge ??
+    item.packagingCharge ??
+    item.packingFee ??
+    item.packageFee ??
+    item.packagingFee ??
+    item.handlingCharge ??
+    item.adminPricing?.packingCharge ??
+    item.adminPricing?.packageCharge ??
+    item.adminPricing?.packagingFee ??
+    item.product?.adminPricing?.packingCharge ??
+    item.product?.packingCharge ??
+    item.product?.packageCharge ??
+    item.productId?.adminPricing?.packingCharge ??
+    item.productId?.adminPricing?.packageCharge ??
+    item.productId?.packingCharge ??
+    item.productId?.packageCharge ??
+    item.productId?.packagingCharge ??
+    item.productId?.packingFee ??
+    0
+  );
+  return Number.isFinite(val) && val > 0 ? val : 0;
+};
+
+export const getItemPlatformFee = (item: any): number => {
+  if (!item) return 0;
+
+  let distFrom =
+    item.distributedFrom ||
+    item.adminPricing?.distributedFrom ||
+    item.product?.adminPricing?.distributedFrom ||
+    item.productId?.adminPricing?.distributedFrom ||
+    item.attributes?.distributedFrom ||
+    item.product?.attributes?.distributedFrom ||
+    item.productId?.attributes?.distributedFrom ||
+    item.commissionType ||
+    item.adminPricing?.commissionType ||
+    item.product?.adminPricing?.commissionType ||
+    item.productId?.adminPricing?.commissionType;
+
+  const vendorCommPct = Number(
+    item.vendorCommissionPercent ??
+    item.adminPricing?.vendorCommissionPercent ??
+    item.product?.adminPricing?.vendorCommissionPercent ??
+    item.productId?.adminPricing?.vendorCommissionPercent ??
+    0
+  );
+
+  const platformFeePct = Number(
+    item.platformFeePercent ??
+    item.adminPricing?.platformFeePercent ??
+    item.product?.adminPricing?.platformFeePercent ??
+    item.productId?.adminPricing?.platformFeePercent ??
+    0
+  );
+
+  const directFee = Number(
+    item.platformFeeAmount ??
+    item.platformFee ??
+    item.adminPricing?.platformFeeAmount ??
+    item.product?.adminPricing?.platformFeeAmount ??
+    item.productId?.adminPricing?.platformFeeAmount ??
+    0
+  );
+
+  // Smart fallback: if distFrom not set, check if vendorCommissionPercent is set without a platform fee
+  if (!distFrom) {
+    if (vendorCommPct > 0 && directFee === 0 && platformFeePct === 0) {
+      distFrom = 'apexbee_commission';
+    } else {
+      distFrom = 'platform_fee';
+    }
+  }
+
+  // If commission is apexbee_commission / vendor, taken from vendor -> customer pays ₹0 platform fee
+  if (distFrom === 'apexbee_commission' || distFrom === 'vendor' || distFrom === 'vendor_commission') {
+    return 0;
+  }
+
+  // If commission is platform_fee or both:
+  if (Number.isFinite(directFee) && directFee > 0) return directFee;
+
+  const price = Number(item.sellingPrice ?? item.afterDiscount ?? item.price ?? 0);
+
+  if (platformFeePct > 0 && price > 0) {
+    return (price * platformFeePct) / 100;
+  }
+
+  const fixedFee = Number(
+    item.commissionAmount ??
+    item.adminPricing?.vendorCommissionAmount ??
+    0
+  );
+  if ((distFrom === 'platform_fee' || distFrom === 'platform' || distFrom === 'both') && fixedFee > 0) {
+    return fixedFee;
+  }
+
+  return 0;
+};
+
+const renderVariantDetails = (item: any) => {
+  const details: string[] = [];
+
+  if (item.selectedAttributes && typeof item.selectedAttributes === "object") {
+    Object.entries(item.selectedAttributes).forEach(([key, val]) => {
+      if (val && val !== "default") {
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        details.push(`${label}: ${val}`);
+      }
+    });
+  }
+
+  if (details.length === 0) {
+    const color = item.selectedColor || item.color;
+    const size = item.selectedSize || item.size;
+    if (color && color !== "default") details.push(`Color: ${color}`);
+    if (size && size !== "default") details.push(`Size: ${size}`);
+  }
+
+  if (details.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {details.map((d, idx) => (
+        <span
+          key={idx}
+          className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs"
+        >
+          {d}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 // Read pickup/preorder flags safely
 const readItemFlags = (item: any) => {
   const allowPickup = Boolean(item?.allowPickup ?? item?.pickupAvailable ?? false);
@@ -351,42 +511,33 @@ const Cart = () => {
     return Object.values(groups);
   }, [cartItems]);
 
-  // Subtotal (product selling price)
+  // Subtotal (product base selling price)
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + (item.afterDiscount || item.price || item.sellingPrice || 0) * item.quantity,
+    (sum, item) => sum + (item.sellingPrice || item.afterDiscount || item.price || 0) * (item.quantity || 1),
     0
   );
 
   // Original total before discounts (MRP)
   const originalTotal = cartItems.reduce(
-    (sum, item) => sum + (item.originalPrice || item.salesPrice || item.price || 0) * item.quantity,
+    (sum, item) => sum + (item.originalPrice || item.salesPrice || item.mrp || item.price || 0) * (item.quantity || 1),
     0
   );
   const discount = Math.max(0, originalTotal - subtotal);
 
   // delivery fee
-  const totalDeliveryFee = cartItems.reduce((sum, item: any) => {
-    const fee = Number(
-      item.deliveryFee ??
-      item.shippingCharge ??
-      item.shipping ??
-      item.shippingFee ??
-      item.adminPricing?.shippingCharge ??
-      item.adminPricing?.deliveryFee ??
-      item.product?.adminPricing?.shippingCharge ??
-      item.product?.shippingCharge ??
-      item.product?.deliveryFee ??
-      item.productId?.adminPricing?.shippingCharge ??
-      item.productId?.adminPricing?.deliveryFee ??
-      item.productId?.shippingCharge ??
-      item.productId?.deliveryFee ??
-      item.productId?.shipping ??
-      0
-    );
-    return sum + (fee * (item.quantity || 1));
-  }, 0);
+  const totalDeliveryFee = cartItems.reduce((sum, item: any) => sum + (getItemShippingFee(item) * (item.quantity || 1)), 0);
 
-  const total = subtotal;
+  // packing fee
+  const totalPackingFee = cartItems.reduce((sum, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
+
+  // platform fee (if commission type is platform or platform fee applies)
+  const totalPlatformFee = cartItems.reduce((sum, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
+
+  // GST Tax 5%
+  const taxableAmount = subtotal + totalPackingFee + totalDeliveryFee + totalPlatformFee;
+  const gstTax = Math.round(taxableAmount * 0.05);
+
+  const total = taxableAmount + gstTax;
 
   // Pre-order: compute max availableOn
   const preOrderInfo = useMemo(() => {
@@ -427,6 +578,9 @@ const Cart = () => {
         subtotal,
         discount,
         deliveryFee: totalDeliveryFee,
+        packingFee: totalPackingFee,
+        platformFee: totalPlatformFee,
+        tax: gstTax,
         total,
         pickupPossible,
         preOrderInfo,
@@ -441,29 +595,18 @@ const Cart = () => {
     }
 
     const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
-    const itemSubtotal = (item.afterDiscount || item.price || item.sellingPrice || 0) * (item.quantity || 1);
-    const itemOriginalTotal = (item.originalPrice || item.salesPrice || item.price || 0) * (item.quantity || 1);
+    const itemSubtotal = (item.sellingPrice || item.afterDiscount || item.price || 0) * (item.quantity || 1);
+    const itemOriginalTotal = (item.originalPrice || item.salesPrice || item.mrp || item.price || 0) * (item.quantity || 1);
     const itemDiscount = Math.max(0, itemOriginalTotal - itemSubtotal);
 
-    const itemDeliveryFee = Number(
-      item.deliveryFee ??
-      item.shippingCharge ??
-      item.shipping ??
-      item.shippingFee ??
-      item.adminPricing?.shippingCharge ??
-      item.adminPricing?.deliveryFee ??
-      item.product?.adminPricing?.shippingCharge ??
-      item.product?.shippingCharge ??
-      item.product?.deliveryFee ??
-      item.productId?.adminPricing?.shippingCharge ??
-      item.productId?.adminPricing?.deliveryFee ??
-      item.productId?.shippingCharge ??
-      item.productId?.deliveryFee ??
-      item.productId?.shipping ??
-      0
-    ) * (item.quantity || 1);
+    const itemDeliveryFee = getItemShippingFee(item) * (item.quantity || 1);
+    const itemPackingFee = getItemPackingFee(item) * (item.quantity || 1);
+    const itemPlatformFee = getItemPlatformFee(item) * (item.quantity || 1);
 
-    const itemTotal = itemSubtotal + itemDeliveryFee;
+    const itemTaxable = itemSubtotal + itemPackingFee + itemDeliveryFee + itemPlatformFee;
+    const itemGstTax = Math.round(itemTaxable * 0.05);
+
+    const itemTotal = itemTaxable + itemGstTax;
 
     const singlePreOrderInfo = {
       hasPreOrder: isPreOrder && Boolean(availableOn),
@@ -482,6 +625,9 @@ const Cart = () => {
         subtotal: itemSubtotal,
         discount: itemDiscount,
         deliveryFee: itemDeliveryFee,
+        packingFee: itemPackingFee,
+        platformFee: itemPlatformFee,
+        tax: itemGstTax,
         total: itemTotal,
         pickupPossible: allowPickup,
         preOrderInfo: singlePreOrderInfo,
@@ -580,14 +726,15 @@ const Cart = () => {
                               <p className="text-xs text-slate-500 font-medium">
                                 Category: <span className="font-bold text-slate-700">{item.categoryName || "Marketplace"}</span>
                               </p>
+                              {renderVariantDetails(item)}
 
                               <div className="flex items-center space-x-2 pt-1">
                                 <span className="text-base font-black text-[#0A1128] font-mono">
-                                  {formatCurrency(item.afterDiscount || item.price || item.sellingPrice)}
+                                  {formatCurrency(item.sellingPrice || item.afterDiscount || item.price)}
                                 </span>
-                                {item.salesPrice && item.salesPrice > (item.afterDiscount || item.price) && (
+                                {item.originalPrice && item.originalPrice > (item.sellingPrice || item.afterDiscount || item.price) && (
                                   <span className="text-xs text-slate-400 line-through font-normal">
-                                    {formatCurrency(item.salesPrice)}
+                                    {formatCurrency(item.originalPrice)}
                                   </span>
                                 )}
                               </div>
@@ -701,8 +848,34 @@ const Cart = () => {
                 )}
 
                 <div className="flex justify-between text-slate-600">
+                  <span>Item Subtotal</span>
+                  <span className="font-bold text-slate-900 font-mono">{formatCurrency(subtotal)}</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
                   <span>Estimated Delivery Charge</span>
-                  <span className="font-bold text-emerald-600">FREE</span>
+                  <span className={`font-bold font-mono ${totalDeliveryFee === 0 ? "text-emerald-600" : "text-slate-900"}`}>
+                    {totalDeliveryFee === 0 ? "FREE" : formatCurrency(totalDeliveryFee)}
+                  </span>
+                </div>
+
+                {totalPackingFee > 0 && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Packing Fee</span>
+                    <span className="font-bold text-slate-900 font-mono">{formatCurrency(totalPackingFee)}</span>
+                  </div>
+                )}
+
+                {totalPlatformFee > 0 && (
+                  <div className="flex justify-between text-amber-800 font-bold bg-amber-50 p-2 rounded-xl border border-amber-200">
+                    <span>Platform Fee</span>
+                    <span className="font-mono">+{formatCurrency(totalPlatformFee)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Estimated GST Tax (5%)</span>
+                  <span className="font-bold text-slate-900 font-mono">{formatCurrency(gstTax)}</span>
                 </div>
 
                 <div className="border-t border-slate-200 pt-3 flex justify-between text-base font-black text-[#0A1128]">
