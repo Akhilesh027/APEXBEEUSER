@@ -1960,8 +1960,8 @@ const Checkout = () => {
                         key={opt.id}
                         onClick={() => setDeliveryMode(opt.id as any)}
                         className={`border rounded-xl p-3 cursor-pointer transition-all ${deliveryMode === opt.id
-                            ? "border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/30"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
+                          ? "border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/30"
+                          : "border-gray-200 hover:border-gray-300 bg-white"
                           }`}
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -1994,8 +1994,8 @@ const Checkout = () => {
                         key={inst.id}
                         onClick={() => setDeliveryInstruction(inst.id)}
                         className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer text-left ${deliveryInstruction === inst.id
-                            ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-xs ring-1 ring-indigo-400/30"
-                            : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
+                          ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-xs ring-1 ring-indigo-400/30"
+                          : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
                           }`}
                       >
                         <span className="text-sm">{inst.icon}</span>

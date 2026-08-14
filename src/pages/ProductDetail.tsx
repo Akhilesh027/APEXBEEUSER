@@ -61,6 +61,7 @@ const ProductDetail = () => {
   const [showShare, setShowShare] = useState(false);
 
   // Variant & attributes selection state
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
 
   // Deduplicate attributes for rendering (extracts from both product.attributes and product.variants)
@@ -160,7 +161,9 @@ const ProductDetail = () => {
     return { icon: "📍", text: "Local Quick Delivery (15-30 mins in vendor area)", badge: "Local Quick Delivery" };
   }, [product?.deliveryScope, product?.isPanIndia, product?.isLocalDelivery]);
 
+  // Reset variant index & selected attributes on product load
   useEffect(() => {
+    setSelectedVariantIndex(0);
     const initial: Record<string, string> = {};
 
     // 1. Initialize from first variant's attributes if present
@@ -190,48 +193,46 @@ const ProductDetail = () => {
     setSelectedAttrs(initial);
   }, [product]);
 
-  // Distinct valid variants check - only return array if product contains > 1 valid distinct variants
+  // Selected variant derived from index, falling back to matching selectedAttrs or index 0
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return null;
+
+    if (selectedVariantIndex >= 0 && selectedVariantIndex < product.variants.length) {
+      return product.variants[selectedVariantIndex];
+    }
+
+    return product.variants[0];
+  }, [product?.variants, selectedVariantIndex]);
+
+  // When variant selection changes, reset main image index
+  useEffect(() => {
+    setMainImageIndex(0);
+  }, [selectedVariantIndex]);
+
+  // Distinct valid variants check - returns list of variants with original indices
   const validVariants = useMemo(() => {
     if (!product?.variants || !Array.isArray(product.variants) || product.variants.length <= 1) return [];
 
     const setOfKeys = new Set<string>();
-    const result = product.variants.filter((v: any, idx: number) => {
-      if (!v) return false;
-      let vLabel = v.name || v.title || v.sku;
-      if (v.attributes && typeof v.attributes === 'object') {
-        const attrStr = Object.entries(v.attributes).map(([k, val]) => `${val}`).join(' / ');
-        if (attrStr) vLabel = attrStr;
+    const result: { variant: any; originalIndex: number }[] = [];
+
+    product.variants.forEach((v: any, idx: number) => {
+      if (!v) return;
+      let vLabel = v.name || v.title || v.label || v.variantName;
+      if (!vLabel && v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0) {
+        vLabel = Object.entries(v.attributes).map(([_, val]) => `${val}`).join(' / ');
       }
-      if (!vLabel || vLabel === 'default') vLabel = `Option ${idx + 1}`;
+      if (!vLabel || vLabel === 'default') vLabel = v.sku ? `SKU: ${v.sku}` : `Option ${idx + 1}`;
+
       const uniqueKey = `${vLabel}-${v.sku || idx}`;
-      if (setOfKeys.has(uniqueKey)) return false;
-      setOfKeys.add(uniqueKey);
-      return true;
+      if (!setOfKeys.has(uniqueKey)) {
+        setOfKeys.add(uniqueKey);
+        result.push({ variant: v, originalIndex: idx });
+      }
     });
 
     return result.length > 1 ? result : [];
   }, [product?.variants]);
-
-  const selectedVariant = useMemo(() => {
-    if (!product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return null;
-
-    // 1. Find variant where ALL variant.attributes match selectedAttrs
-    const match = product.variants.find((variant: any) => {
-      if (!variant.attributes || typeof variant.attributes !== 'object') return false;
-      const vKeys = Object.keys(variant.attributes);
-      if (vKeys.length === 0) return false;
-
-      return vKeys.every((key) => {
-        const selVal = selectedAttrs[key] ?? selectedAttrs[key.toLowerCase()];
-        return selVal !== undefined && String(variant.attributes[key]) === String(selVal);
-      });
-    });
-
-    if (match) return match;
-
-    // 2. Fallback to first variant
-    return product.variants[0];
-  }, [product?.variants, selectedAttrs]);
 
   // MOQ - update quantity to MOQ when product loads or variant changes
   const moq = useMemo(() => {
@@ -838,23 +839,23 @@ const ProductDetail = () => {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2.5">
-                  {validVariants.map((v: any, idx: number) => {
-                    let vLabel = v.name || v.title || v.sku;
-                    if (v.attributes && typeof v.attributes === 'object') {
-                      const attrStr = Object.entries(v.attributes).map(([k, val]) => `${val}`).join(' / ');
-                      if (attrStr) vLabel = attrStr;
+                  {validVariants.map(({ variant: v, originalIndex }) => {
+                    let vLabel = v.name || v.title || v.label || v.variantName;
+                    if (!vLabel && v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0) {
+                      vLabel = Object.entries(v.attributes).map(([_, val]) => `${val}`).join(' / ');
                     }
-                    if (!vLabel) vLabel = `Option ${idx + 1}`;
+                    if (!vLabel || vLabel === 'default') vLabel = v.sku ? `SKU: ${v.sku}` : `Option ${originalIndex + 1}`;
 
-                    const isSelected = selectedVariant ? (selectedVariant.sku === v.sku || selectedVariant === v) : idx === 0;
+                    const isSelected = selectedVariantIndex === originalIndex;
                     const vPrice = v.sellingPrice ?? v.price ?? v.afterDiscount ?? 0;
                     const vMrp = v.mrp ?? v.userPrice ?? 0;
 
                     return (
                       <button
-                        key={v.sku || idx}
+                        key={v.sku || originalIndex}
                         type="button"
                         onClick={() => {
+                          setSelectedVariantIndex(originalIndex);
                           if (v.attributes && typeof v.attributes === 'object') {
                             setSelectedAttrs((prev) => ({ ...prev, ...v.attributes }));
                           }
@@ -894,18 +895,32 @@ const ProductDetail = () => {
                       <span className="text-sm font-semibold text-navy capitalize">{label}:</span>
                       <div className="flex flex-wrap gap-2">
                         {values.map((val: any) => {
-                          const isSelected = selectedAttrs[key] === val;
+                          const strVal = String(val);
+                          const isSelected = selectedAttrs[key] === strVal || selectedAttrs[key.toLowerCase()] === strVal;
                           return (
                             <button
-                              key={String(val)}
+                              key={strVal}
                               type="button"
-                              onClick={() => setSelectedAttrs((prev) => ({ ...prev, [key]: val }))}
-                              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${isSelected
+                              onClick={() => {
+                                const newAttrs = { ...selectedAttrs, [key]: strVal };
+                                setSelectedAttrs(newAttrs);
+                                if (product?.variants && Array.isArray(product.variants)) {
+                                  const matchIdx = product.variants.findIndex((v: any) => {
+                                    if (!v?.attributes || typeof v.attributes !== 'object') return false;
+                                    const variantVal = v.attributes[key] ?? v.attributes[key.toLowerCase()];
+                                    return String(variantVal) === strVal;
+                                  });
+                                  if (matchIdx !== -1) {
+                                    setSelectedVariantIndex(matchIdx);
+                                  }
+                                }
+                              }}
+                              className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${isSelected
                                 ? "bg-accent text-white border-transparent shadow-sm shadow-accent/50 scale-105"
                                 : "bg-white text-navy border-gray-300 hover:border-gray-400"
                                 }`}
                             >
-                              {String(val)}
+                              {strVal}
                             </button>
                           );
                         })}
