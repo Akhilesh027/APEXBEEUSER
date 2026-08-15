@@ -211,6 +211,8 @@ type WithdrawalRequest = {
   createdAt: string;
   processedAt?: string;
   referenceId?: string;
+  transactionId?: string;
+  paymentMethod?: string;
   rejectReason?: string;
   feePercent?: number;
   feeAmount?: number;
@@ -733,9 +735,12 @@ const Referrals = () => {
         return;
       }
 
+      const refId = json?.withdrawal?.referenceId || json?.withdrawal?._id ? `REF-${String(json.withdrawal.referenceId || json.withdrawal._id).slice(-8).toUpperCase()}` : `REF-${Date.now().toString(36).toUpperCase()}`;
+
       toast({
-        title: "Withdrawal Successful",
-        description: `Requested: Rs. ${Math.round(amt)} • Net Receive: Rs. ${Math.round(net)} (TDS/Platform Fee: Rs. ${Math.round(fee)})`,
+        title: "Withdrawal Requested Successfully 🎉",
+        description: `Reference ID: ${refId} • Requested: ₹${Math.round(amt)} • Net Payout: ₹${Math.round(net)}`,
+        className: "bg-slate-900 text-white border-amber-400 font-bold",
       });
 
       setWithdrawAmount("");
@@ -1067,11 +1072,11 @@ const Referrals = () => {
               </div>
 
               <div className="border-t border-white/10 pt-4 flex gap-2">
-                <Button className="flex-1 bg-emerald-500 text-white hover:bg-emerald-600 font-bold text-xs py-2 rounded-xl transition-all" onClick={() => setActiveTab("withdraw")}>
-                  <IndianRupee className="h-3 w-3 mr-1.5" />
+                <Button className="flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.02]" onClick={() => setActiveTab("withdraw")}>
+                  <IndianRupee className="h-3.5 w-3.5 mr-1 text-slate-950 font-black" />
                   Request Withdraw
                 </Button>
-                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 text-xs font-bold py-2 rounded-xl" onClick={() => copyToClipboard(referralCode, "code")}>
+                <Button className="bg-[#0A1128] hover:bg-slate-900 text-amber-400 font-black text-xs py-2.5 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02]" onClick={() => copyToClipboard(referralCode, "code")}>
                   Copy Code
                 </Button>
               </div>
@@ -1889,13 +1894,33 @@ const Referrals = () => {
               </Card>
 
               {/* Right Column: Withdraw amount form */}
-              <Card className="border border-slate-200 shadow-sm rounded-2xl h-fit">
-                <CardHeader>
-                  <CardTitle className="text-base font-extrabold text-navy">Withdraw request</CardTitle>
+              <Card className="border border-slate-200 shadow-md rounded-2xl h-fit overflow-hidden bg-white">
+                <CardHeader className="bg-gradient-to-r from-slate-950 via-[#0A1128] to-slate-900 text-white p-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-extrabold text-white flex items-center gap-2">
+                      <span>💳 Withdraw Request</span>
+                    </CardTitle>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
+                      Instant Payout
+                    </span>
+                  </div>
+
+                  {/* CLEAR BALANCE & FEE HIGHLIGHT BANNER */}
+                  <div className="mt-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-xs text-slate-100 font-semibold space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-sm font-black">
+                      <span>Total: <strong className="text-amber-300 font-black">₹{stats.walletBalance || stats.availableBalance || 0}</strong></span>
+                      <span className="text-slate-400">•</span>
+                      <span>Hold: <strong className="text-orange-300 font-black">₹{stats.walletHold || stats.pendingBalance || 0}</strong></span>
+                    </div>
+                    <div className="text-[11px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
+                      <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM FEE)</strong></span>
+                      <span className="text-[9.5px] text-emerald-300 font-black bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">100% Tax Compliant</span>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-4 space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600 block">Amount to Withdraw</label>
+                    <label className="text-xs font-bold text-slate-700 block">Amount to Withdraw</label>
                     <Input
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
@@ -1904,18 +1929,18 @@ const Referrals = () => {
                     />
 
                     {Number(withdrawAmount) > 0 && (
-                      <div className="mt-3 bg-slate-50 border rounded-xl p-3 text-xs space-y-1.5 text-slate-600">
-                        <div className="flex justify-between">
-                          <span>Requested Balance</span>
-                          <span className="font-bold text-navy">₹{Number(withdrawAmount)}</span>
+                      <div className="mt-3 bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs space-y-2 text-slate-800 shadow-2xs">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-slate-600">Requested Amount</span>
+                          <span className="font-extrabold text-slate-900">₹{Number(withdrawAmount)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Platform Fee & TDS (15%)</span>
-                          <span className="font-bold text-red-600">- ₹{calcWithdrawFee(Number(withdrawAmount)).fee}</span>
+                        <div className="flex justify-between items-center text-rose-700 font-semibold">
+                          <span>Fee: 15% (TDS + PLATFORM FEE)</span>
+                          <span className="font-bold">- ₹{calcWithdrawFee(Number(withdrawAmount)).fee}</span>
                         </div>
-                        <div className="flex justify-between border-t pt-1.5">
-                          <span className="font-bold text-slate-800">Net Bank Payout</span>
-                          <span className="font-black text-emerald-600">₹{calcWithdrawFee(Number(withdrawAmount)).net}</span>
+                        <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-sm font-black">
+                          <span className="text-slate-900">Net Bank Payout</span>
+                          <span className="text-emerald-700">₹{calcWithdrawFee(Number(withdrawAmount)).net}</span>
                         </div>
                       </div>
                     )}
@@ -1931,7 +1956,7 @@ const Referrals = () => {
                     />
                   </div>
 
-                  <Button onClick={requestWithdrawWithGate} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs py-2.5 rounded-xl">
+                  <Button onClick={requestWithdrawWithGate} className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.01]">
                     Submit Withdrawal Request
                   </Button>
                 </CardContent>
@@ -1953,7 +1978,9 @@ const Referrals = () => {
                     <table className="w-full text-left">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
+                          <th className="p-3">Transaction ID</th>
                           <th className="p-3">Reference ID</th>
+                          <th className="p-3">Method</th>
                           <th className="p-3">Date</th>
                           <th className="p-3 text-right">Amount</th>
                           <th className="p-3 text-center">Status</th>
@@ -1961,23 +1988,59 @@ const Referrals = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {withdrawals.map((w) => (
-                          <tr key={w._id} className="hover:bg-slate-50/55">
-                            <td className="p-3 font-mono font-bold text-slate-500">ABW-{w._id.substring(w._id.length - 6).toUpperCase()}</td>
-                            <td className="p-3 text-slate-400">{new Date(w.createdAt).toLocaleDateString("en-IN")}</td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(w.amount)}</td>
-                            <td className="p-3 text-center">
-                              <Badge className={
-                                w.status === "paid" ? "bg-green-100 text-green-800 border-green-200" :
-                                  w.status === "pending" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                    "bg-red-100 text-red-800 border-red-200"
-                              }>
-                                {w.status.toUpperCase()}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-slate-500">{w.note || w.rejectReason || "verified"}</td>
-                          </tr>
-                        ))}
+                        {withdrawals.map((w) => {
+                          const txnId = w.transactionId || (w._id ? `TXN-${w._id.slice(-8).toUpperCase()}` : `TXN-WDR`);
+                          const refId = w.referenceId || (w.status === 'pending' ? 'Pending Release' : `REF-${w._id ? w._id.slice(-6).toUpperCase() : 'BANK'}`);
+                          return (
+                            <tr key={w._id} className="hover:bg-slate-50/70 transition">
+                              <td className="p-3">
+                                <div className="inline-flex items-center gap-1.5 bg-[#0A1128] text-amber-400 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-amber-400/30">
+                                  <span>{txnId}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(txnId, "code")}
+                                    title="Copy Transaction ID"
+                                    className="hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
+                                  >
+                                    <Copy className="w-3 h-3 text-amber-400 hover:text-white" />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-slate-200">
+                                  <span>{refId}</span>
+                                  {w.referenceId && (
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(w.referenceId!, "code")}
+                                      title="Copy Reference ID"
+                                      className="hover:text-slate-900 transition border-none bg-transparent cursor-pointer ml-0.5 text-slate-400"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3 text-slate-700 font-bold text-xs">
+                                <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
+                                  {w.paymentMethod || 'Bank Transfer'}
+                                </span>
+                              </td>
+                              <td className="p-3 text-slate-500 font-medium">{new Date(w.createdAt).toLocaleDateString("en-IN")}</td>
+                              <td className="p-3 text-right font-black text-slate-900 text-xs">₹{Math.round(w.amount)}</td>
+                              <td className="p-3 text-center">
+                                <Badge className={
+                                  w.status === "paid" ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" :
+                                    w.status === "pending" ? "bg-amber-100 text-amber-800 border-amber-300 font-bold" :
+                                      "bg-red-100 text-red-800 border-red-300 font-bold"
+                                }>
+                                  {w.status.toUpperCase()}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-slate-600 font-medium">{w.note || w.rejectReason || "Verified Settlement"}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

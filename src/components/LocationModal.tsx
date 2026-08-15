@@ -338,7 +338,14 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
       locationType: payload.locationType,
     };
     localStorage.setItem("user_location", JSON.stringify(storagePayload));
+    localStorage.setItem("userLocation", JSON.stringify(storagePayload));
+    localStorage.setItem("apexbee_user_location", JSON.stringify(storagePayload));
+    if (payload.pincode) {
+      localStorage.setItem("userPincode", payload.pincode);
+      localStorage.setItem("pincode", payload.pincode);
+    }
     window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("user_location_updated"));
 
     onConfirm?.(payload);
     onOpenChange(false);
@@ -357,6 +364,29 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
       address: loc.address,
       locationType: "saved" as const,
     };
+
+    const storagePayload = {
+      lat: null,
+      lng: null,
+      state: loc.state,
+      district: loc.district,
+      mandal: loc.mandal,
+      colony: loc.colony,
+      pincode: loc.pincode,
+      landmark: loc.landmark,
+      address: loc.address,
+      locationType: "saved" as const,
+    };
+
+    localStorage.setItem("user_location", JSON.stringify(storagePayload));
+    localStorage.setItem("userLocation", JSON.stringify(storagePayload));
+    localStorage.setItem("apexbee_user_location", JSON.stringify(storagePayload));
+    if (loc.pincode) {
+      localStorage.setItem("userPincode", loc.pincode);
+      localStorage.setItem("pincode", loc.pincode);
+    }
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("user_location_updated"));
 
     localStorage.setItem("user_location", JSON.stringify(payload));
     window.dispatchEvent(new Event("storage"));

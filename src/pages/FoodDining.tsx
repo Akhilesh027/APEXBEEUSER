@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Utensils,
   Search,
@@ -89,6 +89,76 @@ const HERO_BANNERS = [
 
 // RICH DEMO FOOD ITEMS WITH DETAILED INFORMATION
 const DEMO_FOOD_ITEMS = [
+  {
+    _id: 'food-item-tamsi-1',
+    name: 'Tamsi Special Chicken Dum Biryani (Family Pack)',
+    restaurantName: 'Adilabad Paradise Biryani & Grill',
+    category: 'Biryani',
+    price: 320,
+    mrp: 450,
+    rating: 4.9,
+    prepTime: '20-25 mins',
+    isVeg: false,
+    pincode: '504312',
+    locality: 'Tamsi Mandal, Adilabad',
+    mandal: 'Tamsi',
+    district: 'Adilabad',
+    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=800&auto=format&fit=crop',
+    ],
+    tag: 'Tamsi Bestseller',
+    description: 'Authentic Hyderabadi Dum Biryani cooked with fresh spices in Tamsi Mandal, served hot with Mirchi ka Salan & Raita.',
+    ingredients: ['Basmati Rice', 'Tender Chicken', 'Desi Ghee', 'Royal Spices'],
+    serves: '2-3 Persons',
+  },
+  {
+    _id: 'food-item-tamsi-2',
+    name: 'Adilabad Special Paneer Butter Masala + 2 Naan',
+    restaurantName: 'Tamsi Royal Family Dhaba',
+    category: 'Thali & Meals',
+    price: 210,
+    mrp: 280,
+    rating: 4.8,
+    prepTime: '15-20 mins',
+    isVeg: true,
+    pincode: '504312',
+    locality: 'Tamsi Cross Roads, Adilabad',
+    mandal: 'Tamsi',
+    district: 'Adilabad',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
+    ],
+    tag: 'Pure Veg Special',
+    description: 'Rich creamy paneer butter masala prepared at Tamsi Cross Roads, served with hot butter tandoori naans.',
+    ingredients: ['Fresh Paneer', 'Butter & Cream', 'Ripe Tomatoes'],
+    serves: '1-2 Persons',
+  },
+  {
+    _id: 'food-item-tamsi-3',
+    name: 'Ghee Masala Dosa + 4 Chutneys',
+    restaurantName: 'Adilabad South Tiffin Center',
+    category: 'Tiffins',
+    price: 99,
+    mrp: 140,
+    rating: 4.9,
+    prepTime: '10-15 mins',
+    isVeg: true,
+    pincode: '504312',
+    locality: 'Tamsi Mandal, Adilabad',
+    mandal: 'Tamsi',
+    district: 'Adilabad',
+    image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
+    ],
+    tag: 'Morning Special',
+    description: 'Crispy ghee roasted masala dosa served with spicy sambhar and 4 varieties of chutneys in Tamsi.',
+    ingredients: ['Rice Batter', 'Pure Ghee', 'Potato Masala'],
+    serves: '1 Person',
+  },
   {
     _id: 'food-item-1',
     name: 'Special Chicken Dum Biryani (Family Pack)',
@@ -211,6 +281,28 @@ const DEMO_FOOD_ITEMS = [
 // DINEOUT VENUES DATA WITH RICH IMAGES & VIDEO DETAILS
 const DINEOUT_RESTAURANTS = [
   {
+    id: 'do-tamsi-1',
+    name: 'Tamsi Royal Family Dhaba & Dining',
+    cuisine: 'Telangana Special, Hyderabadi & Tandoori',
+    locality: 'Tamsi Mandal, Adilabad - 504312',
+    pincode: '504312',
+    mandal: 'Tamsi',
+    district: 'Adilabad',
+    rating: 4.9,
+    offer: 'FLAT 25% OFF ON TOTAL DINING BILL',
+    costForTwo: '₹800',
+    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
+    ],
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cooking-food-in-a-pan-43098-large.mp4',
+    tag: 'Tamsi Top Pick',
+    description: 'Top-rated family dhaba and dining garden in Tamsi Mandal, Adilabad. Serves authentic spicy Telangana curries, dum biryani, and tandoori specials.',
+    features: ['👨‍👩‍👧‍👦 Outdoor Family Garden', '🅿️ Ample Parking Space', '🌱 Pure Veg & Non-Veg Sections'],
+    timings: '11:00 AM – 10:30 PM (Daily)',
+  },
+  {
     id: 'do-1',
     name: 'Royal Pavilion Fine Dining',
     cuisine: 'North Indian, Mughlai & Bar',
@@ -308,6 +400,61 @@ export const FoodDining: React.FC = () => {
   const [selectedCuisine, setSelectedCuisine] = useState<string>('ALL');
   const [selectedItemCat, setSelectedItemCat] = useState<string>('ALL');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | 'VEG' | 'NON_VEG'>('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const subParamRaw = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || '';
+
+  // Parse incoming category parameters from URL (e.g. /food?sub=Restaurants)
+  useEffect(() => {
+    const subParam = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab');
+    if (subParam) {
+      const lower = subParam.toLowerCase();
+      if (lower.includes('restaurant') || lower === 'restaurants') {
+        setActiveMainTab('restaurants');
+      } else if (lower.includes('dine') || lower.includes('booking') || lower === 'dineout') {
+        setActiveMainTab('dineout');
+      } else {
+        setActiveMainTab('items');
+        setSelectedItemCat(subParam);
+        setSearchQuery(subParam);
+      }
+    } else {
+      setSelectedItemCat('ALL');
+    }
+  }, [searchParams]);
+
+  const handleMainTabChange = (tab: 'items' | 'restaurants' | 'dineout') => {
+    setActiveMainTab(tab);
+    if (tab === 'restaurants') {
+      setSearchParams({ sub: 'Restaurants' });
+    } else if (tab === 'dineout') {
+      setSearchParams({ sub: 'Dineout' });
+    } else {
+      if (selectedItemCat && selectedItemCat !== 'ALL') {
+        setSearchParams({ sub: selectedItemCat });
+      } else {
+        setSearchParams({});
+      }
+    }
+  };
+
+  const handleCategoryChipClick = (cat: string) => {
+    setSelectedItemCat(cat);
+    if (cat === 'ALL') {
+      setSearchParams({});
+      setSearchQuery('');
+    } else {
+      setSearchParams({ sub: cat });
+      setSearchQuery(cat);
+    }
+  };
+
+  const handleClearSubcategoryFilter = () => {
+    setSearchParams({});
+    setActiveMainTab('items');
+    setSelectedItemCat('ALL');
+    setSearchQuery('');
+  };
   const [activeBanner, setActiveBanner] = useState(0);
   const [dineoutVenues, setDineoutVenues] = useState<any[]>([]);
 
@@ -327,13 +474,31 @@ export const FoodDining: React.FC = () => {
   const [bookingGuests, setBookingGuests] = useState('2');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  const getActiveUserLocation = () => {
+    const userLocRaw = localStorage.getItem("userLocation") || localStorage.getItem("user_location") || localStorage.getItem("apexbee_user_location");
+    const userLocation = userLocRaw ? JSON.parse(userLocRaw) : null;
+    const activePincode = (localStorage.getItem("userPincode") || userLocation?.pincode || localStorage.getItem("pincode") || "").toString().trim().toLowerCase();
+    const activeMandal = (userLocation?.mandal || userLocation?.subdistrict || "").toString().trim().toLowerCase();
+    const activeDistrict = (userLocation?.district || userLocation?.city || "").toString().trim().toLowerCase();
+    const activeCity = (userLocation?.city || userLocation?.locality || "").toString().trim().toLowerCase();
+    const fullAddress = (userLocation?.address || userLocation?.display_name || "").toString().trim().toLowerCase();
+
+    return { activePincode, activeMandal, activeDistrict, activeCity, fullAddress };
+  };
+
   const allCombinedDineout = useMemo(() => {
+    const loc = getActiveUserLocation();
+    const { activePincode, activeMandal, activeDistrict, fullAddress } = loc;
+
     const dbDineout = (restaurants || []).map((r: any) => ({
       id: r._id || r.id,
       restaurantId: r._id || r.id,
       name: r.restaurantName || r.name,
       cuisine: Array.isArray(r.cuisines) ? r.cuisines.join(', ') : r.cuisines || 'Multi-Cuisine & Dining',
       locality: r.locality || r.city || 'Hyderabad',
+      pincode: r.pincode || r.zipcode || r.address?.pincode || '',
+      mandal: r.mandal || '',
+      district: r.district || '',
       rating: formatRating(r.rating),
       offer: r.diningInfo?.offer || 'FLAT 20% OFF ON DINING BILL',
       costForTwo: r.diningInfo?.costForTwo || '₹1,200',
@@ -354,8 +519,92 @@ export const FoodDining: React.FC = () => {
       }
     });
 
+    if (activePincode || activeMandal || activeDistrict || fullAddress) {
+      return combined.filter((v: any) => {
+        const vPin = (v.pincode || v.pinCode || v.zipcode || v.address?.pincode || "").toString().toLowerCase();
+        const vLoc = (v.locality || v.city || v.mandal || v.district || v.name || "").toString().toLowerCase();
+        const vFull = `${vLoc} ${vPin}`.toLowerCase();
+
+        const isTamsiAdilabadUser = activePincode === '504312' || activeMandal.includes('tamsi') || activeDistrict.includes('adilabad') || fullAddress.includes('tamsi') || fullAddress.includes('adilabad');
+
+        if (isTamsiAdilabadUser) {
+          const isDistantCity = vFull.includes('buchi') || vFull.includes('nellore') || vFull.includes('hyderabad central') || vFull.includes('secunderabad');
+          const isExplicitTamsiAdilabad = vFull.includes('tamsi') || vFull.includes('adilabad') || vPin === '504312';
+
+          if (isDistantCity && !isExplicitTamsiAdilabad) {
+            return false;
+          }
+          if (!isExplicitTamsiAdilabad && vPin && vPin !== '504312' && vPin.length === 6) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
     return combined;
   }, [restaurants, dineoutVenues]);
+
+  // Strict Pincode, Mandal (Tamsi) & District (Adilabad) Filtered Restaurants
+  const filteredRestaurants = useMemo(() => {
+    const loc = getActiveUserLocation();
+    const { activePincode, activeMandal, activeDistrict, fullAddress } = loc;
+
+    return (restaurants || []).filter((rest: any) => {
+      // 1. Strict Location Hierarchy Matching
+      if (activePincode || activeMandal || activeDistrict || fullAddress) {
+        const restPin = (rest.pincode || rest.zipcode || rest.pinCode || rest.address?.pincode || rest.location?.pincode || "").toString().toLowerCase();
+        const restMandal = (rest.mandal || rest.subdistrict || "").toString().toLowerCase();
+        const restDistrict = (rest.district || rest.city || "").toString().toLowerCase();
+        const restLocality = (rest.locality || rest.address || rest.city || rest.name || rest.restaurantName || "").toString().toLowerCase();
+        const restFull = `${restLocality} ${restMandal} ${restDistrict} ${restPin}`.toLowerCase();
+
+        const isTamsiAdilabadUser = activePincode === '504312' || activeMandal.includes('tamsi') || activeDistrict.includes('adilabad') || fullAddress.includes('tamsi') || fullAddress.includes('adilabad');
+
+        if (isTamsiAdilabadUser) {
+          const isDistantCity = restFull.includes('buchi') || restFull.includes('nellore') || restFull.includes('hyderabad central') || restFull.includes('secunderabad');
+          const isExplicitTamsiAdilabad = restFull.includes('tamsi') || restFull.includes('adilabad') || restPin === '504312';
+
+          if (isDistantCity && !isExplicitTamsiAdilabad) {
+            return false;
+          }
+
+          if (!isExplicitTamsiAdilabad) {
+            if (restPin && restPin !== '504312' && restPin.length === 6) {
+              return false;
+            }
+          }
+        } else {
+          const matchPin = activePincode && restPin === activePincode;
+          const matchMandal = activeMandal && (restMandal.includes(activeMandal) || restLocality.includes(activeMandal));
+          const matchDistrict = activeDistrict && (restDistrict.includes(activeDistrict) || restLocality.includes(activeDistrict));
+
+          if (!matchPin && !matchMandal && !matchDistrict) {
+            return false;
+          }
+        }
+      }
+
+      // 2. Cuisine Filter
+      if (selectedCuisine !== 'ALL') {
+        const cuisinesStr = Array.isArray(rest.cuisines) ? rest.cuisines.join(' ') : rest.cuisines || '';
+        if (!cuisinesStr.toLowerCase().includes(selectedCuisine.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 3. Search Query Filter
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const rName = (rest.restaurantName || rest.name || "").toLowerCase();
+        const rCuisine = (Array.isArray(rest.cuisines) ? rest.cuisines.join(" ") : rest.cuisines || "").toLowerCase();
+        const rLoc = (rest.locality || rest.city || "").toLowerCase();
+        return rName.includes(q) || rCuisine.includes(q) || rLoc.includes(q);
+      }
+
+      return true;
+    });
+  }, [restaurants, selectedCuisine, searchQuery]);
 
   const cuisinesList = [
     { name: 'All Cuisines', value: 'ALL', icon: '🍽️' },
@@ -363,19 +612,19 @@ export const FoodDining: React.FC = () => {
     { name: 'Biryani', value: 'Biryani', icon: '🍚' },
     { name: 'South Indian', value: 'South Indian', icon: '🫓' },
     { name: 'North Indian', value: 'North Indian', icon: '🥘' },
+    { name: 'Chinese', value: 'Chinese', icon: '🥢' },
     { name: 'Fast Food', value: 'Fast Food', icon: '🍔' },
-    { name: 'Chinese', value: 'Chinese', icon: '🍜' },
+    { name: 'Italian', value: 'Italian', icon: '🍕' },
     { name: 'Desserts', value: 'Desserts', icon: '🍰' },
   ];
 
   const itemCategories = [
-    { name: 'All Food Items', value: 'ALL', icon: '✨' },
+    { name: 'All Dishes', value: 'ALL', icon: '🍽️' },
     { name: 'Biryani & Rice', value: 'Biryani', icon: '🍚' },
+    { name: 'Thali & Meals', value: 'Thali', icon: '🍱' },
     { name: 'Pizza', value: 'Pizza', icon: '🍕' },
     { name: 'Burgers', value: 'Burgers', icon: '🍔' },
-    { name: 'Thalis & Meals', value: 'Thali', icon: '🍱' },
-    { name: 'Tiffins & Breakfast', value: 'Tiffins', icon: '🫓' },
-    { name: 'Chinese & Noodles', value: 'Chinese', icon: '🍜' },
+    { name: 'South Tiffins', value: 'Tiffins', icon: '🫓' },
     { name: 'Desserts & Sweets', value: 'Desserts', icon: '🍰' },
     { name: 'Beverages', value: 'Beverages', icon: '🥤' },
   ];
@@ -388,25 +637,82 @@ export const FoodDining: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Helper to merge food restaurants with nearby vendor shops (same logic as Home.tsx)
+  const combineRestaurantsAndVendors = (foodRestaurants: any[], vendorShops: any[]) => {
+    const combined = [...(foodRestaurants || [])];
+
+    (vendorShops || []).forEach((shop: any) => {
+      const cat = (shop.category || (shop.categories && shop.categories[0]) || shop.industryType || "").toString().toLowerCase();
+      const name = (shop.businessName || shop.shopName || shop.name || "").toString().toLowerCase();
+
+      const isFood = cat.includes("food") || cat.includes("restaurant") || cat.includes("dining") ||
+        cat.includes("bakes") || cat.includes("sweets") || cat.includes("cafe") ||
+        name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") ||
+        name.includes("cafe") || name.includes("diner") || name.includes("dhaba") || name.includes("kitchen");
+
+      if (isFood) {
+        const id = shop.id || shop._id;
+        const exists = combined.some(r => (r.id === id || r._id === id || (r.restaurantName || r.name)?.toLowerCase() === name));
+        if (!exists) {
+          combined.push({
+            id: id,
+            _id: id,
+            restaurantName: shop.shopName || shop.businessName || shop.name,
+            name: shop.shopName || shop.businessName || shop.name,
+            bannerImage: shop.bannerImage || shop.storeDesign?.logo || shop.logoUrl || shop.coverImage || shop.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop",
+            coverImage: shop.bannerImage || shop.storeDesign?.logo || shop.logoUrl || shop.coverImage || shop.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop",
+            logo: shop.logo || shop.storeDesign?.logo || shop.logoUrl,
+            cuisines: shop.categories || (shop.category ? [shop.category] : ['Multi-Cuisine & Fast Food']),
+            locality: shop.locality || shop.mandal || shop.district || shop.city || 'Local Outlet',
+            city: shop.city || shop.district || 'Hyderabad',
+            state: shop.state || 'Telangana',
+            pincode: shop.pincode || shop.zipcode || (shop.address && typeof shop.address === 'object' ? shop.address.pincode : ''),
+            mandal: shop.mandal || '',
+            district: shop.district || '',
+            rating: shop.rating?.average || shop.rating || '4.8',
+            averagePreparationMinutes: shop.prepTime || 20,
+            minimumOrderValue: shop.minimumOrderValue || 99,
+            isOpen: shop.isOpen !== false,
+          });
+        }
+      }
+    });
+
+    return combined;
+  };
+
   // Fetch Restaurants & Food Products
   const fetchData = async () => {
     setLoading(true);
     try {
+      const { activePincode, activeMandal, activeDistrict, activeCity } = getActiveUserLocation();
+
       const params: any = {};
       if (selectedCuisine !== 'ALL') params.cuisine = selectedCuisine;
       if (dietaryFilter !== 'ALL') params.foodPreference = dietaryFilter;
       if (searchQuery) params.search = searchQuery;
+      if (activePincode) params.pincode = activePincode;
+      if (activeMandal) params.mandal = activeMandal;
+      if (activeDistrict) params.district = activeDistrict;
+      if (activeCity) params.city = activeCity;
 
-      const [restRes, foodItemsRes, prodRes, diningRes] = await Promise.all([
+      const [restRes, vendorRes, foodItemsRes, prodRes, diningRes, homePersonalizationRes] = await Promise.all([
         axios.get(`${API_BASE}/food/restaurants`, { params }).catch(() => null),
+        axios.get(`${API_BASE}/vendors/nearby`, { params }).catch(() => axios.get(`${API_BASE}/vendor/nearby`, { params }).catch(() => null)),
         axios.get(`${API_BASE}/food/items`, { params }).catch(() => null),
-        axios.get(`${API_BASE}/products`).catch(() => null),
+        axios.get(`${API_BASE}/products`, { params }).catch(() => null),
         axios.get(`${API_BASE}/food/dining/venues`, { params }).catch(() => null),
+        axios.get(`${API_BASE}/home/personalization`).catch(() => null),
       ]);
 
-      if (restRes?.data?.restaurants) {
-        setRestaurants(restRes.data.restaurants);
-      }
+      const foodRestaurants = restRes?.data?.restaurants || [];
+      const vendorShops = vendorRes?.data?.data || vendorRes?.data?.vendors || (Array.isArray(vendorRes?.data) ? vendorRes.data : []) || [];
+      const homeRestaurants = homePersonalizationRes?.data?.restaurants || [];
+
+      const combinedVendorShops = [...vendorShops, ...homeRestaurants];
+      const mergedRestaurants = combineRestaurantsAndVendors(foodRestaurants, combinedVendorShops);
+
+      setRestaurants(mergedRestaurants);
 
       if (diningRes?.data?.venues && diningRes.data.venues.length > 0) {
         setDineoutVenues(diningRes.data.venues);
@@ -461,10 +767,31 @@ export const FoodDining: React.FC = () => {
     fetchData();
   };
 
-  // Filtered Food Items for 'items' tab
+  // Filtered Food Items for 'items' tab (Strict Location Pincode, Mandal, District Filter)
   const filteredFoodItems = useMemo(() => {
+    const { activePincode, activeMandal, activeDistrict, activeCity, fullAddress } = getActiveUserLocation();
+
     let list = foodProducts.length > 0 ? foodProducts : DEMO_FOOD_ITEMS;
 
+    // 1. Location Matching for Food Items
+    if (activePincode || activeMandal || activeDistrict || activeCity || fullAddress) {
+      list = list.filter((item: any) => {
+        const itemPin = (item.pincode || item.pinCode || item.zipcode || item.sellerId?.pincode || item.vendorId?.pincode || item.restaurantPincode || "").toString().toLowerCase();
+        const itemLoc = (item.locality || item.city || item.mandal || item.district || item.restaurantName || "").toString().toLowerCase();
+
+        const matchPin = activePincode && itemPin.includes(activePincode);
+        const matchMandal = activeMandal && (itemLoc.includes(activeMandal) || fullAddress.includes(itemLoc));
+        const matchDistrict = activeDistrict && (itemLoc.includes(activeDistrict) || fullAddress.includes(itemLoc));
+        const matchRegional = (activePincode === '504312' || fullAddress.includes('tamsi') || fullAddress.includes('adilabad')) && (itemLoc.includes('tamsi') || itemLoc.includes('adilabad') || itemPin === '504312');
+
+        if (itemPin && !matchPin && !matchMandal && !matchDistrict && !matchRegional) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // 2. Search Query Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -475,6 +802,7 @@ export const FoodDining: React.FC = () => {
       );
     }
 
+    // 3. Subcategory Filter
     if (selectedItemCat !== 'ALL') {
       const cat = selectedItemCat.toLowerCase();
       list = list.filter((item) => {
@@ -484,6 +812,7 @@ export const FoodDining: React.FC = () => {
       });
     }
 
+    // 4. Dietary Filter
     if (dietaryFilter === 'VEG') {
       list = list.filter((item) => item.isVeg === true);
     } else if (dietaryFilter === 'NON_VEG') {
@@ -663,12 +992,90 @@ export const FoodDining: React.FC = () => {
       {/* MAIN CONTENT CONTAINER */}
       <div className="max-w-7xl mx-auto px-2 sm:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
 
+        {/* DEDICATED SUBCATEGORY HERO BANNER & BREADCRUMBS (Renders when ?sub=... URL parameter is present) */}
+        {subParamRaw && (
+          <div className="bg-gradient-to-r from-[#0A1128] via-slate-900 to-amber-950 text-white rounded-3xl p-5 sm:p-6 border border-amber-400/40 shadow-xl relative overflow-hidden text-left">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="space-y-1.5">
+                {/* Breadcrumb Navigation */}
+                <div className="flex items-center space-x-2 text-xs text-amber-300 font-bold flex-wrap">
+                  <Link to="/" className="hover:underline">Home</Link>
+                  <span>/</span>
+                  <button type="button" onClick={handleClearSubcategoryFilter} className="hover:underline text-amber-300 bg-transparent border-none p-0 cursor-pointer">
+                    Food &amp; Dining
+                  </button>
+                  <span>/</span>
+                  <span className="text-white font-extrabold capitalize">{subParamRaw}</span>
+                </div>
+
+                <h2 className="text-xl sm:text-2xl font-black text-amber-400 font-heading flex items-center space-x-2">
+                  <span>
+                    {subParamRaw.toLowerCase().includes('restaurant') ? '🏪 Nearby Restaurants & Food Outlets' :
+                      subParamRaw.toLowerCase().includes('dine') ? '🍽️ Dineout & Table Reservations' :
+                        `🍱 ${subParamRaw} Special Menu`}
+                  </span>
+                </h2>
+
+                <p className="text-xs text-slate-300 font-medium max-w-xl">
+                  {subParamRaw.toLowerCase().includes('restaurant') ? 'Explore top-rated local restaurants, cloud kitchens & dining outlets near your location.' :
+                    subParamRaw.toLowerCase().includes('dine') ? 'Book tables & enjoy exclusive dine-in discounts at top-rated restaurants.' :
+                      `Showing top-rated ${subParamRaw} dishes, thalis & specials from local kitchens.`}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleClearSubcategoryFilter}
+                className="self-start sm:self-center px-4 py-2 bg-white/10 hover:bg-white/20 text-amber-300 font-black text-xs rounded-2xl border border-amber-400/30 shadow-md backdrop-blur-md transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4 text-amber-400" />
+                <span>View All Food Hub</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ACTIVE LOCATION PINCODE STATUS BADGE */}
+        {(() => {
+          const userLocRaw = localStorage.getItem("userLocation");
+          const userLocation = userLocRaw ? JSON.parse(userLocRaw) : null;
+          const activePin = (localStorage.getItem("userPincode") || userLocation?.pincode || localStorage.getItem("pincode") || "").toString().trim();
+          const locationName = userLocation?.city || userLocation?.locality || userLocation?.state || "Hyderabad";
+
+          return (
+            <div className="bg-slate-900 text-white p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 text-xs shadow-md">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                  <MapPin className="w-4 h-4 text-slate-950" />
+                </div>
+                <div className="truncate text-left">
+                  <span className="font-extrabold text-amber-400 block leading-tight">
+                    {activePin ? `Delivering to Pincode: ${activePin}` : 'Showing All Hyderabad Outlets'}
+                  </span>
+                  <span className="text-[10.5px] text-slate-400 font-medium truncate block">
+                    {activePin ? `📍 Strictly filtered to restaurants, food items & dineout venues matching ${activePin} (${locationName})` : 'Set your location to see hyper-local 25-minute food delivery outlets'}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                to="/"
+                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-[11px] rounded-xl transition shrink-0 cursor-pointer shadow-xs"
+              >
+                {activePin ? 'Change Pincode' : 'Set Location'}
+              </Link>
+            </div>
+          );
+        })()}
+
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* 3 PRIMARY VIEW NAVIGATION TABS (FULL OF ITEMS | RESTAURANTS | DINEOUTS) */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
         <div className="bg-white p-1 sm:p-2 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-md grid grid-cols-3 gap-1 sm:gap-2">
           <button
-            onClick={() => setActiveMainTab('items')}
+            type="button"
+            onClick={() => handleMainTabChange('items')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'items'
               ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
               : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
@@ -679,7 +1086,8 @@ export const FoodDining: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveMainTab('restaurants')}
+            type="button"
+            onClick={() => handleMainTabChange('restaurants')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'restaurants'
               ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
               : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
@@ -690,7 +1098,8 @@ export const FoodDining: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveMainTab('dineout')}
+            type="button"
+            onClick={() => handleMainTabChange('dineout')}
             className={`py-2 sm:py-3.5 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === 'dineout'
               ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
               : 'bg-transparent text-slate-700 border-transparent hover:bg-slate-100'
@@ -735,7 +1144,7 @@ export const FoodDining: React.FC = () => {
 
           <div className="text-[10px] sm:text-xs text-slate-500 font-semibold px-1 shrink-0">
             <span className="text-[#0A1128] font-black">
-              {activeMainTab === 'items' ? filteredFoodItems.length : activeMainTab === 'restaurants' ? restaurants.length : DINEOUT_RESTAURANTS.length}
+              {activeMainTab === 'items' ? filteredFoodItems.length : activeMainTab === 'restaurants' ? filteredRestaurants.length : DINEOUT_RESTAURANTS.length}
             </span> {activeMainTab === 'items' ? 'Items' : 'Outlets'}
           </div>
         </div>
@@ -750,7 +1159,8 @@ export const FoodDining: React.FC = () => {
               {itemCategories.map((cat) => (
                 <button
                   key={cat.value}
-                  onClick={() => setSelectedItemCat(cat.value)}
+                  type="button"
+                  onClick={() => handleCategoryChipClick(cat.value)}
                   className={`px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition duration-300 flex items-center space-x-1.5 cursor-pointer shrink-0 border ${selectedItemCat === cat.value
                     ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
                     : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -763,99 +1173,141 @@ export const FoodDining: React.FC = () => {
             </div>
 
             {/* FOOD ITEMS GRID - 2 COLUMNS ON MOBILE */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-              {filteredFoodItems.map((item: any) => {
-                const title = item.name || item.itemName || 'Delicious Dish';
-                const price = Number(item.price || item.afterDiscount || item.userPrice || 199);
-                const mrp = Number(item.mrp || item.baseMrp || price * 1.3);
-                const dp = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-                const img = item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop';
-                const isVeg = item.isVeg !== undefined ? item.isVeg : true;
+            {filteredFoodItems.length === 0 ? (
+              (() => {
+                const { activePincode, activeMandal, activeDistrict, fullAddress } = getActiveUserLocation();
+                const userLocRaw = localStorage.getItem("userLocation");
+                const userLocation = userLocRaw ? JSON.parse(userLocRaw) : null;
+                const displayLoc = activePincode
+                  ? `${activePincode}${userLocation?.mandal ? ` (${userLocation.mandal})` : userLocation?.city ? ` (${userLocation.city})` : ''}`
+                  : fullAddress || 'your selected location';
 
                 return (
-                  <div
-                    key={item._id || item.id}
-                    className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-xl hover:border-amber-400 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
-                    onClick={() => {
-                      setSelectedQuickViewItem(item);
-                      setQuickViewQty(1);
-                    }}
-                  >
-                    <div>
-                      {/* ITEM IMAGE CONTAINER - COMPACT ON MOBILE */}
-                      <div className="h-28 sm:h-44 bg-slate-100 relative overflow-hidden">
-                        <img
-                          src={img}
-                          alt={title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex gap-1 z-10">
-                          <span className={`px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded text-[8px] sm:text-[10px] font-black border ${isVeg ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'
-                            }`}>
-                            {isVeg ? '🌱 VEG' : '🍖 NON-VEG'}
-                          </span>
-                          {dp > 0 && (
-                            <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 bg-rose-600 text-white rounded text-[8px] sm:text-[10px] font-black">
-                              {dp}%
-                            </span>
-                          )}
-                        </div>
-
-                        {/* QUICK VIEW BUTTON OVERLAY */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                          <span className="px-3 py-1.5 bg-white text-[#0A1128] font-black text-xs rounded-xl shadow-md flex items-center gap-1">
-                            <Eye className="w-3.5 h-3.5" /> Quick View
-                          </span>
-                        </div>
-
-                        <div className="absolute bottom-1.5 right-1.5 sm:bottom-3 sm:right-3 bg-white/90 backdrop-blur-sm px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded text-[9px] sm:text-[11px] font-black text-amber-600 flex items-center gap-0.5 shadow-xs">
-                          <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-400 text-amber-400" />
-                          <span>{item.rating || '4.8'}</span>
-                        </div>
+                  <div className="bg-gradient-to-br from-slate-900 via-[#0A1128] to-slate-950 text-white rounded-3xl p-8 sm:p-12 border border-amber-400/30 shadow-2xl text-center space-y-5 relative overflow-hidden my-6">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="relative z-10 space-y-4 max-w-xl mx-auto">
+                      <div className="w-16 h-16 rounded-2xl bg-amber-400/20 text-amber-400 border border-amber-400/40 flex items-center justify-center mx-auto shadow-lg">
+                        <MapPin className="w-8 h-8 text-amber-400 animate-bounce" />
                       </div>
 
-                      {/* ITEM DETAILS */}
-                      <div className="p-2.5 sm:p-4 space-y-1 sm:space-y-2">
-                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 truncate">
-                          🏪 {item.restaurantName || item.brand || 'Gourmet Partner'}
-                        </p>
-                        <h3 className="font-extrabold text-xs sm:text-sm text-[#0A1128] line-clamp-2 leading-snug group-hover:text-amber-600 transition min-h-[32px] sm:min-h-[40px]">
-                          {title}
+                      <div className="space-y-2">
+                        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                          Location Status
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
+                          No Food Items Delivering to <span className="text-amber-400">{displayLoc}</span>
                         </h3>
-                        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-slate-500 font-semibold">
-                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500" />
-                          <span>⚡ {item.prepTime || '20m'}</span>
-                        </div>
+                        <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                          We couldn't find active food items or dishes matching your location filter in <strong className="text-amber-300">{displayLoc}</strong>.
+                        </p>
+                      </div>
+
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleClearSubcategoryFilter}
+                          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2"
+                        >
+                          <span>Explore All Items Across Platform</span>
+                        </button>
+
+                        <Link
+                          to="/"
+                          className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs rounded-2xl border border-white/20 backdrop-blur-md transition flex items-center justify-center space-x-2"
+                        >
+                          <span>📍 Change Location / Pincode</span>
+                        </Link>
                       </div>
                     </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+                {filteredFoodItems.map((item: any) => {
+                  const title = item.name || item.itemName || 'Delicious Dish';
+                  const price = Number(item.price || item.afterDiscount || item.userPrice || 199);
+                  const mrp = Number(item.mrp || item.baseMrp || price * 1.3);
+                  const dp = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+                  const img = item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop';
+                  const isVeg = item.isVeg !== undefined ? item.isVeg : true;
 
-                    {/* PRICE & ADD TO CART CTA */}
-                    <div className="p-2.5 sm:p-4 pt-0 flex items-center justify-between gap-1 border-t border-slate-100 mt-1">
+                  return (
+                    <div
+                      key={item._id || item.id}
+                      className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-xl hover:border-amber-400 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                      onClick={() => {
+                        setSelectedQuickViewItem(item);
+                        setQuickViewQty(1);
+                      }}
+                    >
                       <div>
-                        <div className="flex items-baseline gap-0.5 sm:gap-1">
+                        {/* ITEM IMAGE CONTAINER - COMPACT ON MOBILE */}
+                        <div className="h-28 sm:h-44 bg-slate-100 relative overflow-hidden">
+                          <img
+                            src={img}
+                            alt={title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex gap-1 z-10">
+                            <span className={`px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded text-[8px] sm:text-[10px] font-black border ${isVeg ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'
+                              }`}>
+                              {isVeg ? '🌱 VEG' : '🍖 NON-VEG'}
+                            </span>
+                            {dp > 0 && (
+                              <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 bg-amber-500 text-[#0A1128] rounded text-[8px] sm:text-[10px] font-black shadow-xs">
+                                {dp}% OFF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* ITEM DETAILS */}
+                        <div className="p-2.5 sm:p-4 space-y-1 sm:space-y-1.5 text-left">
+                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-500 font-semibold">
+                            <span className="truncate max-w-[110px] sm:max-w-[140px] text-amber-600 font-bold">{item.restaurantName || 'Food Kitchen'}</span>
+                            <div className="flex items-center gap-0.5 text-amber-500 font-black">
+                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                              <span>{formatRating(item.rating)}</span>
+                            </div>
+                          </div>
+
+                          <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-amber-600 transition">
+                            {title}
+                          </h3>
+
+                          <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1 font-medium hidden sm:block">
+                            {item.description || 'Piping hot fresh food delivered to your door.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* ITEM FOOTER & ADD BUTTON */}
+                      <div className="p-2.5 sm:p-4 pt-0 sm:pt-0 flex items-center justify-between gap-1 border-t border-slate-100/60 mt-1">
+                        <div className="flex items-baseline space-x-1">
                           <span className="text-xs sm:text-base font-black text-[#0A1128]">₹{price}</span>
                           {mrp > price && (
                             <span className="text-[9px] sm:text-xs text-slate-400 line-through font-medium">₹{Math.round(mrp)}</span>
                           )}
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(item, 1);
-                        }}
-                        className="bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-[10px] sm:text-xs px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1 transition duration-300 border-none cursor-pointer shrink-0"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(item, 1);
+                          }}
+                          className="bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-[10px] sm:text-xs px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1 transition duration-300 border-none cursor-pointer shrink-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -869,6 +1321,7 @@ export const FoodDining: React.FC = () => {
               {cuisinesList.map((c) => (
                 <button
                   key={c.value}
+                  type="button"
                   onClick={() => setSelectedCuisine(c.value)}
                   className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition duration-300 flex items-center space-x-2 cursor-pointer shrink-0 border ${selectedCuisine === c.value
                     ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md scale-105'
@@ -888,17 +1341,60 @@ export const FoodDining: React.FC = () => {
                   <div key={i} className="h-80 bg-white rounded-3xl border border-slate-200 shadow animate-pulse" />
                 ))}
               </div>
-            ) : restaurants.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 space-y-3 shadow-sm">
-                <Store className="w-12 h-12 text-slate-300 mx-auto" />
-                <h3 className="text-base font-extrabold text-slate-800">No Restaurants Found</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  We couldn't find active food partners matching your filter criteria. Try selecting "All Cuisines" or adjusting your search term.
-                </p>
-              </div>
+            ) : filteredRestaurants.length === 0 ? (
+              (() => {
+                const { activePincode, activeMandal, activeDistrict, fullAddress } = getActiveUserLocation();
+                const userLocRaw = localStorage.getItem("userLocation");
+                const userLocation = userLocRaw ? JSON.parse(userLocRaw) : null;
+                const displayLoc = activePincode
+                  ? `${activePincode}${userLocation?.mandal ? ` (${userLocation.mandal})` : userLocation?.city ? ` (${userLocation.city})` : ''}`
+                  : fullAddress || 'your selected location';
+
+                return (
+                  <div className="bg-gradient-to-br from-slate-900 via-[#0A1128] to-slate-950 text-white rounded-3xl p-8 sm:p-12 border border-amber-400/30 shadow-2xl text-center space-y-5 relative overflow-hidden my-6">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="relative z-10 space-y-4 max-w-xl mx-auto">
+                      <div className="w-16 h-16 rounded-2xl bg-amber-400/20 text-amber-400 border border-amber-400/40 flex items-center justify-center mx-auto shadow-lg">
+                        <MapPin className="w-8 h-8 text-amber-400 animate-bounce" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                          Location Status
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
+                          No Restaurants Delivering to <span className="text-amber-400">{displayLoc}</span> Yet
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                          We currently don't have registered restaurant partners in <strong className="text-amber-300">{displayLoc}</strong>. We are rapidly expanding our food network in your area!
+                        </p>
+                      </div>
+
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleClearSubcategoryFilter}
+                          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2"
+                        >
+                          <span>Explore All Outlets Across Platform</span>
+                        </button>
+
+                        <Link
+                          to="/"
+                          className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs rounded-2xl border border-white/20 backdrop-blur-md transition flex items-center justify-center space-x-2"
+                        >
+                          <span>📍 Change Location / Pincode</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {restaurants.map((rest) => {
+                {filteredRestaurants.map((rest) => {
                   const defaultImage = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop';
                   const displayImage = rest.bannerImage || rest.coverImage || rest.logo || defaultImage;
 

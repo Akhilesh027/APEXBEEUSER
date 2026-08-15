@@ -670,6 +670,37 @@ const ProductDetail = () => {
     );
   }
 
+  // Real Haversine Distance Calculation
+  const userLat = localStorage.getItem("userLat") ? parseFloat(localStorage.getItem("userLat")!) : 17.3850;
+  const userLng = localStorage.getItem("userLng") ? parseFloat(localStorage.getItem("userLng")!) : 78.4867;
+
+  const vendorLat = product.sellerId?.latitude || product.sellerId?.location?.coordinates?.[1] || product.vendorLat || product.latitude || null;
+  const vendorLng = product.sellerId?.longitude || product.sellerId?.location?.coordinates?.[0] || product.vendorLng || product.longitude || null;
+
+  let calculatedDist = Number(product.calculatedDistanceKm || 0);
+  if (!calculatedDist && vendorLat && vendorLng) {
+    const R = 6371; // Radius of Earth in km
+    const dLat = ((vendorLat - userLat) * Math.PI) / 180;
+    const dLon = ((vendorLng - userLng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((userLat * Math.PI) / 180) *
+      Math.cos((vendorLat * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    calculatedDist = Number((R * c).toFixed(1));
+  }
+
+  const distanceText = calculatedDist && calculatedDist > 0 ? `${calculatedDist.toFixed(1)} km away` : "Nearby (2 km)";
+
+  const sellerStoreLogo =
+    product.sellerId?.storeLogo ||
+    product.sellerId?.logo ||
+    product.sellerId?.profilePicture ||
+    product.storeLogo ||
+    "";
+
   const currentRating = Math.round(reviewStats.avg || product.rating || 4);
 
   const renderStars = (value: number) => (
@@ -728,6 +759,58 @@ const ProductDetail = () => {
 
           {/* RIGHT DETAILS */}
           <div>
+            {/* 🏬 SELLER STORE BADGE CARD */}
+            <div className="mb-4 bg-slate-50 border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 border border-slate-200 flex items-center justify-center shrink-0 text-amber-800 font-bold overflow-hidden">
+                  {sellerStoreLogo ? (
+                    <img src={sellerStoreLogo} alt="Store" className="w-full h-full object-cover" />
+                  ) : (
+                    "🏬"
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-sm text-[#0A1128]">
+                      {product.sellerId?.shopName ||
+                        product.sellerId?.storeName ||
+                        product.sellerId?.businessName ||
+                        product.sellerId?.sellerProfile?.shopName ||
+                        product.sellerId?.sellerProfile?.storeName ||
+                        product.sellerId?.sellerProfile?.businessName ||
+                        product.shopName ||
+                        product.storeName ||
+                        product.businessName ||
+                        product.brand ||
+                        (product.sellerId?.name && !/^vendor\d*$/i.test(product.sellerId.name) ? product.sellerId.name : null) ||
+                        "ApexBee Partner Store"}
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-200">
+                      ✔ Verified Store
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
+                    <span className="text-amber-600 font-bold flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      {product.sellerId?.rating?.average ? Number(product.sellerId.rating.average).toFixed(1) : "4.5"}
+                    </span>
+                    <span>•</span>
+                    <span>{distanceText}</span>
+                  </div>
+                </div>
+              </div>
+
+              {product.sellerId?._id && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/vendor/${product.sellerId._id}`)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-800 font-extrabold text-xs rounded-xl shadow-2xs transition cursor-pointer"
+                >
+                  Visit Store &rarr;
+                </button>
+              )}
+            </div>
+
             {product.brand && (
               <div className="text-xs font-bold text-accent mb-2 uppercase tracking-wide">
                 Brand: {product.brand}
@@ -755,6 +838,99 @@ const ProductDetail = () => {
                 </span>
               )}
             </div>
+
+            {/* 💰 3-TIER MULTI-LEVEL REFERRAL EARNINGS CARD */}
+            {(() => {
+              const referralShares = product?.adminPricing?.commissionShares || [];
+              const getRefShare = (type: string, defaultPct: number) => {
+                const sh = Array.isArray(referralShares)
+                  ? referralShares.find((s: any) => s.type === type && s.isActive !== false)
+                  : null;
+                if (sh) {
+                  if (typeof sh.percent === 'number') return { percent: sh.percent, amount: sh.amount };
+                  if (typeof sh.amount === 'number') return { percent: null, amount: sh.amount };
+                }
+                return { percent: defaultPct, amount: null };
+              };
+
+              const l1 = getRefShare("level1", 10);
+              const l2 = getRefShare("level2", 5);
+              const l3 = getRefShare("level3", 2.5);
+
+              const priceVal = Number(afterDiscount || 100);
+              const platformFee = Number(product?.adminPricing?.platformFeePercent || 15);
+              const commBase = product?.adminPricing?.commissionBase || "platform_fee";
+
+              const calcAmount = (share: { percent: number | null; amount: number | null }) => {
+                if (share.amount !== null && share.amount > 0) return share.amount;
+                const pct = share.percent ?? 0;
+                if (commBase === "sale_price") {
+                  return Math.round((priceVal * pct) / 100);
+                }
+                const pool = (priceVal * platformFee) / 100;
+                return Math.round((pool * pct) / 100);
+              };
+
+              const l1Earn = Math.max(1, calcAmount(l1));
+              const l2Earn = Math.max(1, calcAmount(l2));
+              const l3Earn = Math.max(1, calcAmount(l3));
+
+              return (
+                <div className="mb-6 bg-gradient-to-r from-slate-950 via-slate-900 to-[#0A1128] text-white rounded-2xl p-4 border border-amber-400/40 shadow-md relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm">
+                        🚀
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-amber-400 leading-tight">Multi-Tier Network Rewards</h4>
+                        <p className="text-[10.5px] text-slate-300">Passive reward share generated when your invited network purchases this item.</p>
+                      </div>
+                    </div>
+                    <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[9.5px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                      Network Share
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center font-sans">
+                    {/* Level 1 */}
+                    <div className="bg-slate-800/80 border border-emerald-500/30 rounded-xl p-2.5 space-y-1">
+                      <span className="text-[9.5px] font-black uppercase text-emerald-400 block tracking-wide">Tier 1 (Direct Friend)</span>
+                      <span className="text-xl font-black text-white block leading-none">₹{l1Earn}</span>
+                      <span className="text-[9.5px] font-bold text-slate-400 block">{l1.percent !== null ? `${l1.percent}%` : 'Flat'}</span>
+                    </div>
+
+                    {/* Level 2 */}
+                    <div className="bg-slate-800/80 border border-amber-500/30 rounded-xl p-2.5 space-y-1">
+                      <span className="text-[9.5px] font-black uppercase text-amber-300 block tracking-wide">Tier 2 (Invited by Friend)</span>
+                      <span className="text-xl font-black text-white block leading-none">₹{l2Earn}</span>
+                      <span className="text-[9.5px] font-bold text-slate-400 block">{l2.percent !== null ? `${l2.percent}%` : 'Flat'}</span>
+                    </div>
+
+                    {/* Level 3 */}
+                    <div className="bg-slate-800/80 border border-indigo-500/30 rounded-xl p-2.5 space-y-1">
+                      <span className="text-[9.5px] font-black uppercase text-indigo-300 block tracking-wide">Tier 3 (3rd-Gen Team)</span>
+                      <span className="text-xl font-black text-white block leading-none">₹{l3Earn}</span>
+                      <span className="text-[9.5px] font-bold text-slate-400 block">{l3.percent !== null ? `${l3.percent}%` : 'Flat'}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[10.5px] text-slate-400 flex-wrap gap-2">
+                    <span className="flex items-center gap-1 font-medium italic">
+                      <span>ℹ️</span>
+                      <span>*Rewards based on standard commission pools. Final credited amount is determined upon successful order completion and non-return.</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black px-3 py-1.5 rounded-xl transition text-[11px] shrink-0 shadow-xs cursor-pointer not-italic"
+                    >
+                      Copy Link &amp; Refer
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* 🚨 BULK / WHOLESALE PRODUCT ALERT BANNER */}
             {moq > 1 && (

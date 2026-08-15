@@ -1286,14 +1286,22 @@ const Home = () => {
       setShopsLoading(true);
       setShopsError(null);
 
+      const userLocRaw = localStorage.getItem("userLocation") || localStorage.getItem("user_location") || localStorage.getItem("apexbee_user_location");
+      const userLocationObj = userLocRaw ? JSON.parse(userLocRaw) : userLocation;
+      const activePin = (localStorage.getItem("userPincode") || userLocationObj?.pincode || localStorage.getItem("pincode") || "").toString().trim();
+
       const params = new URLSearchParams();
-      if (userLocation?.lat && userLocation?.lng) {
-        params.append("lat", String(userLocation.lat));
-        params.append("lng", String(userLocation.lng));
+      if (userLocationObj?.lat && userLocationObj?.lng) {
+        params.append("lat", String(userLocationObj.lat));
+        params.append("lng", String(userLocationObj.lng));
       }
-      if (userLocation?.pincode) {
-        params.append("pincode", String(userLocation.pincode));
+      if (activePin) {
+        params.append("pincode", activePin);
       }
+      if (userLocationObj?.mandal) params.append("mandal", userLocationObj.mandal);
+      if (userLocationObj?.district) params.append("district", userLocationObj.district);
+      if (userLocationObj?.city) params.append("city", userLocationObj.city);
+      if (userLocationObj?.state) params.append("state", userLocationObj.state);
       params.append("radius", "20");
 
       let res = await fetch(`${API_BASE}/vendors/nearby?${params.toString()}`);
@@ -1317,14 +1325,20 @@ const Home = () => {
   const fetchNearbyRestaurants = async () => {
     try {
       setRestaurantsLoading(true);
+      const userLocRaw = localStorage.getItem("userLocation") || localStorage.getItem("user_location") || localStorage.getItem("apexbee_user_location");
+      const userLocationObj = userLocRaw ? JSON.parse(userLocRaw) : userLocation;
+
       const params = new URLSearchParams();
-      if (userLocation?.lat && userLocation?.lng) {
-        params.append("lat", String(userLocation.lat));
-        params.append("lng", String(userLocation.lng));
+      if (userLocationObj?.lat && userLocationObj?.lng) {
+        params.append("lat", String(userLocationObj.lat));
+        params.append("lng", String(userLocationObj.lng));
       }
-      if (userLocation?.pincode) {
-        params.append("pincode", String(userLocation.pincode));
+      if (userLocationObj?.pincode) {
+        params.append("pincode", String(userLocationObj.pincode));
       }
+      if (userLocationObj?.mandal) params.append("mandal", userLocationObj.mandal);
+      if (userLocationObj?.district) params.append("district", userLocationObj.district);
+      if (userLocationObj?.city) params.append("city", userLocationObj.city);
 
       const res = await fetch(`${API_BASE}/food/restaurants?${params.toString()}`);
       if (res.ok) {
@@ -1345,6 +1359,56 @@ const Home = () => {
     fetchNearbyShops();
     fetchNearbyRestaurants();
   }, [userLocation]);
+
+  // ── ACTIVE ORDER LIVE COUNTDOWN TIMER STATE & SYNC ──
+  const [activeCustomerOrder, setActiveCustomerOrder] = useState<any | null>(null);
+  const [timerSeconds, setTimerSeconds] = useState<number>(0);
+
+  const fetchActiveCustomerOrder = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/orders/active-order`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.activeOrder) {
+          setActiveCustomerOrder(data.activeOrder);
+        } else {
+          setActiveCustomerOrder(null);
+        }
+      }
+    } catch (e) {
+      console.error("fetchActiveCustomerOrder error:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveCustomerOrder();
+    const interval = setInterval(fetchActiveCustomerOrder, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!activeCustomerOrder) return;
+
+    const prepMins = activeCustomerOrder.estimatedDeliveryMinutes || 20;
+    const baseTime = activeCustomerOrder.acceptedAt || activeCustomerOrder.createdAt;
+    const targetTime = activeCustomerOrder.estimatedDeliveryTime
+      ? new Date(activeCustomerOrder.estimatedDeliveryTime).getTime()
+      : (baseTime ? new Date(baseTime).getTime() : Date.now()) + prepMins * 60 * 1000;
+
+    const tick = () => {
+      const now = Date.now();
+      const diffSecs = Math.max(0, Math.floor((targetTime - now) / 1000));
+      setTimerSeconds(diffSecs);
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [activeCustomerOrder?.estimatedDeliveryTime, activeCustomerOrder?.acceptedAt, activeCustomerOrder?.estimatedDeliveryMinutes]);
 
   /** ---------------------------
    * UI helpers
@@ -1807,6 +1871,105 @@ const Home = () => {
               </div>
             </div>
           </section>
+
+          {/* ⏱️ ACTIVE ORDER LIVE COUNTDOWN TIMER CARD (FOOD ORDERS ONLY) */}
+          {activeCustomerOrder && (() => {
+            const isFoodOrder = activeCustomerOrder.isFoodOrder ?? Boolean(
+              activeCustomerOrder.orderType === 'FOOD' ||
+              JSON.stringify(activeCustomerOrder).toLowerCase().match(/food|dining|restaurant|biryani|bakery|tiffin|kitchen|hotel|fast food/)
+            );
+
+            if (!isFoodOrder) return null;
+
+            const hasAccepted = activeCustomerOrder.hasAccepted ?? Boolean(
+              activeCustomerOrder.acceptedAt ||
+              ['accepted', 'preparing', 'confirmed', 'packed', 'ready', 'shipped', 'out_for_delivery'].includes((activeCustomerOrder.orderStatus || '').toLowerCase())
+            );
+
+            const prepMins = activeCustomerOrder.estimatedDeliveryMinutes || 25;
+            const totalSecs = prepMins * 60;
+            const minsLeft = Math.floor(timerSeconds / 60);
+            const secsLeft = timerSeconds % 60;
+            const clockText = `${String(minsLeft).padStart(2, '0')}:${String(secsLeft).padStart(2, '0')}`;
+
+            const elapsedSecs = Math.max(0, totalSecs - timerSeconds);
+            const progressPct = hasAccepted ? Math.min(100, Math.round((elapsedSecs / totalSecs) * 100)) : 10;
+
+            const firstItem = activeCustomerOrder.items?.[0]?.productName || activeCustomerOrder.items?.[0]?.name || 'Delicious Food Order';
+            const itemCount = activeCustomerOrder.items?.length || 1;
+
+            return (
+              <section className="container mx-auto px-3 sm:px-4 py-2">
+                <div className="bg-gradient-to-br from-slate-950 via-[#0A1128] to-slate-900 text-white rounded-3xl p-5 border border-amber-400/40 shadow-xl relative overflow-hidden font-sans text-left">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start space-x-3.5">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 shadow-lg animate-pulse">
+                        🍲
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {hasAccepted ? (
+                            <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider">
+                              🔥 Order Accepted &amp; Preparing
+                            </span>
+                          ) : (
+                            <span className="bg-blue-400/20 text-blue-300 border border-blue-400/40 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider animate-pulse">
+                              ⏳ Awaiting Restaurant Acceptance
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-300 font-bold">
+                            Order #{activeCustomerOrder.orderNumber}
+                          </span>
+                        </div>
+
+                        <h3 className="font-extrabold text-base sm:text-lg text-white font-heading">
+                          {firstItem} {itemCount > 1 ? `+ ${itemCount - 1} more items` : ''}
+                        </h3>
+                        <p className="text-xs text-slate-300 font-medium">
+                          🏪 Store: <strong className="text-amber-300">{activeCustomerOrder.storeName || 'ApexBee Partner Outlet'}</strong>
+                          {!hasAccepted && <span className="block text-[11px] text-blue-300 mt-0.5 font-bold">Timer starts as soon as restaurant confirms prep time!</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ⏱️ COUNTDOWN CLOCK DISPLAY */}
+                    <div className="w-full sm:w-auto bg-slate-900/90 border border-amber-400/30 rounded-2xl p-3 text-center flex sm:flex-col items-center justify-between sm:justify-center gap-2 shrink-0 shadow-inner">
+                      <div>
+                        <span className="text-[9.5px] font-black uppercase text-amber-400 block tracking-wider">
+                          {!hasAccepted ? 'Restaurant Status' : timerSeconds > 0 ? 'Estimated Delivery In' : 'Arriving Any Moment'}
+                        </span>
+                        <span className="text-2xl sm:text-3xl font-black text-white font-mono leading-none tracking-tight">
+                          {!hasAccepted ? 'Pending' : timerSeconds > 0 ? clockText : '00:00'}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => navigate('/my-orders')}
+                        className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition shadow-md cursor-pointer shrink-0"
+                      >
+                        Track Order Live &rarr;
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PROGRESS BAR */}
+                  <div className="mt-4 space-y-1.5 pt-2 border-t border-slate-800">
+                    <div className="flex justify-between text-[11px] font-bold text-slate-300">
+                      <span>Status: <strong className="text-amber-400 uppercase">{hasAccepted ? (activeCustomerOrder.orderStatus || 'Preparing') : 'Sent to Kitchen (Pending Acceptance)'}</strong></span>
+                      <span>{hasAccepted ? `${progressPct}% Completed (${prepMins} Min Delivery Window)` : 'Awaiting Confirmation'}</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                      <div
+                        className={`h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all duration-1000 shadow-sm ${!hasAccepted ? 'animate-pulse' : ''}`}
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* SCHEDULED MORNING SUBSCRIPTION DELIVERY ALERT CARD — ONLY SHOWN IF USER HAS ACTIVE SUBSCRIPTIONS */}
           {activeUserSubscriptions.length > 0 && (() => {
@@ -2765,111 +2928,129 @@ const Home = () => {
                   <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
                 ))}
               </div>
-            ) : nearbyShops.length === 0 ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-2">
-                <Store className="w-10 h-10 text-slate-300 mx-auto" />
-                <h4 className="font-extrabold text-slate-800 text-sm">No Local Stores Found Near Location</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">Try setting your location via GPS or search in nearby pincodes.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
-                {nearbyShops.slice(0, 6).map((shop: any) => {
-                  const defaultImage = "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop";
-                  const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
-                  const ratingAvg = shop.rating?.average || 4.8;
-                  const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
-                  const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
-                  const firstOffer = shop.offers?.[0];
-                  const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
+            ) : (() => {
+              const userLocRaw = localStorage.getItem("userLocation");
+              const userLocationObj = userLocRaw ? JSON.parse(userLocRaw) : userLocation;
+              const activePin = (localStorage.getItem("userPincode") || userLocationObj?.pincode || localStorage.getItem("pincode") || "").toString().trim();
 
-                  return (
-                    <div
-                      key={shop._id}
-                      onClick={() => navigate(`/business/${shop._id}`)}
-                      className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
-                    >
-                      <div>
-                        {/* COVER IMAGE WITH GRADIENT OVERLAY */}
-                        <div className="h-48 bg-slate-100 relative overflow-hidden">
-                          <img
-                            src={displayImage}
-                            alt={shop.businessName}
-                            className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
+              const filteredShops = (nearbyShops || []).filter((shop: any) => {
+                if (activePin) {
+                  const shopPin = (shop.pincode || shop.pinCode || shop.address?.pincode || "").toString().trim();
+                  if (shopPin && shopPin !== activePin) return false;
+                }
+                return true;
+              });
 
-                          {/* STATUS & OFFER BADGES */}
-                          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
-                              <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
-                            </span>
+              if (filteredShops.length === 0) {
+                return (
+                  <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-2">
+                    <Store className="w-10 h-10 text-slate-300 mx-auto" />
+                    <h4 className="font-extrabold text-slate-800 text-sm">No Local Stores Found Near Location</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">Try setting your location via GPS or search in nearby pincodes.</p>
+                  </div>
+                );
+              }
 
-                            {firstOffer && (
-                              <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
-                                <Tag className="w-3 h-3 text-slate-950" />
-                                <span>{firstOffer.title}</span>
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
+                  {filteredShops.slice(0, 6).map((shop: any) => {
+                    const defaultImage = "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop";
+                    const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
+                    const ratingAvg = shop.rating?.average || 4.8;
+                    const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
+                    const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
+                    const firstOffer = shop.offers?.[0];
+                    const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
+
+                    return (
+                      <div
+                        key={shop._id}
+                        onClick={() => navigate(`/business/${shop._id}`)}
+                        className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
+                      >
+                        <div>
+                          {/* COVER IMAGE WITH GRADIENT OVERLAY */}
+                          <div className="h-48 bg-slate-100 relative overflow-hidden">
+                            <img
+                              src={displayImage}
+                              alt={shop.businessName}
+                              className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
+
+                            {/* STATUS & OFFER BADGES */}
+                            <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                                <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
                               </span>
-                            )}
-                          </div>
 
-                          {/* RATING BADGE */}
-                          <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            <span>{ratingAvg}</span>
-                          </div>
-
-                          {/* DISTANCE & TIME FLOATING STRIP */}
-                          <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
-                            <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
-                              <Clock className="w-3 h-3 text-amber-400" />
-                              <span>{deliveryTime}</span>
-                            </span>
-                            <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
-                              <MapPin className="w-3 h-3 text-amber-400" />
-                              <span>{distance}</span>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* STORE DETAILS */}
-                        <div className="p-5 space-y-2.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-0.5 min-w-0">
-                              <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
-                                {shop.businessName}
-                              </h3>
-                              <p className="text-xs text-slate-500 line-clamp-1 font-medium">
-                                {shop.industryType || shop.businessTypes?.join(', ') || 'Local Store & Daily Essentials'}
-                              </p>
+                              {firstOffer && (
+                                <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                  <Tag className="w-3 h-3 text-slate-950" />
+                                  <span>{firstOffer.title}</span>
+                                </span>
+                              )}
                             </div>
 
-                            {(shop.verifiedBadge || shop.isVerified !== false) && (
-                              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="Verified Store">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            {/* RATING BADGE */}
+                            <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              <span>{ratingAvg}</span>
+                            </div>
+
+                            {/* DISTANCE & TIME FLOATING STRIP */}
+                            <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
+                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                <Clock className="w-3 h-3 text-amber-400" />
+                                <span>{deliveryTime}</span>
                               </span>
-                            )}
+                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                <MapPin className="w-3 h-3 text-amber-400" />
+                                <span>{distance}</span>
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
-                            <span>📍 {shop.locality || shop.city || 'Hyderabad'}</span>
-                            <span className="text-amber-600 font-bold">Same-Day Express</span>
+                          {/* STORE DETAILS */}
+                          <div className="p-5 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-0.5 min-w-0">
+                                <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
+                                  {shop.businessName}
+                                </h3>
+                                <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                                  {shop.industryType || shop.businessTypes?.join(', ') || 'Local Store & Daily Essentials'}
+                                </p>
+                              </div>
+
+                              {(shop.verifiedBadge || shop.isVerified !== false) && (
+                                <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="Verified Store">
+                                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                              <span>📍 {shop.locality || shop.city || 'Hyderabad'}</span>
+                              <span className="text-amber-600 font-bold">Same-Day Express</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ACTION BUTTON */}
+                        <div className="px-5 pb-5 pt-1">
+                          <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
+                            <span>Visit Store &amp; Shop</span>
+                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                           </div>
                         </div>
                       </div>
-
-                      {/* ACTION BUTTON */}
-                      <div className="px-5 pb-5 pt-1">
-                        <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
-                          <span>Visit Store &amp; Shop</span>
-                          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </section>
 
           {/* 8. Nearby Restaurants & Food Outlets (Premium Cards Layout) */}

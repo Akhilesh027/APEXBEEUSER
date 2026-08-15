@@ -3,12 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Star, Heart, Share2, Clock, MapPin,
   Calendar, ShieldCheck, CheckCircle2, Zap, ShoppingCart,
-  RefreshCw, Lock, Award, Flame, Eye, Store, Phone, MessageCircle, Navigation
+  RefreshCw, Lock, Award, Flame, Eye, Store, Phone, MessageCircle, Navigation, Coins
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
+
+// Global cache for fetched vendor/store details to avoid duplicate network calls across product cards
+const vendorDetailsCache = new Map<string, any>();
 
 export interface ProductCardProps {
   product?: any;
@@ -32,6 +35,56 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   // Real Database Field Extractions from MongoDB backend
   const productId = product._id || product.id || "";
   const title = product.name || product.itemName || product.title || "Product";
+
+  // Vendor ID extraction from product object
+  const vendorId =
+    (typeof product.sellerId === "string" ? product.sellerId : product.sellerId?._id || product.sellerId?.id) ||
+    (typeof product.vendorId === "string" ? product.vendorId : product.vendorId?._id || product.vendorId?.id) ||
+    (typeof product.vendor === "string" ? product.vendor : product.vendor?._id || product.vendor?.id) ||
+    (typeof product.seller === "string" ? product.seller : product.seller?._id || product.seller?.id) ||
+    (typeof product.storeId === "string" ? product.storeId : product.storeId?._id || product.storeId?.id) ||
+    (typeof product.createdBy === "string" ? product.createdBy : product.createdBy?._id || product.createdBy?.id) ||
+    "";
+
+  // State to store vendor details fetched by vendor ID
+  const [fetchedVendor, setFetchedVendor] = useState<any>(() => {
+    if (vendorId && vendorDetailsCache.has(vendorId)) {
+      return vendorDetailsCache.get(vendorId);
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (!vendorId) return;
+
+    if (vendorDetailsCache.has(vendorId)) {
+      setFetchedVendor(vendorDetailsCache.get(vendorId));
+      return;
+    }
+
+    // Fetch vendor details from API using vendorId if shopName is not populated on product object
+    axios
+      .get(`${API_BASE}/vendors/${vendorId}`)
+      .then((res) => {
+        const vData = res.data?.vendor || res.data?.data || res.data;
+        if (vData) {
+          vendorDetailsCache.set(vendorId, vData);
+          setFetchedVendor(vData);
+        }
+      })
+      .catch(() => {
+        axios
+          .get(`${API_BASE}/stores/${vendorId}`)
+          .then((res) => {
+            const sData = res.data?.store || res.data?.vendor || res.data;
+            if (sData) {
+              vendorDetailsCache.set(vendorId, sData);
+              setFetchedVendor(sData);
+            }
+          })
+          .catch(() => { });
+      });
+  }, [vendorId, product]);
 
   // Real Image handling
   const rawImg = product.images?.[0] || product.thumbnail || product.image;
@@ -65,9 +118,23 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
   const savings = mrp > sellingPrice ? mrp - sellingPrice : 5;
 
-  // Merchant Details & Store Logo Extraction
+  // Merchant Details & Store Logo Extraction - Strictly prioritizes shopName over businessName
   const storeName =
+    fetchedVendor?.shopName ||
+    fetchedVendor?.storeName ||
+    fetchedVendor?.storeDesign?.shopName ||
+    fetchedVendor?.storeDesign?.storeName ||
+    product.sellerId?.shopName ||
     product.sellerId?.storeName ||
+    product.sellerId?.storeDesign?.shopName ||
+    product.sellerId?.storeDesign?.storeName ||
+    product.shopName ||
+    product.storeName ||
+    fetchedVendor?.businessName ||
+    product.sellerId?.businessName ||
+    product.businessName ||
+    fetchedVendor?.ownerName ||
+    fetchedVendor?.name ||
     product.sellerId?.name ||
     product.vendorLocationName ||
     product.brand ||
@@ -75,6 +142,11 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     "ApexBee Store";
 
   const rawStoreLogo =
+    fetchedVendor?.storeDesign?.logoUrl ||
+    fetchedVendor?.storeDesign?.logo ||
+    fetchedVendor?.logo ||
+    fetchedVendor?.profilePicture ||
+    product.sellerId?.storeDesign?.logoUrl ||
     product.sellerId?.storeLogo ||
     product.sellerId?.logo ||
     product.sellerId?.profilePicture ||
@@ -189,6 +261,44 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   }
 
   const distanceText = rawDistKm > 0 ? `${rawDistKm.toFixed(1)} km` : "1.8 km";
+
+  // 3-Level Referral Commission Earnings Calculation
+  const commissionShares = product.adminPricing?.commissionShares || [];
+  const getCommissionShare = (type: string, defaultPct: number) => {
+    const sh = Array.isArray(commissionShares)
+      ? commissionShares.find((s: any) => s.type === type && s.isActive !== false)
+      : null;
+    if (sh) {
+      if (typeof sh.percent === "number") return { percent: sh.percent, amount: sh.amount };
+      if (typeof sh.amount === "number") return { percent: null, amount: sh.amount };
+    }
+    return { percent: defaultPct, amount: null };
+  };
+
+  const l1Share = getCommissionShare("level1", 10);
+  const l2Share = getCommissionShare("level2", 5);
+  const l3Share = getCommissionShare("level3", 2.5);
+
+  const platformFeePct = Number(product.adminPricing?.platformFeePercent || 15);
+  const commissionBase = product.adminPricing?.commissionBase || "platform_fee";
+
+  const calculateEarning = (share: { percent: number | null; amount: number | null }) => {
+    if (share.amount !== null && share.amount > 0) return share.amount;
+    const pct = share.percent ?? 0;
+    if (commissionBase === "sale_price") {
+      return Math.round((sellingPrice * pct) / 100);
+    }
+    const pool = (sellingPrice * platformFeePct) / 100;
+    return Math.round((pool * pct) / 100);
+  };
+
+  const level1Earning = Math.max(1, calculateEarning(l1Share));
+  const level2Earning = Math.max(1, calculateEarning(l2Share));
+  const level3Earning = Math.max(1, calculateEarning(l3Share));
+
+  const level1PctStr = l1Share.percent !== null ? `${l1Share.percent}%` : `Flat`;
+  const level2PctStr = l2Share.percent !== null ? `${l2Share.percent}%` : `Flat`;
+  const level3PctStr = l3Share.percent !== null ? `${l3Share.percent}%` : `Flat`;
 
   // Vendor / Product Real Coupons extraction
   const vendorCoupons: any[] = Array.isArray(product.coupons) && product.coupons.length > 0
@@ -439,7 +549,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               <Store className="w-2.5 h-2.5 text-amber-700" />
             )}
           </div>
-          <span className="font-extrabold text-slate-800 truncate max-w-[80px]">{storeName}</span>
+          <span className="font-extrabold text-slate-800 truncate max-w-[100px] sm:max-w-[120px]" title={storeName}>{storeName}</span>
           <CheckCircle2 className="w-2.5 h-2.5 text-blue-500 fill-blue-500 text-white shrink-0" />
         </div>
 
@@ -548,8 +658,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             </div>
           </div>
 
-          {/* Right 1-Col: Delivery Box */}
-          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-xl p-2 space-y-1.5 text-[8.5px] font-bold text-slate-700">
+          {/* Right 1-Col: Delivery Box & 3-Level Referral Earnings Badge */}
+          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-xl p-1.5 space-y-1 text-[8.5px] font-bold text-slate-700 relative">
             <div className="flex items-center gap-1 text-emerald-700">
               <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
               <span className="truncate">{deliveryMins}</span>
@@ -558,15 +668,41 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
               <span className="truncate">{distanceText}</span>
             </div>
-            {product.isSubscribable !== false && (
-              <div className="flex items-center gap-1 text-amber-700 font-extrabold">
-                <RefreshCw className="w-3 h-3 text-amber-600 shrink-0" />
-                <span className="truncate">Subscribe</span>
+
+            {/* 3-Level Referral Earning Badge & Hover Tooltip */}
+            <div className="mt-0.5 pt-1 border-t border-slate-200/80 bg-amber-500/10 text-amber-900 px-1 py-0.5 rounded-lg group/ref cursor-pointer transition hover:bg-amber-500/20 relative">
+              <div className="flex items-center justify-between text-[7.5px] font-black">
+                <span className="flex items-center gap-0.5 text-amber-800">
+                  <Coins className="w-2.5 h-2.5 text-amber-600 animate-pulse shrink-0" />
+                  <span>Est. Earn</span>
+                </span>
+                <span className="text-emerald-700 font-extrabold">₹{level1Earning}</span>
               </div>
-            )}
-            <div className="flex items-center gap-1 text-purple-700">
-              <Calendar className="w-3 h-3 text-purple-600 shrink-0" />
-              <span className="truncate">Advance Order</span>
+
+              {/* Hover Popover showing Level 1, Level 2, Level 3 breakdown */}
+              <div className="hidden group-hover/ref:block absolute right-0 bottom-full mb-1 w-48 bg-slate-900 text-white rounded-xl p-2.5 shadow-2xl z-50 text-[8.5px] border border-amber-400/40 space-y-1 pointer-events-none">
+                <div className="font-black text-amber-400 border-b border-slate-700 pb-1 flex items-center justify-between">
+                  <span>🚀 Network Rewards</span>
+                  <span className="text-[6.5px] bg-amber-400/20 text-amber-300 px-1 rounded uppercase tracking-wider font-black">Share</span>
+                </div>
+                <div className="space-y-0.5 text-slate-200">
+                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
+                    <span>Tier 1 (Direct Friend):</span>
+                    <span className="font-extrabold text-emerald-400">₹{level1Earning} ({level1PctStr})</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
+                    <span>Tier 2 (Invited by Friend):</span>
+                    <span className="font-extrabold text-amber-300">₹{level2Earning} ({level2PctStr})</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
+                    <span>Tier 3 (3rd-Gen Team):</span>
+                    <span className="font-extrabold text-indigo-300">₹{level3Earning} ({level3PctStr})</span>
+                  </div>
+                </div>
+                <p className="text-[7px] text-slate-400 italic pt-0.5 leading-tight">
+                  *Network rewards per order. Final rewards are credited after successful order delivery.
+                </p>
+              </div>
             </div>
           </div>
         </div>

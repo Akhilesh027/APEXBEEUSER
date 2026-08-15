@@ -204,17 +204,20 @@ const Navbar = () => {
   // ✅ orders count
   const fetchOrdersCount = useCallback(
     async (userId: string, token: string) => {
-      if (!userId || !token) return;
+      if (!userId || userId === "undefined" || !token) {
+        setOrdersCount(0);
+        return;
+      }
 
       try {
         setLoading((p) => ({ ...p, orders: true }));
-        const response = await fetch(`${API_BASE}/orders/${userId}/count`, {
+        const response = await fetch(`${API_BASE}/orders/${userId}/count?status=active`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.ok) {
           const data = await response.json();
-          setOrdersCount(data?.count || 0);
+          setOrdersCount(Number(data?.count) || 0);
         } else if (response.status === 401) {
           handleLogout();
         } else {
@@ -336,11 +339,12 @@ const Navbar = () => {
 
     if (user && token) {
       setLoggedInUser(user);
+      const targetUserId = user._id || user.id || user.masterCustomerId;
       await Promise.all([
-        fetchCartItemsCount(user._id, token),
-        fetchOrdersCount(user._id, token),
+        fetchCartItemsCount(targetUserId, token),
+        fetchOrdersCount(targetUserId, token),
         fetchWalletBalance(token),
-        fetchNotifications(user._id, token),
+        fetchNotifications(targetUserId, token),
       ]);
     } else {
       setLoggedInUser(null);

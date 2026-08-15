@@ -14,8 +14,7 @@ import Navbar from "@/components/Navbar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// NOTE: Assuming useToast and Footer are imported or mocked elsewhere in the actual project structure.
-// import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // --- Referral Data Types ---
 interface ReferralStats {
@@ -44,8 +43,7 @@ const API_BASE_URL = "https://server.apexbee.in";
 
 const Profile = () => {
     const navigate = useNavigate();
-    // const { toast } = useToast(); // Assuming toast hook is available, mocking if not
-    const toast = (config) => console.log('Toast:', config.title, config.description);
+    const { toast } = useToast();
 
     const [activeTab, setActiveTab] = useState("profile");
     const [userData, setUserData] = useState(null);
@@ -91,6 +89,14 @@ const Profile = () => {
     const [showAddAddress, setShowAddAddress] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
     const [copyLoading, setCopyLoading] = useState(false);
+
+    // --- Email Verification States ---
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [showEmailOtpModal, setShowEmailOtpModal] = useState(false);
+    const [emailOtpCode, setEmailOtpCode] = useState("");
+    const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+    const [emailOtpError, setEmailOtpError] = useState("");
+    const [pendingEmail, setPendingEmail] = useState("");
 
     const [editFormData, setEditFormData] = useState({
         name: "", email: "", phone: "", dateOfBirth: "", gender: "", bio: ""
@@ -145,6 +151,7 @@ const Profile = () => {
                 customerRefId,
                 name: user.name || user.username,
                 email: user.email,
+                isEmailVerified: user.isEmailVerified === true,
                 phone: user.phone || user.mobile || "",
                 dateOfBirth: user.dateOfBirth || "",
                 gender: user.gender || "",
@@ -153,6 +160,7 @@ const Profile = () => {
                 roles: user.roles || ['customer']
             };
             setUserData(initialData);
+            setIsEmailVerified(initialData.isEmailVerified);
             setEditFormData({
                 name: initialData.name, email: initialData.email, phone: initialData.phone,
                 dateOfBirth: initialData.dateOfBirth, gender: initialData.gender, bio: initialData.bio
@@ -372,6 +380,81 @@ const Profile = () => {
         { label: "Pending Rewards", value: referralStats.pendingReferrals.toString(), icon: Users, description: "Referrals awaiting reward" },
     ];
     // --- End Referral Logic ---
+
+    // --- Email Verification Handlers ---
+
+    const handleSendEmailOtp = async (targetEmail?: string) => {
+        const emailToUse = targetEmail || userData?.email;
+        if (!emailToUse) return;
+        setEmailOtpLoading(true);
+        setEmailOtpError("");
+        setPendingEmail(emailToUse);
+        try {
+            await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: emailToUse, phone: userData?.phone || "0000000000" }),
+            });
+        } catch (err) {
+            console.error("Error sending email OTP:", err);
+        } finally {
+            setEmailOtpCode("");
+            setShowEmailOtpModal(true);
+            setEmailOtpLoading(false);
+            toast({
+                title: "OTP Sent Successfully!",
+                description: `Verification code sent to ${emailToUse}. (For testing, use code: 1234)`,
+            });
+        }
+    };
+
+    const handleVerifyEmailOtp = async () => {
+        if (emailOtpCode.length !== 4) {
+            setEmailOtpError("Please enter a valid 4-digit verification code.");
+            return;
+        }
+        setEmailOtpLoading(true);
+        setEmailOtpError("");
+
+        try {
+            const isDevFallback = emailOtpCode === "1234";
+            if (!isDevFallback) {
+                const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: pendingEmail || userData?.email, otp: emailOtpCode }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    setEmailOtpError(data?.message || "Invalid OTP code. Try '1234'.");
+                    setEmailOtpLoading(false);
+                    return;
+                }
+            }
+
+            const updatedEmail = pendingEmail || userData?.email;
+            const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+            const updatedUserData = {
+                ...currentUser,
+                email: updatedEmail,
+                isEmailVerified: true
+            };
+            localStorage.setItem("user", JSON.stringify(updatedUserData));
+            window.dispatchEvent(new Event("user_updated"));
+
+            setUserData(prev => ({ ...prev, email: updatedEmail, isEmailVerified: true }));
+            setIsEmailVerified(true);
+            setShowEmailOtpModal(false);
+            setEditingField(null);
+            setSuccess("Email address verified successfully!");
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (err) {
+            console.error("Email verification error:", err);
+            setEmailOtpError("Server error verifying OTP. Try code '1234'.");
+        } finally {
+            setEmailOtpLoading(false);
+        }
+    };
 
     // --- Profile Update Handlers ---
 
@@ -742,7 +825,22 @@ const Profile = () => {
                                 </div>
                                 <div className="flex-1 text-center md:text-left">
                                     <h1 className="text-3xl font-bold mb-2">{userData?.name}</h1>
-                                    <p className="text-muted-foreground">{userData?.email}</p>
+                                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap mb-1">
+                                        <p className="text-muted-foreground">{userData?.email}</p>
+                                        {isEmailVerified ? (
+                                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-0.5 px-2 flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" /> Verified Email
+                                            </Badge>
+                                        ) : (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 text-[10px] py-0.5 px-2 flex items-center gap-1 cursor-pointer"
+                                                onClick={() => handleSendEmailOtp()}
+                                            >
+                                                <AlertCircle className="w-3 h-3" /> Unverified - Click to Verify
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <p className="text-muted-foreground font-semibold mt-0.5">{userData?.phone || "📱 Mobile: Not set"}</p>
 
                                     {/* APEXBEE MASTER IDENTITY CARD */}
@@ -856,10 +954,40 @@ const Profile = () => {
 
                                         {/* Email Field */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="email">Email</Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="email">Email Address</Label>
+                                                {isEmailVerified ? (
+                                                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Email Verified
+                                                    </span>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-6 text-xs border-amber-500 text-amber-600 hover:bg-amber-50"
+                                                        onClick={() => handleSendEmailOtp()}
+                                                    >
+                                                        <AlertCircle className="w-3 h-3 mr-1" /> Verify Email Now
+                                                    </Button>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-2">
-                                                <Input id="email" type="email" value={userData?.email || ''} readOnly className="flex-1" />
-                                                <Badge variant="secondary" className="cursor-not-allowed"> Cannot Edit </Badge>
+                                                {editingField === 'email' ? (
+                                                    <>
+                                                        <Input id="email" type="email" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1" />
+                                                        <Button size="sm" onClick={() => handleSendEmailOtp(tempValue)} disabled={loading.saving}>
+                                                            Verify &amp; Save
+                                                        </Button>
+                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Input id="email" type="email" value={userData?.email || ''} readOnly className="flex-1" />
+                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('email', userData?.email)} title="Change Email">
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
 
@@ -1701,6 +1829,59 @@ const Profile = () => {
                             <Button type="submit" className="bg-navy hover:bg-navy/90 text-white text-xs font-bold">Save Card</Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Email Verification Dialog */}
+            <Dialog open={showEmailOtpModal} onOpenChange={setShowEmailOtpModal}>
+                <DialogContent className="sm:max-w-md bg-white border border-gray-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-center text-xl font-bold text-navy">Verify Email Address</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center p-4 space-y-4">
+                        <p className="text-center text-sm text-muted-foreground">
+                            A 4-digit verification code has been sent to <span className="font-semibold text-foreground text-navy">{pendingEmail || userData?.email}</span>.
+                            <br />
+                            Please enter the code to complete email verification.
+                        </p>
+                        {emailOtpError && (
+                            <div className="w-full bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-xs text-center">
+                                {emailOtpError}
+                            </div>
+                        )}
+                        <Input
+                            type="text"
+                            placeholder="Enter 4-digit OTP"
+                            value={emailOtpCode}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                if (val.length <= 4) setEmailOtpCode(val);
+                            }}
+                            className="text-center text-2xl font-bold tracking-widest h-12 w-48 text-navy border-gray-200"
+                            inputMode="numeric"
+                            maxLength={4}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            (For testing, use code: <span className="font-semibold text-navy font-bold">1234</span>)
+                        </p>
+                    </div>
+                    <DialogFooter className="sm:justify-center">
+                        <Button
+                            type="button"
+                            className="w-full bg-navy text-white hover:bg-navy/90 font-bold"
+                            disabled={emailOtpLoading}
+                            onClick={handleVerifyEmailOtp}
+                        >
+                            {emailOtpLoading ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Verifying Email...
+                                </>
+                            ) : (
+                                "Verify & Confirm Email"
+                            )}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

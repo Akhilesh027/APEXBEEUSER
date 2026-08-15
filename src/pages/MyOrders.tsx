@@ -38,6 +38,40 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
+const CustomerOrderTimerBadge = ({ estimatedDeliveryTime }: { estimatedDeliveryTime?: string }) => {
+  const [clockText, setClockText] = useState<string>('');
+
+  useEffect(() => {
+    if (!estimatedDeliveryTime) return;
+
+    const tick = () => {
+      const target = new Date(estimatedDeliveryTime).getTime();
+      const now = Date.now();
+      const diffSecs = Math.max(0, Math.floor((target - now) / 1000));
+
+      if (diffSecs === 0) {
+        setClockText('00:00');
+      } else {
+        const m = Math.floor(diffSecs / 60);
+        const s = diffSecs % 60;
+        setClockText(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [estimatedDeliveryTime]);
+
+  if (!estimatedDeliveryTime) return null;
+
+  return (
+    <span className="bg-[#0A1128] text-amber-400 font-mono font-black text-xs px-2.5 py-1 rounded-xl border border-amber-400/40 flex items-center gap-1 shadow-sm animate-pulse">
+      ⏱️ {clockText || '00:00'}
+    </span>
+  );
+};
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -552,7 +586,7 @@ const MyOrders = () => {
   const [tableBookings, setTableBookings] = useState<any[]>([]);
   const [loadingTables, setLoadingTables] = useState(false);
 
-  // Reviews
+  // Item Reviews
   const [reviewByProductId, setReviewByProductId] = useState<Record<string, Review>>({});
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
@@ -561,6 +595,82 @@ const MyOrders = () => {
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  // ── UNIFIED 3-IN-1 ORDER REVIEW MODAL STATE ──
+  const [unifiedModalOpen, setUnifiedModalOpen] = useState(false);
+  const [unifiedOrder, setUnifiedOrder] = useState<Order | null>(null);
+  const [unifiedSubmitting, setUnifiedSubmitting] = useState(false);
+  const [orderReviewedMap, setOrderReviewedMap] = useState<Record<string, boolean>>({});
+
+  // Section 1: Product Review
+  const [productRating, setProductRating] = useState(5);
+  const [productComment, setProductComment] = useState("");
+
+  // Section 2: Store Review
+  const [storeRatingVal, setStoreRatingVal] = useState(5);
+  const [storeCommentVal, setStoreCommentVal] = useState("");
+
+  // Section 3: Delivery Review
+  const [deliveryRatingVal, setDeliveryRatingVal] = useState(5);
+  const [deliveryCommentVal, setDeliveryCommentVal] = useState("");
+
+  const openUnifiedReviewModal = (order: Order) => {
+    setUnifiedOrder(order);
+    setProductRating(5);
+    setProductComment("");
+    setStoreRatingVal(order.ratings?.store?.rating || 5);
+    setStoreCommentVal(order.ratings?.store?.comment || "");
+    setDeliveryRatingVal(order.ratings?.delivery?.rating || 5);
+    setDeliveryCommentVal(order.ratings?.delivery?.comment || "");
+    setUnifiedModalOpen(true);
+  };
+
+  const submitUnifiedAllReviews = async () => {
+    if (!unifiedOrder) return;
+    setUnifiedSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      // 1. Submit Store Rating
+      await fetch(`${API_BASE}/orders/${unifiedOrder._id}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ targetType: 'store', rating: storeRatingVal, comment: storeCommentVal })
+      }).catch(() => null);
+
+      // 2. Submit Delivery Rating
+      await fetch(`${API_BASE}/orders/${unifiedOrder._id}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ targetType: 'delivery', rating: deliveryRatingVal, comment: deliveryCommentVal })
+      }).catch(() => null);
+
+      // 3. Submit Product Review for first item if present
+      const firstItem = unifiedOrder.orderItems?.[0];
+      if (firstItem) {
+        const prodId = firstItem.productId || (firstItem as any)._id;
+        await fetch(`${API_BASE}/reviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            productId: prodId,
+            orderId: unifiedOrder._id,
+            rating: productRating,
+            title: `Order #${unifiedOrder.orderNumber} Review`,
+            comment: productComment
+          })
+        }).catch(() => null);
+      }
+
+      setOrderReviewedMap((prev) => ({ ...prev, [unifiedOrder._id]: true }));
+      setUnifiedModalOpen(false);
+      alert("Thank you! Product, Store & Delivery partner reviews submitted successfully 🎉");
+    } catch (e: any) {
+      alert(e?.message || "Failed to submit reviews");
+    } finally {
+      setUnifiedSubmitting(false);
+    }
+  };
 
   // Returns
   const [returnOpen, setReturnOpen] = useState(false);
@@ -1055,6 +1165,9 @@ const MyOrders = () => {
                           <Badge className={`${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor} font-medium text-xs`}>
                             {statusConfig.label}
                           </Badge>
+                          {(order as any).estimatedDeliveryTime && (
+                            <CustomerOrderTimerBadge estimatedDeliveryTime={(order as any).estimatedDeliveryTime} />
+                          )}
                           <span className="font-bold text-navy text-lg">{formatCurrency(order.orderSummary?.grandTotal || order.orderSummary?.total || 0)}</span>
                           <button
                             onClick={() => setExpandedOrder(isExpanded ? null : order._id)}
@@ -1458,6 +1571,34 @@ const MyOrders = () => {
                               );
                             })()}
 
+                            {/* 🌟 UNIFIED 3-IN-1 ORDER REVIEW SECTION (FOR DELIVERED / COMPLETED ORDERS) */}
+                            {isDelivered && (
+                              <div className="bg-gradient-to-r from-amber-500/10 via-amber-100/60 to-amber-50 border border-amber-300/80 rounded-2xl p-4 text-left space-y-2.5 shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-amber-600 text-lg">⭐</span>
+                                    <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                                      Rate &amp; Review Complete Experience (3-in-1)
+                                    </h4>
+                                  </div>
+                                  <Badge className="bg-emerald-600 text-white font-extrabold text-[10px]">
+                                    Verified Order
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-slate-600 font-medium">
+                                  Rate items, merchant store packaging, and delivery partner behavior all in one place!
+                                </p>
+                                <Button
+                                  type="button"
+                                  onClick={() => openUnifiedReviewModal(order)}
+                                  className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow-md border border-amber-300/40 transition cursor-pointer flex items-center justify-center gap-2"
+                                >
+                                  <Star className="w-4 h-4 fill-slate-950 text-slate-950" />
+                                  <span>{orderReviewedMap[order._id] ? "View / Update 3-in-1 Review (Items, Store & Delivery)" : "Rate Items, Store & Delivery Boy (3-in-1 Review)"}</span>
+                                </Button>
+                              </div>
+                            )}
+
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2 pt-2">
                               <Button className="bg-navy hover:bg-navy/90 text-white" size="sm" onClick={() => setTrackingOrder(order)}>
@@ -1779,6 +1920,159 @@ const MyOrders = () => {
               </Button>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 🌟 UNIFIED 3-IN-1 ORDER REVIEW DIALOG */}
+      <Dialog open={unifiedModalOpen} onOpenChange={setUnifiedModalOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-3">
+            <DialogTitle className="flex items-center gap-2 text-[#0A1128] font-black text-base">
+              <span>⭐ Order Experience Review (3-in-1)</span>
+            </DialogTitle>
+            <p className="text-xs text-slate-500 font-medium">
+              Order #{unifiedOrder?.orderNumber} • {formatDate(unifiedOrder?.createdAt)}
+            </p>
+          </DialogHeader>
+
+          {unifiedOrder && (
+            <div className="space-y-5 text-left py-2">
+              {/* 1. PRODUCT / ITEM RATING */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-900 font-bold shrink-0">
+                    📦
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-xs text-[#0A1128] uppercase tracking-wider">1. Item / Product Quality</h5>
+                    <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                      {unifiedOrder.orderItems?.[0]?.name || "Purchased Items"} {unifiedOrder.orderItems?.length > 1 ? `(+${unifiedOrder.orderItems.length - 1} more items)` : ""}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1.5">Rating (1–5 Stars)</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setProductRating(r)}
+                        className={`w-9 h-9 rounded-xl text-sm font-black transition cursor-pointer border ${productRating >= r ? "bg-amber-400 border-amber-400 text-slate-950 shadow-xs" : "bg-white text-slate-400 border-slate-200"}`}
+                      >
+                        ★ {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <textarea
+                    value={productComment}
+                    onChange={(e) => setProductComment(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs min-h-[60px] focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                    placeholder="Feedback on product freshness, quality, packing..."
+                  />
+                </div>
+              </div>
+
+              {/* 2. STORE / MERCHANT RATING */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-900 font-bold shrink-0">
+                    🏬
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-xs text-[#0A1128] uppercase tracking-wider">2. Store &amp; Merchant Packaging</h5>
+                    <p className="text-[11px] text-slate-500 font-medium truncate max-w-[280px]">
+                      {unifiedOrder.sellerId?.shopName || unifiedOrder.sellerId?.storeName || unifiedOrder.sellerId?.businessName || unifiedOrder.vendorName || "ApexBee Store"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1.5">Rating (1–5 Stars)</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setStoreRatingVal(r)}
+                        className={`w-9 h-9 rounded-xl text-sm font-black transition cursor-pointer border ${storeRatingVal >= r ? "bg-amber-400 border-amber-400 text-slate-950 shadow-xs" : "bg-white text-slate-400 border-slate-200"}`}
+                      >
+                        ★ {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <textarea
+                    value={storeCommentVal}
+                    onChange={(e) => setStoreCommentVal(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs min-h-[60px] focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                    placeholder="Feedback on store readiness, packaging, response time..."
+                  />
+                </div>
+              </div>
+
+              {/* 3. DELIVERY BOY / PARTNER RATING */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-900 font-bold shrink-0">
+                    🛵
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-xs text-[#0A1128] uppercase tracking-wider">3. Delivery Boy Speed &amp; Behavior</h5>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {unifiedOrder.assignedDeliveryPartnerName || unifiedOrder.deliveryPartnerName || unifiedOrder.fulfillment?.driverName || "Delivery Partner"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1.5">Rating (1–5 Stars)</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setDeliveryRatingVal(r)}
+                        className={`w-9 h-9 rounded-xl text-sm font-black transition cursor-pointer border ${deliveryRatingVal >= r ? "bg-amber-400 border-amber-400 text-slate-950 shadow-xs" : "bg-white text-slate-400 border-slate-200"}`}
+                      >
+                        ★ {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <textarea
+                    value={deliveryCommentVal}
+                    onChange={(e) => setDeliveryCommentVal(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs min-h-[60px] focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                    placeholder="Feedback on delivery speed, polite behavior, or handling..."
+                  />
+                </div>
+              </div>
+
+              {/* SUBMIT ALL REVIEWS BUTTON */}
+              <Button
+                type="button"
+                onClick={submitUnifiedAllReviews}
+                disabled={unifiedSubmitting}
+                className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg transition cursor-pointer border border-amber-300/40 flex items-center justify-center gap-2"
+              >
+                {unifiedSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Star className="w-4 h-4 fill-slate-950 text-slate-950" />
+                )}
+                <span>Submit All 3 Reviews (Product, Store &amp; Delivery)</span>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

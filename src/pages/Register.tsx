@@ -14,7 +14,6 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api"
 type AccountType = "guest" | "customer" | "business";
 
 const Register = () => {
-  const [accountType, setAccountType] = useState<AccountType | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,11 +35,30 @@ const Register = () => {
   const [searchParams] = useSearchParams();
   const urlReferralCode = searchParams.get("ref");
 
+  const [accountType, setAccountType] = useState<AccountType>(() => {
+    if (urlReferralCode === "partner" || urlReferralCode === "business") return "business";
+    return "customer";
+  });
+
   useEffect(() => {
     if (urlReferralCode) {
       setFormData((prev) => ({ ...prev, referralCode: urlReferralCode }));
     }
   }, [urlReferralCode]);
+
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return null;
+    let score = 0;
+    if (pass.length >= 6) score += 1;
+    if (pass.length >= 10) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+
+    if (score <= 2) return { label: "Weak", color: "bg-red-500", text: "text-red-600", width: "w-1/3" };
+    if (score <= 4) return { label: "Medium", color: "bg-amber-500", text: "text-amber-600", width: "w-2/3" };
+    return { label: "Strong", color: "bg-emerald-500", text: "text-emerald-600", width: "w-full" };
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,9 +101,8 @@ const Register = () => {
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("token", data.token);
       toast({ title: "Welcome!", description: "Signed in with Google successfully." });
-      // Post-registration redirect
-      if (accountType === "business") navigate("/partner-dashboard");
-      else navigate("/");
+      // Post-registration redirect to home
+      navigate("/");
     } catch (err) {
       console.error("Google auth error:", err);
       setError("Server error, try again later.");
@@ -238,8 +255,8 @@ const Register = () => {
       toast({ title: "Account created!", description: "Your account has been created successfully." });
       setShowOtpDialog(false);
 
-      if (accountType === "business") navigate("/partner-dashboard");
-      else navigate("/");
+      // Post-registration redirect to home
+      navigate("/");
     } catch (err) {
       console.error("Verification/Registration error:", err);
       setOtpError("Server error, try again later.");
@@ -248,105 +265,6 @@ const Register = () => {
       setLoading(false);
     }
   };
-
-  // Show type selection if not chosen yet
-  if (!accountType) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <section className="relative overflow-hidden bg-navy-dark">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-accent blur-3xl" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-white blur-3xl" />
-          </div>
-          <div className="relative container mx-auto px-4 py-14">
-            <div className="max-w-5xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 px-3 py-1 rounded-full text-sm text-white">
-                <ShieldCheck className="w-4 h-4" />
-                Join ApexBee
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold mt-5 text-white">Create your ApexBee account</h1>
-              <p className="text-white/80 mt-3 max-w-md mx-auto">
-                Choose how you want to experience ApexBee.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-10">
-              {/* Guest Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 text-center">
-                <ShoppingBag className="w-12 h-12 text-accent mx-auto" />
-                <h2 className="text-xl font-bold text-navy mt-3">Guest</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  For users who want to quickly browse and make purchases without joining the ApexBee ecosystem.
-                </p>
-                <ul className="mt-4 text-left text-sm space-y-1">
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Fast Checkout</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Product Purchases</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Service Bookings</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Order Tracking</li>
-                </ul>
-                <Button onClick={handleGuestContinue} className="w-full mt-5 bg-accent hover:bg-accent/90 text-white">
-                  Continue as Guest
-                </Button>
-              </div>
-              {/* Customer Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 text-center">
-                <Users className="w-12 h-12 text-accent mx-auto" />
-                <h2 className="text-xl font-bold text-navy mt-3">Customer</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  For regular shoppers who want a complete shopping experience.
-                </p>
-                <ul className="mt-4 text-left text-sm space-y-1">
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Product Purchases</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Service Bookings</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Wallet Access</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Rewards & Cashback</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Wishlist & Order History</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Personalized Recommendations</li>
-                </ul>
-                <Button onClick={() => setAccountType("customer")} className="w-full mt-5 bg-accent hover:bg-accent/90 text-white">
-                  Register as Customer
-                </Button>
-              </div>
-              {/* Business Partner Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 text-center">
-                <Briefcase className="w-12 h-12 text-accent mx-auto" />
-                <h2 className="text-xl font-bold text-navy mt-3">Business Partner</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  For users interested in earning, referrals, business growth, and participating in the ApexBee ecosystem.
-                </p>
-                <ul className="mt-4 text-left text-sm space-y-1">
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Referral Income</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> MLM Network Benefits</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Business Opportunities</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Partner Dashboard Access</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Training Programs</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-accent" /> Business Growth Support</li>
-                </ul>
-                <Button
-                  onClick={() => setAccountType("business")}
-                  className="w-full mt-5 bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white shadow-xl hover:shadow-indigo-500/20 font-black tracking-wider uppercase text-xs py-2.5 rounded-xl border-none animate-pulse"
-                >
-                  🚀 Start Free (Business Partner)
-                </Button>
-              </div>
-            </div>
-            <div className="text-center mt-8">
-              <p className="text-white/80 text-sm">
-                Already have an account?{" "}
-                <Link to="/login" className="text-white font-semibold underline">
-                  Login
-                </Link>
-              </p>
-            </div>
-          </div>
-          <svg className="block w-full" viewBox="0 0 1200 120" preserveAspectRatio="none" style={{ height: "80px" }}>
-            <path d="M0,0 C150,80 350,80 600,50 C850,20 1050,20 1200,50 L1200,120 L0,120 Z" className="fill-white" />
-          </svg>
-        </section>
-        <Footer />
-      </div>
-    );
-  }
 
   // Registration form for Customer or Business Partner
   const isBusiness = accountType === "business";
@@ -358,36 +276,72 @@ const Register = () => {
           <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-accent blur-3xl" />
           <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-white blur-3xl" />
         </div>
-        <div className="relative container mx-auto px-4 py-14">
-          <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
-            {/* Left side - info */}
+        <div className="relative container mx-auto px-4 py-10">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
+            {/* Left side - info & details */}
             <div className="text-white">
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 px-3 py-1 rounded-full text-sm">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4 text-accent" />
                 {isBusiness ? "Business Partner Registration" : "Customer Registration"}
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mt-5 leading-tight">
                 {isBusiness ? "Start Your Business Journey" : "Join as a Customer"}
               </h1>
-              <p className="text-white/80 mt-3 max-w-md">
+              <p className="text-white/80 mt-3 max-w-md text-sm leading-relaxed">
                 {isBusiness
                   ? "Business Partner is the entry point into the ApexBee earning ecosystem. After registration, you can apply for various opportunities based on your interests and qualifications."
                   : "Create a customer account to enjoy rewards, cashback, and a personalized shopping experience."}
               </p>
-              {isBusiness && (
-                <div className="mt-6 p-4 rounded-xl bg-white/10 border border-white/15">
-                  <p className="font-medium">Available opportunities after registration:</p>
-                  <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                    {["Vendor", "Manufacturer", "Wholesaler", "Entrepreneur", "Franchise Partner", "Service Provider", "Course Provider", "Delivery Partner"].map(opp => (
-                      <div key={opp} className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> {opp}</div>
+
+              {/* Customer Benefits List */}
+              {!isBusiness && (
+                <div className="mt-6 space-y-3">
+                  <p className="font-medium text-sm text-white/90">Customer Account Benefits:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    {[
+                      "Product Purchases & Fast Checkout",
+                      "Service Bookings",
+                      "Wallet Access & Cashback",
+                      "Exclusive Rewards",
+                      "Wishlist & Order History",
+                      "Personalized Recommendations"
+                    ].map((benefit) => (
+                      <div key={benefit} className="flex items-center gap-2 text-white/90 text-xs sm:text-sm">
+                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* Business Opportunities & Benefits */}
+              {isBusiness && (
+                <>
+                  <div className="mt-6 p-4 rounded-xl bg-white/10 border border-white/15">
+                    <p className="font-medium text-sm">Available opportunities after registration:</p>
+                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                      {["Vendor", "Manufacturer", "Wholesaler", "Entrepreneur", "Franchise Partner", "Service Provider", "Course Provider", "Delivery Partner"].map(opp => (
+                        <div key={opp} className="flex items-center gap-1 text-xs sm:text-sm"><Sparkles className="w-3.5 h-3.5 text-amber-400" /> {opp}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <p className="font-medium text-xs text-white/80">Business Partner Perks:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
+                      <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-accent" /> Referral Income</div>
+                      <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-accent" /> Partner Network Benefits</div>
+                      <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-accent" /> Dashboard Access</div>
+                      <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-accent" /> Growth Support</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {urlReferralCode && (
-                <div className="mt-7 p-4 rounded-xl bg-white/10 border border-white/15">
+                <div className="mt-6 p-4 rounded-xl bg-white/10 border border-white/15">
                   <p className="text-sm">Referral detected! Your code will be applied automatically.</p>
-                  <p className="text-xs mt-2">Code: <span className="font-semibold">{urlReferralCode}</span></p>
+                  <p className="text-xs mt-1">Code: <span className="font-semibold">{urlReferralCode}</span></p>
                 </div>
               )}
             </div>
@@ -397,9 +351,9 @@ const Register = () => {
               <div className="p-6 md:p-8">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-navy">{isBusiness ? "Business Partner Signup" : "Customer Signup"}</h2>
-                  <Button variant="ghost" size="sm" onClick={() => setAccountType(null)} className="text-xs">
-                    ← Back
-                  </Button>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                    {isBusiness ? "Business Partner" : "Customer"}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
                   Continue with Google or fill the form below.
@@ -442,13 +396,71 @@ const Register = () => {
                       const onlyNums = e.target.value.replace(/\D/g, "");
                       if (onlyNums.length <= 10) setFormData(p => ({ ...p, phone: onlyNums }));
                     }} inputMode="numeric" pattern="[0-9]{10}" maxLength={10} required />
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} name="password" placeholder="Password (min 6 characters)" value={formData.password} onChange={handleInputChange} required minLength={6} className="pr-10" />
-                      <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(s => !s)}>
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                    <div className="space-y-1">
+                      <div className="relative">
+                        <Input type={showPassword ? "text" : "password"} name="password" placeholder="Password (min 6 characters)" value={formData.password} onChange={handleInputChange} required minLength={6} className="pr-10" />
+                        <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700" onClick={() => setShowPassword(s => !s)}>
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+
+                      {/* Password Strength Indicator (Visual Guide: Weak / Medium / Strong - Not mandatory) */}
+                      {formData.password.length > 0 && (() => {
+                        const strength = getPasswordStrength(formData.password);
+                        if (!strength) return null;
+                        return (
+                          <div className="pt-0.5 space-y-1">
+                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                              <div className={`h-full ${strength.color} ${strength.width} transition-all duration-300 rounded-full`} />
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] px-0.5">
+                              <span className="text-gray-500">Strength: <strong className={`font-semibold ${strength.text}`}>{strength.label}</strong></span>
+                              <span className="text-gray-400 text-[10px] italic">(Optional guide)</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <Input type="text" name="referralCode" placeholder="Referral code (optional)" value={formData.referralCode} onChange={handleInputChange} />
+
+                    {/* Account Type Tabs (Guest, Customer, Business Partner) - Rendered directly after Referral Code input */}
+                    <div className="pt-2">
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select Account Type</label>
+                      <div className="grid grid-cols-3 gap-1.5 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
+                        <button
+                          type="button"
+                          onClick={handleGuestContinue}
+                          className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-semibold text-xs text-gray-700 hover:bg-white hover:shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                          <span>Guest</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setAccountType("customer")}
+                          className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "customer"
+                              ? "bg-accent text-white shadow-md"
+                              : "text-gray-700 hover:bg-white hover:shadow-xs"
+                            }`}
+                        >
+                          <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>Customer</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setAccountType("business")}
+                          className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "business"
+                              ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md"
+                              : "text-gray-700 hover:bg-white hover:shadow-xs"
+                            }`}
+                        >
+                          <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>Business Partner</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full mt-5 bg-accent hover:bg-accent/90 text-white" disabled={loading}>
                     {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...</> : (isBusiness ? "🚀 Start Free (Register Now)" : "Register as Customer")}
@@ -462,7 +474,7 @@ const Register = () => {
           </div>
 
           {/* Why Join ApexBee section */}
-          <div className="mt-16 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-5xl mx-auto">
+          <div className="mt-16 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold text-navy text-center">Why Join ApexBee?</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
               {["Shop Products", "Book Services", "Learn New Skills", "Earn Rewards", "Build Business Networks", "Access Business Opportunities"].map((item, idx) => (

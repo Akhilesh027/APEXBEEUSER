@@ -418,7 +418,7 @@ const GROUP_COLORS: Record<string, { bg: string; text: string; border: string }>
 
 function detectVirtualCategory(name: string): keyof typeof GROUP_COLORS | null {
   const n = name.trim().toLowerCase();
-  if (n.includes("service")) return "service";
+  // Allow Service and Food categories to render subcategories view first without instant redirect
   if (n.includes("academy") || n.includes("learning") || n.includes("course")) return "learning";
   if (n.includes("travel") || n.includes("tour") || n.includes("flight")) return "travel";
   if (n.includes("finance") || n.includes("insurance") || n.includes("loan")) return "finance";
@@ -740,15 +740,7 @@ const Category = () => {
     } catch { }
   }, []);
 
-  // Redirect Food & Dining categories to /food
-  useEffect(() => {
-    if (categoryName) {
-      const lower = decodeURIComponent(categoryName).toLowerCase();
-      if (lower.includes("food") || lower.includes("dining") || lower.includes("restaurant")) {
-        navigate("/food", { replace: true });
-      }
-    }
-  }, [categoryName, navigate]);
+
 
   // ── Discovery state ──
   const [allCats, setAllCats] = useState<CategoryType[]>([]);
@@ -992,6 +984,28 @@ const Category = () => {
             { _id: "sub-devotional-idols", name: "Idols & Brass Decor", image: "https://images.unsplash.com/photo-1590076175571-c5e7e616d82d?w=200&auto=format&fit=crop&q=60" },
             { _id: "sub-devotional-festival", name: "Festival Combos", image: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=200&auto=format&fit=crop&q=60" },
           ];
+        } else if (finalSubs.length === 0 && (cleanName(mainCategory.name).includes("food") || cleanName(mainCategory.name).includes("dining") || cleanName(mainCategory.name).includes("restaurant"))) {
+          finalSubs = [
+            { _id: "sub-food-restaurants", name: "Restaurants & Dining", image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300" },
+            { _id: "sub-food-biryani", name: "Biryani & Rice", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300" },
+            { _id: "sub-food-pizza", name: "Pizza & Italian", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" },
+            { _id: "sub-food-burgers", name: "Burgers & Fast Food", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300" },
+            { _id: "sub-food-thali", name: "Thalis & Meals", image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=300" },
+            { _id: "sub-food-tiffins", name: "Tiffins & Breakfast", image: "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=300" },
+            { _id: "sub-food-chinese", name: "Chinese & Asian", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300" },
+            { _id: "sub-food-desserts", name: "Desserts & Cakes", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300" },
+            { _id: "sub-food-beverages", name: "Beverages & Shakes", image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=300" },
+          ];
+        } else if (finalSubs.length === 0 && (cleanName(mainCategory.name).includes("service") || cleanName(mainCategory.name).includes("repair") || cleanName(mainCategory.name).includes("cleaning"))) {
+          finalSubs = [
+            { _id: "sub-service-appliance", name: "Appliance Repair", image: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=300" },
+            { _id: "sub-service-electrical", name: "Electrical Work", image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=300" },
+            { _id: "sub-service-plumbing", name: "Plumbing Services", image: "https://images.unsplash.com/photo-1607472586893-edb57cbbea42?w=300" },
+            { _id: "sub-service-cleaning", name: "Home Cleaning", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300" },
+            { _id: "sub-service-laundry", name: "Laundry Service", image: "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=300" },
+            { _id: "sub-service-spa", name: "Spa & Salon", image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300" },
+            { _id: "sub-service-pest", name: "Pest Control", image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=300" },
+          ];
         }
 
         // Match selected subcategory from URL if provided
@@ -1113,7 +1127,8 @@ const Category = () => {
         if (fetchedProds.length === 0) {
           try {
             const fallbackDbRes = await axios.get(`${API_BASE}/products?limit=100`);
-            const allDbProds: Product[] = fallbackDbRes?.data?.products || Array.isArray(fallbackDbRes?.data) ? fallbackDbRes.data : [];
+            const rawDbData = fallbackDbRes?.data?.products || fallbackDbRes?.data;
+            const allDbProds: Product[] = Array.isArray(rawDbData) ? rawDbData : [];
             const reqCatName = (mainCategory.name || categoryName || '').toLowerCase();
             const matchedDb = allDbProds.filter((p: any) => {
               const cName = (p.categoryName || p.category || '').toString().toLowerCase();
@@ -1347,9 +1362,17 @@ const Category = () => {
                 <div
                   key={sub._id}
                   onClick={() => {
-                    setSelectedSubcategoryId(sub._id);
-                    setSelectedChildCategoryId(null);
-                    navigate(`/category/${encodeURIComponent(category.name)}?sub=${encodeURIComponent(sub._id)}`);
+                    const cName = (category.name || '').toLowerCase();
+                    const sName = (sub.name || '').toLowerCase();
+                    if (cName.includes("food") || cName.includes("dining") || cName.includes("restaurant") || sName.includes("biryani") || sName.includes("pizza") || sName.includes("burger")) {
+                      navigate(`/food?sub=${encodeURIComponent(sub.name)}`);
+                    } else if (cName.includes("service") || cName.includes("repair") || cName.includes("cleaning") || sName.includes("appliance") || sName.includes("electric") || sName.includes("plumb")) {
+                      navigate(`/services?sub=${encodeURIComponent(sub.name)}`);
+                    } else {
+                      setSelectedSubcategoryId(sub._id);
+                      setSelectedChildCategoryId(null);
+                      navigate(`/category/${encodeURIComponent(category.name)}?sub=${encodeURIComponent(sub._id)}`);
+                    }
                   }}
                   className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1 transition duration-300"
                 >
@@ -2021,9 +2044,6 @@ const Category = () => {
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 lg:gap-6 pt-2 sm:pt-4">
             {filteredCategoriesByTab.map((cat) => {
-              const isComingSoon = cat.experienceType === 'coming_soon_lead_capture';
-              const isFoodCat = cat.name.toLowerCase().includes("food") || cat.name.toLowerCase().includes("dining") || cat.name.toLowerCase().includes("restaurant");
-              const targetRoute = isFoodCat ? "/food" : (isComingSoon && cat.experienceRoute ? cat.experienceRoute : `/category/${encodeURIComponent(cat.name)}`);
               const defaultImage = "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop";
               const image = cat.image || defaultImage;
 
@@ -2032,11 +2052,7 @@ const Category = () => {
                   key={cat._id}
                   onClick={() => {
                     addRecentlyViewed({ id: cat._id, name: cat.name, icon: getSubIcon(cat.name) });
-                    if (isFoodCat) {
-                      navigate("/food");
-                    } else {
-                      navigate(`/category/${encodeURIComponent(cat.name)}/subcategories`);
-                    }
+                    navigate(`/category/${encodeURIComponent(cat.name)}/subcategories`);
                   }}
                   className="group flex flex-col items-center text-center cursor-pointer hover:-translate-y-1 transition duration-300"
                 >

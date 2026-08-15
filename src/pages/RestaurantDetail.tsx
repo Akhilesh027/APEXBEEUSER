@@ -299,7 +299,9 @@ export const RestaurantDetail: React.FC = () => {
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                     <span>{formatRating(restaurant.rating)}</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 font-extrabold">100+ Diners</div>
+                  <div className="text-[10px] text-slate-600 font-extrabold">
+                    {restaurant.totalOrders || restaurant.totalRatings || restaurant.reviewsCount || restaurant.ratingsCount || (restaurant.reviews ? restaurant.reviews.length : 0) || 50}+ Diners
+                  </div>
                 </div>
 
                 <div className="text-center px-4 py-2.5 bg-slate-50 rounded-2xl border border-slate-200">

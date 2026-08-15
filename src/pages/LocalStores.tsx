@@ -191,7 +191,7 @@ export const LocalStores: React.FC = () => {
   useEffect(() => {
     const syncLocation = () => {
       try {
-        const raw = localStorage.getItem(LOCATION_KEY);
+        const raw = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === "object") {
@@ -206,6 +206,7 @@ export const LocalStores: React.FC = () => {
 
     syncLocation();
     window.addEventListener("storage", syncLocation);
+    window.addEventListener("user_location_updated", syncLocation);
 
     // Auto-detect browser GPS if no location stored
     if (!localStorage.getItem(LOCATION_KEY) && navigator.geolocation) {
@@ -287,8 +288,8 @@ export const LocalStores: React.FC = () => {
   useEffect(() => {
     const lat = userLocation?.lat ?? null;
     const lng = userLocation?.lng ?? null;
-    const pincode = manualPincode || userLocation?.pincode || "";
-    fetchNearbyStores(lat, lng, pincode, radiusFilter, categoryFilter, sortFilter);
+    const activePin = (localStorage.getItem("userPincode") || manualPincode || userLocation?.pincode || localStorage.getItem("pincode") || "").toString().trim();
+    fetchNearbyStores(lat, lng, activePin, radiusFilter, categoryFilter, sortFilter);
   }, [userLocation, manualPincode, radiusFilter, categoryFilter, sortFilter, fetchNearbyStores]);
 
   // Fetch subscriptions
