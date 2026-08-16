@@ -440,8 +440,8 @@ const Register = () => {
                           type="button"
                           onClick={() => setAccountType("customer")}
                           className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "customer"
-                              ? "bg-accent text-white shadow-md"
-                              : "text-gray-700 hover:bg-white hover:shadow-xs"
+                            ? "bg-accent text-white shadow-md"
+                            : "text-gray-700 hover:bg-white hover:shadow-xs"
                             }`}
                         >
                           <Users className="w-3.5 h-3.5 flex-shrink-0" />
@@ -452,8 +452,8 @@ const Register = () => {
                           type="button"
                           onClick={() => setAccountType("business")}
                           className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "business"
-                              ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md"
-                              : "text-gray-700 hover:bg-white hover:shadow-xs"
+                            ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md"
+                            : "text-gray-700 hover:bg-white hover:shadow-xs"
                             }`}
                         >
                           <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />

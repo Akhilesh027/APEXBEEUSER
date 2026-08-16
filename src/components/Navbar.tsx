@@ -42,15 +42,6 @@ type CategoryItem = {
   image?: string;
 };
 
-const MOCK_NOTIFICATIONS = [
-  { _id: "notif-1", title: "🚚 Order Dispatched!", message: "Order #AB-90412 is on the way with partner Ramesh. ETA 15 mins. OTP: 5829", category: "orders", isRead: false, createdAt: new Date().toISOString() },
-  { _id: "notif-2", title: "🔥 Fresh Milk Flash Offer", message: "Same-day milk offer ends in 2 hours! Get 30% discount on local farm milk.", category: "offers", isRead: false, createdAt: new Date().toISOString() },
-  { _id: "notif-3", title: "💰 Referral Commission", message: "₹50 cash bonus added to your Wallet from downline sign-up Amit Singh.", category: "wallet", isRead: true, createdAt: new Date(Date.now() - 3600000).toISOString() },
-  { _id: "notif-4", title: "🏪 Support Local Shops", message: "New Nellore Supermarket is now live. Check out daily nearby store deals!", category: "offers", isRead: true, createdAt: new Date(Date.now() - 7200000).toISOString() },
-  { _id: "notif-5", title: "🤝 Franchise Payout Approved", message: "Mandal level-1 partner commission of ₹1,200 cleared for JP Nagar zone.", category: "franchise", isRead: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { _id: "notif-6", title: "🔔 KYC Complete Bonus", message: "Your KYC verification is complete. ₹50 registration bonus has unlocked.", category: "wallet", isRead: false, createdAt: new Date(Date.now() - 120000).toISOString() }
-];
-
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -647,8 +638,8 @@ const Navbar = () => {
         return { ...n, category };
       });
     }
-    return loggedInUser ? [] : MOCK_NOTIFICATIONS;
-  }, [notifications, loggedInUser]);
+    return [];
+  }, [notifications]);
 
   const filteredNotifications = useMemo(() => {
     if (activeNotificationTab === "all") return allNotifications;

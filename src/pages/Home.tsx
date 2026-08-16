@@ -555,238 +555,10 @@ const Home = () => {
     }
   };
 
-  const DEMO_DAILY_NEEDS: Product[] = [
-    {
-      _id: "dn-1",
-      name: "Heritage Toned Fresh Milk (500ml)",
-      brand: "Heritage Dairy",
-      baseMrp: 32,
-      baseSellingPrice: 28,
-      discountPercent: 12,
-      thumbnail: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&auto=format&fit=crop&q=80",
-      category: "Daily Needs",
-      rating: 4.9,
-      reviews: 1420
-    },
-    {
-      _id: "dn-2",
-      name: "Bisleri Mineral Water Can (20 Litres)",
-      brand: "Bisleri",
-      baseMrp: 120,
-      baseSellingPrice: 95,
-      discountPercent: 20,
-      thumbnail: "https://images.unsplash.com/photo-1548839140-29a749e1cf4e?w=400&auto=format&fit=crop&q=80",
-      category: "Daily Needs",
-      rating: 4.8,
-      reviews: 890
-    },
-    {
-      _id: "dn-3",
-      name: "Fresh Farm Organic Tomatoes (1 kg)",
-      brand: "Local Farm Fresh",
-      baseMrp: 45,
-      baseSellingPrice: 34,
-      discountPercent: 24,
-      thumbnail: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&auto=format&fit=crop&q=80",
-      category: "Daily Needs",
-      rating: 4.7,
-      reviews: 512
-    },
-    {
-      _id: "dn-4",
-      name: "Aashirvaad Shuddh Chakki Atta (5 kg)",
-      brand: "Aashirvaad",
-      baseMrp: 290,
-      baseSellingPrice: 245,
-      discountPercent: 15,
-      thumbnail: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&auto=format&fit=crop&q=80",
-      category: "Daily Needs",
-      rating: 4.9,
-      reviews: 2100
-    },
-    {
-      _id: "dn-5",
-      name: "Freedom Refined Sunflower Oil (1L)",
-      brand: "Freedom Oil",
-      baseMrp: 165,
-      baseSellingPrice: 139,
-      discountPercent: 16,
-      thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&auto=format&fit=crop&q=80",
-      category: "Daily Needs",
-      rating: 4.8,
-      reviews: 730
-    }
-  ];
-
-  const DEMO_DEVOTIONAL: Product[] = [
-    {
-      _id: "dev-1",
-      name: "Fresh Orange Marigold Flower Garland (Puja Mala)",
-      brand: "Shree Local Harvester",
-      baseMrp: 150,
-      baseSellingPrice: 99,
-      discountPercent: 34,
-      thumbnail: "https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=400&auto=format&fit=crop&q=80",
-      category: "Devotional",
-      rating: 4.9,
-      reviews: 650
-    },
-    {
-      _id: "dev-2",
-      name: "Bhimseni Pure Organic Camphor (100g Jar)",
-      brand: "Mangal deep",
-      baseMrp: 220,
-      baseSellingPrice: 175,
-      discountPercent: 20,
-      thumbnail: "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=400&auto=format&fit=crop&q=80",
-      category: "Devotional",
-      rating: 4.9,
-      reviews: 430
-    },
-    {
-      _id: "dev-3",
-      name: "Handcrafted Brass Diya Kuber Lamp (Pair)",
-      brand: "Pavitra Craft",
-      baseMrp: 499,
-      baseSellingPrice: 349,
-      discountPercent: 30,
-      thumbnail: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=400&auto=format&fit=crop&q=80",
-      category: "Devotional",
-      rating: 4.8,
-      reviews: 310
-    },
-    {
-      _id: "dev-4",
-      name: "Natural Chandan & Gugal Incense Sticks (100 Sticks)",
-      brand: "Cycle Pure Agarbatti",
-      baseMrp: 180,
-      baseSellingPrice: 135,
-      discountPercent: 25,
-      thumbnail: "https://images.unsplash.com/photo-1602928321679-560b4139c908?w=400&auto=format&fit=crop&q=80",
-      category: "Devotional",
-      rating: 4.9,
-      reviews: 1120
-    },
-    {
-      _id: "dev-5",
-      name: "Complete Mahalakshmi Pooja Samagri Kit",
-      brand: "ApexBee Vedic Store",
-      baseMrp: 899,
-      baseSellingPrice: 649,
-      discountPercent: 27,
-      thumbnail: "https://images.unsplash.com/photo-1545232979-fbfd42e000b9?w=400&auto=format&fit=crop&q=80",
-      category: "Devotional",
-      rating: 5.0,
-      reviews: 820
-    }
-  ];
-
-  const DEMO_FOOD: Product[] = [
-    {
-      _id: "food-1",
-      name: "Hyderabadi Mutton Dum Biryani (Full Handi)",
-      brand: "Bawarchi Special",
-      baseMrp: 420,
-      baseSellingPrice: 340,
-      discountPercent: 19,
-      thumbnail: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&auto=format&fit=crop&q=80",
-      category: "Food & Dining",
-      rating: 4.9,
-      reviews: 3410
-    },
-    {
-      _id: "food-2",
-      name: "Ghee Butter Masala Dosa + Sambhar (2 Pcs)",
-      brand: "Chutneys Tiffin",
-      baseMrp: 180,
-      baseSellingPrice: 139,
-      discountPercent: 22,
-      thumbnail: "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=400&auto=format&fit=crop&q=80",
-      category: "Food & Dining",
-      rating: 4.8,
-      reviews: 1890
-    },
-    {
-      _id: "food-3",
-      name: "Special Paneer Butter Masala + 3 Butter Naan",
-      brand: "Punjabi Dhaba Express",
-      baseMrp: 340,
-      baseSellingPrice: 269,
-      discountPercent: 20,
-      thumbnail: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&auto=format&fit=crop&q=80",
-      category: "Food & Dining",
-      rating: 4.7,
-      reviews: 950
-    },
-    {
-      _id: "food-4",
-      name: "Cheesy Loaded Double Veggie Pizza (10 Inch)",
-      brand: "Italian Bistro",
-      baseMrp: 450,
-      baseSellingPrice: 299,
-      discountPercent: 33,
-      thumbnail: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
-      category: "Food & Dining",
-      rating: 4.8,
-      reviews: 2150
-    }
-  ];
-
-  const DEMO_SHOPPING: Product[] = [
-    {
-      _id: "shop-1",
-      name: "Kanjeevaram Pure Silk Zari Saree (Royal Blue)",
-      brand: "Weaver Heritage",
-      baseMrp: 3999,
-      baseSellingPrice: 2499,
-      discountPercent: 37,
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&auto=format&fit=crop&q=80",
-      category: "Shopping",
-      rating: 4.9,
-      reviews: 580
-    },
-    {
-      _id: "shop-2",
-      name: "Men's Slim Fit Pure Cotton Oxford Shirt",
-      brand: "Apex Fashions",
-      baseMrp: 1499,
-      baseSellingPrice: 899,
-      discountPercent: 40,
-      thumbnail: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&auto=format&fit=crop&q=80",
-      category: "Shopping",
-      rating: 4.7,
-      reviews: 1240
-    },
-    {
-      _id: "shop-3",
-      name: "Wireless ANC Noise Cancelling Headphones",
-      brand: "SoundBass Pro",
-      baseMrp: 2999,
-      baseSellingPrice: 1799,
-      discountPercent: 40,
-      thumbnail: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80",
-      category: "Shopping",
-      rating: 4.8,
-      reviews: 3100
-    },
-    {
-      _id: "shop-4",
-      name: "Handcrafted Designer Leather Shoulder Bag",
-      brand: "Luxe Craft",
-      baseMrp: 2499,
-      baseSellingPrice: 1499,
-      discountPercent: 40,
-      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&auto=format&fit=crop&q=80",
-      category: "Shopping",
-      rating: 4.8,
-      reviews: 790
-    }
-  ];
-
-  const [dailyNeedsProducts, setDailyNeedsProducts] = useState<Product[]>(DEMO_DAILY_NEEDS);
-  const [devotionalProducts, setDevotionalProducts] = useState<Product[]>(DEMO_DEVOTIONAL);
-  const [foodProducts, setFoodProducts] = useState<Product[]>(DEMO_FOOD);
-  const [shoppingProducts, setShoppingProducts] = useState<Product[]>(DEMO_SHOPPING);
+  const [dailyNeedsProducts, setDailyNeedsProducts] = useState<Product[]>([]);
+  const [devotionalProducts, setDevotionalProducts] = useState<Product[]>([]);
+  const [foodProducts, setFoodProducts] = useState<Product[]>([]);
+  const [shoppingProducts, setShoppingProducts] = useState<Product[]>([]);
 
   const fetchCategoryProducts = async () => {
     try {
@@ -820,10 +592,10 @@ const Home = () => {
           return cat.includes("shopping") || cat.includes("fashion") || cat.includes("saree") || name.includes("shirt") || name.includes("dress") || name.includes("saree");
         });
 
-        if (daily.length > 0) setDailyNeedsProducts([...daily, ...DEMO_DAILY_NEEDS].slice(0, 10));
-        if (dev.length > 0) setDevotionalProducts([...dev, ...DEMO_DEVOTIONAL].slice(0, 10));
-        if (food.length > 0) setFoodProducts([...food, ...DEMO_FOOD].slice(0, 10));
-        if (shopping.length > 0) setShoppingProducts([...shopping, ...DEMO_SHOPPING].slice(0, 10));
+        setDailyNeedsProducts(daily.slice(0, 10));
+        setDevotionalProducts(dev.slice(0, 10));
+        setFoodProducts(food.slice(0, 10));
+        setShoppingProducts(shopping.slice(0, 10));
       }
     } catch (err) {
       console.error("fetchCategoryProducts error:", err);
@@ -1153,14 +925,6 @@ const Home = () => {
     return () => window.removeEventListener("storage", loadLocation);
   }, []);
 
-  const DEFAULT_PRIMARY_CATEGORIES: CategoryItem[] = [
-    { id: 'cat-food', label: 'Food & Restaurant', to: '/food', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=300&auto=format&fit=crop&q=60' },
-    { id: 'cat-grocery', label: 'Daily Needs & Grocery', to: '/category/Daily Needs & Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=60' },
-    { id: 'cat-fashion', label: 'Fashion & Boutique', to: '/category/Fashion & Boutique', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=60' },
-    { id: 'cat-services', label: 'Home Services & Repair', to: '/category/Home Services & Repair', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=60' },
-    { id: 'cat-devotional', label: 'Devotional & Puja', to: '/category/Devotional & Puja', image: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=300&auto=format&fit=crop&q=60' },
-  ];
-
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
@@ -1171,14 +935,10 @@ const Home = () => {
       const list = Array.isArray(data?.categories) ? data.categories : [];
       const parsed = flattenCategoryTree(list);
 
-      if (parsed.length > 0) {
-        setCategories(parsed);
-      } else {
-        setCategories(DEFAULT_PRIMARY_CATEGORIES);
-      }
+      setCategories(parsed);
     } catch (e) {
       console.error("Error fetching categories:", e);
-      setCategories(DEFAULT_PRIMARY_CATEGORIES);
+      setCategories([]);
     } finally {
       setLoadingCategories(false);
     }

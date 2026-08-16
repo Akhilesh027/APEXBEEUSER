@@ -87,197 +87,6 @@ const HERO_BANNERS = [
   },
 ];
 
-// RICH DEMO FOOD ITEMS WITH DETAILED INFORMATION
-const DEMO_FOOD_ITEMS = [
-  {
-    _id: 'food-item-tamsi-1',
-    name: 'Tamsi Special Chicken Dum Biryani (Family Pack)',
-    restaurantName: 'Adilabad Paradise Biryani & Grill',
-    category: 'Biryani',
-    price: 320,
-    mrp: 450,
-    rating: 4.9,
-    prepTime: '20-25 mins',
-    isVeg: false,
-    pincode: '504312',
-    locality: 'Tamsi Mandal, Adilabad',
-    mandal: 'Tamsi',
-    district: 'Adilabad',
-    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Tamsi Bestseller',
-    description: 'Authentic Hyderabadi Dum Biryani cooked with fresh spices in Tamsi Mandal, served hot with Mirchi ka Salan & Raita.',
-    ingredients: ['Basmati Rice', 'Tender Chicken', 'Desi Ghee', 'Royal Spices'],
-    serves: '2-3 Persons',
-  },
-  {
-    _id: 'food-item-tamsi-2',
-    name: 'Adilabad Special Paneer Butter Masala + 2 Naan',
-    restaurantName: 'Tamsi Royal Family Dhaba',
-    category: 'Thali & Meals',
-    price: 210,
-    mrp: 280,
-    rating: 4.8,
-    prepTime: '15-20 mins',
-    isVeg: true,
-    pincode: '504312',
-    locality: 'Tamsi Cross Roads, Adilabad',
-    mandal: 'Tamsi',
-    district: 'Adilabad',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Pure Veg Special',
-    description: 'Rich creamy paneer butter masala prepared at Tamsi Cross Roads, served with hot butter tandoori naans.',
-    ingredients: ['Fresh Paneer', 'Butter & Cream', 'Ripe Tomatoes'],
-    serves: '1-2 Persons',
-  },
-  {
-    _id: 'food-item-tamsi-3',
-    name: 'Ghee Masala Dosa + 4 Chutneys',
-    restaurantName: 'Adilabad South Tiffin Center',
-    category: 'Tiffins',
-    price: 99,
-    mrp: 140,
-    rating: 4.9,
-    prepTime: '10-15 mins',
-    isVeg: true,
-    pincode: '504312',
-    locality: 'Tamsi Mandal, Adilabad',
-    mandal: 'Tamsi',
-    district: 'Adilabad',
-    image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Morning Special',
-    description: 'Crispy ghee roasted masala dosa served with spicy sambhar and 4 varieties of chutneys in Tamsi.',
-    ingredients: ['Rice Batter', 'Pure Ghee', 'Potato Masala'],
-    serves: '1 Person',
-  },
-  {
-    _id: 'food-item-1',
-    name: 'Special Chicken Dum Biryani (Family Pack)',
-    restaurantName: 'Paradise Biryani & Grill',
-    category: 'Biryani',
-    price: 349,
-    mrp: 499,
-    rating: 4.9,
-    prepTime: '20-25 mins',
-    isVeg: false,
-    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Bestseller',
-    description: 'Long-grain Basmati rice dum-cooked with tender, marinated chicken pieces, saffron, pure ghee, caramelized onions, and authentic Hyderabadi secret spice blend. Served with Mirchi ka Salan & Raita.',
-    ingredients: ['Basmati Rice', 'Tender Chicken', 'Desi Ghee', 'Saffron', 'Royal Spices', 'Mint & Coriander'],
-    serves: '2-3 Persons',
-  },
-  {
-    _id: 'food-item-2',
-    name: 'Paneer Butter Masala + 2 Butter Naan',
-    restaurantName: 'Pangea Dhaba',
-    category: 'Thali & Meals',
-    price: 229,
-    mrp: 299,
-    rating: 4.7,
-    prepTime: '15-20 mins',
-    isVeg: true,
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Pure Veg',
-    description: 'Fresh cottage cheese cubes simmered in a velvety, buttery tomato-cashew gravy scented with Kasuri Methi. Served with 2 piping hot tandoori butter naans.',
-    ingredients: ['Fresh Paneer', 'Butter & Cream', 'Ripe Tomatoes', 'Cashew Paste', 'Kasuri Methi'],
-    serves: '1-2 Persons',
-  },
-  {
-    _id: 'food-item-3',
-    name: 'Loaded Cheese Overload Pizza (Medium)',
-    restaurantName: 'Pizza Bistro',
-    category: 'Pizza',
-    price: 299,
-    mrp: 449,
-    rating: 4.8,
-    prepTime: '25-30 mins',
-    isVeg: true,
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Cheesy Delight',
-    description: 'Hand-tossed sourdough crust topped with 100% Mozzarella, Processed Cheese, Gouda blend, herbs, and San Marzano style tomato sauce.',
-    ingredients: ['Mozzarella Cheese', 'Gouda Cheese', 'Artisanal Crust', 'Italian Herbs', 'Tomato Sauce'],
-    serves: '2 Persons',
-  },
-  {
-    _id: 'food-item-4',
-    name: 'Crispy Double Patty Gourmet Burger',
-    restaurantName: 'The Burger Club',
-    category: 'Burgers',
-    price: 189,
-    mrp: 249,
-    rating: 4.6,
-    prepTime: '15 mins',
-    isVeg: false,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Juicy',
-    description: 'Double crunchy chicken patties layered with melted Cheddar cheese, caramelized onions, jalapeños, crispy lettuce, and smoky BBQ aioli sauce in toasted brioche buns.',
-    ingredients: ['Double Crispy Patties', 'Cheddar Cheese', 'Brioche Bun', 'Jalapenos', 'Smoky Mayo'],
-    serves: '1 Person',
-  },
-  {
-    _id: 'food-item-5',
-    name: 'Special Ghee Masala Dosa + Sambhar & Chutneys',
-    restaurantName: 'Chutneys Tiffin Center',
-    category: 'Tiffins',
-    price: 119,
-    mrp: 159,
-    rating: 4.9,
-    prepTime: '12 mins',
-    isVeg: true,
-    image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Morning Special',
-    description: 'Paper-thin golden crispy crepe roasted in pure Desi Ghee, stuffed with spiced potato masala. Served with hot lentil sambhar and 4 varieties of fresh coconut & ginger chutneys.',
-    ingredients: ['Fermented Rice Batter', 'Pure Ghee', 'Spiced Potato Masala', 'Lentil Sambhar', 'Coconut Chutney'],
-    serves: '1 Person',
-  },
-  {
-    _id: 'food-item-6',
-    name: 'Belgian Chocolate Truffle Cake (500g)',
-    restaurantName: 'Sweet Tooth Bakery',
-    category: 'Desserts',
-    price: 399,
-    mrp: 599,
-    rating: 4.9,
-    prepTime: '30 mins',
-    isVeg: true,
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop',
-    ],
-    tag: 'Fresh Baked',
-    description: 'Decadent 100% eggless dark Belgian chocolate sponge cake layered with rich dark chocolate ganache glaze and chocolate curls.',
-    ingredients: ['Dark Belgian Chocolate', 'Cocoa Powder', 'Heavy Cream', 'Vanilla Extract', 'Chocolate Shavings'],
-    serves: '4-5 Persons',
-  },
-];
-
 // DINEOUT VENUES DATA WITH RICH IMAGES & VIDEO DETAILS
 const DINEOUT_RESTAURANTS = [
   {
@@ -742,17 +551,13 @@ export const FoodDining: React.FC = () => {
           );
         });
 
-        if (foodOnly.length > 0) {
-          setFoodProducts(foodOnly);
-        } else {
-          setFoodProducts(DEMO_FOOD_ITEMS);
-        }
+        setFoodProducts(foodOnly);
       } else {
-        setFoodProducts(DEMO_FOOD_ITEMS);
+        setFoodProducts([]);
       }
     } catch (err) {
       console.error('Failed to fetch food listings:', err);
-      setFoodProducts(DEMO_FOOD_ITEMS);
+      setFoodProducts([]);
     } finally {
       setLoading(false);
     }
@@ -771,7 +576,7 @@ export const FoodDining: React.FC = () => {
   const filteredFoodItems = useMemo(() => {
     const { activePincode, activeMandal, activeDistrict, activeCity, fullAddress } = getActiveUserLocation();
 
-    let list = foodProducts.length > 0 ? foodProducts : DEMO_FOOD_ITEMS;
+    let list = foodProducts;
 
     // 1. Location Matching for Food Items
     if (activePincode || activeMandal || activeDistrict || activeCity || fullAddress) {

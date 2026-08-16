@@ -114,150 +114,9 @@ const CATEGORIES = [
   { id: "", name: "All Services", icon: <Home className="w-5 h-5" />, color: "from-slate-600 to-slate-800", image: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=300", count: "100+ Pros", desc: "Complete home repair" },
   { id: "Appliance Repair", name: "Appliance Repair", icon: <Snowflake className="w-5 h-5" />, color: "from-cyan-500 to-blue-600", image: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=300", count: "40+ Pros", desc: "AC, Fridge, Washing Machine" },
   { id: "Electrical Work", name: "Electrical Work", icon: <Zap className="w-5 h-5" />, color: "from-amber-500 to-orange-600", image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=300", count: "35+ Pros", desc: "Wiring, Fans, MCB, Lights" },
-  { id: "Plumbing", name: "Plumbing", icon: <Wrench className="w-5 h-5" />, color: "from-blue-600 to-indigo-700", image: "https://images.unsplash.com/photo-1607472586893-edb57cbbea42?q=80&w=300", count: "30+ Pros", desc: "Taps, Pipe Fitting, Geyser" },
+  { id: "Plumbing", name: "Plumbing", icon: <Wrench className="w-5 h-5" />, color: "from-blue-600 to-indigo-700", image: "https://images.unsplash.com/photo-607472586893-edb57cbbea42?q=80&w=300", count: "30+ Pros", desc: "Taps, Pipe Fitting, Geyser" },
   { id: "Home Cleaning", name: "Home Cleaning", icon: <Sparkles className="w-5 h-5" />, color: "from-purple-500 to-pink-600", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=300", count: "25+ Pros", desc: "Full House & Sofa Deep Clean" },
   { id: "Pest Control", name: "Pest Control", icon: <Bug className="w-5 h-5" />, color: "from-rose-500 to-red-700", image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?q=80&w=300", count: "20+ Pros", desc: "Termite & Cockroach Spray" },
-];
-
-const DEMO_PROVIDERS: Provider[] = [
-  {
-    _id: "prov-demo-1",
-    userId: "user-demo-1",
-    providerCode: "SP-HYD-101",
-    businessName: "Apex Cool Care AC & Appliance Repair",
-    ownerName: "Rajesh Kumar",
-    profilePhoto: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=400",
-    serviceCategory: ["Appliance Repair"],
-    experience: "7+ Years",
-    description: "Certified AC & refrigerator repair specialists. 90 days service warranty with original spare parts replacement.",
-    district: "Hyderabad",
-    mandal: "Jubilee Hills",
-    address: "Road No 36, Jubilee Hills, Hyderabad",
-    pincode: "500033",
-    rating: 4.9,
-    status: "active",
-    availability: {
-      weeklySchedule: [
-        { day: "Monday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Tuesday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Wednesday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Thursday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Friday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Saturday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Sunday", active: true, start: "09:00 AM", end: "06:00 PM" },
-      ],
-      emergencyActive: true,
-      holidays: [],
-    },
-    services: [
-      { id: "s1", name: "Split AC Servicing & Jet Cleaning", category: "Appliance Repair", type: "On-site", price: 599, discountPrice: 399, duration: "45 mins", active: true, included: ["Jet High Pressure Washing", "Gas Check", "Filter Cleaning"] },
-      { id: "s2", name: "AC Gas Refill (R32 / R410a)", category: "Appliance Repair", type: "On-site", price: 2499, discountPrice: 1999, duration: "60 mins", active: true, included: ["Full Gas Charging", "Leakage Testing"] },
-      { id: "s3", name: "Refrigerator Cooling Repair", category: "Appliance Repair", type: "On-site", price: 499, discountPrice: 349, duration: "30 mins", active: true, included: ["Thermostat Check", "Compressor Inspection"] },
-    ],
-  },
-  {
-    _id: "prov-demo-2",
-    userId: "user-demo-2",
-    providerCode: "SP-HYD-102",
-    businessName: "VoltMasters Electrical Solutions",
-    ownerName: "Suresh Reddy",
-    profilePhoto: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=400",
-    serviceCategory: ["Electrical Work"],
-    experience: "10+ Years",
-    description: "Licensed master electricians for home wiring, short circuit troubleshooting, MCB replacement, and heavy appliance installation.",
-    district: "Hyderabad",
-    mandal: "Banjara Hills",
-    address: "Road No 12, Banjara Hills, Hyderabad",
-    pincode: "500034",
-    rating: 4.8,
-    status: "active",
-    availability: {
-      weeklySchedule: [
-        { day: "Monday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Tuesday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Wednesday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Thursday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Friday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Saturday", active: true, start: "08:00 AM", end: "09:00 PM" },
-        { day: "Sunday", active: true, start: "09:00 AM", end: "05:00 PM" },
-      ],
-      emergencyActive: true,
-      holidays: [],
-    },
-    services: [
-      { id: "s4", name: "Short Circuit & MCB Repair", category: "Electrical Work", type: "On-site", price: 399, discountPrice: 249, duration: "30 mins", active: true, included: ["Diagnostic Check", "Fuse Replacement"] },
-      { id: "s5", name: "Ceiling Fan & Light Fitting", category: "Electrical Work", type: "On-site", price: 199, discountPrice: 149, duration: "20 mins", active: true, included: ["Unboxing & Assembly", "Secure Mounting"] },
-      { id: "s6", name: "Complete Room Re-Wiring", category: "Electrical Work", type: "On-site", price: 1499, discountPrice: 1199, duration: "120 mins", active: true, included: ["Concealed Piping", "Heavy Duty Switches"] },
-    ],
-  },
-  {
-    _id: "prov-demo-3",
-    userId: "user-demo-3",
-    providerCode: "SP-HYD-103",
-    businessName: "HydroFix Plumbing & Leak Detection",
-    ownerName: "Venkat Naidu",
-    profilePhoto: "https://images.unsplash.com/photo-1607472586893-edb57cbbea42?q=80&w=400",
-    serviceCategory: ["Plumbing"],
-    experience: "8+ Years",
-    description: "Expert plumbers for tap leak repairs, pipe fitting, flush tank repair, and bathroom sanitary installations.",
-    district: "Hyderabad",
-    mandal: "Madhapur",
-    address: "Hitech City Main Road, Madhapur, Hyderabad",
-    pincode: "500081",
-    rating: 4.7,
-    status: "active",
-    availability: {
-      weeklySchedule: [
-        { day: "Monday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Tuesday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Wednesday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Thursday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Friday", active: true, start: "09:00 AM", end: "08:00 PM" },
-        { day: "Saturday", active: true, start: "09:00 AM", end: "08:00 PM" },
-      ],
-      emergencyActive: true,
-      holidays: [],
-    },
-    services: [
-      { id: "s7", name: "Tap Leakage & Valve Fitting", category: "Plumbing", type: "On-site", price: 299, discountPrice: 199, duration: "25 mins", active: true, included: ["Washer Replacement", "Sealing Tape Application"] },
-      { id: "s8", name: "Drainage Unblocking & Jet Drain", category: "Plumbing", type: "On-site", price: 699, discountPrice: 499, duration: "45 mins", active: true, included: ["Pressure Jetting", "Blockage Removal"] },
-      { id: "s9", name: "Water Heater Geyser Installation", category: "Plumbing", type: "On-site", price: 499, discountPrice: 349, duration: "40 mins", active: true, included: ["Inlet Outlet Connection", "Safety Valve Test"] },
-    ],
-  },
-  {
-    _id: "prov-demo-4",
-    userId: "user-demo-4",
-    providerCode: "SP-HYD-104",
-    businessName: "CleanZone Deep Home Hygiene",
-    ownerName: "Priya Sharma",
-    profilePhoto: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=400",
-    serviceCategory: ["Home Cleaning"],
-    experience: "6+ Years",
-    description: "Professional full home deep cleaning, sofa sanitization, kitchen degreasing, and eco-friendly chemical treatment.",
-    district: "Hyderabad",
-    mandal: "Gachibowli",
-    address: "Financial District, Gachibowli, Hyderabad",
-    pincode: "500032",
-    rating: 4.9,
-    status: "active",
-    availability: {
-      weeklySchedule: [
-        { day: "Monday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Tuesday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Wednesday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Thursday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Friday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Saturday", active: true, start: "08:00 AM", end: "07:00 PM" },
-        { day: "Sunday", active: true, start: "08:00 AM", end: "05:00 PM" },
-      ],
-      emergencyActive: false,
-      holidays: [],
-    },
-    services: [
-      { id: "s10", name: "Full House Deep Cleaning (2 BHK)", category: "Home Cleaning", type: "On-site", price: 3499, discountPrice: 2499, duration: "240 mins", active: true, included: ["Floor Scrubbing", "Window Wiping", "Bathroom Disinfection"] },
-      { id: "s11", name: "Sofa & Upholstery Shampooing", category: "Home Cleaning", type: "On-site", price: 999, discountPrice: 749, duration: "60 mins", active: true, included: ["Foam Extraction", "Stain Removal"] },
-    ],
-  },
 ];
 
 const TIME_SLOTS = ["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM", "07:00 PM"];
@@ -520,29 +379,11 @@ const Services = () => {
         }
       }
 
-      // Fallback to DEMO PROVIDERS if API returns empty
-      let list = [...DEMO_PROVIDERS];
-      if (selectedCategory) {
-        list = list.filter((p) => p.serviceCategory.includes(selectedCategory));
-      }
-      if (emergencyOnly) {
-        list = list.filter((p) => p.availability?.emergencyActive);
-      }
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        list = list.filter(
-          (p) =>
-            p.businessName.toLowerCase().includes(q) ||
-            p.ownerName.toLowerCase().includes(q) ||
-            p.services.some((s) => s.name.toLowerCase().includes(q))
-        );
-      }
-      setProviders(list);
-      setTotal(list.length);
-      setPage(1);
+      setProviders(reset ? [] : (prev) => prev);
+      setTotal(0);
     } catch (err: any) {
-      setProviders(DEMO_PROVIDERS);
-      setTotal(DEMO_PROVIDERS.length);
+      setProviders([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -734,8 +575,8 @@ const Services = () => {
           <button
             onClick={() => setActiveMainTab("book")}
             className={`py-2.5 sm:py-3.5 px-2 sm:px-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === "book"
-                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
-                : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
+              ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+              : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
               }`}
           >
             <Wrench className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -745,8 +586,8 @@ const Services = () => {
           <button
             onClick={() => setActiveMainTab("providers")}
             className={`py-2.5 sm:py-3.5 px-2 sm:px-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === "providers"
-                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
-                : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
+              ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+              : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
               }`}
           >
             <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -756,8 +597,8 @@ const Services = () => {
           <button
             onClick={() => setActiveMainTab("bookings")}
             className={`py-2.5 sm:py-3.5 px-2 sm:px-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 border cursor-pointer ${activeMainTab === "bookings"
-                ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
-                : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
+              ? "bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md"
+              : "bg-transparent text-slate-700 border-transparent hover:bg-slate-100"
               }`}
           >
             <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -812,8 +653,8 @@ const Services = () => {
                           }
                         }}
                         className={`group relative flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border transition-all duration-300 cursor-pointer text-center ${isSelected
-                            ? "bg-[#0A1128] text-white border-[#0A1128] shadow-lg ring-2 ring-amber-400 scale-[1.02]"
-                            : "bg-slate-50/80 hover:bg-white text-slate-800 border-slate-200 hover:border-amber-400 hover:shadow-md"
+                          ? "bg-[#0A1128] text-white border-[#0A1128] shadow-lg ring-2 ring-amber-400 scale-[1.02]"
+                          : "bg-slate-50/80 hover:bg-white text-slate-800 border-slate-200 hover:border-amber-400 hover:shadow-md"
                           }`}
                       >
                         <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden mb-2 shadow-xs border border-white/20 bg-slate-900">
