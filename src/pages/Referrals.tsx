@@ -816,15 +816,126 @@ const Referrals = () => {
     toast({ title: "WhatsApp Opened", description: "Referral pitch shared via WhatsApp." });
   };
 
-  const getRankBadge = (count: number) => {
-    if (count >= 100) return { rank: "Diamond Leader", badge: "💎 Diamond" };
-    if (count >= 50) return { rank: "Gold Partner", badge: "🥇 Gold" };
-    if (count >= 15) return { rank: "Silver Partner", badge: "🥈 Silver" };
-    if (count >= 5) return { rank: "Bronze Partner", badge: "🥉 Bronze" };
-    return { rank: "Level 1 Starter", badge: "⭐ Partner" };
+  // Qualification check: Phone Verified + Gmail/Email Verified + 1st Purchase Completed
+  const isUserQualified = (u: any) => {
+    if (!u) return false;
+    const hasPhone = Boolean(u.phone || u.mobile);
+    const hasEmail = Boolean(u.email);
+    const hasPurchased = Boolean(
+      u.firstOrderQualified ||
+      (u.totalPurchases && Number(u.totalPurchases) > 0) ||
+      (u.orders && Array.isArray(u.orders) && u.orders.length > 0) ||
+      (u.totalCommissionGenerated && Number(u.totalCommissionGenerated) > 0)
+    );
+    return hasPhone && hasEmail && hasPurchased;
   };
 
-  const currentRank = getRankBadge(allReferredUsers.length);
+  // Qualified counts per level
+  const qualifiedL1 = useMemo(() => level1Users.filter(isUserQualified), [level1Users]);
+  const qualifiedL2 = useMemo(() => level2Users.filter(isUserQualified), [level2Users]);
+  const qualifiedL3 = useMemo(() => level3Users.filter(isUserQualified), [level3Users]);
+
+  // Count Bronze achievers in Level 1 (L1 members having >= 10 qualified in L2)
+  const l1BronzeAchievers = useMemo(() => {
+    return level1Users.filter((u1) => {
+      if (!isUserQualified(u1)) return false;
+      const directDownlines = level2Users.filter(
+        (u2) => String(u2.referredBy) === String(u1._id || u1.id) && isUserQualified(u2)
+      );
+      return directDownlines.length >= 10;
+    });
+  }, [level1Users, level2Users]);
+
+  // Count Bronze achievers in Level 2 (L2 members having >= 10 qualified in L3)
+  const l2BronzeAchievers = useMemo(() => {
+    return level2Users.filter((u2) => {
+      if (!isUserQualified(u2)) return false;
+      const directDownlines = level3Users.filter(
+        (u3) => String(u3.referredBy) === String(u2._id || u2.id) && isUserQualified(u3)
+      );
+      return directDownlines.length >= 10;
+    });
+  }, [level2Users, level3Users]);
+
+  // Count Silver achievers in Level 1 (L1 members having >= 10 Bronze in L2 OR >= 100 L2 qualified)
+  const l1SilverAchievers = useMemo(() => {
+    return level1Users.filter((u1) => {
+      if (!isUserQualified(u1)) return false;
+      const l1ChildrenInL2 = level2Users.filter((u2) => String(u2.referredBy) === String(u1._id || u1.id));
+      const bronzeChildren = l1ChildrenInL2.filter((u2) => {
+        const u2ChildrenInL3 = level3Users.filter(
+          (u3) => String(u3.referredBy) === String(u2._id || u2.id) && isUserQualified(u3)
+        );
+        return isUserQualified(u2) && u2ChildrenInL3.length >= 10;
+      });
+      const totalL2ForU1 = level3Users.filter((u3) =>
+        l1ChildrenInL2.some((u2) => String(u2._id || u2.id) === String(u3.referredBy)) && isUserQualified(u3)
+      );
+      return bronzeChildren.length >= 10 || totalL2ForU1.length >= 100;
+    });
+  }, [level1Users, level2Users, level3Users]);
+
+  // Multi-tier rank calculation
+  const currentRank = useMemo(() => {
+    // 1. Diamond: L1 has 10 Gold OR L2 has 100 Silver OR L3 has 1,000 Bronze OR L4 has 10,000 Members
+    // 2. Gold: L1 has 10 Silver OR L2 has 100 Bronze OR L3 has 1,000 Members
+    if (l1SilverAchievers.length >= 10 || l2BronzeAchievers.length >= 100 || qualifiedL3.length >= 1000) {
+      return {
+        rank: "Gold Partner",
+        badge: "🥇 Gold",
+        level: 4,
+        targetGoal: "Diamond Partner",
+        targetRemaining: Math.max(0, 10 - l1SilverAchievers.length),
+        targetCondition: "10 Gold Achievers (L1) or 10,000 Members (L4)",
+        progressPercent: Math.min(100, (qualifiedL3.length / 1000) * 100),
+        currentCount: qualifiedL3.length,
+        targetMax: 1000
+      };
+    }
+
+    // 3. Silver: L1 has 10 Bronze Achievers OR L2 has 100 Qualified Members
+    if (l1BronzeAchievers.length >= 10 || qualifiedL2.length >= 100) {
+      return {
+        rank: "Silver Partner",
+        badge: "🥈 Silver",
+        level: 3,
+        targetGoal: "Gold Partner",
+        targetRemaining: Math.max(0, 10 - l1SilverAchievers.length),
+        targetCondition: "10 Silver Achievers (L1) or 100 Bronze (L2) or 1,000 Members (L3)",
+        progressPercent: Math.min(100, Math.max((l1BronzeAchievers.length / 10) * 100, (qualifiedL2.length / 100) * 100)),
+        currentCount: qualifiedL2.length,
+        targetMax: 100
+      };
+    }
+
+    // 4. Bronze: L1 has 10 Qualified Members (KYC + 1st Purchase)
+    if (qualifiedL1.length >= 10) {
+      return {
+        rank: "Bronze Partner",
+        badge: "🥉 Bronze",
+        level: 2,
+        targetGoal: "Silver Partner",
+        targetRemaining: Math.max(0, 10 - l1BronzeAchievers.length),
+        targetCondition: "10 Bronze Achievers (L1) or 100 Members (L2)",
+        progressPercent: Math.min(100, Math.max((l1BronzeAchievers.length / 10) * 100, (qualifiedL2.length / 100) * 100)),
+        currentCount: l1BronzeAchievers.length,
+        targetMax: 10
+      };
+    }
+
+    // 5. Starter (Default entry level lower than Bronze)
+    return {
+      rank: "Level 1 Starter",
+      badge: "🌱 Starter",
+      level: 1,
+      targetGoal: "Bronze Partner",
+      targetRemaining: Math.max(0, 10 - qualifiedL1.length),
+      targetCondition: "10 Level 1 Members (Phone & Gmail Verified + 1st Purchase)",
+      progressPercent: Math.min(100, (qualifiedL1.length / 10) * 100),
+      currentCount: qualifiedL1.length,
+      targetMax: 10
+    };
+  }, [qualifiedL1, qualifiedL2, qualifiedL3, l1BronzeAchievers, l2BronzeAchievers, l1SilverAchievers]);
 
   // Estimator Calculations
   const calculatedEstimations = useMemo(() => {
@@ -1014,13 +1125,13 @@ const Referrals = () => {
           <div className="flex items-center gap-3">
             <span className="text-3xl">🎯</span>
             <div className="text-left">
-              <h4 className="font-extrabold text-slate-800 text-sm">Your Goal: Bronze Partner Milestone</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Need {Math.max(0, 10 - allReferredUsers.length)} more referrals to unlock rank bonus rewards.</p>
+              <h4 className="font-extrabold text-slate-800 text-sm">Your Goal: {currentRank.targetGoal} Milestone</h4>
+              <p className="text-xs text-slate-500 mt-0.5">Need {currentRank.targetRemaining} more to unlock {currentRank.targetGoal} ({currentRank.targetCondition}).</p>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-xl">
             <Award className="h-4 w-4 text-purple-600" />
-            <span className="text-xs font-extrabold text-purple-700">Next Reward: ₹500 + Badge</span>
+            <span className="text-xs font-extrabold text-purple-700">Next Milestone: {currentRank.targetGoal}</span>
           </div>
         </div>
 
@@ -1101,23 +1212,43 @@ const Referrals = () => {
           {/* Overview Tab Content */}
           <TabsContent value="overview" className="space-y-6 text-left">
             {/* Gamified Milestone Progress Indicator */}
-            <Card className="border border-slate-200/80 shadow-sm rounded-2xl">
+            <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl p-2.5 bg-purple-50 rounded-xl">🏅</span>
                     <div>
-                      <p className="font-extrabold text-navy text-sm">Rank Milestone Status: {currentRank.rank}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-extrabold text-navy text-sm">Rank Milestone Status: {currentRank.rank}</p>
+                        <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-black">
+                          {currentRank.badge}
+                        </Badge>
+                      </div>
                       <p className="text-slate-500 text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {["🥉 Bronze", "🥈 Silver", "🥇 Gold", "💎 Diamond"].map((b, idx) => {
-                      const req = idx === 0 ? 5 : idx === 1 ? 15 : idx === 2 ? 50 : 100;
-                      const active = allReferredUsers.length >= req;
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { name: "🌱 Starter", level: 1 },
+                      { name: "🥉 Bronze", level: 2 },
+                      { name: "🥈 Silver", level: 3 },
+                      { name: "🥇 Gold", level: 4 },
+                      { name: "💎 Diamond", level: 5 },
+                    ].map((b) => {
+                      const active = currentRank.level >= b.level;
+                      const isCurrent = currentRank.level === b.level;
                       return (
-                        <Badge key={b} className={`text-[10px] px-2.5 py-1 ${active ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                          {b}
+                        <Badge
+                          key={b.name}
+                          className={`text-[10px] px-2.5 py-1 transition-all ${
+                            isCurrent
+                              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
+                              : active
+                              ? 'bg-indigo-600 text-white font-bold'
+                              : 'bg-slate-100 text-slate-400 border border-slate-200 font-medium'
+                          }`}
+                        >
+                          {b.name} {active && !isCurrent ? "✓" : ""}
                         </Badge>
                       );
                     })}
@@ -1126,15 +1257,40 @@ const Referrals = () => {
 
                 <div className="mt-5">
                   <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
-                    <span>Rank Level Progress ({allReferredUsers.length} / 10 Referrals)</span>
-                    <span>{Math.max(0, 10 - allReferredUsers.length)} more to Bronze Partner</span>
+                    <span>Rank Level Progress ({currentRank.currentCount} / {currentRank.targetMax} Qualified Referrals)</span>
+                    <span className="text-indigo-600 font-black">{currentRank.targetRemaining} more to {currentRank.targetGoal}</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-3.5 border overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-purple-500 to-indigo-600 h-3.5 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (allReferredUsers.length / 10) * 100)}%` }}
+                      className="bg-gradient-to-r from-purple-500 via-indigo-600 to-amber-500 h-3.5 rounded-full transition-all duration-500"
+                      style={{ width: `${currentRank.progressPercent}%` }}
                     />
                   </div>
+                  <p className="text-[11px] text-slate-400 mt-1.5 italic">
+                    *Qualification Criteria: Member must be Phone & Gmail verified (KYC) and completed their 1st Purchase.
+                  </p>
+                </div>
+
+                {/* How to reach next step guide */}
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 text-xs text-indigo-950">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🚀</span>
+                    <div>
+                      <p className="font-extrabold text-xs text-indigo-950">
+                        How to Unlock {currentRank.targetGoal}:
+                      </p>
+                      <p className="text-[11px] text-indigo-700 mt-0.5">
+                        Invite members who verify their Phone & Gmail, and complete their 1st purchase. You need <span className="font-black text-indigo-900">{currentRank.targetRemaining} more qualified member{currentRank.targetRemaining === 1 ? '' : 's'}</span> to unlock your {currentRank.targetGoal} badge.
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                    onClick={shareReferral}
+                  >
+                    Invite Now
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1533,9 +1689,23 @@ const Referrals = () => {
                             <td className="p-3 text-center font-bold text-slate-700">{u.totalPurchases || 0}</td>
                             <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(u.totalCommissionGenerated || 0)}</td>
                             <td className="p-3 text-center">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${u.firstOrderQualified ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                {u.firstOrderQualified ? "🟢 Active / Verified" : "🟡 Registered / Pending"}
-                              </span>
+                              {isUserQualified(u) ? (
+                                <div className="inline-flex flex-col items-center gap-0.5">
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                    ✓ Qualified
+                                  </span>
+                                  <span className="text-[9px] text-slate-400">KYC & Order Done</span>
+                                </div>
+                              ) : (
+                                <div className="inline-flex flex-col items-center gap-0.5">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                    Pending
+                                  </span>
+                                  <span className="text-[9px] text-slate-400">
+                                    {!u.phone && !u.mobile ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="p-3 text-center flex items-center justify-center gap-1.5">
                               <Button size="sm" variant="outline" className="text-[10px] h-7 px-2 border-slate-200 text-slate-700 font-bold" onClick={() => setSelectedProfileNode(u)}>

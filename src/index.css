@@ -186,3 +186,27 @@ html {
 .animate-map-pulse {
   animation: map-pulse 2s infinite ease-in-out;
 }
+
+/* Form controls & Dropdown dark mode styling */
+select {
+  color-scheme: light dark;
+}
+
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.dark select,
+[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+.dark select option,
+.dark select optgroup,
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+}
