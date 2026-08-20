@@ -32,6 +32,13 @@ import Academy from "./pages/Academy";
 import Services from "./pages/Services";
 import Travel from "./pages/Travel";
 import Community from "./pages/Community";
+import AboutUs from "./pages/AboutUs";
+import ContactUs from "./pages/ContactUs";
+import Careers from "./pages/Careers";
+import PressMedia from "./pages/PressMedia";
+import Blog from "./pages/Blog";
+import HelpCenter from "./pages/HelpCenter";
+import Legal from "./pages/Legal";
 import TrackOrder from "./pages/TrackOrder";
 import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
@@ -109,6 +116,35 @@ const App = () => (
           <Route path="/food" element={<FoodDining />} />
           <Route path="/food/restaurant/:id" element={<RestaurantDetail />} />
           <Route path="/community" element={<Community />} />
+
+          {/* ===== Company & Informational Pages ===== */}
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/mission" element={<AboutUs />} />
+          <Route path="/research" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/press" element={<PressMedia />} />
+          <Route path="/press-media" element={<PressMedia />} />
+          <Route path="/blog" element={<Blog />} />
+
+          {/* ===== Support & FAQs ===== */}
+          <Route path="/help" element={<HelpCenter />} />
+          <Route path="/help-center" element={<HelpCenter />} />
+          <Route path="/faqs" element={<HelpCenter />} />
+          <Route path="/faq" element={<HelpCenter />} />
+
+          {/* ===== Legal & Policy Pages ===== */}
+          <Route path="/privacy-policy" element={<Legal />} />
+          <Route path="/terms-conditions" element={<Legal />} />
+          <Route path="/terms" element={<Legal />} />
+          <Route path="/return-policy" element={<Legal />} />
+          <Route path="/refund-policy" element={<Legal />} />
+          <Route path="/returns-refunds" element={<Legal />} />
+          <Route path="/cancellation-policy" element={<Legal />} />
+          <Route path="/franchise-policy" element={<Legal />} />
+          <Route path="/vendor-policy" element={<Legal />} />
 
           {/* ===== Protected Routes — require login ===== */}
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />

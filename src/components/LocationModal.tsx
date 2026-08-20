@@ -46,6 +46,8 @@ type SavedLocation = {
   pincode: string;
   landmark?: string;
   address: string;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -70,6 +72,9 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
   // Load saved locations from backend if logged in, or local storage fallback
   useEffect(() => {
     if (!open) return;
+    // Clean up legacy mock locations if any
+    localStorage.removeItem("mock_saved_locations");
+
     const token = localStorage.getItem("token");
     const userRaw = localStorage.getItem("user");
     let user: any = null;
@@ -86,6 +91,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
             const mapped: SavedLocation[] = data.addresses.map((a: any) => ({
               id: a._id || a.id || `loc_${Date.now()}`,
               label: (a.type || a.label || "Home") as "Home" | "Office" | "Other",
+              customName: a.label || a.type || undefined,
               state: a.state || "",
               district: a.district || "",
               mandal: a.mandal || "",
@@ -93,8 +99,9 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
               pincode: a.pincode || "",
               landmark: a.landmark || "",
               address: a.address || `${a.street}, ${a.colony}, ${a.district}, ${a.state} - ${a.pincode}`,
-            }));
+            })).filter((a: SavedLocation) => !a.id.startsWith("loc_test_"));
             setSavedLocations(mapped);
+            if (mapped.length > 0) setActiveTab("saved");
             return;
           }
           loadLocalSavedLocations();
@@ -107,10 +114,18 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
     function loadLocalSavedLocations() {
       const stored = localStorage.getItem("saved_locations");
       if (stored) {
-        try { setSavedLocations(JSON.parse(stored)); } catch { }
-      } else {
-        setSavedLocations([]);
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const clean = parsed.filter((m: any) => m && !m.id?.startsWith("loc_test_"));
+            setSavedLocations(clean);
+            if (clean.length > 0) setActiveTab("saved");
+            return;
+          }
+        } catch { }
       }
+      setSavedLocations([]);
+      setActiveTab("detect");
     }
   }, [open]);
 
@@ -320,7 +335,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
         ? savedLocations.map(l => l.label === saveAs ? { ...l, ...payload, id: `loc_${idPrefix}_${Date.now()}` } : l)
         : [...savedLocations, { id: `loc_${idPrefix}_${Date.now()}`, label: saveAs, ...payload }];
 
-      localStorage.setItem("mock_saved_locations", JSON.stringify(nextLocations));
+      localStorage.setItem("saved_locations", JSON.stringify(nextLocations));
       setSavedLocations(nextLocations);
     }
 
@@ -353,8 +368,8 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
 
   const selectSavedLocation = (loc: SavedLocation) => {
     const payload = {
-      lat: null,
-      lng: null,
+      lat: loc.lat || null,
+      lng: loc.lng || null,
       state: loc.state,
       district: loc.district,
       mandal: loc.mandal,
@@ -365,31 +380,15 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
       locationType: "saved" as const,
     };
 
-    const storagePayload = {
-      lat: null,
-      lng: null,
-      state: loc.state,
-      district: loc.district,
-      mandal: loc.mandal,
-      colony: loc.colony,
-      pincode: loc.pincode,
-      landmark: loc.landmark,
-      address: loc.address,
-      locationType: "saved" as const,
-    };
-
-    localStorage.setItem("user_location", JSON.stringify(storagePayload));
-    localStorage.setItem("userLocation", JSON.stringify(storagePayload));
-    localStorage.setItem("apexbee_user_location", JSON.stringify(storagePayload));
+    localStorage.setItem("user_location", JSON.stringify(payload));
+    localStorage.setItem("userLocation", JSON.stringify(payload));
+    localStorage.setItem("apexbee_user_location", JSON.stringify(payload));
     if (loc.pincode) {
       localStorage.setItem("userPincode", loc.pincode);
       localStorage.setItem("pincode", loc.pincode);
     }
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("user_location_updated"));
-
-    localStorage.setItem("user_location", JSON.stringify(payload));
-    window.dispatchEvent(new Event("storage"));
 
     onConfirm?.(payload);
     onOpenChange(false);
@@ -398,7 +397,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
   const deleteSavedLocation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = savedLocations.filter(loc => loc.id !== id);
-    localStorage.setItem("mock_saved_locations", JSON.stringify(updated));
+    localStorage.setItem("saved_locations", JSON.stringify(updated));
     setSavedLocations(updated);
   };
 
@@ -654,12 +653,17 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                           <Bookmark className="h-4 w-4 text-emerald-500" />
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-extrabold text-navy text-xs leading-none">
-                          {loc.label}
-                        </p>
-                        <p className="text-[10px] font-bold text-accent mt-1 leading-none uppercase tracking-wide">
-                          {loc.colony} - {loc.pincode}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-black text-[#0A1128] text-xs leading-none">
+                            {loc.customName || loc.label}
+                          </p>
+                          <span className="text-[9px] bg-amber-100 text-amber-900 font-extrabold px-1.5 py-0.5 rounded-md">
+                            PIN: {loc.pincode}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-accent mt-1 leading-none">
+                          {loc.colony}, {loc.district} ({loc.state})
                         </p>
                         <p className="text-[10px] text-muted-foreground line-clamp-1 mt-1 leading-normal">
                           {loc.address}

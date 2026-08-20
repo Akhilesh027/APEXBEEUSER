@@ -10,6 +10,7 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LocationModal from "@/components/LocationModal";
+import { DynamicHeroBanner } from "@/components/DynamicHeroBanner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -392,69 +393,8 @@ export const LocalStores: React.FC = () => {
         <div className="absolute -bottom-20 left-10 w-96 h-96 bg-orange-500/15 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 pb-12 relative z-10">
-          {/* SLIDER CAROUSEL ITEM */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group min-h-[360px] sm:min-h-[420px] flex items-center">
-            <img
-              key={currentBanner.id}
-              src={currentBanner.image}
-              alt={currentBanner.title}
-              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out scale-105 group-hover:scale-100"
-            />
-            <div className={`absolute inset-0 bg-gradient-to-r ${currentBanner.gradient} opacity-85 mix-blend-multiply`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-            {/* SLIDER CONTENT */}
-            <div className="relative z-20 p-6 sm:p-12 max-w-2xl space-y-4 text-left">
-              <div className="inline-flex items-center space-x-2 bg-amber-400 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs shadow-lg animate-bounce">
-                <Flame className="w-3.5 h-3.5 text-slate-950" />
-                <span>{currentBanner.tag}</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white font-heading leading-tight tracking-tight drop-shadow-md">
-                {currentBanner.title}
-              </h1>
-
-              <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-lg leading-relaxed">
-                {currentBanner.subtitle}
-              </p>
-
-              <div className="pt-2 flex flex-wrap items-center gap-3">
-                <div className="px-4 py-2 bg-amber-500 text-slate-950 font-black rounded-2xl text-sm shadow-xl flex items-center space-x-2">
-                  <Tag className="w-4 h-4" />
-                  <span>{currentBanner.discount}</span>
-                </div>
-                <div className="px-3.5 py-2 bg-white/20 backdrop-blur-md text-white font-mono font-bold text-xs rounded-2xl border border-white/30">
-                  CODE: <span className="text-amber-300 font-extrabold">{currentBanner.code}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SLIDER ARROWS */}
-            <button
-              onClick={() => setActiveBanner((prev) => (prev === 0 ? HERO_BANNERS.length - 1 : prev - 1))}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-950/60 hover:bg-amber-500 text-white hover:text-slate-950 transition backdrop-blur-md border border-white/20 shadow-xl cursor-pointer z-30 opacity-80 group-hover:opacity-100"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setActiveBanner((prev) => (prev + 1) % HERO_BANNERS.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-950/60 hover:bg-amber-500 text-white hover:text-slate-950 transition backdrop-blur-md border border-white/20 shadow-xl cursor-pointer z-30 opacity-80 group-hover:opacity-100"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-
-            {/* SLIDER DOTS */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center space-x-2">
-              {HERO_BANNERS.map((b, idx) => (
-                <button
-                  key={b.id}
-                  onClick={() => setActiveBanner(idx)}
-                  className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${activeBanner === idx ? 'w-8 bg-amber-400' : 'w-2.5 bg-white/50 hover:bg-white'
-                    }`}
-                />
-              ))}
-            </div>
-          </div>
+          {/* DYNAMIC LOCAL STORES HERO BANNER (Managed via Admin Panel) */}
+          <DynamicHeroBanner placement="stores_hero" heightClass="h-[340px] sm:h-[400px] md:h-[440px]" />
 
           {/* SEARCH & LOCATION BAR */}
           <div className="mt-6 bg-white p-3 rounded-2xl shadow-2xl border border-slate-200 flex flex-col md:flex-row items-center gap-3">

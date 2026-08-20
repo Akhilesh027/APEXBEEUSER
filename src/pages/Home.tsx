@@ -43,6 +43,8 @@ import LocationModal from "@/components/LocationModal";
 import SupportDrawer from "@/components/SupportDrawer";
 import ProductCard from "@/components/ProductCard";
 import { ApexBeeWelcomeIntro } from "../components/welcome-intro/ApexBeeWelcomeIntro";
+import { DynamicHeroBanner } from "@/components/DynamicHeroBanner";
+import { DynamicBannerStrip } from "@/components/DynamicBannerStrip";
 const logo = "/logo.png";
 
 import { Button } from "@/components/ui/button";
@@ -461,21 +463,57 @@ const Home = () => {
   const [kidsProducts, setKidsProducts] = useState<Product[]>([]);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
 
+  const buildLocationParams = useCallback(() => {
+    const loc = userLocation || (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user_location") || localStorage.getItem(LOCATION_KEY) || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    const params = new URLSearchParams();
+    if (loc?.lat && loc?.lng) {
+      params.append("lat", String(loc.lat));
+      params.append("lng", String(loc.lng));
+    } else if (loc?.pincode) {
+      params.append("pincode", String(loc.pincode));
+    }
+    if (loc?.mandal) params.append("mandal", loc.mandal);
+    if (loc?.district) params.append("district", loc.district);
+    return params.toString();
+  }, [userLocation]);
+
   useEffect(() => {
     const fetchDbProducts = async () => {
       try {
-        const res = await fetch(`${API_BASE}/products?limit=20`);
+        const locParams = buildLocationParams();
+        const url = `${API_BASE}/products?limit=20${locParams ? `&${locParams}` : ''}`;
+        const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
           const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-          setDbProducts(list);
+
+          const filtered = list.filter((p: any) => {
+            const isLive = (p.status === "Live" || p.status === "Active" || p.status === "Approved") && p.isActive !== false;
+            if (!isLive) return false;
+            const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both';
+            if (isPan) return true;
+            if (!userLocation?.pincode && !userLocation?.lat) return true;
+            const vendorPin = p.vendorPincode || p.sellerId?.pincode;
+            if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) return true;
+            if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
+            return false;
+          });
+
+          setDbProducts(filtered);
         }
       } catch (e) {
         console.error("fetchDbProducts error:", e);
       }
     };
     fetchDbProducts();
-  }, []);
+  }, [userLocation, buildLocationParams]);
 
   const continueShoppingProducts = useMemo(() => {
     if (personalization?.continueShopping && personalization.continueShopping.length > 0) {
@@ -527,7 +565,9 @@ const Home = () => {
 
   const fetchPetAndKidsProducts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/products?limit=50`);
+      const locParams = buildLocationParams();
+      const url = `${API_BASE}/products?limit=50${locParams ? `&${locParams}` : ''}`;
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
@@ -562,11 +602,23 @@ const Home = () => {
 
   const fetchCategoryProducts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/products?limit=100`);
+      const locParams = buildLocationParams();
+      const url = `${API_BASE}/products?limit=100${locParams ? `&${locParams}` : ''}`;
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
-        const liveList = list.filter((p: any) => p.status === "Live" && p.isActive !== false);
+        const liveList = list.filter((p: any) => {
+          const isLive = (p.status === "Live" || p.status === "Active" || p.status === "Approved") && p.isActive !== false;
+          if (!isLive) return false;
+          const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both';
+          if (isPan) return true;
+          if (!userLocation?.pincode && !userLocation?.lat) return true;
+          const vendorPin = p.vendorPincode || p.sellerId?.pincode;
+          if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) return true;
+          if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
+          return false;
+        });
 
         const daily = liveList.filter((p: any) => {
           const cat = (p.category || p.categoryName || "").toLowerCase();
@@ -607,7 +659,7 @@ const Home = () => {
     fetchCourses();
     fetchPetAndKidsProducts();
     fetchCategoryProducts();
-  }, [loggedInUser]);
+  }, [loggedInUser, userLocation]);
 
   // Dynamic Greeting & Timer Effect
   useEffect(() => {
@@ -922,7 +974,11 @@ const Home = () => {
     };
     loadLocation();
     window.addEventListener("storage", loadLocation);
-    return () => window.removeEventListener("storage", loadLocation);
+    window.addEventListener("user_location_updated", loadLocation);
+    return () => {
+      window.removeEventListener("storage", loadLocation);
+      window.removeEventListener("user_location_updated", loadLocation);
+    };
   }, []);
 
   const fetchCategories = async () => {
@@ -946,6 +1002,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetch(`${API_BASE}/update-pan-india`).catch(() => { });
   }, []);
 
   /** ---------------------------
@@ -959,6 +1016,12 @@ const Home = () => {
     } else if (userLocation?.pincode) {
       locationUrl += `&pincode=${userLocation.pincode}`;
     }
+    if (userLocation?.mandal) {
+      locationUrl += `&mandal=${encodeURIComponent(userLocation.mandal)}`;
+    }
+    if (userLocation?.district) {
+      locationUrl += `&district=${encodeURIComponent(userLocation.district)}`;
+    }
 
     try {
       const res = await fetch(locationUrl);
@@ -966,42 +1029,37 @@ const Home = () => {
         const json = await res.json();
         const list = Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
         const filtered = (list as Product[]).filter(
-          (product: Product) =>
-            (product.status === "Live" || product.status === "Active" || product.status === "Approved" || (product as any).status === "approved") &&
-            product.isActive !== false
+          (product: Product) => {
+            const isLiveStatus = (product.status === "Live" || product.status === "Active" || product.status === "Approved" || (product as any).status === "approved") &&
+              product.isActive !== false;
+            if (!isLiveStatus) return false;
+
+            const scope = (product as any).deliveryScope;
+            const isPan = product.isPanIndia || scope === 'pan_india' || scope === 'both';
+            if (isPan) return true;
+
+            // If user location is not set, allow
+            if (!userLocation?.pincode && !userLocation?.lat && !userLocation?.mandal && !userLocation?.district) return true;
+
+            // Strict local check
+            const vendorPin = (product as any).vendorPincode || (product as any).sellerId?.pincode;
+            if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) {
+              return true;
+            }
+            if ((product as any).calculatedDistanceKm !== null && (product as any).calculatedDistanceKm !== undefined) {
+              return (product as any).calculatedDistanceKm <= 20;
+            }
+            return false;
+          }
         );
 
-        if (filtered.length > 0) return filtered;
+        return filtered;
       }
     } catch (e) {
-      console.warn("Location product query failed, trying global fetch fallback:", e);
+      console.warn("Location product query failed:", e);
     }
 
-    // Fallback to fetch all active products across the platform if no local vendor matched
-    const fallbackRes = await fetch(`${API_BASE}/products?limit=${limit}`);
-    if (!fallbackRes.ok) throw new Error("Failed to fetch products");
-
-    const fallbackJson = await fallbackRes.json();
-    const fallbackList = Array.isArray(fallbackJson?.products) ? fallbackJson.products : Array.isArray(fallbackJson?.data) ? fallbackJson.data : Array.isArray(fallbackJson) ? fallbackJson : [];
-
-    return (fallbackList as Product[]).filter(
-      (product: Product) => {
-        const isLiveStatus = (product.status === "Live" || product.status === "Active" || product.status === "Approved" || (product as any).status === "approved") && product.isActive !== false;
-        if (!isLiveStatus) return false;
-
-        const scope = (product as any).deliveryScope;
-        const isPan = product.isPanIndia || scope === 'pan_india' || scope === 'both';
-        if (isPan) return true; // Pan India items are deliverable anywhere
-
-        // Local-only items are ONLY deliverable if vendor pincode matches user location pincode
-        const vendorPin = (product as any).vendorPincode || (product as any).sellerId?.pincode;
-        if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) {
-          return true;
-        }
-
-        return false; // Exclude local-only items from distant vendors
-      }
-    );
+    return [];
   };
 
   const fetchFeaturedProducts = async () => {
@@ -1183,8 +1241,8 @@ const Home = () => {
   const scrollHorizontally = (id: string, direction: "left" | "right") => {
     const container = document.getElementById(id);
     if (!container) return;
-    const amount = 280;
-    container.scrollLeft += direction === "left" ? -amount : amount;
+    const amount = 360;
+    container.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
   };
 
   const handleViewAllCategories = () => navigate("/categories");
@@ -1504,91 +1562,33 @@ const Home = () => {
             </div>
           </div>
 
-          {/* 1. Hero Banner Slider with Integrated Greeting Overlay */}
-          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-5">
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-r from-navy to-navy-dark text-white shadow-md min-h-[240px] sm:min-h-[320px] md:min-h-[400px] lg:min-h-[440px] flex items-center">
-              {/* Floating Glass Greeting & Location Overlay Bar */}
-              <div className="absolute top-2.5 left-3 right-3 sm:top-4 sm:left-6 sm:right-6 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
-                <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 sm:px-4 sm:py-1.5 flex items-center gap-1.5 shadow-lg">
-                  <span className="text-xs sm:text-sm font-extrabold text-white">
-                    {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Guru Swamy")} 👋
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
-                  className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full transition-all cursor-pointer shadow-lg border-none"
-                  title="Click to change your delivery location"
-                >
-                  <span className="opacity-90">Delivering to:</span>
-                  <span className="text-amber-300 font-black">📍 {userLocation?.colony || "Buchireddypalem"}</span>
-                  <span className="text-[9px] text-amber-300 font-bold">▼</span>
-                </button>
+          {/* 1. Dynamic Hero Banner Slider with Integrated Greeting Overlay */}
+          <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-5 space-y-3">
+            {/* Floating Glass Greeting & Location Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="bg-card/80 backdrop-blur-md border border-border rounded-full px-3.5 py-1.5 flex items-center gap-2 shadow-sm">
+                <span className="text-xs sm:text-sm font-extrabold text-foreground">
+                  {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Valued Customer")} 👋
+                </span>
               </div>
 
-              {displayBanners.map((slide, idx) => (
-                <div
-                  key={slide.id}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${idx === currentSlide ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-                    }`}
-                >
-                  <div className="absolute inset-0 bg-black/40" />
-                  <img
-                    src={slide.image}
-                    alt="banner"
-                    className="w-full h-full object-cover absolute inset-0"
-                  />
-                  <div className="relative pt-12 sm:pt-16 p-4 sm:p-10 md:p-16 max-w-2xl flex flex-col justify-center h-full z-10 text-left">
-                    <div className="inline-flex self-start items-center gap-2 bg-accent px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-white mb-1.5 sm:mb-4">
-                      {slide.badge}
-                    </div>
-                    <h2 className="text-base sm:text-3xl md:text-5xl font-black text-white leading-tight line-clamp-2">
-                      {slide.title}
-                    </h2>
-                    <p className="text-[11px] sm:text-sm md:text-base text-white/90 mt-1 sm:mt-3 max-w-lg font-medium leading-snug line-clamp-2 hidden xs:block">
-                      {slide.desc}
-                    </p>
-                    <div className="mt-3 sm:mt-6">
-                      <Button
-                        onClick={slide.action}
-                        className="bg-accent hover:bg-accent/90 text-white font-extrabold text-[10px] sm:text-xs px-4 py-2 sm:px-7 sm:py-3.5 h-auto rounded-full shadow-lg hover:shadow-accent/30 active:scale-95 transition-all cursor-pointer border-none"
-                      >
-                        {slide.btnText}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20 w-7 h-7 sm:w-10 sm:h-10"
-                onClick={() => setCurrentSlide((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
+                className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 bg-card/80 hover:bg-card backdrop-blur-md border border-border px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-sm"
+                title="Click to change your delivery location"
               >
-                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/10 hover:bg-black/35 rounded-full z-20 w-7 h-7 sm:w-10 sm:h-10"
-                onClick={() => setCurrentSlide((prev) => (prev + 1) % displayBanners.length)}
-              >
-                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-                {displayBanners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? "bg-accent w-4 sm:w-5" : "bg-white/40"
-                      }`}
-                    onClick={() => setCurrentSlide(idx)}
-                  />
-                ))}
-              </div>
+                <span className="text-muted-foreground">Delivering to:</span>
+                <span className="text-amber-500 font-black">
+                  📍 {userLocation?.colony || userLocation?.district || (userLocation?.pincode ? `PIN: ${userLocation.pincode}` : "Set Location")}
+                  {userLocation?.pincode ? ` (${userLocation.pincode})` : ""}
+                </span>
+                <span className="text-[9px] text-amber-500 font-bold">▼</span>
+              </button>
             </div>
+
+            {/* Dynamic Hero Banner Component (Controlled by Admin Panel) */}
+            <DynamicHeroBanner placement="home_hero" />
           </section>
 
           {/* 🍱 DUAL BANNER: FOOD DELIVERY & DINEOUT RESERVATION */}
@@ -1936,19 +1936,63 @@ const Home = () => {
                     Trending Products
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate("/category/All")}
-                  className="text-xs font-bold text-amber-600 hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  View All Products →
-                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/category/All")}
+                    className="text-xs font-bold text-amber-600 hover:underline bg-transparent border-none cursor-pointer"
+                  >
+                    View All Products →
+                  </button>
+
+                  {/* Header mini left & right buttons */}
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => scrollHorizontally("trending-products-scroll", "left")}
+                      className="w-8 h-8 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer"
+                      aria-label="Scroll Left"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollHorizontally("trending-products-scroll", "right")}
+                      className="w-8 h-8 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer"
+                      aria-label="Scroll Right"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none">
-                {dbProducts.map((p: any) => (
-                  <ProductCard key={p._id || p.id} product={p} />
-                ))}
+              {/* Scroll Container with Floating Left/Right Arrows */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => scrollHorizontally("trending-products-scroll", "left")}
+                  className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
+                  aria-label="Scroll Left"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                <div id="trending-products-scroll" className="flex gap-4 overflow-x-auto pb-3 px-1 scrollbar-none scroll-smooth">
+                  {dbProducts.map((p: any) => (
+                    <ProductCard key={p._id || p.id} product={p} />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => scrollHorizontally("trending-products-scroll", "right")}
+                  className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
+                  aria-label="Scroll Right"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
               </div>
             </section>
           )}
@@ -2301,61 +2345,9 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 🪔 VARALAKSHMI VRATHAM FESTIVAL BANNER */}
+          {/* Dynamic Mid-Page Strip (Managed via Admin Panel) */}
           <section className="container mx-auto px-3 sm:px-4 my-6 text-left">
-            <div className="relative rounded-[32px] overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-700 text-white shadow-xl border border-amber-400/40">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-300/20 rounded-full blur-[90px] pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-3 max-w-xl">
-                  <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-black text-amber-200 border border-white/20 shadow-xs">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>FESTIVAL SPECIAL</span>
-                  </div>
-
-                  <h3 className="text-2xl sm:text-3.5xl font-black font-heading tracking-tight text-white leading-tight">
-                    🪔 Varalakshmi Vratham is coming up!
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-amber-100 font-medium leading-relaxed">
-                    Ensure complete puja preparation. Instantly book your bundle or custom items with 30-min guaranteed doorstep delivery.
-                  </p>
-
-                  {/* QUICK ITEM CHIPS */}
-                  <div className="flex flex-wrap gap-2 pt-1 font-sans">
-                    {[
-                      { icon: "🌼", label: "Flowers" },
-                      { icon: "🍎", label: "Fruits" },
-                      { icon: "🛍", label: "Pooja Kit" },
-                      { icon: "🥥", label: "Coconut" },
-                      { icon: "🍌", label: "Banana" },
-                      { icon: "🪔", label: "Deepam" },
-                    ].map((item, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center space-x-1 bg-white/15 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-bold text-white border border-white/15 shadow-xs"
-                      >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-center md:items-end justify-center space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/category/Devotional")}
-                    className="w-full sm:w-auto px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-xl flex items-center justify-center space-x-2 cursor-pointer border-none"
-                  >
-                    <ShoppingCart className="w-4 h-4 text-slate-950" />
-                    <span>Order Puja Bundle</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <span className="text-[10px] font-bold text-amber-200">⚡ 30-Min Guaranteed Delivery</span>
-                </div>
-              </div>
-            </div>
+            <DynamicBannerStrip placement="home_strip" />
           </section>
 
           {/* 🍔 3. FOOD & DINING SPECIALS */}

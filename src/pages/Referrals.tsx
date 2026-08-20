@@ -1240,13 +1240,12 @@ const Referrals = () => {
                       return (
                         <Badge
                           key={b.name}
-                          className={`text-[10px] px-2.5 py-1 transition-all ${
-                            isCurrent
-                              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
-                              : active
+                          className={`text-[10px] px-2.5 py-1 transition-all ${isCurrent
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
+                            : active
                               ? 'bg-indigo-600 text-white font-bold'
                               : 'bg-slate-100 text-slate-400 border border-slate-200 font-medium'
-                          }`}
+                            }`}
                         >
                           {b.name} {active && !isCurrent ? "✓" : ""}
                         </Badge>
@@ -1284,8 +1283,8 @@ const Referrals = () => {
                       </p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
                     onClick={shareReferral}
                   >

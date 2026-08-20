@@ -468,7 +468,9 @@ const Register = () => {
                 </form>
               </div>
               <div className="px-6 md:px-8 py-4 bg-secondary/30 border-t border-gray-200">
-                <p className="text-xs text-muted-foreground text-center">By creating an account, you agree to our Terms & Privacy Policy.</p>
+                <p className="text-xs text-muted-foreground text-center">
+                  By creating an account, you agree to our <Link to="/terms-conditions" className="text-amber-600 hover:underline font-semibold">Terms</Link> & <Link to="/privacy-policy" className="text-amber-600 hover:underline font-semibold">Privacy Policy</Link>.
+                </p>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import { DynamicHeroBanner } from "@/components/DynamicHeroBanner";
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
@@ -757,55 +758,40 @@ const Category = () => {
         let fetchedProds: Product[] = [];
         try {
           let prodUrl = `${API_BASE}/products?categoryId=${mainCategory._id}&category=${encodeURIComponent(mainCategory.name)}&limit=100`;
-          const loc = (() => { try { return JSON.parse(localStorage.getItem(LOCATION_KEY) || 'null'); } catch { return null; } })();
+          const loc = (() => {
+            try {
+              return JSON.parse(localStorage.getItem("user_location") || localStorage.getItem(LOCATION_KEY) || 'null');
+            } catch {
+              return null;
+            }
+          })();
+
           if (loc?.lat && loc?.lng) {
             prodUrl += `&lat=${loc.lat}&lng=${loc.lng}`;
           } else if (loc?.pincode) {
             prodUrl += `&pincode=${loc.pincode}`;
           }
+          if (loc?.mandal) prodUrl += `&mandal=${encodeURIComponent(loc.mandal)}`;
           if (loc?.district) prodUrl += `&district=${encodeURIComponent(loc.district)}`;
 
           const prodRes = await axios.get(prodUrl);
           const rawProds: Product[] = prodRes?.data?.products || [];
 
-          // Apply local vs Pan-India scoping on the client too
+          // Enforce local vs Pan-India scoping
           fetchedProds = rawProds.filter((p: any) => {
             const scope = p.deliveryScope;
             const isPan = p.isPanIndia || scope === 'pan_india' || scope === 'both';
             if (isPan) return true;
-            // If no location known, show all
-            if (!loc?.pincode && !loc?.lat) return true;
-            // For local products, only show if vendor is in same pincode area
+            // If user location is unknown, show products
+            if (!loc?.pincode && !loc?.lat && !loc?.mandal && !loc?.district) return true;
+            // For local products, verify matching pincode or calculated distance <= 20km
             const vendorPin = p.vendorPincode || p.sellerId?.pincode;
-            if (loc?.pincode && vendorPin) return String(loc.pincode).trim() === String(vendorPin).trim();
-            // If distance is within 20 km show it
+            if (loc?.pincode && vendorPin && String(loc.pincode).trim() === String(vendorPin).trim()) return true;
             if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
-            return true; // default show if no geo data
+            return false;
           });
-
-          // Fallback: if all products got filtered out, show pan-india/all (no strict local filter)
-          if (fetchedProds.length === 0) fetchedProds = rawProds;
         } catch (pErr) {
           console.error("Error fetching products:", pErr);
-        }
-
-        if (fetchedProds.length === 0) {
-          try {
-            const fallbackDbRes = await axios.get(`${API_BASE}/products?limit=100`);
-            const rawDbData = fallbackDbRes?.data?.products || fallbackDbRes?.data;
-            const allDbProds: Product[] = Array.isArray(rawDbData) ? rawDbData : [];
-            const reqCatName = (mainCategory.name || categoryName || '').toLowerCase();
-            const matchedDb = allDbProds.filter((p: any) => {
-              const cName = (p.categoryName || p.category || '').toString().toLowerCase();
-              const pName = (p.itemName || p.name || '').toString().toLowerCase();
-              return cName.includes(reqCatName) || reqCatName.includes(cName) || pName.includes(reqCatName);
-            });
-            if (matchedDb.length > 0) {
-              fetchedProds = matchedDb;
-            }
-          } catch (dbErr) {
-            console.error("DB product search fallback error:", dbErr);
-          }
         }
 
         setAllProducts(fetchedProds);
@@ -1544,71 +1530,11 @@ const Category = () => {
         <div className="absolute -bottom-20 left-10 w-96 h-96 bg-orange-500/15 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="container mx-auto px-4 sm:px-8 pt-6 pb-10 relative z-10">
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group min-h-[320px] sm:min-h-[380px] flex items-center">
-            <img
-              key={currentHeroBanner.id}
-              src={currentHeroBanner.image}
-              alt={currentHeroBanner.title}
-              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out scale-105 group-hover:scale-100"
-            />
-            <div className={`absolute inset-0 bg-gradient-to-r ${currentHeroBanner.gradient} opacity-85 mix-blend-multiply`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-            {/* SLIDER CONTENT */}
-            <div className="relative z-20 p-6 sm:p-10 max-w-2xl space-y-3.5 text-left">
-              <div className="inline-flex items-center space-x-2 bg-amber-400 text-slate-950 px-3 py-1 rounded-full font-black text-xs shadow-lg animate-bounce">
-                <Flame className="w-3.5 h-3.5 text-slate-950" />
-                <span>{currentHeroBanner.tag}</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-4xl font-black text-white font-heading leading-tight tracking-tight drop-shadow-md">
-                {currentHeroBanner.title}
-              </h1>
-
-              <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-lg leading-relaxed">
-                {currentHeroBanner.subtitle}
-              </p>
-
-              <div className="pt-1 flex flex-wrap items-center gap-3">
-                <div className="px-4 py-2 bg-amber-500 text-slate-950 font-black rounded-2xl text-xs sm:text-sm shadow-xl flex items-center space-x-2">
-                  <Tag className="w-4 h-4" />
-                  <span>{currentHeroBanner.discount}</span>
-                </div>
-                <div className="px-3.5 py-2 bg-white/20 backdrop-blur-md text-white font-mono font-bold text-xs rounded-2xl border border-white/30">
-                  CODE: <span className="text-amber-300 font-extrabold">{currentHeroBanner.code}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CAROUSEL DOTS & CONTROLS */}
-            <div className="absolute bottom-4 right-6 z-30 flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() => setActiveBanner((prev) => (prev === 0 ? CATEGORY_HERO_BANNERS.length - 1 : prev - 1))}
-                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white flex items-center justify-center transition border-none cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="flex space-x-1.5 px-2">
-                {CATEGORY_HERO_BANNERS.map((b, idx) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => setActiveBanner(idx)}
-                    className={`h-2 rounded-full transition-all border-none cursor-pointer ${activeBanner === idx ? "w-6 bg-amber-400" : "w-2 bg-white/40"
-                      }`}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveBanner((prev) => (prev + 1) % CATEGORY_HERO_BANNERS.length)}
-                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white flex items-center justify-center transition border-none cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <DynamicHeroBanner
+            placement="category_hero"
+            category={categoryName || category?.name || "all"}
+            heightClass="h-[300px] sm:h-[360px] md:h-[400px]"
+          />
         </div>
       </div>
 

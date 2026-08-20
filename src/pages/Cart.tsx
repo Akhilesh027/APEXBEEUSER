@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { DynamicBannerStrip } from "@/components/DynamicBannerStrip";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, Store, Tag, Bookmark, Heart, Truck, Gift } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -659,14 +660,18 @@ const Cart = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
-        {/* QUICK NOTIFICATION STRIP */}
-        <div className="bg-amber-400 text-[#0A1128] font-black text-xs py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>Earn 10% Instant Wallet Bonus Cashback on Checkout Today!</span>
-          </div>
-          <span className="hidden sm:inline font-mono">CODE: APEXCHECKOUT</span>
-        </div>
+        {/* DYNAMIC CART PROMOTIONAL STRIP (Managed via Admin Panel) */}
+        <DynamicBannerStrip
+          placement="cart_strip"
+          defaultBanner={{
+            title: "Earn 10% Instant Wallet Bonus Cashback on Checkout Today!",
+            subtitle: "Special cashback automatically credited to your ApexBee wallet upon order completion.",
+            tag: "WALLET CASHBACK",
+            discount: "10% CASHBACK",
+            buttonText: "Claim Cashback",
+            link: "/cart"
+          }}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT: CART ITEMS BY VENDOR */}

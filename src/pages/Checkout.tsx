@@ -419,16 +419,184 @@ const Checkout = () => {
     return normPincode(p);
   }, [selectedAddress?.pincode, addressForm.pincode]);
 
-  /** ✅ compute if pickup is possible based on items + (optional) pincode match-only rule */
+  /** ✅ Compute if any product is being delivered out-of-local dynamically based on vendor location, customer location, and delivery scope */
+  const outOfLocalInfo = useMemo(() => {
+    if (!orderDetails.items || orderDetails.items.length === 0) {
+      return { hasOutOfLocal: false, outOfLocalItems: [], reasons: [] };
+    }
+
+    const outOfLocalItems: any[] = [];
+    const customerPin = normPincode(userPincode || selectedAddress?.pincode || "");
+
+    orderDetails.items.forEach((item: any) => {
+      const p = item.product || item.productId || item;
+      const vendorPin = normPincode(
+        item.vendorPincode ||
+        item.shopPincode ||
+        item.storePincode ||
+        item.sellerId?.pincode ||
+        item.sellerId?.pinCode ||
+        item.sellerId?.location?.pincode ||
+        item.vendor?.pincode ||
+        item.vendor?.pinCode ||
+        item.vendorId?.pincode ||
+        item.vendorId?.pinCode ||
+        p.vendorPincode ||
+        p.sellerId?.pincode ||
+        p.sellerId?.pinCode ||
+        p.sellerId?.location?.pincode ||
+        p.storePincode ||
+        p.pincode
+      );
+
+      const isPanScope = Boolean(
+        p.deliveryScope === "pan_india" ||
+        p.deliveryScope === "both" ||
+        p.isPanIndia ||
+        item.isPanIndia ||
+        item.deliveryScope === "pan_india" ||
+        item.deliveryScope === "both"
+      );
+
+      const dist = Number(item.calculatedDistanceKm ?? p.calculatedDistanceKm ?? 0);
+      const isFar = dist > 25; // Beyond 25km local radius
+      const isLocalStoreMatch = Boolean(customerPin && vendorPin && customerPin === vendorPin && dist <= 25);
+
+      // Dynamic check:
+      // - If vendor PIN and customer PIN exist and don't match => out of local
+      // - If distance > 25km => out of local
+      // - If product has PAN-India courier scope and is not at customer's local store => out of local
+      const isOut = Boolean(
+        (vendorPin && customerPin && vendorPin !== customerPin) ||
+        isFar ||
+        (isPanScope && !isLocalStoreMatch)
+      );
+
+      if (isOut) {
+        outOfLocalItems.push({
+          name: item.name || item.itemName || p.name || "Product",
+          vendorPin: vendorPin || "National Courier Hub",
+          customerPin,
+          distance: dist
+        });
+      }
+    });
+
+    const hasOutOfLocal = outOfLocalItems.length > 0;
+    return {
+      hasOutOfLocal,
+      outOfLocalItems,
+      reasons: hasOutOfLocal ? outOfLocalItems.map(i => `"${i.name}" (Origin PIN: ${i.vendorPin})`) : []
+    };
+  }, [orderDetails.items, userPincode, selectedAddress]);
+
+  /** ✅ Compute if any product is STRICTLY LOCAL ONLY and completely undeliverable to customer's address */
+  const undeliverableInfo = useMemo(() => {
+    if (!orderDetails.items || orderDetails.items.length === 0) {
+      return { hasUndeliverable: false, undeliverableItems: [] };
+    }
+
+    const undeliverableItems: any[] = [];
+    const customerPin = normPincode(userPincode || selectedAddress?.pincode || "");
+
+    orderDetails.items.forEach((item: any) => {
+      const p = item.product || item.productId || item;
+      const vendorPin = normPincode(
+        item.vendorPincode ||
+        item.shopPincode ||
+        item.storePincode ||
+        item.sellerId?.pincode ||
+        item.sellerId?.pinCode ||
+        item.sellerId?.location?.pincode ||
+        item.vendor?.pincode ||
+        item.vendor?.pinCode ||
+        item.vendorId?.pincode ||
+        item.vendorId?.pinCode ||
+        p.vendorPincode ||
+        p.sellerId?.pincode ||
+        p.sellerId?.pinCode ||
+        p.sellerId?.location?.pincode ||
+        p.storePincode ||
+        p.pincode
+      );
+
+      const isPanScope = Boolean(
+        p.deliveryScope === "pan_india" ||
+        p.deliveryScope === "both" ||
+        p.isPanIndia ||
+        item.isPanIndia ||
+        item.deliveryScope === "pan_india" ||
+        item.deliveryScope === "both"
+      );
+
+      const dist = Number(item.calculatedDistanceKm ?? p.calculatedDistanceKm ?? 0);
+      const isFar = dist > 25; // Beyond 25km local radius
+      const isLocalStoreMatch = Boolean(customerPin && vendorPin && customerPin === vendorPin && dist <= 25);
+
+      // If an item is NOT PAN-India (strictly local), and is not at customer's local store => UNDELIVERABLE!
+      if (!isPanScope && (!isLocalStoreMatch || (customerPin && vendorPin && customerPin !== vendorPin) || isFar)) {
+        undeliverableItems.push({
+          id: item._id || item.productId || p._id || p.id,
+          name: item.name || item.itemName || p.name || "Product",
+          vendorPin: vendorPin || "Vendor Hub",
+          vendorLocationName: p.vendorLocationName || p.sellerId?.city || p.sellerId?.district || "Local Store",
+          customerPin,
+          distance: dist,
+          image: item.image || item.images?.[0] || p.thumbnail || p.images?.[0] || "/placeholder.png"
+        });
+      }
+    });
+
+    return {
+      hasUndeliverable: undeliverableItems.length > 0,
+      undeliverableItems
+    };
+  }, [orderDetails.items, userPincode, selectedAddress]);
+
+  const handleRemoveCartItem = (itemId: string) => {
+    const updatedItems = orderDetails.items.filter((it: any) => (it._id || it.productId || it.id) !== itemId);
+    const newSubtotal = calcItemsSubtotal(updatedItems);
+    const newDelivery = calculateDeliveryFee(updatedItems);
+    setOrderDetails((prev: any) => ({
+      ...prev,
+      items: updatedItems,
+      subtotal: newSubtotal,
+      shipping: newDelivery,
+      total: Math.max(0, newSubtotal + newDelivery)
+    }));
+
+    // Sync with localStorage
+    try {
+      const local = JSON.parse(localStorage.getItem("local_cart") || "[]");
+      const filtered = local.filter((x: any) => (x.productId || x._id || x.id) !== itemId);
+      localStorage.setItem("local_cart", JSON.stringify(filtered));
+      window.dispatchEvent(new Event("storage"));
+    } catch { }
+
+    toast({
+      title: "Item Removed",
+      description: "Undeliverable item removed from order.",
+    });
+  };
+
+  // Auto-switch away from COD if out-of-local items are detected
+  useEffect(() => {
+    if (outOfLocalInfo.hasOutOfLocal && selectedPayment === "cod") {
+      setSelectedPayment("upi");
+    }
+  }, [outOfLocalInfo.hasOutOfLocal, selectedPayment]);
+
+  /** ✅ compute if pickup is possible based on items + location (pickup is ONLY possible when customer is in the local store area) */
   const pickupPossible = useMemo(() => {
     if (!orderDetails.items?.length) return false;
+    if (outOfLocalInfo.hasOutOfLocal || undeliverableInfo.hasUndeliverable) return false; // Block pickup for out-of-local deliveries!
 
     const flags = orderDetails.items.map((it: any) => readItemFlags(it));
     const allPickupEnabled = flags.every((f) => f.allowPickup);
     if (!allPickupEnabled) return false;
 
     const needsMatch = flags.some((f) => f.pincodeMatchOnly);
-    if (!needsMatch) return true;
+    if (!needsMatch && !outOfLocalInfo.hasOutOfLocal) return true;
 
     if (!userPincode) return true;
 
@@ -443,7 +611,7 @@ const Checkout = () => {
     });
 
     return allMatch;
-  }, [orderDetails.items, userPincode]);
+  }, [orderDetails.items, userPincode, outOfLocalInfo.hasOutOfLocal]);
 
   /** ✅ Pre-order compute max availableOn */
   const preOrderInfo = useMemo(() => {
@@ -773,20 +941,33 @@ const Checkout = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
       if (!user || !token) return;
+      const userId = user.id || user._id;
+      if (!userId) return;
 
-      const res = await fetch(`${API_BASE}/user/address/${user.id}`, {
+      const res = await fetch(`${API_BASE}/user/address/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
 
       const data = await res.json();
-      const list = data.addresses || [];
+      const rawList = data.addresses || (data.address ? [data.address] : []);
+      const list = rawList.map((a: any) => ({
+        _id: a._id || a.id || `addr_${Date.now()}`,
+        name: a.name || a.recipientName || user.name || "Customer",
+        phone: a.phone || user.phone || "",
+        pincode: a.pincode || "",
+        address: a.address || a.addressLine1 || "",
+        city: a.city || "",
+        state: a.state || "",
+        isDefault: a.isDefault || false,
+        type: a.type || a.label || "Home",
+      }));
       setAddresses(list);
 
       const defaultAddr =
         list.find((a: Address) => a.isDefault) || list[0] || null;
 
-      setSelectedAddress(defaultAddr);
+      setSelectedAddress((prev) => (prev ? list.find((a: Address) => a._id === prev._id) || defaultAddr : defaultAddr));
     } catch (err) {
       console.error("Load addresses error:", err);
     }
@@ -797,8 +978,10 @@ const Checkout = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
       if (!user || !token) return;
+      const userId = user.id || user._id;
+      if (!userId) return;
 
-      const res = await fetch(`${API_BASE}/user/wallet/${user.id}`, {
+      const res = await fetch(`${API_BASE}/user/wallet/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -815,8 +998,10 @@ const Checkout = () => {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
       if (!user || !token) return;
+      const userId = user.id || user._id;
+      if (!userId) return;
 
-      const res = await fetch(`${API_BASE}/user/rewards/${user.id}`, {
+      const res = await fetch(`${API_BASE}/user/rewards/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -837,8 +1022,13 @@ const Checkout = () => {
         setIsFirstOrder(false);
         return;
       }
+      const userId = user.id || user._id;
+      if (!userId) {
+        setIsFirstOrder(false);
+        return;
+      }
 
-      const res = await fetch(`${API_BASE}/orders/first-order/${user.id}`, {
+      const res = await fetch(`${API_BASE}/orders/first-order/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -977,7 +1167,30 @@ const Checkout = () => {
     addressForm.state.trim();
 
   const handleAddOrEditAddress = async () => {
-    if (!isAddressFormValid()) return;
+    if (!addressForm.name.trim()) {
+      toast({ title: "Name Required", description: "Please enter recipient name.", variant: "destructive" });
+      return;
+    }
+    if (onlyDigits(addressForm.phone).length !== 10) {
+      toast({ title: "Phone Required", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+      return;
+    }
+    if (normPincode(addressForm.pincode).length !== 6) {
+      toast({ title: "Pincode Required", description: "Please enter a valid 6-digit postal pincode.", variant: "destructive" });
+      return;
+    }
+    if (!addressForm.address.trim()) {
+      toast({ title: "Address Required", description: "Please enter your street address / landmark.", variant: "destructive" });
+      return;
+    }
+    if (!addressForm.city.trim()) {
+      toast({ title: "City Required", description: "Please enter city or district.", variant: "destructive" });
+      return;
+    }
+    if (!addressForm.state.trim()) {
+      toast({ title: "State Required", description: "Please enter state.", variant: "destructive" });
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -986,12 +1199,14 @@ const Checkout = () => {
       if (!user || !token) {
         toast({
           title: "Login required",
-          description: "Please login",
+          description: "Please login to save delivery addresses.",
           variant: "destructive",
         });
         navigate("/login");
         return;
       }
+
+      const userId = user.id || user._id;
 
       const mappedType =
         addressForm.type === "Office"
@@ -1002,6 +1217,7 @@ const Checkout = () => {
 
       const payload: any = {
         ...addressForm,
+        userId,
         phone: onlyDigits(addressForm.phone).slice(0, 10),
         pincode: normPincode(addressForm.pincode),
         type: mappedType,
@@ -1022,7 +1238,19 @@ const Checkout = () => {
 
       await loadAddresses();
 
-      if (!selectedAddress || addressForm.isDefault) setSelectedAddress(result.address);
+      const savedAddr: Address = {
+        _id: result.address?._id || result.address?.id || editingAddress?._id || `addr_${Date.now()}`,
+        name: result.address?.name || result.address?.recipientName || addressForm.name,
+        phone: result.address?.phone || addressForm.phone,
+        pincode: result.address?.pincode || addressForm.pincode,
+        address: result.address?.address || result.address?.addressLine1 || addressForm.address,
+        city: result.address?.city || addressForm.city,
+        state: result.address?.state || addressForm.state,
+        isDefault: addressForm.isDefault,
+        type: addressForm.type,
+      };
+
+      setSelectedAddress(savedAddr);
 
       setShowAddressDialog(false);
       setAddressForm({
@@ -1038,13 +1266,13 @@ const Checkout = () => {
       setEditingAddress(null);
 
       toast({
-        title: "Success",
-        description: editingAddress ? "Address updated" : "Address added",
+        title: "Address Saved! 📍",
+        description: editingAddress ? "Address updated successfully." : "New delivery address added.",
       });
     } catch (err: any) {
       toast({
-        title: "Error",
-        description: err?.message || "Failed to save address",
+        title: "Error Saving Address",
+        description: err?.message || "Failed to save address. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -1127,7 +1355,16 @@ const Checkout = () => {
     }
   };
 
-  const handlePaymentSelection = (method: "upi" | "wallet") => {
+  const handlePaymentSelection = (method: "upi" | "wallet" | "cod") => {
+    if (method === "cod" && outOfLocalInfo.hasOutOfLocal) {
+      toast({
+        title: "Cash on Delivery (COD) Not Available",
+        description: "COD is only available for 15-min local deliveries. One or more items in your cart are being shipped from outside your local area.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedPayment(method);
 
     if (appliedCoupon) {
@@ -1313,6 +1550,15 @@ const Checkout = () => {
     let finalPaymentMethod = paymentMethod;
     if (finalTotal === 0) {
       finalPaymentMethod = "wallet";
+    }
+
+    if (finalPaymentMethod === "cod" && outOfLocalInfo.hasOutOfLocal) {
+      toast({
+        title: "COD Blocked for Out-of-Local Shipping",
+        description: "Cash on Delivery is only supported for local 15-min delivery items. Please complete your order using UPI or Wallet.",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (finalPaymentMethod === "wallet" && walletBalance < finalTotal) {
@@ -1914,68 +2160,140 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* 🚨 UNDELIVERABLE LOCAL ITEMS ALERT BANNER */}
+            {undeliverableInfo.hasUndeliverable && (
+              <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+                    🚫
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm sm:text-base font-black text-red-950">
+                      Undeliverable Items in Cart
+                    </h3>
+                    <p className="text-xs text-red-800 font-medium mt-0.5 leading-relaxed">
+                      The following item(s) are strictly for local store delivery and cannot be delivered to your selected address in <strong className="text-red-950 uppercase">{selectedAddress?.colony || selectedAddress?.city || 'Adilabad'} ({userPincode || selectedAddress?.pincode})</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1 border-t border-red-200">
+                  {undeliverableInfo.undeliverableItems.map((uItem, idx) => (
+                    <div key={idx} className="bg-white rounded-xl p-3 border border-red-200 flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img src={uItem.image} alt={uItem.name} className="w-11 h-11 rounded-lg object-contain bg-slate-50 p-1 border border-slate-200 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-slate-900 truncate">{uItem.name}</p>
+                          <p className="text-[10.5px] text-red-700 font-bold">
+                            📍 Local to PIN: {uItem.vendorPin} {uItem.distance > 0 ? `(${uItem.distance} km away)` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCartItem(uItem.id)}
+                        className="bg-red-100 hover:bg-red-200 text-red-900 text-xs font-black px-3 py-1.5 rounded-lg border border-red-300 transition shrink-0 cursor-pointer"
+                      >
+                        Remove Item
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-1 text-[11.5px] font-bold text-red-900 flex items-center gap-1">
+                  <span>👉</span>
+                  <span>Please remove these local items or switch to a local delivery address in the store's area to proceed.</span>
+                </div>
+              </div>
+            )}
+
             {/* 📝 Delivery Preferences */}
             {fulfillmentType === "delivery" && (
               <div className="bg-white rounded-lg border p-4 sm:p-6 text-left space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy flex items-center gap-2">
-                    <span>📝</span>
-                    <span>Delivery Preferences</span>
+                    <span>{outOfLocalInfo.hasOutOfLocal ? "📦" : "📝"}</span>
+                    <span>{outOfLocalInfo.hasOutOfLocal ? "Shipping & Courier Details" : "Delivery Preferences"}</span>
                   </h2>
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300">
-                    {deliveryMode === "express" ? "🚀 Express 15-30 Min" : deliveryMode === "same_day" ? "🌆 Same Day" : "🚚 Standard"}
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${outOfLocalInfo.hasOutOfLocal
+                    ? "bg-blue-100 text-blue-900 border-blue-300"
+                    : "bg-amber-100 text-amber-900 border-amber-300"
+                    }`}>
+                    {outOfLocalInfo.hasOutOfLocal
+                      ? "🇮🇳 National Courier (3–5 Days)"
+                      : deliveryMode === "express"
+                        ? "🚀 Express 15-30 Min"
+                        : deliveryMode === "same_day"
+                          ? "🌆 Same Day"
+                          : "🚚 Standard 15-Min Local"}
                   </span>
                 </div>
 
-                {/* Delivery Speed / Slot selection */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Select Delivery Speed / Slot
-                  </Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      {
-                        id: "standard",
-                        title: "Standard Delivery",
-                        desc: "Free / Normal local delivery",
-                        badge: "Standard",
-                        icon: "🚚",
-                      },
-                      {
-                        id: "express",
-                        title: "Express 15-30 Mins",
-                        desc: "+₹49 Superfast express delivery",
-                        badge: "🚀 15-30 Min",
-                        icon: "⚡",
-                      },
-                      {
-                        id: "same_day",
-                        title: "Same Day Slot",
-                        desc: "+₹19 Delivered by 9:00 PM today",
-                        badge: "🌆 Same Day",
-                        icon: "🕒",
-                      },
-                    ].map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={() => setDeliveryMode(opt.id as any)}
-                        className={`border rounded-xl p-3 cursor-pointer transition-all ${deliveryMode === opt.id
-                          ? "border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/30"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm">{opt.icon}</span>
-                          <span className="text-[9px] font-extrabold bg-navy/10 text-navy px-2 py-0.5 rounded">
-                            {opt.badge}
-                          </span>
-                        </div>
-                        <p className="font-bold text-xs text-navy">{opt.title}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
-                      </div>
-                    ))}
+                {outOfLocalInfo.hasOutOfLocal ? (
+                  /* OUT-OF-LOCAL NATIONAL COURIER CARD */
+                  <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200/90 space-y-2.5">
+                    <div className="flex items-center gap-2 text-blue-950 font-bold text-sm">
+                      <span>🚚 Standard National Courier Shipping (3–5 Business Days)</span>
+                    </div>
+                    <p className="text-xs text-blue-800 leading-relaxed">
+                      Your items will be dispatched via insured standard courier service directly from the origin seller hub. Live tracking details will be sent via SMS & WhatsApp upon shipment.
+                    </p>
+                    <div className="pt-2 border-t border-blue-200/60 flex items-center gap-2 text-[11px] text-blue-700 font-semibold">
+                      <span>💡</span>
+                      <span>Local 15-minute express delivery slots & same-day slots are only available when ordering from stores located inside your local area.</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* LOCAL DELIVERY SPEED / SLOT SELECTION */
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Select Delivery Speed / Slot
+                    </Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        {
+                          id: "standard",
+                          title: "Standard Delivery",
+                          desc: "Free / Normal local delivery",
+                          badge: "Standard",
+                          icon: "🚚",
+                        },
+                        {
+                          id: "express",
+                          title: "Express 15-30 Mins",
+                          desc: "+₹49 Superfast express delivery",
+                          badge: "🚀 15-30 Min",
+                          icon: "⚡",
+                        },
+                        {
+                          id: "same_day",
+                          title: "Same Day Slot",
+                          desc: "+₹19 Delivered by 9:00 PM today",
+                          badge: "🌆 Same Day",
+                          icon: "🕒",
+                        },
+                      ].map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={() => setDeliveryMode(opt.id as any)}
+                          className={`border rounded-xl p-3 cursor-pointer transition-all ${deliveryMode === opt.id
+                            ? "border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/30"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm">{opt.icon}</span>
+                            <span className="text-[9px] font-extrabold bg-navy/10 text-navy px-2 py-0.5 rounded">
+                              {opt.badge}
+                            </span>
+                          </div>
+                          <p className="font-bold text-xs text-navy">{opt.title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Delivery Instructions Selection */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
@@ -2076,19 +2394,84 @@ const Checkout = () => {
                     onValueChange={(v: any) => handlePaymentSelection(v)}
                     className="space-y-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="cursor-pointer font-medium text-sm sm:text-base text-navy">
-                        Cash on Delivery (COD)
-                      </Label>
+                    {/* COD Option with Out-of-Local Blocking */}
+                    <div className={`p-3 rounded-2xl border transition-all ${outOfLocalInfo.hasOutOfLocal
+                      ? "bg-red-50/40 border-red-200 opacity-90"
+                      : selectedPayment === "cod"
+                        ? "bg-amber-50/40 border-amber-300 shadow-xs"
+                        : "bg-slate-50/50 border-slate-200/80"
+                      }`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem
+                            value="cod"
+                            id="cod"
+                            disabled={outOfLocalInfo.hasOutOfLocal}
+                          />
+                          <Label
+                            htmlFor="cod"
+                            className={`font-bold text-sm sm:text-base ${outOfLocalInfo.hasOutOfLocal
+                              ? "text-slate-400 cursor-not-allowed line-through"
+                              : "cursor-pointer text-navy"
+                              }`}
+                          >
+                            Cash on Delivery (COD)
+                          </Label>
+                        </div>
+                        {outOfLocalInfo.hasOutOfLocal ? (
+                          <span className="text-[10px] bg-red-100 text-red-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            <span>🚫</span> Blocked (Out-of-Local)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            <span>⚡</span> Local 15-Min Only
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Out of Local Explanation & Product List */}
+                      {outOfLocalInfo.hasOutOfLocal && (
+                        <div className="mt-2.5 pt-2.5 border-t border-red-100/80 text-xs">
+                          <p className="font-extrabold text-red-900 flex items-center gap-1.5">
+                            <span>⚠️</span> COD is not available for inter-city / out-of-station delivery
+                          </p>
+                          <p className="text-[11px] text-red-700 mt-1 leading-relaxed">
+                            Cash on Delivery is only supported for local store deliveries. The following product(s) in your cart are being shipped from outside your local delivery zone:
+                          </p>
+                          <div className="mt-2 space-y-1 bg-white/80 p-2 rounded-xl border border-red-200/60">
+                            {outOfLocalInfo.outOfLocalItems.map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-[11px] text-slate-800 font-semibold gap-2">
+                                <span className="truncate">📦 {item.name}</span>
+                                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono shrink-0">
+                                  Origin PIN: {item.vendorPin}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-[11px] font-bold text-red-900 flex items-center gap-1">
+                            <span>👉</span> Please pay online via <strong>UPI</strong> or <strong>Wallet</strong> to proceed.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="upi" id="upi" />
-                      <Label htmlFor="upi" className="cursor-pointer font-medium flex items-center gap-2 text-sm sm:text-base text-navy">
-                        <QrCode className="h-4 w-4 text-accent" />
-                        UPI Payment (Manual Verification)
-                      </Label>
+                    {/* UPI Payment Option */}
+                    <div className={`p-3 rounded-2xl border transition-all ${selectedPayment === "upi"
+                      ? "bg-amber-50/50 border-amber-400 shadow-xs"
+                      : "bg-slate-50/50 border-slate-200/80"
+                      }`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value="upi" id="upi" />
+                          <Label htmlFor="upi" className="cursor-pointer font-bold flex items-center gap-2 text-sm sm:text-base text-navy">
+                            <QrCode className="h-4 w-4 text-accent" />
+                            UPI Payment (Fast & Secure)
+                          </Label>
+                        </div>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Recommended
+                        </span>
+                      </div>
                     </div>
                   </RadioGroup>
 
@@ -2395,13 +2778,25 @@ const Checkout = () => {
               </div>
 
               <Button
-                className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-3 sm:py-3.5 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer"
+                className={`w-full mt-4 sm:mt-6 text-sm sm:text-base py-3 sm:py-3.5 font-black rounded-2xl shadow-lg transition cursor-pointer ${undeliverableInfo.hasUndeliverable
+                  ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none hover:bg-slate-300"
+                  : "bg-amber-500 hover:bg-amber-400 text-[#0A1128] shadow-amber-500/20"
+                  }`}
                 onClick={() => {
+                  if (undeliverableInfo.hasUndeliverable) {
+                    toast({
+                      title: "Cannot Proceed",
+                      description: "Please remove undeliverable local items from your cart to place this order.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
                   if (selectedPayment === "upi") setShowUPIDialog(true);
                   else handlePlaceOrder();
                 }}
                 disabled={
                   isLoading ||
+                  undeliverableInfo.hasUndeliverable ||
                   (fulfillmentType === "delivery" && !selectedAddress) ||
                   (fulfillmentType === "pickup" &&
                     (!pickupPossible || !pickupLocationId || !pickupSlot))
@@ -2412,19 +2807,30 @@ const Checkout = () => {
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Processing...
                   </>
+                ) : undeliverableInfo.hasUndeliverable ? (
+                  "🚫 Remove Undeliverable Items to Order"
+                ) : selectedPayment === "upi" ? (
+                  "Proceed to UPI Payment &rarr;"
                 ) : (
                   "Place Order"
                 )}
               </Button>
 
-              {fulfillmentType === "delivery" && !selectedAddress && (
+              {undeliverableInfo.hasUndeliverable && (
+                <p className="text-xs font-bold text-red-600 text-center mt-2 flex items-center justify-center gap-1">
+                  <span>⚠️</span>
+                  <span>Your cart contains local-only items that cannot be delivered to Adilabad.</span>
+                </p>
+              )}
+
+              {fulfillmentType === "delivery" && !selectedAddress && !undeliverableInfo.hasUndeliverable && (
                 <p className="text-xs text-red-500 text-center mt-2">
                   Please select a delivery address
                 </p>
               )}
 
               {fulfillmentType === "pickup" &&
-                (!pickupPossible || !pickupLocationId || !pickupSlot) && (
+                (!pickupPossible || !pickupLocationId || !pickupSlot) && !undeliverableInfo.hasUndeliverable && (
                   <p className="text-xs text-red-500 text-center mt-2">
                     {!pickupPossible
                       ? pickupDisabledReason

@@ -387,6 +387,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     e.stopPropagation();
 
     const user = JSON.parse(localStorage.getItem("user") || "null");
+    const vPin = product.sellerId?.pincode || product.sellerId?.pinCode || product.sellerId?.location?.pincode || fetchedVendor?.pincode || fetchedVendor?.pinCode || product.vendorPincode || product.pincode;
+
     const cartItem = {
       _id: productId,
       productId: productId,
@@ -397,6 +399,17 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       sellingPrice: sellingPrice,
       originalPrice: mrp,
       salesPrice: mrp,
+      vendorPincode: vPin,
+      shopPincode: vPin,
+      storePincode: vPin,
+      deliveryScope: product.deliveryScope || (product.isPanIndia ? 'both' : 'local'),
+      isPanIndia: product.isPanIndia || product.deliveryScope === 'pan_india' || product.deliveryScope === 'both',
+      calculatedDistanceKm: product.calculatedDistanceKm,
+      distanceInKm: product.calculatedDistanceKm,
+      deliveryTimeLabel: product.deliveryTimeLabel,
+      isCourierShipping: product.isCourierShipping,
+      sellerId: product.sellerId || vendorId,
+      vendorId: vendorId || product.sellerId,
       deliveryFee: Number(product.adminPricing?.shippingCharge ?? product.shippingCharge ?? product.deliveryFee ?? 0),
       shippingCharge: Number(product.adminPricing?.shippingCharge ?? product.shippingCharge ?? product.deliveryFee ?? 0),
       packingCharge: Number(product.adminPricing?.packingCharge ?? product.packingCharge ?? product.packageCharge ?? 0),
@@ -404,7 +417,11 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       images: [image],
       quantity: 1,
       adminPricing: product.adminPricing,
-      product: product
+      product: {
+        ...product,
+        vendorPincode: vPin,
+        sellerId: product.sellerId || { pincode: vPin }
+      }
     };
 
     if (!user?._id) {
@@ -441,8 +458,11 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     }
   };
 
+  const isCustomWidth = className?.includes("w-full") || className?.includes("max-w-");
+  const baseWidth = isCustomWidth ? "w-full" : "w-[260px] sm:w-[300px] shrink-0";
+
   return (
-    <div className={`w-[260px] sm:w-[300px] h-[390px] sm:h-[400px] shrink-0 bg-white rounded-lg border border-slate-200/90 shadow-md flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className}`}>
+    <div className={`${baseWidth} h-[390px] sm:h-[400px] bg-white rounded-lg border border-slate-200/90 shadow-md flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className || ""}`}>
 
       {/* ═══════════════════════════════════════════════════════
          1. HERO IMAGE STAGE (160px height - BOLDER HERO DISPLAY)
@@ -460,6 +480,17 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
         {/* Top-Left Floating Badges */}
         <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-0.5 z-10">
+          {(product.isPanIndia || product.deliveryScope === "both" || product.deliveryScope === "pan_india") ? (
+            <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-1 uppercase tracking-wider">
+              <span>🇮🇳</span>
+              <span>PAN-INDIA</span>
+            </div>
+          ) : (
+            <div className="bg-amber-500 text-slate-950 font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-0.5 uppercase tracking-wider">
+              <span>⚡</span>
+              <span>LOCAL 15-MIN</span>
+            </div>
+          )}
           {product.isBestSeller && (
             <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[8px] px-1.5 py-0.2 rounded-md shadow-2xs uppercase tracking-wider">
               🏆 BEST SELLER

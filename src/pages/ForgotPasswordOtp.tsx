@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, ShieldCheck, KeyRound } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -241,7 +241,7 @@ export default function ForgotPasswordOtp() {
 
             <div className="px-6 md:px-8 py-4 bg-secondary/30 border-t border-gray-200">
               <p className="text-xs text-muted-foreground text-center">
-                By continuing, you agree to our Terms & Privacy Policy.
+                By continuing, you agree to our <Link to="/terms-conditions" className="text-amber-600 hover:underline font-semibold">Terms</Link> & <Link to="/privacy-policy" className="text-amber-600 hover:underline font-semibold">Privacy Policy</Link>.
               </p>
             </div>
           </div>

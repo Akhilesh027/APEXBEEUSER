@@ -38,7 +38,7 @@ interface ReferralHistory {
 
 // --- API Configuration ---
 // NOTE: Use environment variable in production (e.g., import.meta.env.VITE_API_URL)
-const API_BASE_URL = "https://server.apexbee.in";
+const API_BASE_URL = "http://localhost:5500";
 
 
 const Profile = () => {
@@ -847,7 +847,7 @@ const Profile = () => {
                                     <div className="mt-3 flex flex-wrap items-center gap-2">
                                         <div className="bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
                                             <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
-                                                👑 Master Customer ID:
+                                                👑 Customer ID:
                                             </span>
                                             <strong className="text-xs font-mono font-black text-amber-600 dark:text-amber-400 tracking-wider">
                                                 {userData?.masterCustomerId || '583214907'}
@@ -856,7 +856,7 @@ const Profile = () => {
 
                                         <div className="bg-indigo-500/10 dark:bg-indigo-400/10 border border-indigo-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
                                             <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
-                                                🔑 Role Ref ID:
+                                                🔑 Ref ID:
                                             </span>
                                             <strong className="text-xs font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-wider">
                                                 {userData?.customerRefId || 'APX-CUS-7K4P9X'}
@@ -865,7 +865,7 @@ const Profile = () => {
 
                                         <div className="bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
                                             <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-                                                🎟️ Universal Referral:
+                                                🎟️ Referral:
                                             </span>
                                             <strong className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider">
                                                 {userData?.referralCode || 'AB7K9P2'}
@@ -915,17 +915,17 @@ const Profile = () => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                                             <div className="bg-slate-950/80 p-3 rounded-xl border border-amber-400/30">
-                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Master Customer ID</span>
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Customer ID</span>
                                                 <strong className="text-sm font-mono font-black text-amber-400 block mt-0.5">{userData?.masterCustomerId || '583214907'}</strong>
                                             </div>
 
                                             <div className="bg-slate-950/80 p-3 rounded-xl border border-indigo-400/30">
-                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Role Reference ID</span>
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Reference ID</span>
                                                 <strong className="text-sm font-mono font-black text-indigo-400 block mt-0.5">{userData?.customerRefId || 'APX-CUS-7K4P9X'}</strong>
                                             </div>
 
                                             <div className="bg-slate-950/80 p-3 rounded-xl border border-emerald-400/30">
-                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Universal Referral Code</span>
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase block">Referral Code</span>
                                                 <strong className="text-sm font-mono font-black text-emerald-400 block mt-0.5">{userData?.referralCode || 'AB7K9P2'}</strong>
                                             </div>
                                         </div>
@@ -1507,16 +1507,22 @@ const Profile = () => {
                                         <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-red-500" /> Privacy & Security</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                                        <button
+                                            onClick={() => navigate("/privacy-policy")}
+                                            className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-stone-900 transition-colors cursor-pointer"
+                                        >
                                             <div className="flex items-center gap-3">
-                                                <FileText className="h-5 w-5 text-navy" />
+                                                <FileText className="h-5 w-5 text-amber-500" />
                                                 <span className="text-sm font-medium">Privacy Policy</span>
                                             </div>
                                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                         </button>
-                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                                        <button
+                                            onClick={() => navigate("/terms-conditions")}
+                                            className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-stone-900 transition-colors cursor-pointer"
+                                        >
                                             <div className="flex items-center gap-3">
-                                                <FileText className="h-5 w-5 text-navy" />
+                                                <FileText className="h-5 w-5 text-amber-500" />
                                                 <span className="text-sm font-medium">Terms of Service</span>
                                             </div>
                                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
