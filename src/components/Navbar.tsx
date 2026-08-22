@@ -392,13 +392,22 @@ const Navbar = () => {
     fetchCategories();
 
     // Load initial location
-    const savedLoc = localStorage.getItem("user_location");
+    const savedLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
     if (savedLoc) {
       try {
         setUserLocation(JSON.parse(savedLoc));
       } catch {
         localStorage.removeItem("user_location");
+        localStorage.removeItem("userLocation");
+        localStorage.removeItem("apexbee_user_location");
+        setUserLocation(null);
       }
+    } else {
+      // Auto-prompt user if no location is saved in user portal
+      const timer = setTimeout(() => {
+        setOpenLocationModal(true);
+      }, 700);
+      return () => clearTimeout(timer);
     }
 
     // Load wishlist count from real API
@@ -437,8 +446,8 @@ const Navbar = () => {
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === USER_KEY || e.key === TOKEN_KEY) fetchUserData();
-      if (e.key === "user_location") {
-        const nextLoc = localStorage.getItem("user_location");
+      if (e.key === "user_location" || e.key === "userLocation" || e.key === "apexbee_user_location") {
+        const nextLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
         setUserLocation(nextLoc ? JSON.parse(nextLoc) : null);
       }
       if (e.key === "wishlist_updated" || e.key === "local_wishlist" || e.key === "local_cart" || e.key === "cart_updated") {
@@ -448,21 +457,41 @@ const Navbar = () => {
     };
 
     const handleOpenLocModal = () => setOpenLocationModal(true);
+    const handleUserLocationUpdated = () => {
+      const nextLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
+      if (nextLoc) {
+        try {
+          setUserLocation(JSON.parse(nextLoc));
+        } catch {
+          setUserLocation(null);
+        }
+      } else {
+        setUserLocation(null);
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("open_location_modal", handleOpenLocModal);
+    window.addEventListener("user_location_updated", handleUserLocationUpdated);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("open_location_modal", handleOpenLocModal);
+      window.removeEventListener("user_location_updated", handleUserLocationUpdated);
     };
   }, [fetchUserData, fetchCategories]);
 
   const locationLabel = useMemo(() => {
     if (!userLocation) return "Set Location";
     const colony = userLocation.colony?.trim();
+    const mandal = userLocation.mandal?.trim();
+    const district = userLocation.district?.trim();
     const pin = userLocation.pincode;
-    if (colony && pin) return `${colony} - ${pin}`;
-    if (pin) return pin;
-    return "Location set";
+    if (colony && pin) return `${colony}, ${pin}`;
+    if (colony) return colony;
+    if (mandal && pin) return `${mandal}, ${pin}`;
+    if (district && pin) return `${district} (${pin})`;
+    if (pin) return `PIN: ${pin}`;
+    return "Location Set";
   }, [userLocation]);
   // Audio beep player
   const playBeep = () => {
@@ -1063,11 +1092,10 @@ const Navbar = () => {
                         <button
                           key={tab.key}
                           onClick={() => setActiveNotificationTab(tab.key)}
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${
-                            activeNotificationTab === tab.key
-                              ? "bg-[#0A1128] text-white"
-                              : "text-muted-foreground hover:bg-slate-100 bg-transparent"
-                          }`}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${activeNotificationTab === tab.key
+                            ? "bg-[#0A1128] text-white"
+                            : "text-muted-foreground hover:bg-slate-100 bg-transparent"
+                            }`}
                         >
                           {tab.label}
                         </button>
@@ -1093,24 +1121,22 @@ const Navbar = () => {
                                   setNotificationsOpen(false);
                                 }
                               }}
-                              className={`p-3 rounded-xl transition text-left flex gap-2.5 cursor-pointer border ${
-                                isUnread
-                                  ? "bg-blue-50/70 border-blue-200/80 hover:bg-blue-100/60"
-                                  : "bg-slate-50/70 border-slate-100 hover:bg-slate-100"
-                              }`}
+                              className={`p-3 rounded-xl transition text-left flex gap-2.5 cursor-pointer border ${isUnread
+                                ? "bg-blue-50/70 border-blue-200/80 hover:bg-blue-100/60"
+                                : "bg-slate-50/70 border-slate-100 hover:bg-slate-100"
+                                }`}
                             >
                               <div className="flex-1">
                                 <div className="flex items-center gap-1.5">
                                   <span
-                                    className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                      n.category === "orders"
-                                        ? "bg-blue-100 text-blue-700"
-                                        : n.category === "offers"
+                                    className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${n.category === "orders"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : n.category === "offers"
                                         ? "bg-amber-100 text-amber-700"
                                         : n.category === "wallet"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-purple-100 text-purple-700"
-                                    }`}
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-purple-100 text-purple-700"
+                                      }`}
                                   >
                                     {n.category === "franchise" ? "Network" : n.category}
                                   </span>

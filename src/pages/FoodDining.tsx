@@ -796,7 +796,7 @@ export const FoodDining: React.FC = () => {
                 </div>
                 <div className="truncate text-left">
                   <span className="font-extrabold text-amber-400 block leading-tight">
-                    {activePin ? `Delivering to Pincode: ${activePin}` : 'Showing All Hyderabad Outlets'}
+                    {activePin ? `Delivering to Pincode: ${activePin}` : 'Showing All Available Outlets'}
                   </span>
                   <span className="text-[10.5px] text-slate-400 font-medium truncate block">
                     {activePin ? `📍 Strictly filtered to restaurants, food items & dineout venues matching ${activePin} (${locationName})` : 'Set your location to see hyper-local 25-minute food delivery outlets'}

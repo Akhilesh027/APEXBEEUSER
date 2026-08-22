@@ -1631,7 +1631,7 @@ const Home = () => {
                 </span>
                 <span className="text-amber-400 font-extrabold uppercase tracking-wider text-[9px] sm:text-[10px] shrink-0">⚡ 15-Min Delivery</span>
                 <span className="text-slate-300 font-medium text-[10px] sm:text-xs truncate max-w-[200px] xs:max-w-[280px] sm:max-w-none">
-                  • Guaranteed fast delivery from verified local stores in <strong className="text-white">{userLocation?.colony || "Tamsi Mandal"}</strong>
+                  • Guaranteed fast delivery from verified local stores in <strong className="text-white">{userLocation?.colony || userLocation?.district || "your neighborhood"}</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-[11px] shrink-0">
