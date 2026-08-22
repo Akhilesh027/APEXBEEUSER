@@ -137,6 +137,10 @@ const App = () => (
 
           {/* ===== Legal & Policy Pages ===== */}
           <Route path="/privacy-policy" element={<Legal />} />
+          <Route path="/business-partner-policy" element={<Legal />} />
+          <Route path="/business-partner-terms" element={<Legal />} />
+          <Route path="/partner-policy" element={<Legal />} />
+          <Route path="/referral-terms" element={<Legal />} />
           <Route path="/terms-conditions" element={<Legal />} />
           <Route path="/terms" element={<Legal />} />
           <Route path="/return-policy" element={<Legal />} />

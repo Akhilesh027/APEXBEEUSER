@@ -183,6 +183,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/contact" className="hover:text-amber-400 transition">Raise a Support Ticket</Link></li>
               <li><Link to="/contact" className="hover:text-amber-400 transition">Contact Customer Care</Link></li>
               <li><Link to="/privacy-policy" className="hover:text-amber-400 transition">Privacy Policy (DPDPA 2023)</Link></li>
+              <li><Link to="/business-partner-policy" className="hover:text-amber-400 transition">Business Partner Terms & Privacy</Link></li>
               <li><Link to="/terms-conditions" className="hover:text-amber-400 transition">Terms & Conditions</Link></li>
               <li><Link to="/return-policy" className="hover:text-amber-400 transition">Return & Refund Policy</Link></li>
               <li><Link to="/cancellation-policy" className="hover:text-amber-400 transition">Cancellation Policy</Link></li>
@@ -322,6 +323,7 @@ export const Footer: React.FC = () => {
           <p className="text-stone-400">© 2026 ApexBee.in — All Rights Reserved. Empowering Bharat MSMEs.</p>
           <div className="flex flex-wrap gap-4 justify-center text-xs">
             <Link to="/privacy-policy" className="text-stone-400 hover:text-amber-400 transition">Privacy Policy</Link>
+            <Link to="/business-partner-policy" className="text-stone-400 hover:text-amber-400 transition">Business Partner Terms</Link>
             <Link to="/terms-conditions" className="text-stone-400 hover:text-amber-400 transition">Terms of Service</Link>
             <Link to="/return-policy" className="text-stone-400 hover:text-amber-400 transition">Refund Policy</Link>
             <Link to="/franchise-policy" className="text-stone-400 hover:text-amber-400 transition">Franchise Agreement</Link>

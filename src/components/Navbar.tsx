@@ -26,13 +26,21 @@ const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
 const PORTAL_LINKS: Record<string, { label: string; url: string }> = {
+  customer: { label: "Customer Portal", url: "/" },
   admin: { label: "Admin Panel", url: "http://localhost:5173" },
-  vendor: { label: "Vendor Portal", url: "http://localhost:5177" },
-  franchise: { label: "Franchise Management", url: "http://localhost:5175" },
-  state_franchise: { label: "Franchise Management", url: "http://localhost:5175" },
-  district_franchise: { label: "Franchise Management", url: "http://localhost:5175" },
-  mandal_franchise: { label: "Franchise Management", url: "http://localhost:5175" },
-  service_provider: { label: "Service Provider Portal", url: "http://localhost:5176" },
+  vendor: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
+  wholesaler: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
+  manufacturer: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
+  franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
+  state_franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
+  district_franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
+  mandal_franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
+  food_partner: { label: "Food Partner Portal", url: "https://food.apexbee.in/" },
+  food: { label: "Food Partner Portal", url: "https://food.apexbee.in/" },
+  delivery_partner: { label: "Delivery Partner Portal", url: "https://delivery.apexbee.in/" },
+  delivery: { label: "Delivery Partner Portal", url: "https://delivery.apexbee.in/" },
+  service_provider: { label: "Service Provider Portal", url: "https://service.apexbee.in/login" },
+  service: { label: "Service Provider Portal", url: "https://service.apexbee.in/login" },
   course_provider: { label: "Course Provider Portal", url: "http://localhost:5174" },
 };
 
@@ -87,6 +95,7 @@ const Navbar = () => {
   const portalRef = useRef<HTMLDivElement | null>(null);
   const langRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
 
   const [portalDropdownOpen, setPortalDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -122,6 +131,7 @@ const Navbar = () => {
     setMobileEarnOpen(false);
     setPortalDropdownOpen(false);
     setLangOpen(false);
+    setNotificationsOpen(false);
   }, []);
 
   const handleOpenForm = (title: string, endpoint: string) => {
@@ -626,10 +636,53 @@ const Navbar = () => {
     };
   }, [showBarcodeModal]);
 
+  const defaultSystemNotifications = useMemo(() => [
+    {
+      _id: "sys-notif-1",
+      title: "Welcome to ApexBee Marketplace! 🛍️",
+      message: "Enjoy 15-minute hyper-local delivery from verified neighborhood stores and local restaurants.",
+      category: "orders",
+      link: "/products",
+      isRead: false,
+      status: "unread",
+      createdAt: new Date().toISOString()
+    },
+    {
+      _id: "sys-notif-2",
+      title: "Special Cashback Offer ⚡",
+      message: "Use code APEXEXPRESS at checkout to unlock instant discounts and bonus wallet cashback.",
+      category: "offers",
+      link: "/products",
+      isRead: false,
+      status: "unread",
+      createdAt: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      _id: "sys-notif-3",
+      title: "ApexBee Business Partner Program 🚀",
+      message: "Refer genuine customers and business opportunities to earn multi-tier referral incentives.",
+      category: "franchise",
+      link: "/referrals",
+      isRead: false,
+      status: "unread",
+      createdAt: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      _id: "sys-notif-4",
+      title: "Digital Wallet & Instant Refunds 💰",
+      message: "Your ApexBee digital wallet is active and secured for lightning-fast 1-click checkout.",
+      category: "wallet",
+      link: "/referrals",
+      isRead: true,
+      status: "read",
+      createdAt: new Date(Date.now() - 172800000).toISOString()
+    }
+  ], []);
+
   const allNotifications = useMemo(() => {
     if (notifications && notifications.length > 0) {
       return notifications.map((n: any) => {
-        let category = "orders";
+        let category = n.category || "orders";
         const msg = (n.message || "").toLowerCase();
         if (msg.includes("wallet") || msg.includes("cashback") || msg.includes("bonus") || msg.includes("commission") || msg.includes("rupee") || msg.includes("payout")) category = "wallet";
         else if (msg.includes("offer") || msg.includes("discount") || msg.includes("coupon") || msg.includes("deal") || msg.includes("sale")) category = "offers";
@@ -638,13 +691,20 @@ const Navbar = () => {
         return { ...n, category };
       });
     }
-    return [];
-  }, [notifications]);
+    return defaultSystemNotifications;
+  }, [notifications, defaultSystemNotifications]);
 
   const filteredNotifications = useMemo(() => {
     if (activeNotificationTab === "all") return allNotifications;
     return allNotifications.filter((n: any) => n.category === activeNotificationTab);
   }, [allNotifications, activeNotificationTab]);
+
+  // Keep unread count updated from allNotifications if no DB notifications
+  useEffect(() => {
+    if (!notifications || notifications.length === 0) {
+      setUnreadCount(defaultSystemNotifications.filter(n => !n.isRead).length);
+    }
+  }, [notifications, defaultSystemNotifications]);
 
   // refresh counts on route change
   useEffect(() => {
@@ -679,6 +739,7 @@ const Navbar = () => {
       if (portalDropdownOpen && portalRef.current && !portalRef.current.contains(t)) setPortalDropdownOpen(false);
       if (langOpen && langRef.current && !langRef.current.contains(t)) setLangOpen(false);
       if (searchFocused && searchRef.current && !searchRef.current.contains(t)) setSearchFocused(false);
+      if (notificationsOpen && notificationRef.current && !notificationRef.current.contains(t)) setNotificationsOpen(false);
     };
 
     const onEsc = (e: KeyboardEvent) => {
@@ -694,7 +755,7 @@ const Navbar = () => {
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("keydown", onEsc);
     };
-  }, [shopByOpen, earnDropdownOpen, portalDropdownOpen, langOpen, searchFocused, closeAllPopovers]);
+  }, [shopByOpen, earnDropdownOpen, portalDropdownOpen, langOpen, searchFocused, notificationsOpen, closeAllPopovers]);
 
   const formatMoney = (balance: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -789,17 +850,59 @@ const Navbar = () => {
     window.location.href = url;
   };
 
-  const userRoles = Array.isArray(loggedInUser?.roles) ? loggedInUser.roles : [];
-  const rolesList = userRoles.map((r: string) => r.toLowerCase());
-  if (loggedInUser && !rolesList.includes("customer")) {
-    rolesList.unshift("customer");
-  }
-  const availablePortals = rolesList
-    .map((role: string) => {
+  // Determine if user has any business partner / merchant / franchise / partner roles
+  const rawRoles = Array.isArray(loggedInUser?.roles)
+    ? loggedInUser.roles
+    : (loggedInUser?.role ? [loggedInUser.role] : []);
+  const rolesList = rawRoles.map((r: string) => String(r).toLowerCase().trim());
+
+  const businessPartnerRoles = [
+    "vendor",
+    "wholesaler",
+    "manufacturer",
+    "franchise",
+    "franchiser",
+    "state_franchise",
+    "district_franchise",
+    "mandal_franchise",
+    "entrepreneur",
+    "food_partner",
+    "food",
+    "delivery_partner",
+    "delivery",
+    "service_provider",
+    "service",
+    "course_provider",
+    "academy",
+    "business_partner",
+    "partner",
+    "admin"
+  ];
+
+  const hasBusinessPartnerRole = rolesList.some((role: string) => businessPartnerRoles.includes(role));
+
+  // Only assemble portals if the user has a business/partner role. Customers should NOT see Switch Portal.
+  const availablePortals = useMemo(() => {
+    if (!loggedInUser || !hasBusinessPartnerRole) return [];
+
+    const effectiveRoles = [...rolesList];
+    if (!effectiveRoles.includes("customer")) {
+      effectiveRoles.unshift("customer");
+    }
+
+    const seenUrls = new Set<string>();
+    const list: Array<{ label: string; url: string; role: string }> = [];
+
+    for (const role of effectiveRoles) {
       const match = PORTAL_LINKS[role];
-      return match ? { ...match, role } : null;
-    })
-    .filter(Boolean);
+      if (match && !seenUrls.has(match.url)) {
+        seenUrls.add(match.url);
+        list.push({ ...match, role });
+      }
+    }
+
+    return list;
+  }, [loggedInUser, rolesList, hasBusinessPartnerRole]);
 
   return (
     <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full font-sans">
@@ -900,13 +1003,153 @@ const Navbar = () => {
 
 
 
-              {/* Notification icon (mobile & desktop visible) */}
-              <div className="relative cursor-pointer hover:text-accent flex items-center" onClick={() => setNotificationsOpen((v) => !v)}>
-                <Bell className="h-5 w-5 text-white" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold font-sans">
-                    {unreadCount}
-                  </span>
+              {/* Notification icon (mobile & desktop visible with attached dropdown) */}
+              <div className="relative flex items-center" ref={notificationRef}>
+                <button
+                  type="button"
+                  aria-label="Notifications"
+                  className="relative cursor-pointer hover:text-amber-400 flex items-center bg-transparent border-none p-1 text-white transition-colors"
+                  onClick={() => setNotificationsOpen((v) => !v)}
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold font-sans animate-pulse">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[384px] bg-white border border-slate-100 rounded-2xl shadow-2xl z-[100] text-navy p-4 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between border-b pb-2.5 mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🔔</span>
+                        <p className="font-extrabold text-sm text-navy">
+                          Notifications ({allNotifications.filter((n: any) => !n.isRead && n.status !== "read").length})
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <button
+                            className="text-[10px] text-accent font-black hover:underline border-none bg-transparent cursor-pointer"
+                            onClick={() => {
+                              setNotifications((prev) =>
+                                prev.map((n) => ({ ...n, isRead: true, status: "read" }))
+                              );
+                              setUnreadCount(0);
+                            }}
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        <button
+                          className="text-[10px] text-slate-500 font-bold hover:underline border-none bg-transparent cursor-pointer"
+                          onClick={() => setNotificationsOpen(false)}
+                        >
+                          ✕ Close
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Grouping Tabs */}
+                    <div className="flex gap-1 overflow-x-auto pb-1 mb-2.5 border-b scrollbar-none">
+                      {[
+                        { key: "all", label: "All" },
+                        { key: "orders", label: "Orders" },
+                        { key: "offers", label: "Offers" },
+                        { key: "wallet", label: "Wallet" },
+                        { key: "franchise", label: "Network" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setActiveNotificationTab(tab.key)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${
+                            activeNotificationTab === tab.key
+                              ? "bg-[#0A1128] text-white"
+                              : "text-muted-foreground hover:bg-slate-100 bg-transparent"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                      {filteredNotifications.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p className="text-2xl mb-1">📭</p>
+                          <p className="text-xs font-semibold">No notifications in this category.</p>
+                        </div>
+                      ) : (
+                        filteredNotifications.map((n: any) => {
+                          const isUnread = !n.isRead && n.status !== "read";
+                          return (
+                            <div
+                              key={n._id}
+                              onClick={() => {
+                                if (isUnread) handleMarkAsRead(n._id);
+                                if (n.link) {
+                                  navigate(n.link);
+                                  setNotificationsOpen(false);
+                                }
+                              }}
+                              className={`p-3 rounded-xl transition text-left flex gap-2.5 cursor-pointer border ${
+                                isUnread
+                                  ? "bg-blue-50/70 border-blue-200/80 hover:bg-blue-100/60"
+                                  : "bg-slate-50/70 border-slate-100 hover:bg-slate-100"
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                      n.category === "orders"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : n.category === "offers"
+                                        ? "bg-amber-100 text-amber-700"
+                                        : n.category === "wallet"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-purple-100 text-purple-700"
+                                    }`}
+                                  >
+                                    {n.category === "franchise" ? "Network" : n.category}
+                                  </span>
+                                  {isUnread && (
+                                    <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0" />
+                                  )}
+                                </div>
+                                <p className="font-extrabold text-[#0A1128] text-xs mt-1 leading-tight">
+                                  {n.title}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
+                                  {n.message}
+                                </p>
+                                <p className="text-[8px] text-slate-400 mt-1 font-semibold">
+                                  {new Date(n.createdAt).toLocaleDateString([], {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                              {isUnread && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(n._id);
+                                  }}
+                                  className="text-[9px] text-accent font-black hover:underline shrink-0 align-self-start mt-1 border-none bg-transparent cursor-pointer"
+                                >
+                                  Mark Read
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -1089,112 +1332,6 @@ const Navbar = () => {
                     </button>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Notifications (bell icon with popover next to search) */}
-        <div className="relative">
-          <Button
-            variant="ghost"
-            className="text-white hover:text-accent hover:bg-transparent relative p-2"
-            onClick={() => setNotificationsOpen((v) => !v)}
-            title="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            )}
-          </Button>
-
-          {notificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-[384px] bg-white border border-slate-100 rounded-2xl shadow-premium z-50 text-navy p-4">
-              <div className="flex items-center justify-between border-b pb-2 mb-2">
-                <p className="font-extrabold text-sm text-navy">Notifications ({allNotifications.filter((n: any) => !n.isRead && n.status !== 'read').length})</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-[10px] text-accent font-black hover:underline border-none bg-transparent cursor-pointer"
-                    onClick={() => {
-                      setNotifications(prev => prev.map(n => ({ ...n, isRead: true, status: 'read' })));
-                      setUnreadCount(0);
-                    }}
-                  >
-                    Mark all read
-                  </button>
-                  <span className="text-slate-300">•</span>
-                  <button
-                    className="text-[10px] text-slate-500 font-bold hover:underline border-none bg-transparent cursor-pointer"
-                    onClick={() => setNotificationsOpen(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Grouping Tabs */}
-              <div className="flex gap-1 overflow-x-auto pb-1 mb-2 border-b scrollbar-none">
-                {[
-                  { key: "all", label: "All" },
-                  { key: "orders", label: "Orders" },
-                  { key: "offers", label: "Offers" },
-                  { key: "wallet", label: "Wallet" },
-                  { key: "franchise", label: "Network" }
-                ].map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveNotificationTab(tab.key)}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${activeNotificationTab === tab.key
-                      ? "bg-navy text-white"
-                      : "text-muted-foreground hover:bg-slate-100 bg-transparent"
-                      }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
-                {filteredNotifications.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <p className="text-xs">No notifications in this category.</p>
-                  </div>
-                ) : (
-                  filteredNotifications.map((n: any) => {
-                    const isUnread = !n.isRead && n.status !== 'read';
-                    return (
-                      <div key={n._id} className={`p-2 rounded-xl transition text-left flex gap-2 relative ${isUnread ? "bg-blue-50/40" : "opacity-75 hover:bg-slate-50"}`}>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${n.category === 'orders' ? 'bg-blue-100 text-blue-700' :
-                              n.category === 'offers' ? 'bg-amber-100 text-amber-700' :
-                                n.category === 'wallet' ? 'bg-green-100 text-green-700' :
-                                  'bg-purple-100 text-purple-700'
-                              }`}>
-                              {n.category === 'franchise' ? 'Network' : n.category}
-                            </span>
-                            {isUnread && <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0" />}
-                          </div>
-                          <p className="font-extrabold text-navy text-xs mt-1.5 leading-tight">{n.title}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
-                            {n.message}
-                          </p>
-                          <p className="text-[8px] text-slate-400 mt-1 font-bold">
-                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                        {isUnread && (
-                          <button
-                            onClick={() => handleMarkAsRead(n._id)}
-                            className="text-[9px] text-accent font-black hover:underline shrink-0 align-self-start mt-1.5 border-none bg-transparent cursor-pointer"
-                          >
-                            Mark Read
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
               </div>
             </div>
           )}

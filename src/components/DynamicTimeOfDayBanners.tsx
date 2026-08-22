@@ -13,17 +13,17 @@ export const DynamicTimeOfDayBanners: React.FC<{ className?: string }> = ({ clas
   // Compute current time slot
   const currentSlot = (() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 4 && hour < 12) return 'morning';
     if (hour >= 12 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 21) return 'evening';
+    if (hour >= 17 && hour < 22) return 'evening';
     return 'night';
   })();
 
   const slotInfo: Record<string, { label: string; icon: any; color: string }> = {
-    morning: { label: 'Good Morning Deals', icon: Sun, color: 'text-amber-400' },
+    morning: { label: 'Good Morning Breakfast Deals', icon: Sun, color: 'text-amber-400' },
     afternoon: { label: 'Afternoon Lunch Specials', icon: Utensils, color: 'text-orange-400' },
-    evening: { label: 'Evening Chai & Snacks', icon: Coffee, color: 'text-rose-400' },
-    night: { label: 'Late Night Cravings', icon: Moon, color: 'text-indigo-400' }
+    evening: { label: 'Evening Snacks & Dinner Specials', icon: Coffee, color: 'text-rose-400' },
+    night: { label: 'Late Night Cravings & Specials', icon: Moon, color: 'text-indigo-400' }
   };
 
   useEffect(() => {

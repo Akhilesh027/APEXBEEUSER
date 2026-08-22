@@ -450,18 +450,100 @@ const Home = () => {
 
   const [dbBanners, setDbBanners] = useState<any[]>([]);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [timeGreeting, setTimeGreeting] = useState("Good Morning ☀");
-  const [greetingOffer, setGreetingOffer] = useState("Fresh Morning Specials! Milk & Breakfast items delivered in 15 mins.");
+
+  // Dynamic time-of-day calculation based on user's current local hour
+  const getInitialGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) {
+      return {
+        greeting: "Good Morning ☀",
+        offer: "Fresh Morning Specials! Milk & Breakfast items delivered in 15 mins.",
+        title: "Fresh Milk Deal",
+        emoji: "🥛"
+      };
+    } else if (hour >= 12 && hour < 17) {
+      return {
+        greeting: "Good Afternoon 🌤",
+        offer: "Lunch Combos & Fresh Juices from local diners near you.",
+        title: "Lunch Combo Deal",
+        emoji: "🍱"
+      };
+    } else if (hour >= 17 && hour < 22) {
+      return {
+        greeting: "Good Evening 🌇",
+        offer: "Dinner Specials & Snack Platters from top local merchants.",
+        title: "Snacks & Tea Offer",
+        emoji: "🍕"
+      };
+    } else {
+      return {
+        greeting: "Good Night 🌙",
+        offer: "Late-night cravings? Order snacks, desserts, or medicines instantly.",
+        title: "Night Cravings Offer",
+        emoji: "🌙"
+      };
+    }
+  };
+
+  const initialGreetingData = getInitialGreeting();
+  const [timeGreeting, setTimeGreeting] = useState(initialGreetingData.greeting);
+  const [greetingOffer, setGreetingOffer] = useState(initialGreetingData.offer);
   const [milkCountdown, setMilkCountdown] = useState("01:59:59");
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [festivalBanner, setFestivalBanner] = useState<any | null>(null);
   const [activeTracking, setActiveTracking] = useState<any | null>(null);
   const [personalization, setPersonalization] = useState<any>(null);
-  const [offerTitle, setOfferTitle] = useState("Fresh Milk Deal");
-  const [offerEmoji, setOfferEmoji] = useState("🥛");
+  const [offerTitle, setOfferTitle] = useState(initialGreetingData.title);
+  const [offerEmoji, setOfferEmoji] = useState(initialGreetingData.emoji);
   const [petProducts, setPetProducts] = useState<Product[]>([]);
   const [kidsProducts, setKidsProducts] = useState<Product[]>([]);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
+
+  // Rotate Meal & Restaurant Specials dynamically based on current time-of-day wish
+  const foodMealDetails = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) {
+      return {
+        badge: "☕ Morning Tiffins & Breakfast",
+        title: "Breakfast & Morning Specials Nearby",
+        subtitle: "Fresh idlis, hot vadas, crispy dosas, tea & morning breakfast tiffins delivered in 20 mins",
+        heroTag: "⚡ Fresh Breakfast Delivered",
+        heroHeading: "Craving Hot Breakfast?",
+        heroDesc: "Order fresh Idli, Dosa, Poori, Vada & Filter Coffee from top local tiffin centers.",
+        heroButton: "☕ Order Breakfast Now →"
+      };
+    } else if (hour >= 12 && hour < 17) {
+      return {
+        badge: "🍱 Afternoon Lunch Specials",
+        title: "Lunch Specials & Thalis Nearby",
+        subtitle: "Aromatic Biryanis, executive lunch combos & full thali meals delivered hot in 25 mins",
+        heroTag: "⚡ Express Lunch Delivery",
+        heroHeading: "Craving Delicious Lunch?",
+        heroDesc: "Order authentic Biryanis, Veg/Non-Veg Meals, Rice Bowls & fresh juices near you.",
+        heroButton: "🍱 Order Lunch Now →"
+      };
+    } else if (hour >= 17 && hour < 22) {
+      return {
+        badge: "🍕 Evening Dinner & Snacks",
+        title: "Dinner Specials & Snacks Nearby",
+        subtitle: "Piping hot dinners, tandoori, biryanis, curries & evening snack platters delivered in 25 mins",
+        heroTag: "⚡ 30-Min Dinner Delivery",
+        heroHeading: "Craving Hot Dinner?",
+        heroDesc: "Order Biryanis, Pizzas, Burgers, Shawarmas & North/South Indian dinner platters.",
+        heroButton: "🍽️ Order Dinner Now →"
+      };
+    } else {
+      return {
+        badge: "🌙 Midnight Food & Munchies",
+        title: "Late Night Cravings & Specials Nearby",
+        subtitle: "Midnight biryani, rolls, pizzas, desserts & late night cravings delivered instantly",
+        heroTag: "⚡ Late Night Food Delivery",
+        heroHeading: "Late Night Cravings?",
+        heroDesc: "Order midnight snacks, hot desserts, fries & quick meals from open late-night kitchens.",
+        heroButton: "🌙 Order Night Cravings →"
+      };
+    }
+  }, []);
 
   const buildLocationParams = useCallback(() => {
     const loc = userLocation || (() => {
@@ -542,9 +624,6 @@ const Home = () => {
       const data = await res.json();
       if (data.success) {
         setPersonalization(data);
-        if (data.timeGreeting) {
-          setTimeGreeting(data.timeGreeting);
-        }
       }
     } catch (err) {
       console.error("fetchPersonalization error:", err);
@@ -682,8 +761,8 @@ const Home = () => {
           const hour = new Date().getHours();
           let currentType = "morning";
           if (hour >= 12 && hour < 17) currentType = "afternoon";
-          else if (hour >= 17 && hour < 21) currentType = "evening";
-          else if (hour >= 21 || hour < 5) currentType = "night";
+          else if (hour >= 17 && hour < 22) currentType = "evening";
+          else if (hour >= 22 || hour < 4) currentType = "night";
 
           const matchingGreeting = activeBanners.find((b: any) => b.type === currentType && b.isActive);
           if (matchingGreeting) {
@@ -705,8 +784,8 @@ const Home = () => {
               setMilkCountdown("");
             }
           } else {
-            // fallback to original greeting logic
-            if (hour >= 5 && hour < 12) {
+            // fallback to precise time-based greeting logic
+            if (hour >= 4 && hour < 12) {
               setTimeGreeting("Good Morning ☀");
               setGreetingOffer("Fresh Morning Specials! Milk & Breakfast items delivered in 15 mins.");
               setOfferTitle("Fresh Milk Deal");
@@ -718,8 +797,8 @@ const Home = () => {
               setOfferTitle("Lunch Combo Deal");
               setOfferEmoji("🍱");
               setMilkCountdown("");
-            } else if (hour >= 17 && hour < 21) {
-              setTimeGreeting("Good Evening 🍕");
+            } else if (hour >= 17 && hour < 22) {
+              setTimeGreeting("Good Evening 🌇");
               setGreetingOffer("Dinner Specials & Snack Platters from top local merchants.");
               setOfferTitle("Snacks & Tea Offer");
               setOfferEmoji("🍕");
@@ -1568,7 +1647,7 @@ const Home = () => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="bg-card/80 backdrop-blur-md border border-border rounded-full px-3.5 py-1.5 flex items-center gap-2 shadow-sm">
                 <span className="text-xs sm:text-sm font-extrabold text-foreground">
-                  {personalization?.timeGreeting || timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Valued Customer")} 👋
+                  {timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Valued Customer")} 👋
                 </span>
               </div>
 
@@ -1601,12 +1680,12 @@ const Home = () => {
               >
                 <div className="space-y-1.5 z-10 max-w-[65%] text-left">
                   <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-100">
-                    ⚡ 30-Min Fast Delivery
+                    {foodMealDetails.heroTag}
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Craving Hot Food?</h3>
-                  <p className="text-xs text-amber-100 font-medium">Order Biryanis, Pizzas, Burgers &amp; Tiffins from top local restaurants.</p>
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">{foodMealDetails.heroHeading}</h3>
+                  <p className="text-xs text-amber-100 font-medium">{foodMealDetails.heroDesc}</p>
                   <span className="inline-flex items-center gap-1 bg-[#0A1128] text-amber-400 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
-                    🍱 Order Food Now &rarr;
+                    {foodMealDetails.heroButton}
                   </span>
                 </div>
                 <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Food" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
@@ -2805,20 +2884,23 @@ const Home = () => {
             })()}
           </section>
 
-          {/* 8. Nearby Restaurants & Food Outlets (Premium Cards Layout) */}
+          {/* 8. Nearby Restaurants & Food Outlets (Dynamic Time-of-Day Specials) */}
           <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
               <div className="text-left">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase tracking-wider mb-1.5">
+                  {foodMealDetails.badge}
+                </div>
                 <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
                     <Utensils className="w-4 h-4" />
                   </div>
-                  <span>Nearby Restaurants &amp; Food Outlets</span>
+                  <span>{foodMealDetails.title}</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-1 font-medium">Piping hot food &amp; gourmet tiffins delivered in 25 mins</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">{foodMealDetails.subtitle}</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/food")}>
-                Explore Food &amp; Dining →
+                Explore All Food &amp; Dining →
               </Button>
             </div>
 

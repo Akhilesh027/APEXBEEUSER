@@ -47,15 +47,20 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api"
 
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
-  vendor: "http://localhost:5177",
-  food_partner: "http://localhost:5179",
-  franchise: "http://localhost:5175",
-  state_franchise: "http://localhost:5175",
-  district_franchise: "http://localhost:5175",
-  mandal_franchise: "http://localhost:5175",
-  service_provider: "http://localhost:5176",
+  vendor: "https://apexbeevendor.apexbee.in/",
+  wholesaler: "https://apexbeevendor.apexbee.in/",
+  manufacturer: "https://apexbeevendor.apexbee.in/",
+  food_partner: "https://food.apexbee.in/",
+  food: "https://food.apexbee.in/",
+  franchise: "https://franchser.apexbee.in/",
+  state_franchise: "https://franchser.apexbee.in/",
+  district_franchise: "https://franchser.apexbee.in/",
+  mandal_franchise: "https://franchser.apexbee.in/",
+  service_provider: "https://service.apexbee.in/login",
+  service: "https://service.apexbee.in/login",
   course_provider: "http://localhost:5174",
-  delivery_partner: "http://localhost:5178",
+  delivery_partner: "https://delivery.apexbee.in/",
+  delivery: "https://delivery.apexbee.in/",
 };
 
 type Opportunity = {
@@ -2198,25 +2203,25 @@ const EarnWithApexBee = () => {
             const roleStr = (app.role || app.applicationType || "").toLowerCase();
             let appRoleKey = "vendor";
             let portalLabel = "Vendor Business Dashboard";
-            let portalUrl = PORTAL_LINKS.vendor || "http://localhost:5177";
+            let portalUrl = PORTAL_LINKS.vendor || "https://apexbeevendor.apexbee.in/";
             const isVendorRole = roleStr.includes("vendor") || app.applicationType === "vendor";
 
             if (roleStr.includes("franchise")) {
               appRoleKey = "franchise";
               portalLabel = "Franchise Management Portal";
-              portalUrl = PORTAL_LINKS.franchise || "http://localhost:5175";
+              portalUrl = PORTAL_LINKS.franchise || "https://franchser.apexbee.in/";
             } else if (roleStr.includes("entrepreneur")) {
               appRoleKey = "entrepreneur";
               portalLabel = "Entrepreneur Partner Portal";
-              portalUrl = PORTAL_LINKS.franchise || "http://localhost:5175";
+              portalUrl = PORTAL_LINKS.franchise || "https://franchser.apexbee.in/";
             } else if (roleStr.includes("service")) {
               appRoleKey = "service_provider";
               portalLabel = "Service Provider Portal";
-              portalUrl = PORTAL_LINKS.service_provider || "http://localhost:5176";
+              portalUrl = PORTAL_LINKS.service_provider || "https://service.apexbee.in/login";
             } else if (roleStr.includes("delivery")) {
               appRoleKey = "delivery_partner";
               portalLabel = "Delivery Partner Portal";
-              portalUrl = "http://localhost:5178";
+              portalUrl = PORTAL_LINKS.delivery_partner || "https://delivery.apexbee.in/";
             } else if (roleStr.includes("course") || roleStr.includes("academy")) {
               appRoleKey = "course_provider";
               portalLabel = "Digital Academy Portal";
@@ -2224,11 +2229,11 @@ const EarnWithApexBee = () => {
             } else if (roleStr.includes("food")) {
               appRoleKey = "food_partner";
               portalLabel = "Food Partner Operating System";
-              portalUrl = PORTAL_LINKS.food_partner || "http://localhost:5179";
+              portalUrl = PORTAL_LINKS.food_partner || "https://food.apexbee.in/";
             } else if (roleStr.includes("wholesaler") || roleStr.includes("manufacturer")) {
               appRoleKey = "vendor";
               portalLabel = "B2B Merchant Portal";
-              portalUrl = PORTAL_LINKS.vendor || "http://localhost:5177";
+              portalUrl = PORTAL_LINKS.vendor || "https://apexbeevendor.apexbee.in/";
             }
 
             return (
