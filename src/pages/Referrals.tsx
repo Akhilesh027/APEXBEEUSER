@@ -1119,75 +1119,75 @@ const Referrals = () => {
     <div className="min-h-screen bg-[#F8FAFC]">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Top Rank Achievement Banner */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">🎯</span>
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-sm">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="text-2xl sm:text-3xl shrink-0">🎯</span>
             <div className="text-left">
-              <h4 className="font-extrabold text-slate-800 text-sm">Your Goal: {currentRank.targetGoal} Milestone</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Need {currentRank.targetRemaining} more to unlock {currentRank.targetGoal} ({currentRank.targetCondition}).</p>
+              <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm">Your Goal: {currentRank.targetGoal} Milestone</h4>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Need {currentRank.targetRemaining} more to unlock {currentRank.targetGoal} ({currentRank.targetCondition}).</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-xl">
-            <Award className="h-4 w-4 text-purple-600" />
-            <span className="text-xs font-extrabold text-purple-700">Next Milestone: {currentRank.targetGoal}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-purple-50 border border-purple-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shrink-0 self-start sm:self-auto">
+            <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
+            <span className="text-[11px] sm:text-xs font-extrabold text-purple-700">Next: {currentRank.targetGoal}</span>
           </div>
         </div>
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-navy rounded-3xl p-8 mb-8 text-white relative overflow-hidden shadow-xl border border-indigo-900">
+        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-navy rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-xl border border-indigo-900">
           <div className="absolute right-0 top-0 opacity-10 pointer-events-none translate-x-12 -translate-y-12">
-            <Network className="h-96 w-96" />
+            <Network className="h-72 sm:h-96 w-72 sm:w-96" />
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 relative z-10">
             <div className="text-left max-w-xl">
-              <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full border border-amber-400/30">
+              <span className="bg-amber-500/20 text-amber-400 text-[9px] sm:text-[10px] font-black tracking-widest uppercase px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-400/30">
                 Live Earnings Portal
               </span>
-              <h2 className="text-3xl sm:text-4xl font-black mt-3 leading-tight tracking-tight">
-                Refer & Grow Lifetime Network Income.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-2.5 sm:mt-3 leading-tight tracking-tight">
+                Refer &amp; Grow Lifetime Network Income.
               </h2>
-              <p className="text-slate-300 mt-2 text-sm sm:text-base leading-relaxed">
-                Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses & recurring purchase splits.
+              <p className="text-slate-300 mt-1.5 sm:mt-2 text-xs sm:text-sm md:text-base leading-relaxed">
+                Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses &amp; recurring purchase splits.
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/5">
-                  <p className="text-[10px] text-slate-300 font-semibold">Total Network Size</p>
-                  <p className="text-xl font-bold mt-1 text-white">{allReferredUsers.length}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-4 sm:mt-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Network Size</p>
+                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-white">{allReferredUsers.length}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/5">
-                  <p className="text-[10px] text-slate-300 font-semibold">Lifetime Earned</p>
-                  <p className="text-xl font-bold mt-1 text-amber-400">₹{Math.round(stats.totalEarned || 0)}</p>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Lifetime Earned</p>
+                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-amber-400">₹{Math.round(stats.totalEarned || 0)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/5">
-                  <p className="text-[10px] text-slate-300 font-semibold">Pending Settlement</p>
-                  <p className="text-xl font-bold mt-1 text-yellow-400">₹{Math.round(walletHold)}</p>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Pending Settlement</p>
+                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-yellow-400">₹{Math.round(walletHold)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/5">
-                  <p className="text-[10px] text-slate-300 font-semibold">Current Rank</p>
-                  <p className="text-xs font-black mt-2 text-indigo-300 truncate">{currentRank.rank}</p>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Current Rank</p>
+                  <p className="text-xs font-black mt-1 sm:mt-2 text-indigo-300 truncate">{currentRank.rank}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 text-center w-full lg:w-80 shadow-inner flex flex-col gap-4">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10 text-center w-full lg:w-80 shadow-inner flex flex-col gap-3 sm:gap-4">
               <div>
-                <p className="text-xs text-indigo-200 font-semibold uppercase tracking-wider">Available Wallet Balance</p>
-                <p className="text-3xl font-black mt-1 text-emerald-400 font-sans">₹{Math.round(walletAvailable)}</p>
-                <p className="text-[10px] text-slate-300 mt-2 opacity-95">
+                <p className="text-[11px] sm:text-xs text-indigo-200 font-semibold uppercase tracking-wider">Available Wallet Balance</p>
+                <p className="text-2xl sm:text-3xl font-black mt-0.5 sm:mt-1 text-emerald-400 font-sans">₹{Math.round(walletAvailable)}</p>
+                <p className="text-[9.5px] sm:text-[10px] text-slate-300 mt-1 sm:mt-2 opacity-95">
                   Withdrawable Limit: ₹500 - ₹50,000 / day
                 </p>
               </div>
 
-              <div className="border-t border-white/10 pt-4 flex gap-2">
-                <Button className="flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.02]" onClick={() => setActiveTab("withdraw")}>
-                  <IndianRupee className="h-3.5 w-3.5 mr-1 text-slate-950 font-black" />
+              <div className="border-t border-white/10 pt-3 sm:pt-4 flex flex-col sm:flex-row gap-2">
+                <Button className="w-full sm:flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 sm:py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1.5" onClick={() => setActiveTab("withdraw")}>
+                  <IndianRupee className="h-3.5 w-3.5 text-slate-950 font-black" />
                   Request Withdraw
                 </Button>
-                <Button className="bg-[#0A1128] hover:bg-slate-900 text-amber-400 font-black text-xs py-2.5 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02]" onClick={() => copyToClipboard(referralCode, "code")}>
+                <Button className="w-full sm:w-auto bg-[#0A1128] hover:bg-slate-900 text-amber-400 font-black text-xs py-2.5 sm:py-3 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95" onClick={() => copyToClipboard(referralCode, "code")}>
                   Copy Code
                 </Button>
               </div>
@@ -1196,38 +1196,38 @@ const Referrals = () => {
         </div>
 
         {/* Tabs Navigation - Responsive Pill Scroll bar on mobile, 7-col grid on desktop */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8 w-full">
-          <div className="w-full overflow-x-auto no-scrollbar pb-1">
-            <TabsList className="bg-slate-200/70 p-1.5 rounded-2xl border border-slate-200/80 flex lg:grid lg:grid-cols-7 w-max lg:w-full gap-1">
-              <TabsTrigger value="overview" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Overview</TabsTrigger>
-              <TabsTrigger value="earnings" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Earnings Ledger</TabsTrigger>
-              <TabsTrigger value="referrals" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Roster Directory</TabsTrigger>
-              <TabsTrigger value="commissions" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Audit Splits</TabsTrigger>
-              <TabsTrigger value="network" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Network Tree</TabsTrigger>
-              <TabsTrigger value="analytics" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Analytics</TabsTrigger>
-              <TabsTrigger value="withdraw" className="rounded-xl text-xs font-bold shrink-0 whitespace-nowrap px-3 py-2">Withdraw</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full">
+          <div className="w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+            <TabsList className="bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid lg:grid-cols-7 w-max lg:w-full gap-1">
+              <TabsTrigger value="overview" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Overview</TabsTrigger>
+              <TabsTrigger value="earnings" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Earnings Ledger</TabsTrigger>
+              <TabsTrigger value="referrals" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Roster Directory</TabsTrigger>
+              <TabsTrigger value="commissions" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Audit Splits</TabsTrigger>
+              <TabsTrigger value="network" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Network Tree</TabsTrigger>
+              <TabsTrigger value="analytics" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Analytics</TabsTrigger>
+              <TabsTrigger value="withdraw" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Withdraw</TabsTrigger>
             </TabsList>
           </div>
 
           {/* Overview Tab Content */}
-          <TabsContent value="overview" className="space-y-6 text-left">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6 text-left">
             {/* Gamified Milestone Progress Indicator */}
             <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden">
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl p-2.5 bg-purple-50 rounded-xl">🏅</span>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <span className="text-xl sm:text-2xl p-2 sm:p-2.5 bg-purple-50 rounded-xl shrink-0">🏅</span>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-extrabold text-navy text-sm">Rank Milestone Status: {currentRank.rank}</p>
-                        <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-black">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <p className="font-extrabold text-navy text-xs sm:text-sm">Rank Milestone Status: {currentRank.rank}</p>
+                        <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] sm:text-[10px] font-black">
                           {currentRank.badge}
                         </Badge>
                       </div>
-                      <p className="text-slate-500 text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
+                      <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                     {[
                       { name: "🌱 Starter", level: 1 },
                       { name: "🥉 Bronze", level: 2 },
@@ -1240,7 +1240,7 @@ const Referrals = () => {
                       return (
                         <Badge
                           key={b.name}
-                          className={`text-[10px] px-2.5 py-1 transition-all ${isCurrent
+                          className={`text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 transition-all ${isCurrent
                             ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
                             : active
                               ? 'bg-indigo-600 text-white font-bold'
@@ -1254,38 +1254,38 @@ const Referrals = () => {
                   </div>
                 </div>
 
-                <div className="mt-5">
-                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                <div className="mt-4 sm:mt-5">
+                  <div className="flex flex-col sm:flex-row justify-between text-[11px] sm:text-xs font-bold text-slate-600 mb-1.5 gap-0.5">
                     <span>Rank Level Progress ({currentRank.currentCount} / {currentRank.targetMax} Qualified Referrals)</span>
                     <span className="text-indigo-600 font-black">{currentRank.targetRemaining} more to {currentRank.targetGoal}</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3.5 border overflow-hidden">
+                  <div className="w-full bg-slate-100 rounded-full h-3 sm:h-3.5 border overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-purple-500 via-indigo-600 to-amber-500 h-3.5 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-purple-500 via-indigo-600 to-amber-500 h-3 sm:h-3.5 rounded-full transition-all duration-500"
                       style={{ width: `${currentRank.progressPercent}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5 italic">
-                    *Qualification Criteria: Member must be Phone & Gmail verified (KYC) and completed their 1st Purchase.
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5 italic">
+                    *Qualification Criteria: Member must be Phone &amp; Gmail verified (KYC) and completed their 1st Purchase.
                   </p>
                 </div>
 
                 {/* How to reach next step guide */}
-                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 text-xs text-indigo-950">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🚀</span>
+                <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 sm:p-3.5 text-xs text-indigo-950">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-2.5">
+                    <span className="text-lg sm:text-xl shrink-0 mt-0.5 sm:mt-0">🚀</span>
                     <div>
                       <p className="font-extrabold text-xs text-indigo-950">
                         How to Unlock {currentRank.targetGoal}:
                       </p>
-                      <p className="text-[11px] text-indigo-700 mt-0.5">
-                        Invite members who verify their Phone & Gmail, and complete their 1st purchase. You need <span className="font-black text-indigo-900">{currentRank.targetRemaining} more qualified member{currentRank.targetRemaining === 1 ? '' : 's'}</span> to unlock your {currentRank.targetGoal} badge.
+                      <p className="text-[10.5px] sm:text-[11px] text-indigo-700 mt-0.5">
+                        Invite members who verify their Phone &amp; Gmail, and complete their 1st purchase. You need <span className="font-black text-indigo-900">{currentRank.targetRemaining} more qualified member{currentRank.targetRemaining === 1 ? '' : 's'}</span> to unlock your {currentRank.targetGoal} badge.
                       </p>
                     </div>
                   </div>
                   <Button
                     size="sm"
-                    className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                    className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer w-full sm:w-auto"
                     onClick={shareReferral}
                   >
                     Invite Now
@@ -1295,36 +1295,36 @@ const Referrals = () => {
             </Card>
 
             {/* Quick Actions Panel */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-xs font-black py-5 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer shadow-sm border-none" onClick={shareReferral}>
-                <span className="text-lg">💬</span> Share WhatsApp
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-4">
+              <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm border-none active:scale-95 transition" onClick={shareReferral}>
+                <span className="text-base sm:text-lg">💬</span> Share WhatsApp
               </Button>
-              <Button className="h-auto bg-navy text-white hover:bg-navy/95 text-xs font-black py-5 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer shadow-sm" onClick={() => setShowInviteQR(true)}>
-                <span className="text-lg">📷</span> Invite QR Code
+              <Button className="h-auto bg-navy text-white hover:bg-navy/95 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm active:scale-95 transition" onClick={() => setShowInviteQR(true)}>
+                <span className="text-base sm:text-lg">📷</span> Invite QR Code
               </Button>
-              <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-black py-5 rounded-2xl flex flex-col items-center gap-1.5 shadow-sm" onClick={() => copyToClipboard(referralLink, "link")}>
-                <span className="text-lg">🔗</span> Copy Referral Link
+              <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => copyToClipboard(referralLink, "link")}>
+                <span className="text-base sm:text-lg">🔗</span> Copy Link
               </Button>
-              <Button variant="outline" className="h-auto border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-black py-5 rounded-2xl flex flex-col items-center gap-1.5 shadow-sm" onClick={() => setShowVideoDialog(true)}>
-                <span className="text-lg">🎥</span> Training Videos
+              <Button variant="outline" className="h-auto border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setShowVideoDialog(true)}>
+                <span className="text-base sm:text-lg">🎥</span> Training
               </Button>
-              <Button variant="outline" className="h-auto col-span-2 md:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-black py-5 rounded-2xl flex flex-col items-center gap-1.5 shadow-sm" onClick={() => setActiveTab("withdraw")}>
-                <span className="text-lg">🏦</span> Withdraw Wallet
+              <Button variant="outline" className="h-auto col-span-2 md:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setActiveTab("withdraw")}>
+                <span className="text-base sm:text-lg">🏦</span> Withdraw Wallet
               </Button>
             </div>
 
             {/* Double Column Overview Widgets */}
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Left Column: Funnel & Comps */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                 {/* Referral Health Funnel Card */}
                 <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-extrabold text-navy">Referral Network Conversion Funnel</CardTitle>
-                    <CardDescription className="text-xs text-slate-500">Track and identify drop points in your referred downline network.</CardDescription>
+                  <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Conversion Funnel</CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and identify drop points in your referred downline network.</CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-2">
-                    <div className="space-y-3.5">
+                  <CardContent className="p-4 sm:p-6 pt-2">
+                    <div className="space-y-3 sm:space-y-3.5">
                       {[
                         { label: "Referral Link Clicked", value: funnelStats.clicks, color: "bg-slate-400" },
                         { label: "Registered / Signed up", value: funnelStats.registered, color: "bg-indigo-400" },
@@ -1336,15 +1336,15 @@ const Referrals = () => {
                         const drop = prevVal > 0 ? ((step.value / prevVal) * 100).toFixed(0) : "0";
                         return (
                           <div key={step.label} className="space-y-1">
-                            <div className="flex justify-between items-center text-xs font-bold">
-                              <span className="text-slate-700 flex items-center gap-1.5">
-                                <span className={`w-2.5 h-2.5 rounded-full ${step.color}`} />
-                                {step.label}
+                            <div className="flex justify-between items-center text-[11px] sm:text-xs font-bold">
+                              <span className="text-slate-700 flex items-center gap-1.5 truncate">
+                                <span className={`w-2.5 h-2.5 rounded-full ${step.color} shrink-0`} />
+                                <span className="truncate">{step.label}</span>
                               </span>
-                              <span className="text-navy">{step.value} users {idx > 0 && <span className="text-slate-400 font-semibold ml-1.5">({drop}% conv)</span>}</span>
+                              <span className="text-navy shrink-0 ml-2">{step.value} users {idx > 0 && <span className="text-slate-400 font-semibold ml-1">({drop}%)</span>}</span>
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-2">
-                              <div className={`${step.color} h-2 rounded-full`} style={{ width: `${arr[0].value > 0 ? (step.value / arr[0].value) * 100 : 0}%` }} />
+                              <div className={`${step.color} h-2 rounded-full transition-all duration-500`} style={{ width: `${arr[0].value > 0 ? (step.value / arr[0].value) * 100 : 0}%` }} />
                             </div>
                           </div>
                         );
@@ -1355,9 +1355,9 @@ const Referrals = () => {
 
                 {/* Detailed Roster Table (Real Data) */}
                 <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-3 border-b border-slate-100">
-                    <CardTitle className="text-base font-extrabold text-navy">📋 Recent Invites Status</CardTitle>
-                    <CardDescription className="text-xs text-slate-500">List of downlines registered in your network.</CardDescription>
+                  <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100">
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">📋 Recent Invites Status</CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">List of downlines registered in your network.</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     {allReferredUsers.length === 0 ? (
@@ -1365,8 +1365,8 @@ const Referrals = () => {
                         No invites placed yet. Share your code to get started.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
+                      <div className="overflow-x-auto scrollbar-none">
+                        <table className="w-full text-xs text-left min-w-[500px]">
                           <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                             <tr>
                               <th className="p-3">User</th>
@@ -1389,7 +1389,7 @@ const Referrals = () => {
                                 </td>
                                 <td className="p-3 text-center">
                                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${u.firstOrderQualified ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
-                                    {u.firstOrderQualified ? "Active member" : "KYC pending / Signed Up"}
+                                    {u.firstOrderQualified ? "Active member" : "KYC pending"}
                                   </span>
                                 </td>
                                 <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(u.totalCommissionGenerated || 0)}</td>
@@ -1404,22 +1404,22 @@ const Referrals = () => {
               </div>
 
               {/* Right Column: AI Suggests, Badges, Timeline */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* AI suggestion widget */}
                 <Card className="border border-purple-200 bg-purple-50/20 shadow-sm rounded-2xl relative overflow-hidden">
                   <div className="absolute right-0 top-0 translate-x-2 -translate-y-2 opacity-10 pointer-events-none">
                     <Sparkles className="h-24 w-24 text-purple-600" />
                   </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-extrabold text-purple-900 flex items-center gap-1.5">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-xs sm:text-sm font-extrabold text-purple-900 flex items-center gap-1.5">
                       <span>🤖</span> Abhi Suggests
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="text-xs text-purple-950 space-y-2.5">
-                    <p className="leading-relaxed">
+                  <CardContent className="p-4 pt-0 text-xs text-purple-950 space-y-2">
+                    <p className="leading-relaxed text-[11px] sm:text-xs">
                       "You have {allReferredUsers.filter(u => !u.firstOrderQualified).length} pending signups. Remind them to make their first purchase to unlock ₹250 bonus commissions!"
                     </p>
-                    <ul className="space-y-1 text-[11px] text-purple-800 font-semibold list-disc list-inside">
+                    <ul className="space-y-1 text-[10.5px] sm:text-[11px] text-purple-800 font-semibold list-disc list-inside">
                       <li>Complete bank verification details.</li>
                       <li>Invite 3 more friends today to unlock Bronze rank.</li>
                       <li>Share referral link on WhatsApp status.</li>
@@ -1429,14 +1429,14 @@ const Referrals = () => {
 
                 {/* Estimate Estimator */}
                 <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-500">Calculator Estimator</CardTitle>
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">Calculator Estimator</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="p-4 pt-0 space-y-3 sm:space-y-4">
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs font-bold text-slate-600">
                         <span>Invite Friends</span>
-                        <span>{calculatorFriends} members</span>
+                        <span className="text-indigo-600 font-black">{calculatorFriends} members</span>
                       </div>
                       <input
                         type="range"
@@ -1444,7 +1444,7 @@ const Referrals = () => {
                         max="50"
                         value={calculatorFriends}
                         onChange={(e) => setCalculatorFriends(Number(e.target.value))}
-                        className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                        className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                       />
                     </div>
 
@@ -1463,8 +1463,8 @@ const Referrals = () => {
 
                 {/* MLM Leaderboard Card */}
                 <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
-                    <CardTitle className="text-sm font-extrabold text-navy flex items-center gap-1.5">
+                  <CardHeader className="p-4 pb-3 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="text-xs sm:text-sm font-extrabold text-navy flex items-center gap-1.5">
                       <span>🏆</span> Weekly Top Referrers
                     </CardTitle>
                   </CardHeader>
@@ -1496,9 +1496,9 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Earnings Tab Content */}
-          <TabsContent value="earnings" className="space-y-6 text-left">
+          <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left">
             {/* Top Stats Summary row */}
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
               {[
                 { label: "Total Earnings", value: `₹${Math.round(stats.totalEarned || 0)}`, color: "text-navy" },
                 { label: "Active Referrals", value: allReferredUsers.filter(u => u.firstOrderQualified).length.toString(), color: "text-green-700" },
@@ -1508,56 +1508,58 @@ const Referrals = () => {
                 { label: "Indirect Comm", value: `₹${Math.round(stats.indirectEarnings || 0)}`, color: "text-blue-700" },
               ].map(s => (
                 <Card key={s.label} className="border border-slate-200/80 shadow-sm rounded-2xl">
-                  <CardContent className="pt-4 pb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
-                    <p className={`text-xl font-black mt-1 ${s.color}`}>{s.value}</p>
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
+                    <p className={`text-lg sm:text-xl font-black mt-0.5 sm:mt-1 ${s.color}`}>{s.value}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
 
             {/* Visual graph and transaction list toggles */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl">
-              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <div>
-                  <CardTitle className="text-base font-extrabold text-navy">All Earning Transactions Ledger</CardTitle>
-                  <CardDescription className="text-xs text-slate-500">Real-time ledger audit trail showing payouts, bonuses, and subscription commissions.</CardDescription>
+                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy">All Earning Transactions Ledger</CardTitle>
+                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">Real-time ledger audit trail showing payouts, bonuses, and subscription commissions.</CardDescription>
                 </div>
                 {/* Filters */}
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                  <div className="relative">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+                  <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <Input
                       placeholder="Search referral name..."
                       value={dirSearchQuery}
                       onChange={(e) => setDirSearchQuery(e.target.value)}
-                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full md:w-44"
+                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-44"
                     />
                   </div>
-                  <select
-                    value={earningsTypeFilter}
-                    onChange={(e) => setEarningsTypeFilter(e.target.value)}
-                    className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="Signup Bonus">Signup Bonus</option>
-                    <option value="First Purchase">First Purchase</option>
-                    <option value="Product Commission">Product Commission</option>
-                    <option value="Vendor">Vendor</option>
-                    <option value="Franchise">Franchise</option>
-                    <option value="Recurring">Recurring</option>
-                  </select>
-                  <select
-                    value={earningsDateFilter}
-                    onChange={(e) => setEarningsDateFilter(e.target.value)}
-                    className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9"
-                  >
-                    <option value="all">All Dates</option>
-                    <option value="today">Today</option>
-                    <option value="yesterday">Yesterday</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                  </select>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select
+                      value={earningsTypeFilter}
+                      onChange={(e) => setEarningsTypeFilter(e.target.value)}
+                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="Signup Bonus">Signup Bonus</option>
+                      <option value="First Purchase">First Purchase</option>
+                      <option value="Product Commission">Product Commission</option>
+                      <option value="Vendor">Vendor</option>
+                      <option value="Franchise">Franchise</option>
+                      <option value="Recurring">Recurring</option>
+                    </select>
+                    <select
+                      value={earningsDateFilter}
+                      onChange={(e) => setEarningsDateFilter(e.target.value)}
+                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                    >
+                      <option value="all">All Dates</option>
+                      <option value="today">Today</option>
+                      <option value="yesterday">Yesterday</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                    </select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -1566,8 +1568,8 @@ const Referrals = () => {
                     No matching transactions found.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
+                  <div className="overflow-x-auto scrollbar-none">
+                    <table className="w-full text-xs text-left min-w-[620px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
                           <th className="p-3">Date</th>
@@ -1608,44 +1610,46 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Roster Directory Tab Content */}
-          <TabsContent value="referrals" className="space-y-6 text-left">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl">
-              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+          <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <div>
-                  <CardTitle className="text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
-                  <CardDescription className="text-xs text-slate-500">Manage direct downline relationships, verify KYC statuses, and send reminders.</CardDescription>
+                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
+                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">Manage direct downline relationships, verify KYC statuses, and send reminders.</CardDescription>
                 </div>
 
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                  <div className="relative flex-1 md:flex-initial">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+                  <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <Input
                       placeholder="Search name, phone, email..."
                       value={networkSearchQuery}
                       onChange={(e) => setNetworkSearchQuery(e.target.value)}
-                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full md:w-56"
+                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-56"
                     />
                   </div>
-                  <select
-                    value={referralLevelFilter}
-                    onChange={(e) => setReferralLevelFilter(e.target.value)}
-                    className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9"
-                  >
-                    <option value="all">All Levels</option>
-                    <option value="1">Level 1 (Direct)</option>
-                    <option value="2">Level 2</option>
-                    <option value="3">Level 3</option>
-                  </select>
-                  <select
-                    value={dirSortOption}
-                    onChange={(e) => setDirSortOption(e.target.value)}
-                    className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9"
-                  >
-                    <option value="newest">Sort: Newest</option>
-                    <option value="commission">Sort: Earnings</option>
-                    <option value="orders">Sort: Orders Count</option>
-                    <option value="inactive">Sort: Inactive</option>
-                  </select>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select
+                      value={referralLevelFilter}
+                      onChange={(e) => setReferralLevelFilter(e.target.value)}
+                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                    >
+                      <option value="all">All Levels</option>
+                      <option value="1">Level 1 (Direct)</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                    </select>
+                    <select
+                      value={dirSortOption}
+                      onChange={(e) => setDirSortOption(e.target.value)}
+                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                    >
+                      <option value="newest">Sort: Newest</option>
+                      <option value="commission">Sort: Earnings</option>
+                      <option value="orders">Sort: Orders Count</option>
+                      <option value="inactive">Sort: Inactive</option>
+                    </select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -1654,8 +1658,8 @@ const Referrals = () => {
                     No downline members found matching current query parameters.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
+                  <div className="overflow-x-auto scrollbar-none">
+                    <table className="w-full text-xs text-left min-w-[650px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
                           <th className="p-3">Member</th>
@@ -1671,12 +1675,12 @@ const Referrals = () => {
                         {sortedRoster.map((u) => (
                           <tr key={u._id} className="hover:bg-slate-50/55 transition-all">
                             <td className="p-3 flex items-center gap-2">
-                              <span className="w-8 h-8 rounded-full bg-slate-100 border text-sm flex items-center justify-center font-bold text-navy">
+                              <span className="w-8 h-8 rounded-full bg-slate-100 border text-sm flex items-center justify-center font-bold text-navy shrink-0">
                                 {u.name.substring(0, 1).toUpperCase()}
                               </span>
-                              <div>
-                                <p className="font-bold text-navy text-xs">{u.name}</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">{u.email || "No email"}</p>
+                              <div className="min-w-0">
+                                <p className="font-bold text-navy text-xs truncate">{u.name}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5 truncate">{u.email || "No email"}</p>
                               </div>
                             </td>
                             <td className="p-3">
@@ -1693,7 +1697,7 @@ const Referrals = () => {
                                   <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
                                     ✓ Qualified
                                   </span>
-                                  <span className="text-[9px] text-slate-400">KYC & Order Done</span>
+                                  <span className="text-[9px] text-slate-400">KYC &amp; Order Done</span>
                                 </div>
                               ) : (
                                 <div className="inline-flex flex-col items-center gap-0.5">
@@ -1727,11 +1731,11 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Commissions Tab Content */}
-          <TabsContent value="commissions" className="space-y-6 text-left">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl">
-              <CardHeader className="border-b border-slate-100 pb-4">
-                <CardTitle className="text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
-                <CardDescription className="text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
+          <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 p-4 sm:p-6 pb-4">
+                <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
+                <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {commissionHistory.length === 0 ? (
@@ -1739,8 +1743,8 @@ const Referrals = () => {
                     No commission transactions found in ledger database.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
+                  <div className="overflow-x-auto scrollbar-none">
+                    <table className="w-full text-xs text-left min-w-[650px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
                           <th className="p-3">TXN ID</th>
@@ -1787,97 +1791,97 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Network Tree Tab Content */}
-          <TabsContent value="network" className="space-y-6 text-left">
+          <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left">
             <Card className="border border-slate-200 shadow-sm rounded-2xl">
-              <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
-                <CardTitle className="text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
-                <CardDescription className="text-xs text-slate-500">Navigate downline nodes to inspect network volume, user performance and earnings splits.</CardDescription>
+              <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50">
+                <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
+                <CardDescription className="text-[11px] sm:text-xs text-slate-500">Navigate downline nodes to inspect network volume, user performance and earnings splits.</CardDescription>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 {level1Users.length === 0 ? (
                   <div className="text-center py-10 text-slate-400 text-xs">
                     No downlines found in network hierarchy database.
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {/* Root Node: Current User */}
-                    <div className="bg-indigo-900 text-white rounded-2xl p-4 flex items-center justify-between border-2 border-indigo-700 shadow">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-800 border flex items-center justify-center font-bold">
+                    <div className="bg-indigo-900 text-white rounded-2xl p-3 sm:p-4 flex items-center justify-between border-2 border-indigo-700 shadow">
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-800 border flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
                           ME
                         </div>
                         <div>
-                          <p className="font-extrabold text-sm">{networkData?.user.name || "You"}</p>
-                          <p className="text-xs text-indigo-300">Code: {referralCode}</p>
+                          <p className="font-extrabold text-xs sm:text-sm">{networkData?.user.name || "You"}</p>
+                          <p className="text-[10px] sm:text-xs text-indigo-300">Code: {referralCode}</p>
                         </div>
                       </div>
-                      <Badge className="bg-emerald-500 text-white font-bold text-[10px]">ROOT LEVEL</Badge>
+                      <Badge className="bg-emerald-500 text-white font-bold text-[9px] sm:text-[10px]">ROOT LEVEL</Badge>
                     </div>
 
                     {/* Level 1 Nodes */}
-                    <div className="ml-6 border-l-2 border-dashed border-indigo-200 pl-4 space-y-3">
+                    <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-indigo-200 pl-2 sm:pl-4 space-y-2.5 sm:space-y-3">
                       {level1Users.map((u1) => {
                         const kids2 = level2Users.filter(u2 => String(u2.referredBy) === String(u1._id));
                         const isL1Expanded = !!expandedRows[`l1_${u1._id}`];
                         return (
                           <div key={u1._id} className="space-y-2">
                             <div
-                              className="bg-white border rounded-xl p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer"
+                              className="bg-white border rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer"
                               onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1._id}`]: !isL1Expanded }))}
                             >
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-emerald-600">🟢</span>
-                                <div>
-                                  <p className="font-extrabold text-navy text-xs">{u1.name}</p>
-                                  <p className="text-[10px] text-slate-400 mt-0.5">Joined: {new Date(u1.createdAt).toLocaleDateString()}</p>
+                              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                                <span className="text-emerald-600 shrink-0 text-xs sm:text-sm">🟢</span>
+                                <div className="min-w-0">
+                                  <p className="font-extrabold text-navy text-xs truncate">{u1.name}</p>
+                                  <p className="text-[9.5px] sm:text-[10px] text-slate-400 mt-0.5">Joined: {new Date(u1.createdAt).toLocaleDateString()}</p>
                                 </div>
                               </div>
-                              <div className="text-right flex items-center gap-4">
+                              <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
                                 <div className="text-xs">
-                                  <p className="font-extrabold text-navy">₹{Math.round(u1.totalCommissionGenerated || 0)}</p>
+                                  <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{Math.round(u1.totalCommissionGenerated || 0)}</p>
                                   <p className="text-[9px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
                                 </div>
-                                <span className="text-slate-400 text-xs">{isL1Expanded ? "▲" : "▼"}</span>
+                                <span className="text-slate-400 text-[10px] sm:text-xs">{isL1Expanded ? "▲" : "▼"}</span>
                               </div>
                             </div>
 
                             {/* Level 2 Nodes under this L1 */}
                             {isL1Expanded && kids2.length > 0 && (
-                              <div className="ml-6 border-l-2 border-dashed border-emerald-200 pl-4 space-y-2">
+                              <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-emerald-200 pl-2 sm:pl-4 space-y-2">
                                 {kids2.map((u2) => {
                                   const kids3 = level3Users.filter(u3 => String(u3.referredBy) === String(u2._id));
                                   const isL2Expanded = !!expandedRows[`l2_${u2._id}`];
                                   return (
                                     <div key={u2._id} className="space-y-2">
                                       <div
-                                        className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex justify-between items-center hover:shadow-inner transition-all cursor-pointer"
+                                        className="bg-slate-50 border border-slate-100 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-inner transition-all cursor-pointer"
                                         onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2._id}`]: !isL2Expanded }))}
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-blue-500">🔵</span>
-                                          <div>
-                                            <p className="font-bold text-navy text-xs">{u2.name}</p>
-                                            <p className="text-[9px] text-slate-400">Total: {kids3.length} downline</p>
+                                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                          <span className="text-blue-500 shrink-0 text-xs">🔵</span>
+                                          <div className="min-w-0">
+                                            <p className="font-bold text-navy text-[11px] sm:text-xs truncate">{u2.name}</p>
+                                            <p className="text-[8.5px] sm:text-[9px] text-slate-400">Total: {kids3.length} downline</p>
                                           </div>
                                         </div>
-                                        <div className="text-right flex items-center gap-3">
+                                        <div className="text-right flex items-center gap-2 sm:gap-3 shrink-0">
                                           <div className="text-xs">
-                                            <p className="font-extrabold text-navy">₹{Math.round(u2.totalCommissionGenerated || 0)}</p>
+                                            <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{Math.round(u2.totalCommissionGenerated || 0)}</p>
                                           </div>
-                                          <span className="text-slate-400 text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
+                                          <span className="text-slate-400 text-[9px] sm:text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
                                         </div>
                                       </div>
 
                                       {/* Level 3 Nodes under this L2 */}
                                       {isL2Expanded && kids3.length > 0 && (
-                                        <div className="ml-6 border-l-2 border-dashed border-blue-200 pl-4 space-y-1.5">
+                                        <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5">
                                           {kids3.map((u3) => (
                                             <div key={u3._id} className="bg-purple-50/40 border border-purple-100/50 rounded-xl p-2 flex justify-between items-center">
-                                              <div className="flex items-center gap-2 text-xs">
-                                                <span className="text-purple-600">🟣</span>
-                                                <p className="font-semibold text-slate-700">{u3.name}</p>
+                                              <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
+                                                <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                                <p className="font-semibold text-slate-700 text-[10.5px] sm:text-xs truncate">{u3.name}</p>
                                               </div>
-                                              <span className="text-xs font-bold text-purple-900">₹{Math.round(u3.totalCommissionGenerated || 0)}</span>
+                                              <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0">₹{Math.round(u3.totalCommissionGenerated || 0)}</span>
                                             </div>
                                           ))}
                                         </div>
@@ -1898,14 +1902,14 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Analytics Tab Content */}
-          <TabsContent value="analytics" className="space-y-6 text-left">
-            <div className="grid lg:grid-cols-2 gap-6">
+          <TabsContent value="analytics" className="space-y-4 sm:space-y-6 text-left">
+            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Earnings Composition Pie */}
               <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-extrabold text-navy">Commission Distribution Sources</CardTitle>
+                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Distribution Sources</CardTitle>
                 </CardHeader>
-                <CardContent className="h-64 flex items-center justify-center">
+                <CardContent className="h-56 sm:h-64 p-2 sm:p-4 flex items-center justify-center">
                   {earningsComposition.length === 0 ? (
                     <p className="text-xs text-slate-400">No active earnings compositions detected.</p>
                   ) : (
@@ -1916,7 +1920,7 @@ const Referrals = () => {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={80}
+                          outerRadius={70}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -1934,15 +1938,15 @@ const Referrals = () => {
 
               {/* Network Tiers Growth Bar */}
               <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-extrabold text-navy">Referral Network Tier Performance</CardTitle>
+                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Referral Network Tier Performance</CardTitle>
                 </CardHeader>
-                <CardContent className="h-64">
+                <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={levelGrowthData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" stroke="#64748B" style={{ fontSize: "10px" }} />
-                      <YAxis stroke="#64748B" style={{ fontSize: "10px" }} />
+                      <XAxis dataKey="name" stroke="#64748B" style={{ fontSize: "9px" }} />
+                      <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
                       <Tooltip />
                       <Legend wrapperStyle={{ fontSize: "10px" }} />
                       <Bar dataKey="members" fill="#6366F1" name="Members Count" />
@@ -1954,10 +1958,10 @@ const Referrals = () => {
 
               {/* Earnings Daily Trend */}
               <Card className="border border-slate-200 shadow-sm rounded-2xl lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-sm font-extrabold text-navy">Commission Earning Daily Trend</CardTitle>
+                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Earning Daily Trend</CardTitle>
                 </CardHeader>
-                <CardContent className="h-64">
+                <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dailyEarningsTrend}>
                       <defs>
@@ -1967,8 +1971,8 @@ const Referrals = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" stroke="#64748B" style={{ fontSize: "10px" }} />
-                      <YAxis stroke="#64748B" style={{ fontSize: "10px" }} />
+                      <XAxis dataKey="date" stroke="#64748B" style={{ fontSize: "9px" }} />
+                      <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
                       <Tooltip formatter={(value) => `₹${value}`} />
                       <Area type="monotone" dataKey="earnings" stroke="#10B981" fillOpacity={1} fill="url(#colorEarnings)" name="Daily Commission (₹)" />
                     </AreaChart>
@@ -1979,21 +1983,21 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Withdraw Tab Content */}
-          <TabsContent value="withdraw" className="space-y-6 text-left">
-            <div className="grid lg:grid-cols-3 gap-6">
+          <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left">
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Left Column: Bank account details form */}
               <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 p-4 sm:p-6 pb-4 gap-2">
                   <div>
-                    <CardTitle className="text-base font-extrabold text-navy">Verified Bank Settlement Details</CardTitle>
-                    <p className="text-xs text-slate-500 mt-0.5">Please ensure name matches PAN/Aadhaar exactly.</p>
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Verified Bank Settlement Details</CardTitle>
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Please ensure name matches PAN/Aadhaar exactly.</p>
                   </div>
-                  <Badge className={bankSaved ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}>
+                  <Badge className={bankSaved ? "bg-green-100 text-green-800 border-green-200 text-[10px]" : "bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px]"}>
                     {bankSaved ? "Verified & Active" : "Requires Setup"}
                   </Badge>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
+                <CardContent className="p-4 sm:p-6 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-600 block">Account Holder Name</label>
                       <Input
@@ -2046,7 +2050,7 @@ const Referrals = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="md:col-span-2 space-y-1.5">
+                    <div className="sm:col-span-2 space-y-1.5">
                       <label className="text-xs font-bold text-slate-600 block">UPI ID (Optional)</label>
                       <Input
                         value={bankDetails.upiId || ""}
@@ -2056,8 +2060,8 @@ const Referrals = () => {
                     </div>
                   </div>
 
-                  <Button onClick={saveBankDetailsWithGate} className="bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2 rounded-xl">
-                    Save & Verify Account
+                  <Button onClick={saveBankDetailsWithGate} className="w-full sm:w-auto bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 px-6 rounded-xl">
+                    Save &amp; Verify Account
                   </Button>
                 </CardContent>
               </Card>
@@ -2066,24 +2070,24 @@ const Referrals = () => {
               <Card className="border border-slate-200 shadow-md rounded-2xl h-fit overflow-hidden bg-white">
                 <CardHeader className="bg-gradient-to-r from-slate-950 via-[#0A1128] to-slate-900 text-white p-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-extrabold text-white flex items-center gap-2">
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                       <span>💳 Withdraw Request</span>
                     </CardTitle>
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
+                    <span className="text-[9.5px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
                       Instant Payout
                     </span>
                   </div>
 
                   {/* CLEAR BALANCE & FEE HIGHLIGHT BANNER */}
                   <div className="mt-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-xs text-slate-100 font-semibold space-y-1.5 shadow-2xs">
-                    <div className="flex items-center justify-between flex-wrap gap-2 text-sm font-black">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm font-black">
                       <span>Total: <strong className="text-amber-300 font-black">₹{stats.walletBalance || stats.availableBalance || 0}</strong></span>
                       <span className="text-slate-400">•</span>
                       <span>Hold: <strong className="text-orange-300 font-black">₹{stats.walletHold || stats.pendingBalance || 0}</strong></span>
                     </div>
-                    <div className="text-[11px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
-                      <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM FEE)</strong></span>
-                      <span className="text-[9.5px] text-emerald-300 font-black bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">100% Tax Compliant</span>
+                    <div className="text-[10.5px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
+                      <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM)</strong></span>
+                      <span className="text-[9px] text-emerald-300 font-black bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">100% Tax Compliant</span>
                     </div>
                   </div>
                 </CardHeader>
@@ -2104,10 +2108,10 @@ const Referrals = () => {
                           <span className="font-extrabold text-slate-900">₹{Number(withdrawAmount)}</span>
                         </div>
                         <div className="flex justify-between items-center text-rose-700 font-semibold">
-                          <span>Fee: 15% (TDS + PLATFORM FEE)</span>
+                          <span>Fee: 15% (TDS + PLATFORM)</span>
                           <span className="font-bold">- ₹{calcWithdrawFee(Number(withdrawAmount)).fee}</span>
                         </div>
-                        <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-sm font-black">
+                        <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-xs sm:text-sm font-black">
                           <span className="text-slate-900">Net Bank Payout</span>
                           <span className="text-emerald-700">₹{calcWithdrawFee(Number(withdrawAmount)).net}</span>
                         </div>
@@ -2121,11 +2125,11 @@ const Referrals = () => {
                       value={withdrawNote}
                       onChange={(e) => setWithdrawNote(e.target.value)}
                       placeholder="E.g., urgent monthly settlement"
-                      className="min-h-16"
+                      className="min-h-16 text-xs"
                     />
                   </div>
 
-                  <Button onClick={requestWithdrawWithGate} className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.01]">
+                  <Button onClick={requestWithdrawWithGate} className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.01] active:scale-95">
                     Submit Withdrawal Request
                   </Button>
                 </CardContent>
@@ -2133,9 +2137,9 @@ const Referrals = () => {
             </div>
 
             {/* Withdrawals list */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-6">
-              <CardHeader className="border-b border-slate-100 pb-3 bg-slate-50/50">
-                <CardTitle className="text-sm font-extrabold text-navy">Withdrawal Audit History</CardTitle>
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-4 sm:mt-6">
+              <CardHeader className="border-b border-slate-100 p-4 pb-3 bg-slate-50/50">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Withdrawal Audit History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {withdrawals.length === 0 ? (
@@ -2143,8 +2147,8 @@ const Referrals = () => {
                     No withdrawals found in database ledger.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto text-xs">
-                    <table className="w-full text-left">
+                  <div className="overflow-x-auto scrollbar-none text-xs">
+                    <table className="w-full text-left min-w-[700px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
                           <th className="p-3">Transaction ID</th>
@@ -2222,16 +2226,16 @@ const Referrals = () => {
 
       {/* OTP Verification Gate dialog */}
       <Dialog open={showOTPDialog} onOpenChange={setShowOTPDialog}>
-        <DialogContent className="max-w-sm rounded-3xl bg-white border border-slate-200 p-6">
+        <DialogContent className="w-[92vw] sm:max-w-sm rounded-2xl sm:rounded-3xl bg-white border border-slate-200 p-4 sm:p-6">
           <DialogHeader className="text-center space-y-1">
-            <DialogTitle className="font-extrabold text-lg text-navy">🔒 Secure Verification Gate</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogTitle className="font-extrabold text-base sm:text-lg text-navy">🔒 Secure Verification Gate</DialogTitle>
+            <DialogDescription className="text-[11px] sm:text-xs text-slate-500">
               For security, verification is mandatory for bank account modifications or payouts.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-3">
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center text-xs font-semibold text-slate-700">
+          <div className="py-3 sm:py-4 space-y-3">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center text-xs font-semibold text-slate-700">
               {otpAction === "bank" ? "Modifying verified bank details." : `Requesting payout of ₹${otpTargetAmount}.`}
             </div>
 
@@ -2242,13 +2246,13 @@ const Referrals = () => {
                 placeholder="6-digit OTP code"
                 value={otpValue}
                 onChange={(e) => setOtpValue(e.target.value)}
-                className="font-mono text-center text-lg tracking-widest font-black"
+                className="font-mono text-center text-base sm:text-lg tracking-widest font-black"
                 maxLength={6}
               />
             </div>
           </div>
 
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex flex-row gap-2">
             <Button variant="outline" className="flex-1 rounded-xl text-xs font-bold border-slate-200" onClick={() => setShowOTPDialog(false)}>
               Cancel
             </Button>
@@ -2263,43 +2267,43 @@ const Referrals = () => {
       {/* Dynamic Profile detail slide drawer */}
       {selectedProfileNode && (
         <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between border-l border-slate-100">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center pb-4 border-b">
-                <h4 className="font-extrabold text-navy text-base">👤 Downline Member Profile</h4>
+          <div className="bg-white w-full max-w-md h-full shadow-2xl p-4 sm:p-6 overflow-y-auto flex flex-col justify-between border-l border-slate-100">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex justify-between items-center pb-3 sm:pb-4 border-b">
+                <h4 className="font-extrabold text-navy text-sm sm:text-base">👤 Downline Member Profile</h4>
                 <button onClick={() => setSelectedProfileNode(null)} className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 border-none cursor-pointer">
                   <X className="w-4 h-4 text-slate-500" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 bg-slate-50 border rounded-2xl p-4">
-                <span className="w-12 h-12 rounded-full bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-xl font-bold text-indigo-700">
+              <div className="flex items-center gap-3 bg-slate-50 border rounded-2xl p-3.5 sm:p-4">
+                <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-lg sm:text-xl font-bold text-indigo-700 shrink-0">
                   {selectedProfileNode.name.substring(0, 1).toUpperCase()}
                 </span>
-                <div className="text-left">
-                  <h4 className="font-black text-navy text-sm">{selectedProfileNode.name}</h4>
-                  <p className="text-xs text-slate-400">{selectedProfileNode.email}</p>
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">Code: {selectedProfileNode.referralCode || "—"}</p>
+                <div className="text-left min-w-0">
+                  <h4 className="font-black text-navy text-xs sm:text-sm truncate">{selectedProfileNode.name}</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-400 truncate">{selectedProfileNode.email}</p>
+                  <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">Code: {selectedProfileNode.referralCode || "—"}</p>
                 </div>
               </div>
 
               {/* Network stats list */}
-              <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="border border-slate-100 rounded-xl p-3 bg-white">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Level Tier</span>
-                  <span className="text-sm font-extrabold text-navy mt-1 block">Level {selectedProfileNode.levelNum}</span>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-left">
+                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
+                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Level Tier</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-navy mt-0.5 sm:mt-1 block">Level {selectedProfileNode.levelNum}</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-3 bg-white">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Purchases</span>
-                  <span className="text-sm font-extrabold text-navy mt-1 block">{selectedProfileNode.totalPurchases || 0} orders</span>
+                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
+                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Purchases</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-navy mt-0.5 sm:mt-1 block">{selectedProfileNode.totalPurchases || 0} orders</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-3 bg-white">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Joined Date</span>
-                  <span className="text-xs font-bold text-navy mt-1 block">{new Date(selectedProfileNode.createdAt).toLocaleDateString()}</span>
+                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
+                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Joined Date</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-navy mt-0.5 sm:mt-1 block">{new Date(selectedProfileNode.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-3 bg-white">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">KYC Status</span>
-                  <span className="text-xs font-bold text-navy mt-1 block">
+                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
+                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">KYC Status</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-navy mt-0.5 sm:mt-1 block">
                     {selectedProfileNode.firstOrderQualified ? "🟢 Verified Member" : "🟡 Registered Only"}
                   </span>
                 </div>
@@ -2329,7 +2333,7 @@ const Referrals = () => {
               </div>
             </div>
 
-            <Button className="w-full bg-navy text-white hover:bg-navy/95 font-bold py-2.5 rounded-xl mt-6" onClick={() => setSelectedProfileNode(null)}>
+            <Button className="w-full bg-navy text-white hover:bg-navy/95 font-bold py-2.5 rounded-xl mt-4 sm:mt-6" onClick={() => setSelectedProfileNode(null)}>
               Close Drawer Panel
             </Button>
           </div>
@@ -2339,18 +2343,18 @@ const Referrals = () => {
       {/* QR Code Modal Dialog */}
       {showInviteQR && (
         <Dialog open={showInviteQR} onOpenChange={setShowInviteQR}>
-          <DialogContent className="max-w-sm rounded-3xl bg-white border border-slate-200 p-6 text-center">
-            <div className="space-y-4">
+          <DialogContent className="w-[92vw] sm:max-w-sm rounded-2xl sm:rounded-3xl bg-white border border-slate-200 p-4 sm:p-6 text-center">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center pb-2 border-b">
-                <h4 className="font-extrabold text-navy text-sm">Your Invite QR Code</h4>
+                <h4 className="font-extrabold text-navy text-xs sm:text-sm">Your Invite QR Code</h4>
                 <button onClick={() => setShowInviteQR(false)} className="p-1 rounded-lg bg-slate-100 border-none cursor-pointer">
                   <X className="w-3.5 h-3.5 text-slate-500" />
                 </button>
               </div>
 
-              <div className="w-48 h-48 bg-slate-50 border-2 border-dashed rounded-2xl flex items-center justify-center mx-auto p-4">
-                <div className="w-full h-full bg-navy rounded-xl p-3 flex flex-col justify-between items-center text-white">
-                  <div className="grid grid-cols-5 gap-1.5 w-full h-full opacity-90">
+              <div className="w-40 h-40 sm:w-48 sm:h-48 bg-slate-50 border-2 border-dashed rounded-2xl flex items-center justify-center mx-auto p-3 sm:p-4">
+                <div className="w-full h-full bg-navy rounded-xl p-2.5 sm:p-3 flex flex-col justify-between items-center text-white">
+                  <div className="grid grid-cols-5 gap-1 sm:gap-1.5 w-full h-full opacity-90">
                     {Array.from({ length: 25 }).map((_, i) => (
                       <div
                         key={i}
@@ -2358,11 +2362,11 @@ const Referrals = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-[9px] font-black tracking-widest mt-2 font-mono">CODE: {referralCode}</span>
+                  <span className="text-[8.5px] sm:text-[9px] font-black tracking-widest mt-1.5 sm:mt-2 font-mono">CODE: {referralCode}</span>
                 </div>
               </div>
 
-              <div className="text-[10px] text-slate-500 font-bold bg-slate-50 p-2.5 rounded-xl">
+              <div className="text-[9.5px] sm:text-[10px] text-slate-500 font-bold bg-slate-50 p-2 sm:p-2.5 rounded-xl">
                 Scan with phone camera to download app with tag: {referralCode}
               </div>
             </div>
@@ -2371,33 +2375,35 @@ const Referrals = () => {
       )}
 
       {/* Training video popup dialog */}
-      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent className="max-w-lg rounded-3xl bg-white border border-slate-200 p-6">
-          <DialogHeader>
-            <DialogTitle className="font-extrabold text-navy text-base">🎥 ApexBee Referral Training Program</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Master Downline tree building and double your conversion rates.</DialogDescription>
-          </DialogHeader>
+      {showVideoDialog && (
+        <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+          <DialogContent className="w-[92vw] sm:max-w-lg rounded-2xl sm:rounded-3xl bg-white border border-slate-200 p-4 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="font-extrabold text-navy text-sm sm:text-base">🎥 ApexBee Referral Training Program</DialogTitle>
+              <DialogDescription className="text-[11px] sm:text-xs text-slate-500">Master Downline tree building and double your conversion rates.</DialogDescription>
+            </DialogHeader>
 
-          <div className="py-4 space-y-4">
-            <div className="aspect-video w-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center text-white border relative overflow-hidden">
-              <Play className="h-16 w-16 text-emerald-400 cursor-pointer hover:scale-110 transition-transform" />
-              <p className="text-xs font-bold text-slate-300 mt-2">Video: MLM tree construction strategies (12 mins)</p>
+            <div className="py-3 sm:py-4 space-y-3 sm:space-y-4">
+              <div className="aspect-video w-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center text-white border relative overflow-hidden">
+                <Play className="h-12 w-12 sm:h-16 sm:w-16 text-emerald-400 cursor-pointer hover:scale-110 transition-transform" />
+                <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-2">Video: MLM tree construction strategies (12 mins)</p>
+              </div>
+
+              <div className="space-y-1.5 sm:space-y-2 text-xs">
+                <h5 className="font-extrabold text-navy text-[11px] sm:text-xs">Curriculum Includes:</h5>
+                <p className="text-slate-600 text-[10.5px] sm:text-[11px]">• How to pitch local vendors on joining the marketplace.</p>
+                <p className="text-slate-600 text-[10.5px] sm:text-[11px]">• Understanding multi-tier product sales commissions payouts.</p>
+              </div>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <h5 className="font-extrabold text-navy">Curriculum Includes:</h5>
-              <p className="text-slate-600">• How to pitch local vendors on joining the marketplace.</p>
-              <p className="text-slate-600">• Understanding multi-tier product sales commissions payouts.</p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button className="w-full bg-navy text-white hover:bg-navy/95 rounded-xl font-bold text-xs" onClick={() => setShowVideoDialog(false)}>
-              Close Video Dialog
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button className="w-full bg-navy text-white hover:bg-navy/95 rounded-xl font-bold text-xs" onClick={() => setShowVideoDialog(false)}>
+                Close Video Dialog
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Footer />
     </div>

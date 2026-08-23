@@ -476,7 +476,7 @@ const Services = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-6 pb-8 relative z-10">
           {/* DYNAMIC SERVICES HERO BANNER (Managed via Admin Panel) */}
-          <DynamicHeroBanner placement="services_hero" heightClass="h-[320px] sm:h-[380px] md:h-[420px]" />
+          <DynamicHeroBanner placement="services_hero" heightClass="h-[360px] sm:h-[420px] md:h-[480px]" />
 
           {/* INSTANT SERVICE SEARCH BAR */}
           <div className="mt-5 flex flex-col sm:flex-row items-center gap-2 bg-white p-2 rounded-2xl shadow-2xl border border-slate-200">

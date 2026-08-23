@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LocationModal from "@/components/LocationModal";
 import { DynamicHeroBanner } from "@/components/DynamicHeroBanner";
+import { getDeviceCoordinates, reverseGeocode, saveActiveLocation } from "@/utils/locationHelper";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -207,28 +208,20 @@ export const LocalStores: React.FC = () => {
 
     syncLocation();
     window.addEventListener("storage", syncLocation);
-    window.addEventListener("user_location_updated", syncLocation);
-
-    // Auto-detect browser GPS if no location stored
-    if (!localStorage.getItem(LOCATION_KEY) && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const locObj: StoredLocation = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            colony: "Current Area",
-            pincode: "",
-            address: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`
-          };
-          setUserLocation(locObj);
-          localStorage.setItem(LOCATION_KEY, JSON.stringify(locObj));
-        },
-        () => null,
-        { timeout: 8000 }
-      );
+    // Auto-detect location if none stored
+    if (!localStorage.getItem(LOCATION_KEY) && !localStorage.getItem("userLocation")) {
+      getDeviceCoordinates()
+        .then(coords => reverseGeocode(coords.lat, coords.lng))
+        .then(result => {
+          saveActiveLocation(result);
+        })
+        .catch(() => null);
     }
 
-    return () => window.removeEventListener("storage", syncLocation);
+    return () => {
+      window.removeEventListener("storage", syncLocation);
+      window.removeEventListener("user_location_updated", syncLocation);
+    };
   }, []);
 
   const handleSaveLocation = (loc: StoredLocation) => {
@@ -394,7 +387,7 @@ export const LocalStores: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 pb-12 relative z-10">
           {/* DYNAMIC LOCAL STORES HERO BANNER (Managed via Admin Panel) */}
-          <DynamicHeroBanner placement="stores_hero" heightClass="h-[340px] sm:h-[400px] md:h-[440px]" />
+          <DynamicHeroBanner placement="stores_hero" heightClass="h-[360px] sm:h-[420px] md:h-[480px]" />
 
           {/* SEARCH & LOCATION BAR */}
           <div className="mt-6 bg-white p-3 rounded-2xl shadow-2xl border border-slate-200 flex flex-col md:flex-row items-center gap-3">

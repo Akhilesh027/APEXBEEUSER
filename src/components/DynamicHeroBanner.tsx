@@ -35,7 +35,7 @@ export const DynamicHeroBanner: React.FC<DynamicHeroBannerProps> = ({
   category,
   defaultBanners = [],
   className = '',
-  heightClass = 'h-[220px] sm:h-[300px] md:h-[360px] lg:h-[400px]'
+  heightClass = 'h-[250px] xs:h-[290px] sm:h-[360px] md:h-[420px] lg:h-[480px]'
 }) => {
   const navigate = useNavigate();
   const [banners, setBanners] = useState<BannerData[]>(defaultBanners);
@@ -138,109 +138,111 @@ export const DynamicHeroBanner: React.FC<DynamicHeroBannerProps> = ({
         }}
       />
 
-      {/* Dynamic Overlay Gradient */}
+      {/* Dynamic Overlay Gradient - darker at the bottom for high text readability */}
       <div
-        className={`absolute inset-0 bg-gradient-to-r ${current.bgGradient || 'from-stone-950/90 via-stone-900/70 to-transparent'
-          } opacity-90 mix-blend-multiply transition-colors duration-700`}
+        className={`absolute inset-0 bg-gradient-to-t from-stone-950/95 via-stone-950/60 to-black/20 opacity-95 transition-colors duration-700`}
       />
 
       {/* Aesthetic ambient lighting glow */}
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-black/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-stone-950/40 via-transparent to-transparent pointer-events-none" />
 
-      {/* Content Container */}
-      <div className="absolute inset-0 p-5 sm:p-8 md:p-10 flex flex-col justify-between z-10 text-white">
-        {/* Top Badges */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+      {/* Content Container: Badges at top, Content & Buttons at bottom */}
+      <div className="absolute inset-0 p-4 sm:p-6 md:p-8 flex flex-col justify-between z-10 text-white">
+        {/* Top Badges (Up Side) */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
           {current.tag && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-stone-950 text-[11px] md:text-xs font-black uppercase tracking-wider shadow-lg animate-pulse">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-400 text-stone-950 text-[10px] sm:text-[11px] md:text-xs font-black uppercase tracking-wider shadow-lg animate-pulse">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>{current.tag}</span>
             </div>
           )}
 
           {current.discount && (
-            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-amber-300 border border-white/20 text-[11px] md:text-xs font-extrabold shadow">
-              <Tag className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 backdrop-blur-md text-amber-300 border border-white/20 text-[10px] sm:text-[11px] md:text-xs font-extrabold shadow">
+              <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>{current.discount}</span>
             </div>
           )}
         </div>
 
-        {/* Middle / Bottom Headline & CTA */}
-        <div className="max-w-xl md:max-w-2xl space-y-2 md:space-y-3">
-          <h2 className="text-xl sm:text-2xl md:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-md">
-            {current.title}
-          </h2>
+        {/* Down Side: Headline, Subtitle, CTA Buttons & Dots */}
+        <div className="space-y-2 sm:space-y-2.5">
+          <div className="max-w-xl md:max-w-2xl space-y-1 sm:space-y-1.5">
+            <h2 className="text-base sm:text-2xl md:text-3.5xl font-black leading-tight tracking-tight text-white drop-shadow-md line-clamp-2">
+              {current.title}
+            </h2>
 
-          {current.subtitle && (
-            <p className="text-xs sm:text-sm md:text-base text-stone-200 line-clamp-2 drop-shadow leading-relaxed">
-              {current.subtitle}
-            </p>
-          )}
-
-          {/* CTA Button & Coupon Row */}
-          <div className="flex items-center gap-3 pt-2 flex-wrap">
-            <button
-              onClick={() => handleBannerClick(current)}
-              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs sm:text-sm font-black transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-xl shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
-            >
-              <span>{current.buttonText || 'Explore Now'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            {current.couponCode && (
-              <button
-                onClick={(e) => handleCopyCode(e, current.couponCode!)}
-                className="px-3.5 py-2.5 rounded-xl bg-stone-900/80 hover:bg-stone-900 backdrop-blur border border-amber-400/40 text-amber-300 text-xs font-mono font-bold flex items-center gap-2 transition cursor-pointer"
-              >
-                <span>CODE: {current.couponCode}</span>
-                {copiedCode === current.couponCode ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5 text-amber-300" />
-                )}
-              </button>
+            {current.subtitle && (
+              <p className="text-[11px] sm:text-xs md:text-sm text-stone-200 line-clamp-2 drop-shadow leading-relaxed">
+                {current.subtitle}
+              </p>
             )}
-          </div>
-        </div>
 
-        {/* Carousel Navigation Dots & Controls */}
-        {banners.length > 1 && (
-          <div className="flex items-center justify-between pt-2">
-            {/* Dots */}
-            <div className="flex items-center gap-1.5">
-              {banners.map((_, idx) => (
+            {/* CTA Button & Coupon Row */}
+            <div className="flex items-center gap-2 sm:gap-3 pt-0.5 sm:pt-1 flex-wrap">
+              <button
+                onClick={() => handleBannerClick(current)}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs sm:text-sm font-black transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-xl shadow-amber-500/20 flex items-center gap-1.5 sm:gap-2 cursor-pointer"
+              >
+                <span>{current.buttonText || 'Explore Now'}</span>
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+
+              {current.couponCode && (
                 <button
-                  key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${currentIndex === idx ? 'w-8 bg-amber-400' : 'w-2 bg-white/40 hover:bg-white/70'
-                    }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-
-            {/* Left / Right Arrow Buttons */}
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() =>
-                  setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1))
-                }
-                className="p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white border border-white/20 transition cursor-pointer"
-                aria-label="Previous Slide"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setCurrentIndex((prev) => (prev + 1) % banners.length)}
-                className="p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white border border-white/20 transition cursor-pointer"
-                aria-label="Next Slide"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                  onClick={(e) => handleCopyCode(e, current.couponCode!)}
+                  className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-stone-900/80 hover:bg-stone-900 backdrop-blur border border-amber-400/40 text-amber-300 text-[10px] sm:text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <span>CODE: {current.couponCode}</span>
+                  {copiedCode === current.couponCode ? (
+                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
-        )}
+
+          {/* Carousel Navigation Dots & Controls */}
+          {banners.length > 1 && (
+            <div className="flex items-center justify-between pt-1.5 sm:pt-2">
+              {/* Dots */}
+              <div className="flex items-center gap-1.5">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                      currentIndex === idx ? 'w-6 sm:w-8 bg-amber-400' : 'w-1.5 sm:w-2 bg-white/40 hover:bg-white/70'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* Left / Right Arrow Buttons */}
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1))
+                  }
+                  className="p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white border border-white/20 transition cursor-pointer"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentIndex((prev) => (prev + 1) % banners.length)}
+                  className="p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white border border-white/20 transition cursor-pointer"
+                  aria-label="Next Slide"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

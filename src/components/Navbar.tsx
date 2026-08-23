@@ -13,6 +13,28 @@ import {
   Bell,
   MapPin,
   Download,
+  Heart,
+  Store,
+  Utensils,
+  Sparkles,
+  Zap,
+  HelpCircle,
+  Phone,
+  FileText,
+  LogOut,
+  Globe,
+  ExternalLink,
+  ArrowRight,
+  ShieldCheck,
+  Compass,
+  Briefcase,
+  Gift,
+  CheckCircle2,
+  Mic,
+  Camera,
+  ScanLine,
+  Clock,
+  Flame,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -124,6 +146,56 @@ const Navbar = () => {
   });
   const trendingSearches = ["Groceries", "Organic Ghee", "Aromatherapy", "Electrician", "Tuitions"];
   const nearbyStoresMock = ["Nellore Supermarket", "Buchireddypalem Agro Mill", "Apex Pharmacy"];
+
+  // 📍 Location synchronization with localStorage and storage events
+  useEffect(() => {
+    const loadSavedLoc = () => {
+      try {
+        const stored =
+          localStorage.getItem("user_location") ||
+          localStorage.getItem("userLocation") ||
+          localStorage.getItem("apexbee_user_location");
+        if (stored) {
+          setUserLocation(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.warn("Error parsing stored location", e);
+      }
+    };
+    loadSavedLoc();
+    window.addEventListener("storage", loadSavedLoc);
+    window.addEventListener("user_location_updated", loadSavedLoc);
+    return () => {
+      window.removeEventListener("storage", loadSavedLoc);
+      window.removeEventListener("user_location_updated", loadSavedLoc);
+    };
+  }, []);
+
+  const locationDisplayLabel = useMemo(() => {
+    if (!userLocation) return "Select Location";
+    const colony = userLocation.colony || userLocation.mandal;
+    const dist = userLocation.district || userLocation.state;
+    const pin = userLocation.pincode ? ` - ${userLocation.pincode}` : "";
+    if (colony) {
+      return `${colony}${dist && dist !== colony ? `, ${dist}` : ""}${pin}`;
+    }
+    if (userLocation.address) {
+      return userLocation.address.split(",")[0];
+    }
+    return "Select Location";
+  }, [userLocation]);
+
+  // 🔒 Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [mobileMenuOpen]);
 
   const closeAllPopovers = useCallback(() => {
     setEarnDropdownOpen(false);
@@ -482,14 +554,17 @@ const Navbar = () => {
 
   const locationLabel = useMemo(() => {
     if (!userLocation) return "Set Location";
-    const colony = userLocation.colony?.trim();
-    const mandal = userLocation.mandal?.trim();
-    const district = userLocation.district?.trim();
-    const pin = userLocation.pincode;
+    const cleanStr = (s?: string) => (s && s !== "Unknown area" && s !== "Current Area" && s !== "undefined" ? s.trim() : "");
+    const colony = cleanStr(userLocation.colony);
+    const mandal = cleanStr(userLocation.mandal);
+    const district = cleanStr(userLocation.district);
+    const pin = userLocation.pincode ? String(userLocation.pincode).trim() : "";
     if (colony && pin) return `${colony}, ${pin}`;
     if (colony) return colony;
     if (mandal && pin) return `${mandal}, ${pin}`;
+    if (mandal) return mandal;
     if (district && pin) return `${district} (${pin})`;
+    if (district) return district;
     if (pin) return `PIN: ${pin}`;
     return "Location Set";
   }, [userLocation]);
@@ -935,17 +1010,270 @@ const Navbar = () => {
 
   return (
     <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full font-sans">
-      {/* Row 1 — FIXED DESKTOP TOP HEADER BAR */}
-      <div className="border-b border-white/10">
-        <div className="container mx-auto px-2 sm:px-4">
+      {/* ========================================================
+          📱 MOBILE TOP BAR (Row 1 on Mobile: Logo + Location + Icons)
+          ======================================================== */}
+      <div className="lg:hidden border-b border-white/10 bg-[#0A1128]">
+        <div className="px-3 sm:px-4 flex items-center justify-between h-14 gap-2">
+          {/* Brand Logo */}
+          <Link to="/" className="shrink-0 flex items-center" onClick={closeAllPopovers}>
+            <img src={logo} alt="ApexBee" className="w-28 sm:w-32 h-auto object-contain" />
+          </Link>
+
+          {/* Right Action Cluster */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            {/* Notification Bell */}
+            <div className="relative flex items-center">
+              <button
+                type="button"
+                aria-label="Notifications"
+                className="relative cursor-pointer hover:text-amber-400 flex items-center bg-transparent border-none p-1.5 text-white transition-colors"
+                onClick={() => setNotificationsOpen(true)}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold font-sans animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Cart Icon */}
+            <Link to="/cart" className="relative cursor-pointer hover:text-accent flex items-center p-1.5">
+              <ShoppingBag className="h-5 w-5 text-white" />
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#F3BA12] text-[#0A1128] text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black font-sans shadow-sm">
+                  {cartItemsCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Mobile Drawer Trigger */}
+            <button
+              type="button"
+              aria-label="Toggle Menu"
+              className="p-1.5 text-white hover:text-amber-400 cursor-pointer bg-transparent border-none focus:outline-none transition-transform"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================
+          📱 MOBILE SEARCH BAR & HORIZONTAL CATEGORY ACTION STRIP (Row 2)
+          ======================================================== */}
+      <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5">
+        {/* Mobile Search Input */}
+        <div className="relative" ref={searchRef}>
+          <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
+            <Search className="h-4 w-4 text-slate-400 mr-2 shrink-0" />
+            <Input
+              type="text"
+              placeholder="Search 15-min groceries, food, stores..."
+              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-xs font-semibold text-slate-800 placeholder:text-slate-400 h-auto bg-transparent flex-1 shadow-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const q = searchQuery.trim();
+                  if (q) {
+                    const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+                    setRecentSearches(updated);
+                    localStorage.setItem("recent_searches", JSON.stringify(updated));
+                    setSearchFocused(false);
+                    navigate(`/products?q=${encodeURIComponent(q)}`);
+                  }
+                }
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-slate-400 hover:text-slate-600 mr-1.5 p-0.5 rounded-full border-none bg-transparent cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowVoiceModal(true)}
+                className="p-1 rounded-lg text-amber-600 hover:bg-amber-50 cursor-pointer bg-transparent border-none transition-colors"
+                title="Voice Search"
+                aria-label="Voice Search"
+              >
+                <Mic className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBarcodeModal(true)}
+                className="p-1 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer bg-transparent border-none transition-colors"
+                title="Barcode / Visual Scan"
+                aria-label="Barcode / Visual Scan"
+              >
+                <Camera className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Autocomplete / Suggestions Popover on Mobile */}
+          {searchFocused && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-3.5 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+              {recentSearches.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-slate-400" />
+                      Recent Searches
+                    </p>
+                    <button
+                      className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
+                      onClick={() => {
+                        setRecentSearches([]);
+                        localStorage.removeItem("recent_searches");
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {recentSearches.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setSearchQuery(s);
+                          setSearchFocused(false);
+                          navigate(`/products?q=${encodeURIComponent(s)}`);
+                        }}
+                        className="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Clock className="h-2.5 w-2.5 text-slate-400" />
+                        <span>{s}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-amber-500" />
+                  Trending Searches
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {trendingSearches.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSearchQuery(s);
+                        setSearchFocused(false);
+                        navigate(`/products?q=${encodeURIComponent(s)}`);
+                      }}
+                      className="text-[11px] bg-amber-50/70 hover:bg-amber-100/70 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Sparkles className="h-2.5 w-2.5 text-amber-500" />
+                      <span>{s}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <Store className="h-3 w-3 text-slate-400" />
+                  Nearby Stores
+                </p>
+                <div className="space-y-1">
+                  {nearbyStoresMock.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSearchFocused(false);
+                        navigate("/local-stores");
+                      }}
+                      className="w-full text-left text-[11px] text-navy font-semibold hover:bg-slate-50 p-1.5 rounded-lg transition-colors flex items-center gap-2 border-none bg-transparent cursor-pointer"
+                    >
+                      <Store className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>{s}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Horizontal Quick-Action Category Action Strip */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+          <Link
+            to="/products"
+            className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            ⚡ Deals
+          </Link>
+          <Link
+            to="/grocery"
+            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            🥦 Grocery
+          </Link>
+          <Link
+            to="/food"
+            className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 shadow-sm transition-all"
+          >
+            🍔 Food & Dining <span className="text-[8px] bg-slate-950 text-amber-400 px-1 rounded">HOT</span>
+          </Link>
+          <Link
+            to="/fashion"
+            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            👗 Fashion
+          </Link>
+          <Link
+            to="/local-stores"
+            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            🏪 Stores
+          </Link>
+          <Link
+            to="/services"
+            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            🛠️ Services
+          </Link>
+          <Link
+            to="/academy"
+            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            🎓 Academy
+          </Link>
+          <Link
+            to="/earn-with-apexbee"
+            className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+          >
+            💰 Earn Money
+          </Link>
+        </div>
+      </div>
+
+      {/* ========================================================
+          💻 DESKTOP TOP HEADER (Row 1 for Desktop >= lg)
+          ======================================================== */}
+      <div className="hidden lg:block border-b border-white/10">
+        <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14 shrink-0 flex-nowrap">
             {/* Logo */}
             <Link to="/" className="text-2xl font-bold shrink-0 flex items-center" onClick={closeAllPopovers}>
-              <img src={logo} alt="logo" className="w-28 sm:w-32 h-auto object-contain" />
+              <img src={logo} alt="ApexBee" className="w-32 h-auto object-contain" />
             </Link>
 
-            {/* Desktop Menu — FIXED NO-MOVE NO-WRAP */}
-            <div className="hidden lg:flex items-center space-x-4 xl:space-x-5 text-[11px] xl:text-xs font-extrabold tracking-wider whitespace-nowrap shrink-0">
+            {/* Desktop Navigation Links */}
+            <div className="flex items-center space-x-4 xl:space-x-5 text-[11px] xl:text-xs font-extrabold tracking-wider whitespace-nowrap shrink-0">
               <Link to="/" className="hover:text-amber-400 transition">
                 HOME
               </Link>
@@ -968,7 +1296,8 @@ const Navbar = () => {
               <Link to="/community" className="hover:text-accent transition">
                 COMMUNITY
               </Link>
-              {/* Earn With Us */}
+
+              {/* Earn With Us Dropdown */}
               <div className="relative" ref={earnRef}>
                 <Button
                   variant="ghost"
@@ -1020,19 +1349,10 @@ const Navbar = () => {
               </Link>
             </div>
 
-            <FormModal
-              open={modalOpen}
-              onClose={() => setModalOpen(false)}
-              title={modalTitle}
-              endpoint={modalEndpoint}
-            />
-
-            {/* Right Section */}
+            {/* Desktop Right Cluster */}
             <div className="flex items-center space-x-3">
 
-
-
-              {/* Notification icon (mobile & desktop visible with attached dropdown) */}
+              {/* Notification icon */}
               <div className="relative flex items-center" ref={notificationRef}>
                 <button
                   type="button"
@@ -1047,139 +1367,9 @@ const Navbar = () => {
                     </span>
                   )}
                 </button>
-
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[384px] bg-white border border-slate-100 rounded-2xl shadow-2xl z-[100] text-navy p-4 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="flex items-center justify-between border-b pb-2.5 mb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🔔</span>
-                        <p className="font-extrabold text-sm text-navy">
-                          Notifications ({allNotifications.filter((n: any) => !n.isRead && n.status !== "read").length})
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {unreadCount > 0 && (
-                          <button
-                            className="text-[10px] text-accent font-black hover:underline border-none bg-transparent cursor-pointer"
-                            onClick={() => {
-                              setNotifications((prev) =>
-                                prev.map((n) => ({ ...n, isRead: true, status: "read" }))
-                              );
-                              setUnreadCount(0);
-                            }}
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                        <button
-                          className="text-[10px] text-slate-500 font-bold hover:underline border-none bg-transparent cursor-pointer"
-                          onClick={() => setNotificationsOpen(false)}
-                        >
-                          ✕ Close
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Grouping Tabs */}
-                    <div className="flex gap-1 overflow-x-auto pb-1 mb-2.5 border-b scrollbar-none">
-                      {[
-                        { key: "all", label: "All" },
-                        { key: "orders", label: "Orders" },
-                        { key: "offers", label: "Offers" },
-                        { key: "wallet", label: "Wallet" },
-                        { key: "franchise", label: "Network" },
-                      ].map((tab) => (
-                        <button
-                          key={tab.key}
-                          onClick={() => setActiveNotificationTab(tab.key)}
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap border-none cursor-pointer ${activeNotificationTab === tab.key
-                            ? "bg-[#0A1128] text-white"
-                            : "text-muted-foreground hover:bg-slate-100 bg-transparent"
-                            }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                      {filteredNotifications.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p className="text-2xl mb-1">📭</p>
-                          <p className="text-xs font-semibold">No notifications in this category.</p>
-                        </div>
-                      ) : (
-                        filteredNotifications.map((n: any) => {
-                          const isUnread = !n.isRead && n.status !== "read";
-                          return (
-                            <div
-                              key={n._id}
-                              onClick={() => {
-                                if (isUnread) handleMarkAsRead(n._id);
-                                if (n.link) {
-                                  navigate(n.link);
-                                  setNotificationsOpen(false);
-                                }
-                              }}
-                              className={`p-3 rounded-xl transition text-left flex gap-2.5 cursor-pointer border ${isUnread
-                                ? "bg-blue-50/70 border-blue-200/80 hover:bg-blue-100/60"
-                                : "bg-slate-50/70 border-slate-100 hover:bg-slate-100"
-                                }`}
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${n.category === "orders"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : n.category === "offers"
-                                        ? "bg-amber-100 text-amber-700"
-                                        : n.category === "wallet"
-                                          ? "bg-green-100 text-green-700"
-                                          : "bg-purple-100 text-purple-700"
-                                      }`}
-                                  >
-                                    {n.category === "franchise" ? "Network" : n.category}
-                                  </span>
-                                  {isUnread && (
-                                    <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0" />
-                                  )}
-                                </div>
-                                <p className="font-extrabold text-[#0A1128] text-xs mt-1 leading-tight">
-                                  {n.title}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
-                                  {n.message}
-                                </p>
-                                <p className="text-[8px] text-slate-400 mt-1 font-semibold">
-                                  {new Date(n.createdAt).toLocaleDateString([], {
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </div>
-                              {isUnread && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMarkAsRead(n._id);
-                                  }}
-                                  className="text-[9px] text-accent font-black hover:underline shrink-0 align-self-start mt-1 border-none bg-transparent cursor-pointer"
-                                >
-                                  Mark Read
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Cart Icon (mobile & desktop visible) */}
+              {/* Cart Icon */}
               <Link to="/cart" className="relative cursor-pointer hover:text-accent flex items-center">
                 <ShoppingBag className="h-5 w-5 text-white" />
                 {cartItemsCount > 0 && (
@@ -1189,8 +1379,8 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Wishlist Link with notification badge */}
-              <Link to="/wishlist" className="hidden sm:flex items-center gap-1.5 hover:text-accent transition text-xs relative">
+              {/* Wishlist Link */}
+              <Link to="/wishlist" className="flex items-center gap-1.5 hover:text-accent transition text-xs relative">
                 <span>Wishlist</span>
                 {wishlistCount > 0 && (
                   <span className="bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold font-sans">
@@ -1202,7 +1392,7 @@ const Navbar = () => {
               {loggedInUser && (
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7 flex items-center gap-1 hidden sm:flex"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7 flex items-center gap-1"
                   onClick={() => navigate("/referrals")}
                   title={`Wallet Available: ${formatMoney(walletAvailable)} (Hold: ${formatMoney(walletHold)})`}
                   disabled={loading.wallet}
@@ -1211,19 +1401,16 @@ const Navbar = () => {
                   {loading.wallet ? <span className="animate-pulse">...</span> : formatMoney(walletAvailable)}
                 </Button>
               )}
-
-              {/* Mobile Menu Toggle */}
-              <button className="lg:hidden ml-1" onClick={() => setMobileMenuOpen((v) => !v)}>
-                {mobileMenuOpen ? <X className="h-6 w-6 cursor-pointer text-white" /> : <Menu className="h-6 w-6 cursor-pointer text-white" />}
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 2 (Desktop only, hidden on mobile) */}
+      {/* ========================================================
+          💻 DESKTOP ROW 2 (Shop by Category + Search Bar + User Controls)
+          ======================================================== */}
       <div className="hidden lg:flex container mx-auto px-4 py-3 items-center gap-4">
-        {/* ✅ Shop by Category dropdown */}
+        {/* Shop by Category dropdown */}
         <div className="relative" ref={shopByRef}>
           <Button
             variant="outline"
@@ -1237,7 +1424,7 @@ const Navbar = () => {
           {categoryDropdown}
         </div>
 
-        {/* Search */}
+        {/* Desktop Search Bar */}
         <div className="flex-1 relative max-w-2xl" ref={searchRef}>
           <Input
             type="text"
@@ -1259,23 +1446,37 @@ const Navbar = () => {
               }
             }}
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2.5">
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-slate-400 hover:text-slate-600 mr-1 p-1 rounded-full border-none bg-transparent cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <button
+              type="button"
               onClick={() => setShowVoiceModal(true)}
-              className="text-muted-foreground hover:text-navy cursor-pointer bg-transparent border-none p-0 text-sm leading-none"
+              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 cursor-pointer bg-transparent border-none transition-colors"
               title="Voice Search"
+              aria-label="Voice Search"
             >
-              🎤
+              <Mic className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={() => setShowBarcodeModal(true)}
-              className="text-muted-foreground hover:text-navy cursor-pointer bg-transparent border-none p-0 text-sm leading-none"
-              title="Barcode Scan"
+              className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer bg-transparent border-none transition-colors"
+              title="Barcode / Visual Scan"
+              aria-label="Barcode / Visual Scan"
             >
-              📷
+              <Camera className="h-4 w-4" />
             </button>
-            <Search
-              className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-navy transition-colors"
+            <button
+              type="button"
+              className="p-1.5 rounded-lg bg-navy text-amber-400 hover:bg-navy/90 cursor-pointer transition-colors border-none"
               onClick={() => {
                 const q = searchQuery.trim();
                 if (q) {
@@ -1286,7 +1487,11 @@ const Navbar = () => {
                   navigate(`/products?q=${encodeURIComponent(q)}`);
                 }
               }}
-            />
+              title="Search"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
           </div>
 
           {searchFocused && (
@@ -1294,9 +1499,12 @@ const Navbar = () => {
               {recentSearches.length > 0 && (
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent Searches</p>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      Recent Searches
+                    </p>
                     <button
-                      className="text-[9px] text-red-500 hover:underline font-bold"
+                      className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
                       onClick={() => {
                         setRecentSearches([]);
                         localStorage.removeItem("recent_searches");
@@ -1314,9 +1522,10 @@ const Navbar = () => {
                           setSearchFocused(false);
                           navigate(`/products?q=${encodeURIComponent(s)}`);
                         }}
-                        className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors"
+                        className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
-                        🕒 {s}
+                        <Clock className="h-3 w-3 text-slate-400" />
+                        <span>{s}</span>
                       </button>
                     ))}
                   </div>
@@ -1324,7 +1533,10 @@ const Navbar = () => {
               )}
 
               <div className="mb-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">🔥 Trending Searches</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                  <Flame className="h-3.5 w-3.5 text-amber-500" />
+                  Trending Searches
+                </p>
                 <div className="flex gap-2 flex-wrap">
                   {trendingSearches.map((s) => (
                     <button
@@ -1334,16 +1546,20 @@ const Navbar = () => {
                         setSearchFocused(false);
                         navigate(`/products?q=${encodeURIComponent(s)}`);
                       }}
-                      className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors"
+                      className="text-xs bg-amber-50/70 hover:bg-amber-100/70 text-amber-900 px-3 py-1.5 rounded-xl border border-amber-200/60 transition-colors flex items-center gap-1.5 cursor-pointer font-semibold"
                     >
-                      {s}
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      <span>{s}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">📍 Nearby Stores</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                  <Store className="h-3.5 w-3.5 text-slate-400" />
+                  Nearby Stores
+                </p>
                 <div className="space-y-1.5">
                   {nearbyStoresMock.map((s) => (
                     <button
@@ -1352,9 +1568,10 @@ const Navbar = () => {
                         setSearchFocused(false);
                         navigate("/local-stores");
                       }}
-                      className="w-full text-left text-xs text-navy font-semibold hover:bg-slate-50 p-2 rounded-lg transition-colors flex items-center gap-2"
+                      className="w-full text-left text-xs text-navy font-semibold hover:bg-slate-50 p-2 rounded-lg transition-colors flex items-center gap-2 border-none bg-transparent cursor-pointer"
                     >
-                      🏪 {s}
+                      <Store className="h-4 w-4 text-emerald-600" />
+                      <span>{s}</span>
                     </button>
                   ))}
                 </div>
@@ -1363,8 +1580,8 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* ✅ Orders + Cart (Desktop) */}
-        <div className="hidden lg:flex items-center gap-4">
+        {/* Orders + Cart + User (Desktop) */}
+        <div className="flex items-center gap-4">
           {loggedInUser ? (
             <>
               {/* Orders */}
@@ -1404,7 +1621,6 @@ const Navbar = () => {
                     Hi, {loggedInUser.name || "User"}
                   </Link>
 
-                  {/* ✅ show available + hold */}
                   <span className="text-xs text-green-400">
                     Wallet: {formatMoney(walletAvailable)}
                     {walletHold > 0 ? (
@@ -1456,286 +1672,383 @@ const Navbar = () => {
             </Link>
           )}
         </div>
-
-        {/* ✅ Mobile Icons (Cart + Orders + Login) */}
-        <div className="flex lg:hidden items-center gap-3">
-          {loggedInUser ? (
-            <>
-              <Link to="/my-orders" className="relative">
-                <Package className="h-5 w-5" />
-                {badge(ordersCount, loading.orders)}
-              </Link>
-
-              <Link to="/cart" className="relative">
-                <ShoppingBag className="h-5 w-5" />
-                {badge(cartItemsCount, loading.cart)}
-              </Link>
-            </>
-          ) : (
-            <Link to="/login">
-              <User className="h-5 w-5" />
-            </Link>
-          )}
-        </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* ========================================================
+          🚀 SLIDE-OVER MOBILE DRAWER (Modern Slide-Out Menu)
+          ======================================================== */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-navy-dark border-t border-navy-light text-xs font-semibold">
-          <div className="container mx-auto px-4 py-4">
-            {/* Search Input inside Mobile Drawer Menu */}
-            <div className="mb-4">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search groceries, products, services..."
-                  className="w-full bg-white text-navy pr-10 rounded-xl focus:ring-2 focus:ring-accent font-medium text-xs"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const q = searchQuery.trim();
-                      if (q) {
-                        setMobileMenuOpen(false);
-                        navigate(`/products?q=${encodeURIComponent(q)}`);
-                      }
-                    }
-                  }}
-                />
+        <div className="fixed inset-0 z-[100] lg:hidden flex justify-end">
+          {/* Backdrop Blur Overlay */}
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in cursor-pointer"
+          />
+
+          {/* Slide-out Drawer Panel */}
+          <div className="relative z-[101] w-[86vw] max-w-sm h-full bg-gradient-to-b from-[#0A1128] via-[#0E1738] to-[#0A1128] text-white shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300 border-l border-white/10">
+            {/* Drawer Top Bar & Profile Header */}
+            <div className="p-4 border-b border-white/10 bg-white/5 shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
+                  <img src={logo} alt="ApexBee" className="w-24 h-auto object-contain" />
+                </Link>
                 <button
-                  onClick={() => {
-                    const q = searchQuery.trim();
-                    if (q) {
-                      setMobileMenuOpen(false);
-                      navigate(`/products?q=${encodeURIComponent(q)}`);
-                    }
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-navy cursor-pointer bg-transparent border-none"
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors border-none cursor-pointer"
+                  aria-label="Close menu"
                 >
-                  <Search className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <Link to="/" className="block py-2 hover:text-accent transition" onClick={() => setMobileMenuOpen(false)}>
-                HOME
-              </Link>
-              <Link
-                to="/categories"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                CATEGORY
-              </Link>
-              <Link
-                to="/local-stores"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                LOCAL STORES
-              </Link>
-              <Link
-                to="/services"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                SERVICES
-              </Link>
-              <Link
-                to="/academy"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                ACADEMY
-              </Link>
-              <Link
-                to="/community"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                COMMUNITY
-              </Link>
-              <Link
-                to="/referrals"
-                className="block py-2 hover:text-accent transition text-amber-400 font-extrabold"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                REFER & EARN
-              </Link>
-
-              {/* Mobile Earn dropdown */}
-              <div>
-                <button
-                  className="flex items-center justify-between w-full py-2 hover:text-accent transition"
-                  onClick={() => setMobileEarnOpen((v) => !v)}
-                >
-                  <span>EARN WITH US</span>
-                  <ChevronRight className={`h-4 w-4 transition-transform ${mobileEarnOpen ? "rotate-90" : ""}`} />
-                </button>
-
-                {mobileEarnOpen && (
-                  <div className="pl-4 space-y-2 mt-2 border-l border-navy-light text-slate-300">
-                    <Link
-                      to="/earn-with-apexbee"
-                      className="block py-2 text-accent font-bold hover:text-accent transition"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      🚀 OPPORTUNITIES MARKETPLACE
-                    </Link>
-                    <button
-                      className="block w-full text-left py-2 hover:text-accent transition"
-                      onClick={() => handleOpenForm("Become a Vendor", "vendor")}
-                    >
-                      BECOME A VENDOR
-                    </button>
-                    <button
-                      className="block w-full text-left py-2 hover:text-accent transition"
-                      onClick={() => handleOpenForm("Become a Franchiser", "franchiser")}
-                    >
-                      BECOME A FRANCHISER
-                    </button>
-                    <button
-                      className="block w-full text-left py-2 hover:text-accent transition"
-                      onClick={() => handleOpenForm("Become a Freelancer", "freelancer")}
-                    >
-                      BECOME A FREELANCER
-                    </button>
-                    <button
-                      className="block w-full text-left py-2 hover:text-accent transition"
-                      onClick={() => handleOpenForm("Become an Entrepreneur", "entrepreneur")}
-                    >
-                      BECOME AN ENTREPRENEUR
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <Link
-                to="/referrals"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                REFER & EARN
-              </Link>
-              <Link
-                to="/wishlist"
-                className="block py-2 hover:text-accent transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                WISHLIST
-              </Link>
-            </div>
-
-            {/* Mobile Language Controls */}
-            <div className="pt-4 mt-2 border-t border-navy-light flex items-center justify-end gap-2 text-slate-200">
-
-              <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 text-xs font-semibold">
-                <span className="mr-0.5">🌐</span>
-                {Object.entries(languages).map(([code]) => (
-                  <button
-                    key={code}
-                    onClick={() => {
-                      setActiveLang(code);
-                      localStorage.setItem("user_language", code);
-                    }}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${activeLang === code ? "bg-accent text-white" : "text-slate-300 hover:text-white"}`}
-                  >
-                    {code.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* User Section - Mobile */}
-            <div className="mt-6 pt-6 border-t border-navy-light">
+              {/* User Profile / Guest Card */}
               {loggedInUser ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Hi, {loggedInUser.name || "User"}</span>
-                      <span className="text-sm text-green-400">
-                        Wallet: {formatMoney(walletAvailable)}
-                        {walletHold > 0 ? (
-                          <span className="text-yellow-300"> • Hold: {formatMoney(walletHold)}</span>
-                        ) : null}
-                      </span>
+                <div className="flex items-center justify-between bg-white/5 rounded-2xl p-3 border border-white/10">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-lg flex items-center justify-center shrink-0 shadow-md ring-2 ring-amber-400/40">
+                      {loggedInUser.name ? loggedInUser.name.charAt(0).toUpperCase() : "U"}
                     </div>
-                    <Button size="sm" onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3">
-                      Logout
-                    </Button>
-                  </div>
-
-                  {availablePortals.length > 0 && (
-                    <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                      <p className="text-[10px] text-white/50 mb-1 font-bold">PORTALS</p>
-                      <div className="flex flex-wrap gap-2">
-                        {availablePortals.map((portal: any, idx: number) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSwitchPortal(portal.role, portal.url)}
-                            className="inline-flex items-center justify-center px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] font-bold border border-white/5"
-                          >
-                            {portal.label}
-                          </button>
-                        ))}
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-sm text-white truncate">
+                        {loggedInUser.name || "Customer"}
+                      </p>
+                      <p className="text-[10px] text-slate-300 truncate">
+                        {loggedInUser.phone || loggedInUser.email || "Active Member"}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-400/20">
+                          Wallet: {formatMoney(walletAvailable)}
+                        </span>
                       </div>
                     </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <Link
-                      to="/profile"
-                      className="flex items-center py-2 hover:text-accent transition"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <User className="h-4 w-4 mr-3" />
-                      My Profile
-                    </Link>
-
-                    <Link
-                      to="/my-orders"
-                      className="flex items-center py-2 hover:text-accent transition"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Package className="h-4 w-4 mr-3" />
-                      <span>My Orders</span>
-                      {ordersCount > 0 && !loading.orders && (
-                        <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                          {ordersCount > 9 ? "9+" : ordersCount}
-                        </span>
-                      )}
-                    </Link>
-
-                    <Link
-                      to="/cart"
-                      className="flex items-center py-2 hover:text-accent transition"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <ShoppingBag className="h-4 w-4 mr-3" />
-                      <span>My Cart</span>
-                      {cartItemsCount > 0 && !loading.cart && (
-                        <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                          {cartItemsCount > 9 ? "9+" : cartItemsCount}
-                        </span>
-                      )}
-                    </Link>
                   </div>
-                </>
+                  <Link
+                    to="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-[10px] font-black text-amber-400 hover:underline shrink-0 bg-white/10 px-2 py-1 rounded-lg"
+                  >
+                    Profile ➔
+                  </Link>
+                </div>
               ) : (
-                <Link
-                  to="/login"
-                  className="flex items-center py-3 hover:text-accent transition"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <User className="h-5 w-5 mr-3" />
-                  <span>Login / Signup</span>
-                </Link>
+                <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-transparent p-3.5 rounded-2xl border border-amber-400/20">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
+                    <p className="font-extrabold text-xs text-white">Welcome to ApexBee!</p>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mb-3">
+                    Sign in to get 15-min delivery, track orders & earn wallet rewards.
+                  </p>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-center py-2 rounded-xl text-xs shadow-md transition-transform active:scale-95"
+                  >
+                    Login / Sign Up ➔
+                  </Link>
+                </div>
               )}
+
+              {/* 4-Action Quick Action Grid */}
+              <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/10">
+                <Link
+                  to="/my-orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors relative"
+                >
+                  <Package className="h-4 w-4 text-amber-400 mb-1" />
+                  <span className="text-[9px] font-bold text-slate-200">Orders</span>
+                  {ordersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                      {ordersCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  to="/cart"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors relative"
+                >
+                  <ShoppingBag className="h-4 w-4 text-emerald-400 mb-1" />
+                  <span className="text-[9px] font-bold text-slate-200">Cart</span>
+                  {cartItemsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[8px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                      {cartItemsCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors relative"
+                >
+                  <Heart className="h-4 w-4 text-rose-400 mb-1" />
+                  <span className="text-[9px] font-bold text-slate-200">Wishlist</span>
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  to="/referrals"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors"
+                >
+                  <Wallet className="h-4 w-4 text-cyan-400 mb-1" />
+                  <span className="text-[9px] font-bold text-slate-200">Wallet</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Scrollable Navigation Menu Sections */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-xs font-semibold scrollbar-none">
+              {/* Section 1: Marketplace & Shopping */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">
+                  🛍️ Marketplace & Services
+                </p>
+                <div className="space-y-1">
+                  <Link
+                    to="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🏠 Home</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/categories"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🗂️ All Categories</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/food"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 font-bold transition-colors border border-amber-400/20"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      🍔 Food & Dining
+                      <span className="px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[8px] rounded font-black">HOT</span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-amber-400" />
+                  </Link>
+                  <Link
+                    to="/grocery"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🥦 Groceries & Daily Needs</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/fashion"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>👗 Fashion & Sarees</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/local-stores"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🏪 Local Neighborhood Stores</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/services"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🛠️ Doorstep Home Services</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/academy"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>🎓 ApexBee Academy</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/community"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-slate-200 hover:text-white transition-colors"
+                  >
+                    <span>👥 Community & Network</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Section 2: Partner & Earn Programs */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-amber-400 mb-2 px-1">
+                  💰 Earn With ApexBee
+                </p>
+                <div className="space-y-1 bg-white/5 p-2.5 rounded-2xl border border-white/5">
+                  <Link
+                    to="/earn-with-apexbee"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-amber-300 font-extrabold hover:bg-white/5 transition-colors"
+                  >
+                    <span>🚀 Opportunities Marketplace</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-amber-400" />
+                  </Link>
+                  <Link
+                    to="/referrals"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-white font-bold hover:bg-white/5 transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      🤝 Refer & Earn Rewards
+                      <span className="px-1.5 py-0.2 bg-emerald-500 text-white text-[8px] rounded font-black">BONUS</span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenForm("Become a Vendor", "vendor")}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-left border-none bg-transparent cursor-pointer"
+                  >
+                    <span>🏬 Become a Vendor</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenForm("Become a Franchiser", "franchiser")}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-left border-none bg-transparent cursor-pointer"
+                  >
+                    <span>🏢 Become a Franchiser</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenForm("Become a Freelancer", "freelancer")}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-left border-none bg-transparent cursor-pointer"
+                  >
+                    <span>💼 Become a Freelancer</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenForm("Become an Entrepreneur", "entrepreneur")}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-left border-none bg-transparent cursor-pointer"
+                  >
+                    <span>💡 Become an Entrepreneur</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 3: Partner Portals Switcher (Conditional) */}
+              {availablePortals.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-wider text-cyan-400 mb-2 px-1">
+                    🏢 Partner Portals
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 bg-white/5 p-2 rounded-2xl border border-white/5">
+                    {availablePortals.map((portal: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSwitchPortal(portal.role, portal.url)}
+                        className="px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold text-left border-none cursor-pointer transition-colors truncate"
+                      >
+                        {portal.label} ➔
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 4: Language Selector */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">
+                  🌐 Language
+                </p>
+                <div className="flex items-center gap-1.5 bg-white/5 p-1.5 rounded-xl border border-white/5">
+                  {Object.entries(languages).map(([code, name]) => (
+                    <button
+                      key={code}
+                      onClick={() => {
+                        setActiveLang(code);
+                        localStorage.setItem("user_language", code);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${activeLang === code
+                        ? "bg-amber-400 text-slate-950 shadow-sm"
+                        : "text-slate-300 hover:text-white bg-transparent"
+                        }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section 5: Support & Policies */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">
+                  📞 Help & Policies
+                </p>
+                <div className="space-y-1 text-slate-300">
+                  <Link
+                    to="/help"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 hover:text-white transition-colors"
+                  >
+                    <span>❓ 24x7 Help Center & FAQs</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/contact"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 hover:text-white transition-colors"
+                  >
+                    <span>📞 Contact Us</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                  <Link
+                    to="/privacy-policy"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 hover:text-white transition-colors"
+                  >
+                    <span>🔒 Privacy & Return Policy</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-4 border-t border-white/10 bg-white/5 shrink-0 space-y-2.5">
+              {loggedInUser && (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log Out
+                </button>
+              )}
+              <div className="text-center">
+                <p className="text-[10px] text-slate-400">
+                  ApexBee v2.4 • Hyperlocal Fast Delivery
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
+
       {/* Voice Search Modal */}
       {showVoiceModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1787,6 +2100,146 @@ const Navbar = () => {
         </div>
       )}
 
+      {/* 🔔 Universal Notification Modal */}
+      {notificationsOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[150] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-16 sm:pt-4 animate-in fade-in duration-200">
+          <div
+            className="bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-stone-800 bg-slate-50/70 dark:bg-stone-900 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-600 flex items-center justify-center font-bold text-base">
+                  🔔
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-navy dark:text-white">
+                    Notifications
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {allNotifications.filter((n: any) => !n.isRead && n.status !== "read").length} unread updates
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    className="text-[11px] text-amber-600 hover:text-amber-700 font-bold border-none bg-transparent cursor-pointer"
+                    onClick={() => {
+                      setNotifications((prev) =>
+                        prev.map((n) => ({ ...n, isRead: true, status: "read" }))
+                      );
+                      setUnreadCount(0);
+                    }}
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-stone-800 text-slate-500 border-none bg-transparent cursor-pointer transition"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex gap-1.5 overflow-x-auto p-3 border-b border-slate-100 dark:border-stone-800 scrollbar-none bg-white dark:bg-stone-900">
+              {[
+                { key: "all", label: "All" },
+                { key: "orders", label: "📦 Orders" },
+                { key: "offers", label: "🏷️ Offers" },
+                { key: "wallet", label: "💰 Wallet" },
+                { key: "franchise", label: "👥 Network" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveNotificationTab(tab.key)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap border-none cursor-pointer ${
+                    activeNotificationTab === tab.key
+                      ? "bg-navy text-white shadow-xs dark:bg-amber-400 dark:text-slate-950"
+                      : "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-stone-800 hover:bg-slate-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Notifications List */}
+            <div className="p-3 sm:p-4 space-y-2.5 overflow-y-auto flex-1 max-h-[60vh]">
+              {filteredNotifications.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 space-y-2">
+                  <span className="text-3xl block">📭</span>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">No notifications in this category</p>
+                  <p className="text-[11px]">We'll notify you when orders or new offers arrive!</p>
+                </div>
+              ) : (
+                filteredNotifications.map((n: any) => {
+                  const isUnread = !n.isRead && n.status !== "read";
+                  return (
+                    <div
+                      key={n._id}
+                      onClick={() => {
+                        if (isUnread) handleMarkAsRead(n._id);
+                        if (n.link) {
+                          navigate(n.link);
+                          setNotificationsOpen(false);
+                        }
+                      }}
+                      className={`p-3.5 rounded-2xl transition-all text-left flex gap-3 cursor-pointer border ${
+                        isUnread
+                          ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/50 hover:bg-amber-100/60 shadow-2xs"
+                          : "bg-slate-50/70 dark:bg-stone-800/40 border-slate-100 dark:border-stone-800 hover:bg-slate-100/80"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              n.category === "orders"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                : n.category === "offers"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                : n.category === "wallet"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                : "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
+                            }`}
+                          >
+                            {n.category === "franchise" ? "Network" : n.category}
+                          </span>
+                          {isUnread && (
+                            <span className="w-2 h-2 bg-amber-500 rounded-full shrink-0 animate-pulse" />
+                          )}
+                          <span className="text-[9px] text-slate-400 font-mono ml-auto">
+                            {new Date(n.createdAt).toLocaleDateString([], {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-navy dark:text-white text-xs leading-snug">
+                          {n.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                          {n.message}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <LocationModal
         open={openLocationModal}
         onOpenChange={setOpenLocationModal}
@@ -1795,6 +2248,13 @@ const Navbar = () => {
           localStorage.setItem("user_location", JSON.stringify(loc));
           window.dispatchEvent(new Event("storage"));
         }}
+      />
+
+      <FormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalTitle}
+        endpoint={modalEndpoint}
       />
     </nav>
   );

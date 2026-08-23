@@ -1644,9 +1644,9 @@ const Home = () => {
           {/* 1. Dynamic Hero Banner Slider with Integrated Greeting Overlay */}
           <section className="container mx-auto px-3 sm:px-4 py-3 sm:py-5 space-y-3">
             {/* Floating Glass Greeting & Location Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="bg-card/80 backdrop-blur-md border border-border rounded-full px-3.5 py-1.5 flex items-center gap-2 shadow-sm">
-                <span className="text-xs sm:text-sm font-extrabold text-foreground">
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full">
+              <div className="bg-card/80 backdrop-blur-md border border-border rounded-full px-2.5 sm:px-3.5 py-1 sm:py-1.5 flex items-center gap-1.5 shadow-sm min-w-0 flex-1">
+                <span className="text-[11px] sm:text-xs md:text-sm font-extrabold text-foreground truncate">
                   {timeGreeting}, {personalization?.userName || (loggedInUser ? loggedInUser.name : "Valued Customer")} 👋
                 </span>
               </div>
@@ -1654,15 +1654,15 @@ const Home = () => {
               <button
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
-                className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 bg-card/80 hover:bg-card backdrop-blur-md border border-border px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-sm"
+                className="text-[10px] sm:text-xs font-bold text-foreground flex items-center gap-1 bg-card/80 hover:bg-card backdrop-blur-md border border-border px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full transition-all cursor-pointer shadow-sm shrink-0 max-w-[50%]"
                 title="Click to change your delivery location"
               >
-                <span className="text-muted-foreground">Delivering to:</span>
-                <span className="text-amber-500 font-black">
+                <span className="text-muted-foreground hidden xs:inline">Delivering to:</span>
+                <span className="text-amber-500 font-black truncate max-w-[120px] xs:max-w-[150px] sm:max-w-none">
                   📍 {userLocation?.colony || userLocation?.district || (userLocation?.pincode ? `PIN: ${userLocation.pincode}` : "Set Location")}
                   {userLocation?.pincode ? ` (${userLocation.pincode})` : ""}
                 </span>
-                <span className="text-[9px] text-amber-500 font-bold">▼</span>
+                <span className="text-[8px] sm:text-[9px] text-amber-500 font-bold shrink-0">▼</span>
               </button>
             </div>
 
@@ -1672,41 +1672,57 @@ const Home = () => {
 
           {/* 🍱 DUAL BANNER: FOOD DELIVERY & DINEOUT RESERVATION */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scroll-smooth">
               {/* FOOD DELIVERY CARD */}
               <div
                 onClick={() => navigate("/food")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-700 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-700 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-100">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-amber-100">
                     {foodMealDetails.heroTag}
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">{foodMealDetails.heroHeading}</h3>
-                  <p className="text-xs text-amber-100 font-medium">{foodMealDetails.heroDesc}</p>
-                  <span className="inline-flex items-center gap-1 bg-[#0A1128] text-amber-400 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    {foodMealDetails.heroHeading}
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-amber-100 font-medium line-clamp-2">
+                    {foodMealDetails.heroDesc}
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-[#0A1128] text-amber-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     {foodMealDetails.heroButton}
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Food" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80"
+                  alt="Food"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
 
               {/* DINEOUT TABLE RESERVATION CARD */}
               <div
                 onClick={() => navigate("/food")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4 border border-white/10"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">
                     👑 Up to 40% OFF Bills
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Dineout &amp; Table Booking</h3>
-                  <p className="text-xs text-slate-300 font-medium">Reserve tables at luxury fine dining &amp; rooftop lounges with zero booking fees.</p>
-                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Dineout &amp; Table Booking
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium line-clamp-2">
+                    Reserve tables at luxury fine dining &amp; rooftop lounges with zero booking fees.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     🍽️ Reserve Table &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Dineout" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&auto=format&fit=crop&q=80"
+                  alt="Dineout"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
             </div>
           </section>
@@ -2344,41 +2360,57 @@ const Home = () => {
 
           {/* 📦 DUAL BANNER: GROCERY & MORNING ESSENTIALS */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scroll-smooth">
               {/* MORNING DAIRY & MILK CARD */}
               <div
                 onClick={() => navigate("/category/Daily Needs & Grocery")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-900 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-emerald-100">
                     🥛 6 AM Morning Delivery
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Fresh Milk &amp; Daily Dairy</h3>
-                  <p className="text-xs text-emerald-100 font-medium">Daily fresh milk, curd, paneer &amp; morning tiffin supplies delivered by 7 AM.</p>
-                  <span className="inline-flex items-center gap-1 bg-white text-emerald-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Fresh Milk &amp; Daily Dairy
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-emerald-100 font-medium line-clamp-2">
+                    Daily fresh milk, curd, paneer &amp; morning tiffin supplies delivered by 7 AM.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-white text-emerald-950 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     🥛 Order Fresh Dairy &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Dairy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80"
+                  alt="Dairy"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
 
               {/* MONTHLY GROCERY MEGA SALE CARD */}
               <div
                 onClick={() => navigate("/category/Daily Needs & Grocery")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-green-700 via-emerald-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-green-700 via-emerald-800 to-slate-900 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4 border border-white/10"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">
                     🛒 Up to 50% OFF
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Monthly Grocery Store</h3>
-                  <p className="text-xs text-slate-300 font-medium">Atta, Rice, Cooking Oils, Dal &amp; Spices from top verified local merchants.</p>
-                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Monthly Grocery Store
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium line-clamp-2">
+                    Atta, Rice, Cooking Oils, Dal &amp; Spices from top verified local merchants.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     🛒 Shop Monthly Grocery &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Grocery" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80"
+                  alt="Grocery"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
             </div>
           </section>
@@ -2471,40 +2503,40 @@ const Home = () => {
           </section>
 
           {/* 🎁 RAKSHA BANDHAN FESTIVAL OFFERS BANNER */}
-          <section className="container mx-auto px-3 sm:px-4 my-6 text-left">
-            <div className="relative rounded-[32px] overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-rose-700 via-purple-700 to-indigo-900 text-white shadow-xl border border-rose-400/40">
+          <section className="container mx-auto px-3 sm:px-4 my-4 sm:my-6 text-left">
+            <div className="relative rounded-2xl sm:rounded-[32px] overflow-hidden p-4 sm:p-7 md:p-8 bg-gradient-to-r from-rose-700 via-purple-700 to-indigo-900 text-white shadow-xl border border-rose-400/40">
               <div className="absolute -bottom-10 right-10 w-72 h-72 bg-pink-400/20 rounded-full blur-[80px] pointer-events-none" />
 
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-3 max-w-xl">
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                <div className="space-y-2 sm:space-y-3 max-w-xl">
                   <div className="flex items-center space-x-2">
-                    <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full shadow-md animate-pulse">
+                    <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md animate-pulse">
                       ✨ 20% OFF
                     </span>
-                    <span className="text-xs font-mono font-bold bg-white/20 px-3 py-1 rounded-full border border-white/20">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold bg-white/20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/20">
                       CODE: <span className="text-amber-300 font-extrabold">RAKHI20</span>
                     </span>
                   </div>
 
-                  <h3 className="text-2xl sm:text-3.5xl font-black font-heading tracking-tight text-white leading-tight">
+                  <h3 className="text-lg sm:text-2xl md:text-3.5xl font-black font-heading tracking-tight text-white leading-tight">
                     Festival Raksha Bandhan Offers 🎁
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-rose-100 font-medium leading-relaxed">
+                  <p className="text-[11px] sm:text-sm text-rose-100 font-medium leading-relaxed line-clamp-2 sm:line-clamp-none">
                     Send local sweet boxes, Kaju Katli, Motichoor Ladoos &amp; handcrafted designer rakhis to siblings. Get flat 20% off from verified local sweet shops near you.
                   </p>
                 </div>
 
-                <div className="shrink-0 flex flex-col items-center md:items-end justify-center space-y-2">
+                <div className="shrink-0 flex flex-col items-stretch sm:items-center md:items-end justify-center space-y-1.5 sm:space-y-2">
                   <button
                     type="button"
                     onClick={() => navigate("/food")}
-                    className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-rose-50 text-rose-950 font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-xl flex items-center justify-center space-x-2 cursor-pointer border-none"
+                    className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3.5 bg-white hover:bg-rose-50 text-rose-950 font-black text-xs sm:text-sm rounded-xl sm:rounded-2xl transition duration-300 shadow-xl flex items-center justify-center space-x-2 cursor-pointer border-none"
                   >
                     <span>🎁 Send Sweets &amp; Rakhis</span>
                     <ChevronRight className="w-4 h-4 text-rose-950" />
                   </button>
-                  <span className="text-[10px] font-bold text-rose-200">🚚 Same-day Doorstep Delivery</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-rose-200 text-center">🚚 Same-day Doorstep Delivery</span>
                 </div>
               </div>
             </div>
@@ -2553,82 +2585,114 @@ const Home = () => {
 
           {/* 👕 DUAL BANNER: FASHION & LIFESTYLE */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scroll-smooth">
               {/* ETHNIC SAREES & FESTIVE WEAR */}
               <div
                 onClick={() => navigate("/category/Fashion & Boutique")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-purple-700 via-pink-700 to-rose-900 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-purple-700 via-pink-700 to-rose-900 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-amber-300 text-purple-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-amber-300 text-purple-950 px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">
                     ✨ Flat 60% OFF
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Ethnic Sarees &amp; Wear</h3>
-                  <p className="text-xs text-pink-100 font-medium">Silk sarees, festive kurtis, and designer ethnic wear from local boutiques.</p>
-                  <span className="inline-flex items-center gap-1 bg-white text-purple-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Ethnic Sarees &amp; Wear
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-pink-100 font-medium line-clamp-2">
+                    Silk sarees, festive kurtis, and designer ethnic wear from local boutiques.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-white text-purple-950 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     👗 Explore Ethnic Wear &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Fashion" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80"
+                  alt="Fashion"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
 
               {/* FOOTWEAR & WATCHES */}
               <div
                 onClick={() => navigate("/category/Fashion & Boutique")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4 border border-white/10"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-cyan-400 text-slate-950 px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">
                     👟 Buy 1 Get 1 Free
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Footwear &amp; Accessories</h3>
-                  <p className="text-xs text-slate-300 font-medium">Trendy sneakers, formal shoes, smartwatches, and sunglasses at outlet prices.</p>
-                  <span className="inline-flex items-center gap-1 bg-cyan-400 text-slate-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Footwear &amp; Accessories
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium line-clamp-2">
+                    Trendy sneakers, formal shoes, smartwatches, and sunglasses at outlet prices.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-cyan-400 text-slate-950 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     👟 Shop Accessories &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Shoes" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&auto=format&fit=crop&q=80"
+                  alt="Shoes"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
             </div>
           </section>
 
           {/* 💊 DUAL BANNER: PHARMACY & LOCAL HOME SERVICES */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-3 md:pb-0">
+            <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scroll-smooth">
               {/* EXPRESS PHARMACY & MEDICINES */}
               <div
                 onClick={() => navigate("/category/Health & Wellness")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-teal-700 via-emerald-800 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-teal-700 via-emerald-800 to-slate-950 text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-teal-100">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-teal-100">
                     💊 15-Min Pharmacy
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight">Essential Medicines</h3>
-                  <p className="text-xs text-teal-100 font-medium">Prescription medicines, daily vitamins &amp; baby care from certified chemists.</p>
-                  <span className="inline-flex items-center gap-1 bg-white text-teal-950 px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Essential Medicines
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-teal-100 font-medium line-clamp-2">
+                    Prescription medicines, daily vitamins &amp; baby care from certified chemists.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-white text-teal-950 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     💊 Order Medicines &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Pharmacy" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80"
+                  alt="Pharmacy"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
 
               {/* HOME SERVICES & REPAIR */}
               <div
                 onClick={() => navigate("/services")}
-                className="w-[88%] sm:w-[85%] md:w-auto snap-center shrink-0 md:shrink-1 bg-gradient-to-r from-[#0A1128] via-[#1e3c72] to-[#2a5298] text-white rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl transition cursor-pointer relative overflow-hidden group flex items-center justify-between border border-white/10"
+                className="w-[80vw] sm:w-80 md:w-full h-40 sm:h-44 md:h-52 snap-start shrink-0 bg-gradient-to-r from-[#0A1128] via-[#1e3c72] to-[#2a5298] text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden group flex items-center justify-between gap-2.5 sm:gap-4 border border-white/10"
               >
-                <div className="space-y-1.5 z-10 max-w-[65%] text-left">
-                  <span className="bg-amber-400 text-[#0A1128] px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <div className="space-y-1 sm:space-y-1.5 z-10 flex-1 min-w-0 text-left">
+                  <span className="inline-block bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">
                     🔧 Verified Professionals
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black leading-tight text-white">Home Repair &amp; Cleaning</h3>
-                  <p className="text-xs text-slate-300 font-medium">Electricians, plumbers, AC repair mechanics &amp; home deep cleaning.</p>
-                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-3.5 py-1.5 rounded-xl font-black text-xs mt-2 shadow-md group-hover:scale-105 transition">
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black leading-tight text-white line-clamp-1 xs:line-clamp-2">
+                    Home Repair &amp; Cleaning
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium line-clamp-2">
+                    Electricians, plumbers, AC repair mechanics &amp; home deep cleaning.
+                  </p>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs mt-0.5 sm:mt-1 shadow-md group-hover:scale-105 active:scale-95 transition-transform">
                     🛠️ Book Expert Service &rarr;
                   </span>
                 </div>
-                <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&amp;auto=format&amp;fit=crop&amp;q=80" alt="Services" className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0" />
+                <img
+                  src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80"
+                  alt="Services"
+                  className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-xl sm:rounded-2xl shadow-md group-hover:scale-110 transition duration-500 shrink-0"
+                />
               </div>
             </div>
           </section>

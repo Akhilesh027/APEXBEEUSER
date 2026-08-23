@@ -737,11 +737,12 @@ const Profile = () => {
 
     if (loading.user) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-slate-50 dark:bg-stone-950">
                 <Navbar />
-                <div className="container mx-auto py-8 px-4">
-                    <div className="max-w-6xl mx-auto flex justify-center items-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin text-navy" />
+                <div className="container mx-auto py-16 px-4">
+                    <div className="max-w-4xl mx-auto flex flex-col justify-center items-center h-64 gap-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-navy dark:text-amber-400" />
+                        <p className="text-sm font-semibold text-slate-500">Loading your profile details...</p>
                     </div>
                 </div>
             </div>
@@ -750,12 +751,14 @@ const Profile = () => {
 
     if (error && !userData) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-slate-50 dark:bg-stone-950">
                 <Navbar />
-                <div className="container mx-auto py-8 px-4">
-                    <div className="max-w-6xl mx-auto text-center">
-                        <p className="text-red-500">{error}</p>
-                        <Button onClick={() => window.location.href = '/login'} className="mt-4">
+                <div className="container mx-auto py-16 px-4">
+                    <div className="max-w-md mx-auto text-center bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-lg border border-slate-200 dark:border-stone-800">
+                        <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Unable to Load Profile</h2>
+                        <p className="text-sm text-slate-500 mb-6">{error}</p>
+                        <Button onClick={() => window.location.href = '/login'} className="w-full bg-navy hover:bg-navy/90 text-white font-bold py-2.5 rounded-xl">
                             Go to Login
                         </Button>
                     </div>
@@ -765,841 +768,938 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-slate-50/70 dark:bg-stone-950">
             <Navbar />
 
-            <div className="container mx-auto py-8 px-4">
-                <div className="max-w-6xl mx-auto">
-                    {/* Success/Error Messages */}
-                    {success && (
-                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <p className="text-green-700">{success}</p>
+            <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-6 max-w-6xl">
+                {/* Alerts / Success / Warning Messages */}
+                {success && (
+                    <div className="mb-4 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between text-xs sm:text-sm font-medium animate-in fade-in shadow-xs">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>{success}</span>
                         </div>
-                    )}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-700">{error}</p>
+                        <button onClick={() => setSuccess("")} className="text-emerald-600 hover:text-emerald-900 border-none bg-transparent cursor-pointer">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+                {error && (
+                    <div className="mb-4 p-3.5 sm:p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-center justify-between text-xs sm:text-sm font-medium animate-in fade-in shadow-xs">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span>{error}</span>
                         </div>
-                    )}
+                        <button onClick={() => setError("")} className="text-rose-600 hover:text-rose-900 border-none bg-transparent cursor-pointer">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
-                    {(!userData?.phone || !userData?.phone.trim()) && (
-                        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-left">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">⚠️</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-amber-800">Profile Incomplete</h4>
-                                    <p className="text-[11px] text-amber-700">Please add your mobile number to complete your profile registration.</p>
-                                </div>
+                {(!userData?.phone || !userData?.phone.trim()) && (
+                    <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <h4 className="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider">Profile Incomplete</h4>
+                                <p className="text-xs text-amber-700/90 dark:text-amber-300/90 mt-0.5">Please add your mobile number for smooth delivery updates &amp; instant OTP login.</p>
                             </div>
-                            <Button
-                                size="sm"
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shrink-0"
-                                onClick={() => handleInlineEdit('phone', userData?.phone || '')}
-                            >
-                                Add Phone Number
-                            </Button>
                         </div>
-                    )}
+                        <Button
+                            size="sm"
+                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs py-2 px-4 rounded-xl shrink-0 w-full sm:w-auto"
+                            onClick={() => handleInlineEdit('phone', userData?.phone || '')}
+                        >
+                            Add Phone Number
+                        </Button>
+                    </div>
+                )}
 
-                    {/* Profile Header */}
-                    <Card className="mb-6">
-                        <CardContent className="p-6">
-                            <div className="flex flex-col md:flex-row items-center gap-6">
-                                <div className="relative">
-                                    <Avatar className="h-24 w-24 border-4 border-yellow">
-                                        <AvatarImage src={userData?.avatar} />
-                                        <AvatarFallback className="text-2xl font-black bg-navy text-white">
-                                            {userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <label htmlFor="avatar-upload" title="Upload profile picture" className="absolute bottom-0 right-0 bg-navy text-white p-2 rounded-full cursor-pointer hover:bg-navy/90 transition-colors shadow-md">
-                                        <Camera className="h-4 w-4" />
-                                        <input
-                                            id="avatar-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleAvatarChange}
-                                        />
-                                    </label>
-                                </div>
-                                <div className="flex-1 text-center md:text-left">
-                                    <h1 className="text-3xl font-bold mb-2">{userData?.name}</h1>
-                                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap mb-1">
-                                        <p className="text-muted-foreground">{userData?.email}</p>
+                {/* ═══════════════════════════════════════════════ */}
+                {/* 👑 VIP MASTER PROFILE HERO HEADER */}
+                {/* ═══════════════════════════════════════════════ */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A1128] via-[#101b42] to-slate-950 text-white p-5 sm:p-8 mb-6 border border-white/10 shadow-xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+
+                    <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-5 sm:gap-7">
+                        {/* Avatar Column */}
+                        <div className="relative shrink-0">
+                            <div className="relative p-1 rounded-full bg-gradient-to-tr from-amber-400 via-amber-300 to-indigo-400 shadow-xl">
+                                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-slate-950 bg-slate-900">
+                                    <AvatarImage src={userData?.avatar} className="object-cover" />
+                                    <AvatarFallback className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-indigo-900 to-slate-950 text-amber-300">
+                                        {userData?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                            <label
+                                htmlFor="avatar-upload"
+                                title="Upload profile picture"
+                                className="absolute bottom-1 right-1 bg-amber-400 hover:bg-amber-300 text-slate-950 p-2 rounded-full cursor-pointer transition-transform duration-200 hover:scale-110 shadow-lg border-2 border-slate-950"
+                            >
+                                <Camera className="h-4 w-4" />
+                                <input
+                                    id="avatar-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleAvatarChange}
+                                />
+                            </label>
+                        </div>
+
+                        {/* Details Column */}
+                        <div className="flex-1 text-center md:text-left space-y-3 min-w-0">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div>
+                                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{userData?.name || "ApexBee Member"}</h1>
+                                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
+                                            VIP Member
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap text-xs text-slate-300 mt-1">
+                                        <span>{userData?.email}</span>
                                         {isEmailVerified ? (
-                                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-0.5 px-2 flex items-center gap-1">
-                                                <CheckCircle className="w-3 h-3" /> Verified Email
+                                            <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] py-0.5 px-2 flex items-center gap-1 font-bold">
+                                                <CheckCircle className="w-3 h-3" /> Verified
                                             </Badge>
                                         ) : (
                                             <Badge
                                                 variant="outline"
-                                                className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 text-[10px] py-0.5 px-2 flex items-center gap-1 cursor-pointer"
+                                                className="border-amber-400/60 text-amber-300 hover:bg-amber-400/20 text-[10px] py-0.5 px-2 flex items-center gap-1 cursor-pointer font-bold transition"
                                                 onClick={() => handleSendEmailOtp()}
                                             >
-                                                <AlertCircle className="w-3 h-3" /> Unverified - Click to Verify
+                                                <AlertCircle className="w-3 h-3" /> Click to Verify Email
                                             </Badge>
                                         )}
                                     </div>
-                                    <p className="text-muted-foreground font-semibold mt-0.5">{userData?.phone || "📱 Mobile: Not set"}</p>
-
-                                    {/* APEXBEE MASTER IDENTITY CARD */}
-                                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                                        <div className="bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
-                                            <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
-                                                👑 Customer ID:
-                                            </span>
-                                            <strong className="text-xs font-mono font-black text-amber-600 dark:text-amber-400 tracking-wider">
-                                                {userData?.masterCustomerId || '583214907'}
-                                            </strong>
-                                        </div>
-
-                                        <div className="bg-indigo-500/10 dark:bg-indigo-400/10 border border-indigo-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
-                                            <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
-                                                🔑 Ref ID:
-                                            </span>
-                                            <strong className="text-xs font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-wider">
-                                                {userData?.customerRefId || 'APX-CUS-7K4P9X'}
-                                            </strong>
-                                        </div>
-
-                                        <div className="bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs">
-                                            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-                                                🎟️ Referral:
-                                            </span>
-                                            <strong className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider">
-                                                {userData?.referralCode || 'AB7K9P2'}
-                                            </strong>
-                                        </div>
-                                    </div>
-
-                                    {userData?.bio && (
-                                        <p className="text-muted-foreground mt-2 italic">"{userData.bio}"</p>
-                                    )}
                                 </div>
+
                                 <Button
                                     variant="outline"
-                                    className="gap-2"
+                                    className="gap-2 border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-md self-center md:self-auto cursor-pointer"
                                     onClick={() => setShowEditProfile(true)}
                                 >
-                                    <Edit className="h-4 w-4" />
+                                    <Edit className="h-3.5 w-3.5 text-amber-300" />
                                     Edit Profile
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Tabs */}
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                        <TabsList className="flex overflow-x-auto w-full bg-muted/50 scrollbar-none py-1 px-1 gap-1 border rounded-xl">
-                            <TabsTrigger value="profile" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <User className="h-4 w-4" /> Profile </TabsTrigger>
-                            <TabsTrigger value="orders" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Package className="h-4 w-4" /> My Orders </TabsTrigger>
-                            <TabsTrigger value="addresses" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <MapPin className="h-4 w-4" /> Addresses </TabsTrigger>
-                            <TabsTrigger value="referrals" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Gift className="h-4 w-4" /> Referrals </TabsTrigger>
-                            <TabsTrigger value="settings" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm"> <Settings className="h-4 w-4" /> Settings </TabsTrigger>
+                            {userData?.bio && (
+                                <p className="text-xs sm:text-sm text-slate-300/90 italic font-medium max-w-2xl">
+                                    "{userData.bio}"
+                                </p>
+                            )}
+
+                            {/* APEXBEE MASTER IDENTITY PILLS */}
+                            <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
+                                {/* Master Customer ID */}
+                                <div className="bg-white/10 backdrop-blur-md border border-amber-400/30 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-2xs">
+                                    <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider">
+                                        👑 Customer ID:
+                                    </span>
+                                    <strong className="text-xs font-mono font-black text-amber-200">
+                                        {userData?.masterCustomerId || '583214907'}
+                                    </strong>
+                                    <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(userData?.masterCustomerId || '583214907', 'code')}
+                                        title="Copy Customer ID"
+                                        className="text-amber-300/80 hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </button>
+                                </div>
+
+                                {/* Reference ID */}
+                                <div className="bg-white/10 backdrop-blur-md border border-indigo-400/30 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-2xs">
+                                    <span className="text-[10px] font-black uppercase text-indigo-300 tracking-wider">
+                                        🔑 Ref ID:
+                                    </span>
+                                    <strong className="text-xs font-mono font-black text-indigo-200">
+                                        {userData?.customerRefId || 'APX-CUS-7K4P9X'}
+                                    </strong>
+                                    <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(userData?.customerRefId || 'APX-CUS-7K4P9X', 'code')}
+                                        title="Copy Ref ID"
+                                        className="text-indigo-300/80 hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </button>
+                                </div>
+
+                                {/* Referral Code */}
+                                <div className="bg-white/10 backdrop-blur-md border border-emerald-400/30 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-2xs">
+                                    <span className="text-[10px] font-black uppercase text-emerald-300 tracking-wider">
+                                        🎟️ Referral:
+                                    </span>
+                                    <strong className="text-xs font-mono font-black text-emerald-200">
+                                        {userData?.referralCode || 'AB7K9P2'}
+                                    </strong>
+                                    <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(userData?.referralCode || 'AB7K9P2', 'code')}
+                                        title="Copy Referral Code"
+                                        className="text-emerald-300/80 hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Account Highlights Strip */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-6 pt-6 border-t border-white/10 text-center">
+                        <div className="bg-white/5 rounded-2xl p-2.5 sm:p-3 border border-white/5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Orders</span>
+                            <span className="text-base sm:text-lg font-black text-white mt-0.5 block">{orders.length}</span>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-2.5 sm:p-3 border border-white/5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Addresses</span>
+                            <span className="text-base sm:text-lg font-black text-white mt-0.5 block">{addresses.length}</span>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-2.5 sm:p-3 border border-white/5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Referral Rewards</span>
+                            <span className="text-base sm:text-lg font-black text-amber-300 mt-0.5 block">₹{referralStats.walletBalance || 0}</span>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-2.5 sm:p-3 border border-white/5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Saved Cards</span>
+                            <span className="text-base sm:text-lg font-black text-white mt-0.5 block">{savedCards.length}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════ */}
+                {/* 🧭 NAVIGATION TABS */}
+                {/* ═══════════════════════════════════════════════ */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                    <div className="overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+                        <TabsList className="flex items-center gap-1.5 bg-white dark:bg-stone-900 p-1.5 border border-slate-200 dark:border-stone-800 rounded-2xl shadow-xs w-max sm:w-full justify-start sm:justify-between">
+                            <TabsTrigger value="profile" className="gap-2 text-xs sm:text-sm font-bold rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white dark:data-[state=active]:bg-amber-400 dark:data-[state=active]:text-slate-950 px-4 py-2.5 transition">
+                                <User className="h-4 w-4" /> Personal Info
+                            </TabsTrigger>
+                            <TabsTrigger value="orders" className="gap-2 text-xs sm:text-sm font-bold rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white dark:data-[state=active]:bg-amber-400 dark:data-[state=active]:text-slate-950 px-4 py-2.5 transition">
+                                <Package className="h-4 w-4" /> My Orders ({orders.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="addresses" className="gap-2 text-xs sm:text-sm font-bold rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white dark:data-[state=active]:bg-amber-400 dark:data-[state=active]:text-slate-950 px-4 py-2.5 transition">
+                                <MapPin className="h-4 w-4" /> Addresses ({addresses.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="referrals" className="gap-2 text-xs sm:text-sm font-bold rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white dark:data-[state=active]:bg-amber-400 dark:data-[state=active]:text-slate-950 px-4 py-2.5 transition">
+                                <Gift className="h-4 w-4" /> Refer &amp; Earn
+                            </TabsTrigger>
+                            <TabsTrigger value="settings" className="gap-2 text-xs sm:text-sm font-bold rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white dark:data-[state=active]:bg-amber-400 dark:data-[state=active]:text-slate-950 px-4 py-2.5 transition">
+                                <Settings className="h-4 w-4" /> Settings &amp; Security
+                            </TabsTrigger>
                         </TabsList>
+                    </div>
 
-                        {/* Profile Details Tab */}
-                        <TabsContent value="profile">
-                            <Card>
-                                <CardHeader> <CardTitle>Personal Information &amp; ApexBee Account Identity</CardTitle> </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {/* ApexBee Universal Identity Card */}
-                                    <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3 shadow-md border border-slate-800">
-                                        <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                                            <span className="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
-                                                <span>👑 ApexBee Universal Identity System</span>
-                                            </span>
-                                            <span className="text-[10px] text-zinc-400 font-mono">1 Account = 1 Master Customer ID</span>
-                                        </div>
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 1: PERSONAL INFORMATION & IDENTITY */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    <TabsContent value="profile" className="space-y-6 text-left">
+                        <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                            <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div>
+                                        <CardTitle className="text-base sm:text-lg font-extrabold text-navy dark:text-white">Personal Information</CardTitle>
+                                        <p className="text-xs text-slate-500 mt-0.5">Manage your identity details, email verification, and contact preferences.</p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2 text-xs font-bold rounded-xl border-slate-200 dark:border-stone-700"
+                                        onClick={() => setShowEditProfile(true)}
+                                    >
+                                        <Edit className="h-3.5 w-3.5" /> Full Profile Edit
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 sm:p-6 space-y-6">
+                                {/* Universal Identity Card */}
+                                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0A1128] via-[#101b42] to-slate-900 text-white space-y-3 shadow-md border border-slate-800">
+                                    <div className="flex justify-between items-center border-b border-slate-800 pb-2.5 flex-wrap gap-2">
+                                        <span className="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                                            <span>👑 ApexBee Universal Identity Architecture</span>
+                                        </span>
+                                        <span className="text-[10px] text-zinc-400 font-mono">1 Account = 1 Master Customer ID</span>
+                                    </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-amber-400/30">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                        <div className="bg-slate-950/80 p-3.5 rounded-xl border border-amber-400/30 flex items-center justify-between">
+                                            <div>
                                                 <span className="text-[10px] font-bold text-zinc-400 uppercase block">Customer ID</span>
                                                 <strong className="text-sm font-mono font-black text-amber-400 block mt-0.5">{userData?.masterCustomerId || '583214907'}</strong>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(userData?.masterCustomerId || '583214907', 'code')}
+                                                className="p-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 border-none cursor-pointer"
+                                                title="Copy"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
 
-                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-indigo-400/30">
+                                        <div className="bg-slate-950/80 p-3.5 rounded-xl border border-indigo-400/30 flex items-center justify-between">
+                                            <div>
                                                 <span className="text-[10px] font-bold text-zinc-400 uppercase block">Reference ID</span>
                                                 <strong className="text-sm font-mono font-black text-indigo-400 block mt-0.5">{userData?.customerRefId || 'APX-CUS-7K4P9X'}</strong>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(userData?.customerRefId || 'APX-CUS-7K4P9X', 'code')}
+                                                className="p-1.5 rounded-lg bg-indigo-400/10 hover:bg-indigo-400/20 text-indigo-300 border-none cursor-pointer"
+                                                title="Copy"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
 
-                                            <div className="bg-slate-950/80 p-3 rounded-xl border border-emerald-400/30">
+                                        <div className="bg-slate-950/80 p-3.5 rounded-xl border border-emerald-400/30 flex items-center justify-between">
+                                            <div>
                                                 <span className="text-[10px] font-bold text-zinc-400 uppercase block">Referral Code</span>
                                                 <strong className="text-sm font-mono font-black text-emerald-400 block mt-0.5">{userData?.referralCode || 'AB7K9P2'}</strong>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(userData?.referralCode || 'AB7K9P2', 'code')}
+                                                className="p-1.5 rounded-lg bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-300 border-none cursor-pointer"
+                                                title="Copy"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Name Field */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="name">Full Name</Label>
-                                            <div className="flex items-center gap-2">
-                                                {editingField === 'name' ? (
-                                                    <>
-                                                        <Input id="name" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1" />
-                                                        <Button size="sm" onClick={() => handleInlineSave('name')} disabled={loading.saving}>
-                                                            {loading.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Input id="name" value={userData?.name || ''} readOnly className="flex-1" />
-                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('name', userData?.name)}><Edit className="h-4 w-4" /></Button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
+                                </div>
 
-                                        {/* Email Field */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <Label htmlFor="email">Email Address</Label>
-                                                {isEmailVerified ? (
-                                                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                                                        <CheckCircle className="w-3.5 h-3.5" /> Email Verified
-                                                    </span>
-                                                ) : (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-6 text-xs border-amber-500 text-amber-600 hover:bg-amber-50"
-                                                        onClick={() => handleSendEmailOtp()}
-                                                    >
-                                                        <AlertCircle className="w-3 h-3 mr-1" /> Verify Email Now
+                                {/* Form Fields Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                    {/* Name Field */}
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800">
+                                        <Label htmlFor="name" className="text-xs font-bold text-slate-700 dark:text-slate-300">Full Name</Label>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {editingField === 'name' ? (
+                                                <>
+                                                    <Input id="name" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1 text-xs" />
+                                                    <Button size="sm" onClick={() => handleInlineSave('name')} disabled={loading.saving} className="bg-navy text-white rounded-xl">
+                                                        {loading.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                                                     </Button>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {editingField === 'email' ? (
-                                                    <>
-                                                        <Input id="email" type="email" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1" />
-                                                        <Button size="sm" onClick={() => handleSendEmailOtp(tempValue)} disabled={loading.saving}>
-                                                            Verify &amp; Save
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Input id="email" type="email" value={userData?.email || ''} readOnly className="flex-1" />
-                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('email', userData?.email)} title="Change Email">
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </div>
+                                                    <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Input id="name" value={userData?.name || ''} readOnly className="flex-1 text-xs bg-white dark:bg-stone-900 font-semibold" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('name', userData?.name)} className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
+                                    </div>
 
-                                        {/* Phone Field */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="phone">Phone Number</Label>
-                                            <div className="flex items-center gap-2">
-                                                {editingField === 'phone' ? (
-                                                    <>
-                                                        <Input id="phone" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1" />
-                                                        <Button size="sm" onClick={() => handleInlineSave('phone')} disabled={loading.saving}>
-                                                            {loading.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Input id="phone" value={userData?.phone || ''} readOnly className="flex-1" />
-                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('phone', userData?.phone)}><Edit className="h-4 w-4" /></Button>
-                                                    </>
-                                                )}
-                                            </div>
+                                    {/* Email Field */}
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="email" className="text-xs font-bold text-slate-700 dark:text-slate-300">Email Address</Label>
+                                            {isEmailVerified ? (
+                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3" /> Verified
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleSendEmailOtp()}
+                                                    className="text-[10px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 underline border-none bg-transparent cursor-pointer"
+                                                >
+                                                    Verify Now
+                                                </button>
+                                            )}
                                         </div>
-
-                                        {/* Date of Birth Field */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                                            <div className="flex items-center gap-2">
-                                                {editingField === 'dateOfBirth' ? (
-                                                    <>
-                                                        <Input id="dateOfBirth" type="date" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1" />
-                                                        <Button size="sm" onClick={() => handleInlineSave('dateOfBirth')} disabled={loading.saving}>
-                                                            {loading.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Input id="dateOfBirth" type="text" value={formatDate(userData?.dateOfBirth)} readOnly className="flex-1" />
-                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('dateOfBirth', userData?.dateOfBirth || '')}><Edit className="h-4 w-4" /></Button>
-                                                    </>
-                                                )}
-                                            </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {editingField === 'email' ? (
+                                                <>
+                                                    <Input id="email" type="email" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1 text-xs" />
+                                                    <Button size="sm" onClick={() => handleSendEmailOtp(tempValue)} disabled={loading.saving} className="bg-navy text-white text-xs font-bold rounded-xl">
+                                                        Verify &amp; Save
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Input id="email" type="email" value={userData?.email || ''} readOnly className="flex-1 text-xs bg-white dark:bg-stone-900 font-semibold" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('email', userData?.email)} title="Change Email" className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
+                                    </div>
 
-                                        {/* Gender Field */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="gender">Gender</Label>
-                                            <div className="flex items-center gap-2">
-                                                {editingField === 'gender' ? (
-                                                    <>
-                                                        <Select value={tempValue} onValueChange={setTempValue}>
-                                                            <SelectTrigger className="flex-1"> <SelectValue placeholder="Select gender" /> </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="male">Male</SelectItem>
-                                                                <SelectItem value="female">Female</SelectItem>
-                                                                <SelectItem value="other">Other</SelectItem>
-                                                                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <Button size="sm" onClick={() => handleInlineSave('gender')} disabled={loading.saving}>
-                                                            {loading.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Input id="gender" value={userData?.gender ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1) : "Not set"} readOnly className="flex-1" />
-                                                        <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('gender', userData?.gender || '')}><Edit className="h-4 w-4" /></Button>
-                                                    </>
-                                                )}
-                                            </div>
+                                    {/* Phone Field */}
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800">
+                                        <Label htmlFor="phone" className="text-xs font-bold text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {editingField === 'phone' ? (
+                                                <>
+                                                    <Input id="phone" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1 text-xs" />
+                                                    <Button size="sm" onClick={() => handleInlineSave('phone')} disabled={loading.saving} className="bg-navy text-white rounded-xl">
+                                                        {loading.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Input id="phone" value={userData?.phone || ''} placeholder="Add phone number" readOnly className="flex-1 text-xs bg-white dark:bg-stone-900 font-semibold" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('phone', userData?.phone)} className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Date of Birth Field */}
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800">
+                                        <Label htmlFor="dateOfBirth" className="text-xs font-bold text-slate-700 dark:text-slate-300">Date of Birth</Label>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {editingField === 'dateOfBirth' ? (
+                                                <>
+                                                    <Input id="dateOfBirth" type="date" value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="flex-1 text-xs" />
+                                                    <Button size="sm" onClick={() => handleInlineSave('dateOfBirth')} disabled={loading.saving} className="bg-navy text-white rounded-xl">
+                                                        {loading.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Input id="dateOfBirth" type="text" value={formatDate(userData?.dateOfBirth)} readOnly className="flex-1 text-xs bg-white dark:bg-stone-900 font-semibold" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('dateOfBirth', userData?.dateOfBirth || '')} className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Gender Field */}
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800">
+                                        <Label htmlFor="gender" className="text-xs font-bold text-slate-700 dark:text-slate-300">Gender</Label>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {editingField === 'gender' ? (
+                                                <>
+                                                    <Select value={tempValue} onValueChange={setTempValue}>
+                                                        <SelectTrigger className="flex-1 text-xs"> <SelectValue placeholder="Select gender" /> </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="male">Male</SelectItem>
+                                                            <SelectItem value="female">Female</SelectItem>
+                                                            <SelectItem value="other">Other</SelectItem>
+                                                            <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Button size="sm" onClick={() => handleInlineSave('gender')} disabled={loading.saving} className="bg-navy text-white rounded-xl">
+                                                        {loading.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Input id="gender" value={userData?.gender ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1) : "Not set"} readOnly className="flex-1 text-xs bg-white dark:bg-stone-900 font-semibold" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('gender', userData?.gender || '')} className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* Bio Field */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bio">Bio</Label>
-                                        <div className="flex items-start gap-2">
+                                    <div className="space-y-1.5 bg-slate-50/50 dark:bg-stone-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-stone-800 md:col-span-2">
+                                        <Label htmlFor="bio" className="text-xs font-bold text-slate-700 dark:text-slate-300">About / Bio</Label>
+                                        <div className="flex items-start gap-2 mt-1">
                                             {editingField === 'bio' ? (
                                                 <>
-                                                    <Textarea id="bio" value={tempValue} onChange={(e) => setTempValue(e.target.value)} placeholder="Tell us a little about yourself..." className="flex-1 min-h-[100px]" />
+                                                    <Textarea id="bio" value={tempValue} onChange={(e) => setTempValue(e.target.value)} placeholder="Tell us a little about yourself..." className="flex-1 min-h-[80px] text-xs" />
                                                     <div className="flex flex-col gap-2">
-                                                        <Button size="sm" onClick={() => handleInlineSave('bio')} disabled={loading.saving}>
-                                                            {loading.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                        <Button size="sm" onClick={() => handleInlineSave('bio')} disabled={loading.saving} className="bg-navy text-white rounded-xl">
+                                                            {loading.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                                                         </Button>
-                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}><X className="h-4 w-4" /></Button>
+                                                        <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl"><X className="h-3.5 w-3.5" /></Button>
                                                     </div>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Textarea id="bio" value={userData?.bio || "No bio added yet..."} readOnly className="flex-1 min-h-[100px]" />
-                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('bio', userData?.bio || '')}><Edit className="h-4 w-4" /></Button>
+                                                    <Textarea id="bio" value={userData?.bio || "No bio added yet..."} readOnly className="flex-1 min-h-[80px] text-xs bg-white dark:bg-stone-900 font-medium" />
+                                                    <Button variant="ghost" size="sm" onClick={() => handleInlineEdit('bio', userData?.bio || '')} className="rounded-xl text-slate-500 hover:text-navy">
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
                                                 </>
                                             )}
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        {/* My Orders Tab */}
-                        <TabsContent value="orders">
-                            <Card>
-                                <CardHeader> <CardTitle>Order History</CardTitle> </CardHeader>
-                                <CardContent>
-                                    {loading.orders ? (
-                                        <div className="flex justify-center items-center h-32"> <Loader2 className="h-6 w-6 animate-spin text-navy" /> </div>
-                                    ) : orders.length === 0 ? (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                            <p>No orders found</p>
-                                            <Button onClick={() => navigate("/products")} className="mt-4 bg-navy hover:bg-navy/90"> Start Shopping </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {orders.map((order) => (
-                                                <div key={order._id} className="flex flex-col md:flex-row gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                                                    {order.orderItems?.[0]?.image && (
-                                                        <div className="w-24 h-24 bg-muted rounded-md flex-shrink-0 overflow-hidden">
-                                                            <img src={`${API_BASE_URL}${order.orderItems[0].image}`} alt={order.orderItems[0].name} className="w-full h-full object-cover" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <div>
-                                                                <h3 className="font-semibold">Order #{order.orderNumber}</h3>
-                                                                <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
-                                                            </div>
-                                                            {getOrderStatusBadge(order.orderStatus?.currentStatus)}
-                                                        </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <p className="text-sm text-muted-foreground"> {order.orderSummary?.itemsCount || order.orderItems?.length || 0} items </p>
-                                                            <div className="flex items-center gap-4">
-                                                                <p className="font-semibold text-lg"> {formatCurrency(order.orderSummary?.total || 0)} </p>
-                                                                <Button variant="outline" size="sm" className="gap-2" onClick={() => handleViewOrderDetails(order)}>
-                                                                    View Details <ChevronRight className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* My Addresses Tab */}
-                        <TabsContent value="addresses">
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle>Saved Addresses</CardTitle>
-                                        <Button className="bg-navy hover:bg-navy/90 gap-2" onClick={handleAddAddress}>
-                                            <Plus className="h-4 w-4" /> Add New Address
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 2: MY ORDERS */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    <TabsContent value="orders" className="space-y-6 text-left">
+                        <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                            <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base sm:text-lg font-extrabold text-navy dark:text-white">Order History</CardTitle>
+                                        <p className="text-xs text-slate-500 mt-0.5">Track your deliveries, receipts, and order status updates.</p>
+                                    </div>
+                                    <Button onClick={fetchOrders} variant="outline" size="sm" disabled={loading.orders} className="rounded-xl text-xs font-bold">
+                                        {loading.orders ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : "Refresh"}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 sm:p-6">
+                                {loading.orders ? (
+                                    <div className="flex flex-col justify-center items-center h-48 gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-navy dark:text-amber-400" />
+                                        <p className="text-xs text-slate-400">Fetching order history...</p>
+                                    </div>
+                                ) : orders.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-stone-800 rounded-3xl">
+                                        <Package className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-stone-700" />
+                                        <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">No orders placed yet</h4>
+                                        <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Explore our grocery, fashion, and electronics collection to get started!</p>
+                                        <Button onClick={() => navigate("/products")} className="mt-4 bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 px-6 rounded-xl">
+                                            Start Shopping
                                         </Button>
                                     </div>
-                                </CardHeader>
-                                <CardContent>
-                                    {loading.addresses ? (
-                                        <div className="flex justify-center items-center h-32"> <Loader2 className="h-6 w-6 animate-spin text-navy" /> </div>
-                                    ) : addresses.length === 0 ? (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                            <p>No addresses saved</p>
-                                            <Button className="mt-4 bg-navy hover:bg-navy/90" onClick={handleAddAddress}> Add Your First Address </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {addresses.map((address) => (
-                                                <div key={address._id || address.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge className={
-                                                                address.type === 'home' ? 'bg-green-600 text-white font-bold' :
-                                                                    address.type === 'office' ? 'bg-blue-600 text-white font-bold' :
-                                                                        address.type === 'parents' ? 'bg-purple-600 text-white font-bold' :
-                                                                            'bg-slate-600 text-white font-bold'
-                                                            }>
-                                                                {(address.type || 'HOME').toUpperCase()}
-                                                            </Badge>
-                                                            {address.isDefault && (<Badge className="bg-amber-600 text-white font-black">DEFAULT</Badge>)}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            {!address.isDefault && (
-                                                                <Button variant="ghost" size="sm" onClick={() => handleSetDefaultAddress(address._id || address.id)} disabled={loading.saving}> Set Default </Button>
-                                                            )}
-                                                            <Button variant="ghost" size="sm" onClick={() => handleEditAddress(address)}> <Edit className="h-4 w-4" /> </Button>
-                                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteAddress(address._id || address.id)} disabled={loading.saving}> <Trash2 className="h-4 w-4" /> </Button>
-                                                        </div>
-                                                    </div>
-                                                    <h3 className="font-semibold mb-1">{address.name}</h3>
-                                                    <p className="text-sm text-muted-foreground">{address.address}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {address.city}, {address.state} - {address.pincode}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground mt-2">Phone: {address.phone}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Referrals Tab (UPDATED CODE) */}
-                        <TabsContent value="referrals">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Refer & Earn Rewards</CardTitle>
-                                </CardHeader>
-
-                                {loading.referrals ? (
-                                    <CardContent>
-                                        <div className="flex justify-center items-center min-h-64"> <Loader2 className="h-8 w-8 animate-spin text-navy" /> </div>
-                                    </CardContent>
                                 ) : (
-                                    <CardContent className="space-y-8">
-                                        {/* Hero Section */}
-                                        <div className="bg-gradient-to-r from-navy to-yellow-600 rounded-xl p-8 text-white">
-                                            <div className="text-center">
-                                                <Gift className="h-16 w-16 mx-auto mb-4" />
-                                                <h2 className="text-3xl font-bold mb-2">Earn {formatCurrency(50)} per Referral</h2>
-                                                <p className="text-lg mb-6 opacity-90">Invite friends and earn rewards when they make their first purchase</p>
-                                                <div className="bg-white/20 rounded-lg p-4 inline-block">
-                                                    <p className="text-xl font-semibold">Wallet Balance: {formatCurrency(referralStats.walletBalance)}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Stats */}
-                                        <div className="grid md:grid-cols-3 gap-6">
-                                            {referralStatsCards.map((stat) => {
-                                                const Icon = stat.icon;
-                                                return (
-                                                    <div key={stat.label} className="bg-white rounded-lg p-6 text-center shadow-sm border border-gray-100">
-                                                        <Icon className="h-8 w-8 mx-auto mb-3 text-yellow-600" />
-                                                        <div className="text-3xl font-bold text-navy mb-1">{stat.value}</div>
-                                                        <div className="text-sm font-medium text-navy mb-1">{stat.label}</div>
-                                                        <div className="text-xs text-muted-foreground">{stat.description}</div>
+                                    <div className="space-y-4">
+                                        {orders.map((order) => (
+                                            <div
+                                                key={order._id}
+                                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border border-slate-100 dark:border-stone-800 rounded-2xl hover:border-amber-400/40 hover:shadow-md transition bg-slate-50/40 dark:bg-stone-800/30"
+                                            >
+                                                <div className="flex items-center gap-3.5 min-w-0">
+                                                    {order.orderItems?.[0]?.image ? (
+                                                        <div className="w-16 h-16 bg-white rounded-xl flex-shrink-0 overflow-hidden border border-slate-100 dark:border-stone-700">
+                                                            <img
+                                                                src={order.orderItems[0].image.startsWith('http') ? order.orderItems[0].image : `${API_BASE_URL}${order.orderItems[0].image}`}
+                                                                alt={order.orderItems[0].name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-stone-800 rounded-xl flex items-center justify-center text-indigo-600 dark:text-amber-400 shrink-0">
+                                                            <Package className="w-7 h-7" />
+                                                        </div>
+                                                    )}
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-extrabold text-sm text-navy dark:text-white">Order #{order.orderNumber}</h3>
+                                                            {getOrderStatusBadge(order.orderStatus?.currentStatus)}
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                            Placed on {formatDate(order.createdAt)} • {order.orderSummary?.itemsCount || order.orderItems?.length || 0} items
+                                                        </p>
+                                                        <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                            {formatCurrency(order.orderSummary?.total || 0)}
+                                                        </p>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Referral Code & Link */}
-                                        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                                            <h3 className="text-xl font-bold text-navy mb-4">Your Referral Code & Link</h3>
-
-                                            {/* Referral Code */}
-                                            <div className="mb-6">
-                                                <label className="block text-sm font-medium text-navy mb-2">Referral Code</label>
-                                                <div className="flex gap-3">
-                                                    <div className="flex-1 bg-blue-50 rounded-lg p-4 font-mono text-xl font-bold text-navy text-center border border-blue-200">
-                                                        {referralCode || "Code N/A"}
-                                                    </div>
-                                                    <Button
-                                                        onClick={() => copyToClipboard(referralCode, 'code')}
-                                                        className="bg-navy hover:bg-navy/90 min-w-[100px]"
-                                                        disabled={!referralCode || copyLoading}
-                                                    >
-                                                        {copyLoading ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<><Copy className="h-4 w-4 mr-2" />Copy</>)}
-                                                    </Button>
                                                 </div>
-                                            </div>
 
-                                            {/* Referral Link */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-navy mb-2">Referral Link</label>
-                                                <div className="flex gap-3">
-                                                    <div className="flex-1 bg-blue-50 rounded-lg p-3 text-sm text-navy break-all border border-blue-200 font-medium">
-                                                        {referralLink || "Link N/A"}
-                                                    </div>
-                                                    <Button
-                                                        onClick={shareReferral}
-                                                        variant="outline"
-                                                        className="border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white min-w-[100px]"
-                                                        disabled={!referralLink || copyLoading}
-                                                    >
-                                                        {copyLoading ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<><Share2 className="h-4 w-4 mr-2" />Share</>)}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* How it Works */}
-                                        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                                            <h3 className="text-xl font-bold text-navy mb-6">How It Works</h3>
-                                            <div className="grid md:grid-cols-3 gap-8">
-                                                <div className="text-center">
-                                                    <div className="w-16 h-16 bg-yellow-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 shadow-md">1</div>
-                                                    <h4 className="font-semibold text-navy mb-3 text-lg">Share Your Code</h4>
-                                                    <p className="text-sm text-muted-foreground leading-relaxed">Copy your unique referral code or link and share it with friends via message, email, or social media</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="w-16 h-16 bg-yellow-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 shadow-md">2</div>
-                                                    <h4 className="font-semibold text-navy mb-3 text-lg">Friend Signs Up & Buys</h4>
-                                                    <p className="text-sm text-muted-foreground leading-relaxed">Your friend registers using your referral code and makes their first qualifying purchase</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="w-16 h-16 bg-yellow-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 shadow-md">3</div>
-                                                    <h4 className="font-semibold text-navy mb-3 text-lg">You Earn Rewards</h4>
-                                                    <p className="text-sm text-muted-foreground leading-relaxed">Receive {formatCurrency(50)} directly in your wallet immediately after your friend completes their purchase</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Referral History */}
-                                        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="text-xl font-bold text-navy">Referral History</h3>
                                                 <Button
-                                                    onClick={fetchReferralData}
                                                     variant="outline"
                                                     size="sm"
-                                                    disabled={loading.referrals}
+                                                    className="gap-2 text-xs font-bold rounded-xl w-full sm:w-auto border-slate-200 dark:border-stone-700"
+                                                    onClick={() => handleViewOrderDetails(order)}
                                                 >
-                                                    {loading.referrals ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+                                                    View Details <ChevronRight className="h-4 w-4" />
                                                 </Button>
                                             </div>
-
-                                            {referralHistory.length === 0 ? (
-                                                <div className="text-center py-12">
-                                                    <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                                                    <h4 className="text-lg font-semibold text-navy mb-2">No referrals yet</h4>
-                                                    <p className="text-muted-foreground mb-4">Start sharing your referral code to earn rewards!</p>
-                                                    <Button
-                                                        onClick={shareReferral}
-                                                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                                                    >
-                                                        <Share2 className="h-4 w-4 mr-2" /> Share Your Link
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {referralHistory.map((ref) => (
-                                                        <div key={ref._id} className="flex justify-between items-center border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
-                                                            <div className="flex-1">
-                                                                <h4 className="font-semibold text-navy">{ref.referredUser?.name || 'Unknown User'}</h4>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {ref.referredUser?.email || 'No email'} • {formatDate(ref.createdAt)}
-                                                                </p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className="font-bold text-navy text-lg">{formatCurrency(ref.rewardAmount)}</p>
-                                                                <p className={`text-sm font-medium ${getReferralStatusColor(ref.status)}`}>
-                                                                    {getReferralStatusText(ref.status)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Additional Info */}
-                                        <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                                            <h4 className="font-semibold text-navy mb-2">💡 Tips for Successful Referrals</h4>
-                                            <ul className="text-sm text-muted-foreground space-y-1 list-disc ml-4">
-                                                <li>Share your referral link on social media platforms</li>
-                                                <li>Send personalized messages to friends who might be interested</li>
-                                                <li>Explain the benefits they'll get by signing up</li>
-                                                <li>Follow up with friends who haven't completed their purchase yet</li>
-                                            </ul>
-                                        </div>
-                                    </CardContent>
+                                        ))}
+                                    </div>
                                 )}
-                            </Card>
-                        </TabsContent>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        {/* ══════════════════════════════════ */}
-                        {/* Settings Tab */}
-                        {/* ══════════════════════════════════ */}
-                        <TabsContent value="settings">
-                            <div className="space-y-6">
-
-                                {/* Reviews History */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> My Reviews ({myReviews.length})</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {myReviews.length === 0 ? (
-                                            <div className="text-center py-8 border border-dashed rounded-xl bg-slate-50/50 space-y-2">
-                                                <span className="text-2xl block">⭐</span>
-                                                <p className="font-semibold text-xs text-slate-700">No product reviews submitted yet</p>
-                                                <p className="text-[11px] text-slate-400">Reviews you write after receiving orders will be displayed here.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {myReviews.map((review, i) => (
-                                                    <div key={review._id || i} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                                        <div className="flex justify-between items-start">
-                                                            <div>
-                                                                <p className="font-semibold text-navy">{review.productName || review.productId?.name || "ApexBee Product"}</p>
-                                                                <div className="flex items-center gap-1 mt-1">
-                                                                    {Array.from({ length: 5 }, (_, idx) => (
-                                                                        <Star key={idx} className={`h-4 w-4 ${idx < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            <span className="text-xs text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}</span>
-                                                        </div>
-                                                        {review.title && <p className="text-xs font-bold text-slate-800 mt-2">{review.title}</p>}
-                                                        {review.comment && <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>}
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 3: ADDRESSES */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    <TabsContent value="addresses" className="space-y-6 text-left">
+                        <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                            <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div>
+                                        <CardTitle className="text-base sm:text-lg font-extrabold text-navy dark:text-white">Saved Delivery Addresses</CardTitle>
+                                        <p className="text-xs text-slate-500 mt-0.5">Manage your home, office, and family delivery locations.</p>
+                                    </div>
+                                    <Button className="bg-navy hover:bg-navy/90 text-white gap-2 font-bold text-xs rounded-xl py-2 px-4" onClick={handleAddAddress}>
+                                        <Plus className="h-4 w-4" /> Add New Address
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 sm:p-6">
+                                {loading.addresses ? (
+                                    <div className="flex flex-col justify-center items-center h-48 gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-navy dark:text-amber-400" />
+                                        <p className="text-xs text-slate-400">Loading saved addresses...</p>
+                                    </div>
+                                ) : addresses.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-stone-800 rounded-3xl">
+                                        <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-stone-700" />
+                                        <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">No saved addresses</h4>
+                                        <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Add an address for lightning-fast checkout and doorstep delivery.</p>
+                                        <Button className="mt-4 bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 px-6 rounded-xl" onClick={handleAddAddress}>
+                                            Add Your First Address
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {addresses.map((address) => (
+                                            <div
+                                                key={address._id || address.id}
+                                                className={`p-4 sm:p-5 border rounded-2xl transition-all relative ${
+                                                    address.isDefault
+                                                        ? 'border-amber-400 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm'
+                                                        : 'border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900'
+                                                }`}
+                                            >
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <Badge className={
+                                                            address.type === 'home' ? 'bg-emerald-600 text-white font-bold text-[10px]' :
+                                                                address.type === 'office' ? 'bg-indigo-600 text-white font-bold text-[10px]' :
+                                                                    address.type === 'parents' ? 'bg-purple-600 text-white font-bold text-[10px]' :
+                                                                        'bg-slate-600 text-white font-bold text-[10px]'
+                                                        }>
+                                                            {(address.type || 'HOME').toUpperCase()}
+                                                        </Badge>
+                                                        {address.isDefault && (
+                                                            <Badge className="bg-amber-400 text-slate-950 font-black text-[10px]">
+                                                                DEFAULT
+                                                            </Badge>
+                                                        )}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-
-                                {/* Saved Payment Cards */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-500" /> Saved Payment Methods ({savedCards.length})</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {savedCards.length === 0 ? (
-                                            <div className="text-center py-8 border border-dashed rounded-xl bg-slate-50/50 space-y-2">
-                                                <span className="text-2xl block">💳</span>
-                                                <p className="font-semibold text-xs text-slate-700">No saved payment methods</p>
-                                                <p className="text-[11px] text-slate-400">Save cards securely during checkout for one-click payments.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {savedCards.map((card, i) => (
-                                                    <div key={card.id || i} className="flex items-center justify-between border rounded-lg p-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-8 bg-gradient-to-br from-navy to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">{card.type || "CARD"}</div>
-                                                            <div>
-                                                                <p className="text-sm font-medium">•••• •••• •••• {card.last4}</p>
-                                                                <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {card.isDefault && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Default</Badge>}
+                                                    <div className="flex items-center gap-1">
+                                                        {!address.isDefault && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                onClick={() => handleDeleteCard(card.id || i)}
-                                                                className="text-red-500 hover:text-red-700 cursor-pointer"
+                                                                onClick={() => handleSetDefaultAddress(address._id || address.id)}
+                                                                disabled={loading.saving}
+                                                                className="text-[11px] font-bold text-amber-600 hover:text-amber-700 h-7 px-2 rounded-lg"
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                Set Default
                                                             </Button>
+                                                        )}
+                                                        <Button variant="ghost" size="sm" onClick={() => handleEditAddress(address)} className="h-7 w-7 p-0 rounded-lg text-slate-500 hover:text-navy">
+                                                            <Edit className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteAddress(address._id || address.id)} disabled={loading.saving} className="h-7 w-7 p-0 rounded-lg text-rose-500 hover:text-rose-700">
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <h4 className="font-black text-sm text-navy dark:text-white">{address.name}</h4>
+                                                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{address.address}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                                                    {address.city}, {address.state} - <strong className="font-mono">{address.pincode}</strong>
+                                                </p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-2">
+                                                    📞 {address.phone}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 4: REFERRALS & REWARDS */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    <TabsContent value="referrals" className="space-y-6 text-left">
+                        <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                            <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base sm:text-lg font-extrabold text-navy dark:text-white">Refer &amp; Earn Program</CardTitle>
+                                        <p className="text-xs text-slate-500 mt-0.5">Invite friends to ApexBee and get instant wallet cashback bonuses.</p>
+                                    </div>
+                                    <Button onClick={() => navigate("/referrals")} className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs py-2 px-4 rounded-xl shadow-xs">
+                                        Affiliate Dashboard →
+                                    </Button>
+                                </div>
+                            </CardHeader>
+
+                            {loading.referrals ? (
+                                <CardContent className="p-12">
+                                    <div className="flex flex-col justify-center items-center min-h-48 gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-navy dark:text-amber-400" />
+                                        <p className="text-xs text-slate-400">Loading referral statistics...</p>
+                                    </div>
+                                </CardContent>
+                            ) : (
+                                <CardContent className="p-4 sm:p-6 space-y-6">
+                                    {/* Hero Banner */}
+                                    <div className="bg-gradient-to-r from-[#0A1128] via-[#101b42] to-slate-950 rounded-2xl p-6 text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6 border border-white/10 shadow-md">
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
+                                                Instant Cashback
+                                            </span>
+                                            <h2 className="text-xl sm:text-2xl font-black mt-2">Earn ₹50 per Qualified Referral</h2>
+                                            <p className="text-xs text-slate-300 mt-1 max-w-md">
+                                                Share your code with friends. When they register and place their first order, rewards credit to your wallet automatically.
+                                            </p>
+                                        </div>
+                                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-center shrink-0">
+                                            <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">Wallet Balance</span>
+                                            <strong className="text-2xl font-black text-white block mt-0.5">₹{referralStats.walletBalance || 0}</strong>
+                                        </div>
+                                    </div>
+
+                                    {/* Referral Code & Share Link Card */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 dark:bg-stone-800/50 p-4 rounded-2xl border border-slate-200 dark:border-stone-800 space-y-2">
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Your Unique Referral Code</label>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 bg-white dark:bg-stone-900 rounded-xl p-2.5 font-mono text-base font-black text-navy dark:text-amber-400 text-center border border-slate-200 dark:border-stone-700">
+                                                    {referralCode || userData?.referralCode || "AB7K9P2"}
+                                                </div>
+                                                <Button
+                                                    onClick={() => copyToClipboard(referralCode || userData?.referralCode || "AB7K9P2", 'code')}
+                                                    className="bg-navy text-white hover:bg-navy/90 text-xs font-bold rounded-xl px-4"
+                                                    disabled={copyLoading}
+                                                >
+                                                    {copyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Copy className="h-3.5 w-3.5 mr-1" /> Copy</>}
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-50 dark:bg-stone-800/50 p-4 rounded-2xl border border-slate-200 dark:border-stone-800 space-y-2">
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Direct Invite Link</label>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 bg-white dark:bg-stone-900 rounded-xl p-2.5 text-xs text-slate-600 dark:text-slate-300 truncate border border-slate-200 dark:border-stone-700 font-mono">
+                                                    {referralLink || `${window.location.origin}/register?ref=${referralCode || userData?.referralCode || "AB7K9P2"}`}
+                                                </div>
+                                                <Button
+                                                    onClick={shareReferral}
+                                                    variant="outline"
+                                                    className="border-amber-400 text-slate-950 bg-amber-400 hover:bg-amber-300 text-xs font-black rounded-xl px-4"
+                                                    disabled={copyLoading}
+                                                >
+                                                    <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3-Step Guide */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                                        <div className="p-4 rounded-2xl border border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-800/30 text-center">
+                                            <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center mx-auto mb-2 text-xs">1</div>
+                                            <h4 className="font-bold text-xs text-navy dark:text-white">Share Your Link</h4>
+                                            <p className="text-[11px] text-slate-500 mt-1">Send your invite link via WhatsApp, SMS, or Social Media.</p>
+                                        </div>
+                                        <div className="p-4 rounded-2xl border border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-800/30 text-center">
+                                            <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center mx-auto mb-2 text-xs">2</div>
+                                            <h4 className="font-bold text-xs text-navy dark:text-white">Friend Registers &amp; Shops</h4>
+                                            <p className="text-[11px] text-slate-500 mt-1">They sign up with your referral tag and complete first purchase.</p>
+                                        </div>
+                                        <div className="p-4 rounded-2xl border border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-800/30 text-center">
+                                            <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center mx-auto mb-2 text-xs">3</div>
+                                            <h4 className="font-bold text-xs text-navy dark:text-white">Instant Commission</h4>
+                                            <p className="text-[11px] text-slate-500 mt-1">Enjoy cash bonuses and multi-tier network commissions.</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            )}
+                        </Card>
+                    </TabsContent>
+
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 5: SETTINGS & SECURITY */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    <TabsContent value="settings" className="space-y-6 text-left">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Saved Payment Methods */}
+                            <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                                <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-sm sm:text-base font-extrabold text-navy dark:text-white flex items-center gap-2">
+                                            <CreditCard className="h-4 w-4 text-blue-500" /> Saved Payment Methods ({savedCards.length})
+                                        </CardTitle>
+                                        <Button size="sm" variant="outline" onClick={() => setShowAddCardModal(true)} className="rounded-xl text-xs font-bold">
+                                            <Plus className="h-3.5 w-3.5 mr-1" /> Add Card
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4 sm:p-6">
+                                    {savedCards.length === 0 ? (
+                                        <div className="text-center py-8 border border-dashed rounded-2xl bg-slate-50/50 dark:bg-stone-800/30 space-y-2">
+                                            <span className="text-2xl block">💳</span>
+                                            <p className="font-bold text-xs text-slate-700 dark:text-slate-300">No saved payment methods</p>
+                                            <p className="text-[11px] text-slate-400">Save cards securely for one-click checkout.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {savedCards.map((card, i) => (
+                                                <div key={card.id || i} className="flex items-center justify-between border border-slate-100 dark:border-stone-800 rounded-2xl p-3.5 bg-slate-50/30 dark:bg-stone-800/40">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-8 bg-gradient-to-br from-navy to-blue-700 rounded-lg flex items-center justify-center text-white text-[10px] font-black tracking-wider">
+                                                            {card.type || "CARD"}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-900 dark:text-white font-mono">•••• •••• •••• {card.last4}</p>
+                                                            <p className="text-[10px] text-slate-400">Expires {card.expiry}</p>
                                                         </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <Button variant="outline" onClick={() => setShowAddCardModal(true)} className="mt-4 w-full gap-2 cursor-pointer">
-                                            <Plus className="h-4 w-4" /> Add New Payment Method
+                                                    <div className="flex items-center gap-2">
+                                                        {card.isDefault && <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 text-[9px] font-bold">Default</Badge>}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteCard(card.id || i)}
+                                                            className="text-rose-500 hover:text-rose-700 h-7 w-7 p-0 rounded-lg cursor-pointer"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Preferences & Privacy */}
+                            <Card className="border border-slate-200 dark:border-stone-800 shadow-sm rounded-3xl bg-white dark:bg-stone-900 overflow-hidden">
+                                <CardHeader className="p-4 sm:p-6 border-b border-slate-100 dark:border-stone-800 bg-slate-50/50 dark:bg-stone-900/50">
+                                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy dark:text-white flex items-center gap-2">
+                                        <Shield className="h-4 w-4 text-emerald-500" /> Security &amp; Compliance
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 sm:p-6 space-y-3">
+                                    <button
+                                        onClick={() => navigate("/privacy-policy")}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-stone-800 hover:bg-slate-50 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <FileText className="h-4 w-4 text-amber-500" />
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Privacy Policy</span>
+                                        </div>
+                                        <ChevronRight className="h-4 w-4 text-slate-400" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => navigate("/terms-conditions")}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-stone-800 hover:bg-slate-50 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <FileText className="h-4 w-4 text-amber-500" />
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Terms of Service</span>
+                                        </div>
+                                        <ChevronRight className="h-4 w-4 text-slate-400" />
+                                    </button>
+
+                                    <div className="border-t border-slate-100 dark:border-stone-800 pt-3 mt-3">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl"
+                                            onClick={() => {
+                                                if (window.confirm("Are you sure you want to delete your account? This action is irreversible and all your data will be permanently removed.")) {
+                                                    alert("Account deletion request submitted. You will receive a confirmation email within 24 hours.");
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Request Account Deletion
                                         </Button>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Preferences */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-gray-500" /> Preferences</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {/* Dark Mode Toggle */}
-                                        <div className="flex items-center justify-between p-3 rounded-lg border">
-                                            <div className="flex items-center gap-3">
-                                                <Moon className="h-5 w-5 text-indigo-500" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Dark Mode</p>
-                                                    <p className="text-xs text-muted-foreground">Switch to dark theme</p>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" className="sr-only peer" />
-                                                <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
-                                            </label>
-                                        </div>
-
-                                        {/* Notifications */}
-                                        <div className="flex items-center justify-between p-3 rounded-lg border">
-                                            <div className="flex items-center gap-3">
-                                                <Eye className="h-5 w-5 text-green-500" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Push Notifications</p>
-                                                    <p className="text-xs text-muted-foreground">Get order & offer updates</p>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" defaultChecked className="sr-only peer" />
-                                                <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                                            </label>
-                                        </div>
-
-                                        {/* Language */}
-                                        <div className="flex items-center justify-between p-3 rounded-lg border">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-lg">🌍</span>
-                                                <div>
-                                                    <p className="text-sm font-medium">Language</p>
-                                                    <p className="text-xs text-muted-foreground">Choose your preferred language</p>
-                                                </div>
-                                            </div>
-                                            <select className="text-sm border rounded-lg px-3 py-1.5 bg-white">
-                                                <option>English</option>
-                                                <option>Telugu</option>
-                                                <option>Hindi</option>
-                                                <option>Tamil</option>
-                                            </select>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Privacy & Security */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-red-500" /> Privacy & Security</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        <button
-                                            onClick={() => navigate("/privacy-policy")}
-                                            className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-stone-900 transition-colors cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-5 w-5 text-amber-500" />
-                                                <span className="text-sm font-medium">Privacy Policy</span>
-                                            </div>
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                        </button>
-                                        <button
-                                            onClick={() => navigate("/terms-conditions")}
-                                            className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-stone-900 transition-colors cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-5 w-5 text-amber-500" />
-                                                <span className="text-sm font-medium">Terms of Service</span>
-                                            </div>
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                        </button>
-                                        <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <Shield className="h-5 w-5 text-navy" />
-                                                <span className="text-sm font-medium">Change Password</span>
-                                            </div>
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                        </button>
-                                        <div className="border-t pt-4 mt-4">
-                                            <Button
-                                                variant="outline"
-                                                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                onClick={() => {
-                                                    if (window.confirm("Are you sure you want to delete your account? This action is irreversible and all your data will be permanently removed.")) {
-                                                        alert("Account deletion request submitted. You will receive a confirmation email within 24 hours.");
-                                                    }
-                                                }}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-2" /> Delete Account
-                                            </Button>
-                                            <p className="text-xs text-muted-foreground text-center mt-2">This action cannot be undone. Your data will be permanently deleted.</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </div>
 
-            {/* Edit Profile Dialog */}
+            {/* ═══════════════════════════════════════════════ */}
+            {/* MODAL: FULL PROFILE EDIT */}
+            {/* ═══════════════════════════════════════════════ */}
             <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader> <DialogTitle>Edit Profile</DialogTitle> </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2"> <Label htmlFor="edit-name">Full Name</Label> <Input id="edit-name" value={editFormData.name} onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))} /> </div>
-                            <div className="space-y-2"> <Label htmlFor="edit-email">Email</Label> <Input id="edit-email" type="email" value={editFormData.email} disabled className="opacity-70" /> <p className="text-xs text-muted-foreground">Email cannot be changed</p> </div>
-                            <div className="space-y-2"> <Label htmlFor="edit-phone">Phone Number</Label> <Input id="edit-phone" value={editFormData.phone} onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))} /> </div>
-                            <div className="space-y-2"> <Label htmlFor="edit-dob">Date of Birth</Label> <Input id="edit-dob" type="date" value={editFormData.dateOfBirth} onChange={(e) => setEditFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))} /> </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-gender">Gender</Label>
+                <DialogContent className="w-[92vw] sm:max-w-2xl rounded-3xl bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 p-4 sm:p-6 text-left">
+                    <DialogHeader>
+                        <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">Edit Profile Details</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-name" className="text-xs font-bold text-slate-700 dark:text-slate-300">Full Name</Label>
+                                <Input id="edit-name" value={editFormData.name} onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))} className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-email" className="text-xs font-bold text-slate-700 dark:text-slate-300">Email Address</Label>
+                                <Input id="edit-email" type="email" value={editFormData.email} disabled className="opacity-70 text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-phone" className="text-xs font-bold text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                <Input id="edit-phone" value={editFormData.phone} onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))} className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-dob" className="text-xs font-bold text-slate-700 dark:text-slate-300">Date of Birth</Label>
+                                <Input id="edit-dob" type="date" value={editFormData.dateOfBirth} onChange={(e) => setEditFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))} className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <Label htmlFor="edit-gender" className="text-xs font-bold text-slate-700 dark:text-slate-300">Gender</Label>
                                 <Select value={editFormData.gender} onValueChange={(value) => setEditFormData(prev => ({ ...prev, gender: value }))}>
-                                    <SelectTrigger> <SelectValue placeholder="Select gender" /> </SelectTrigger>
-                                    <SelectContent> <SelectItem value="male">Male</SelectItem> <SelectItem value="female">Female</SelectItem> <SelectItem value="other">Other</SelectItem> <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> </SelectContent>
+                                    <SelectTrigger className="text-xs rounded-xl"> <SelectValue placeholder="Select gender" /> </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <div className="space-y-2"> <Label htmlFor="edit-bio">Bio</Label> <Textarea id="edit-bio" value={editFormData.bio} onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))} placeholder="Tell us a little about yourself..." rows={4} /> </div>
-                        <div className="flex justify-end gap-3 pt-4">
-                            <Button variant="outline" onClick={() => setShowEditProfile(false)} disabled={loading.saving}> Cancel </Button>
-                            <Button className="bg-navy hover:bg-navy/90" onClick={handleSaveProfile} disabled={loading.saving}>
-                                {loading.saving ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>) : ("Save Changes")}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="edit-bio" className="text-xs font-bold text-slate-700 dark:text-slate-300">Bio / About Me</Label>
+                            <Textarea id="edit-bio" value={editFormData.bio} onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))} placeholder="Tell us a little about yourself..." rows={3} className="text-xs rounded-xl" />
+                        </div>
+                        <div className="flex justify-end gap-2.5 pt-4">
+                            <Button variant="outline" onClick={() => setShowEditProfile(false)} disabled={loading.saving} className="rounded-xl text-xs font-bold">
+                                Cancel
+                            </Button>
+                            <Button className="bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2 px-5 rounded-xl" onClick={handleSaveProfile} disabled={loading.saving}>
+                                {loading.saving ? (<><Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Saving...</>) : ("Save Changes")}
                             </Button>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
 
-            {/* Add/Edit Address Dialog */}
+            {/* ═══════════════════════════════════════════════ */}
+            {/* MODAL: ADD / EDIT ADDRESS */}
+            {/* ═══════════════════════════════════════════════ */}
             <Dialog open={showAddAddress} onOpenChange={setShowAddAddress}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader> <DialogTitle> {editingAddress ? 'Edit Address' : 'Add New Address'} </DialogTitle> </DialogHeader>
-                    <div className="space-y-4">
+                <DialogContent className="w-[92vw] sm:max-w-2xl rounded-3xl bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 p-4 sm:p-6 text-left">
+                    <DialogHeader>
+                        <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">{editingAddress ? 'Edit Address' : 'Add New Delivery Address'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
                         {/* Mock Map Pin Drag */}
-                        <div className="p-3 border border-slate-100 bg-slate-50 rounded-2xl space-y-2 text-left">
+                        <div className="p-3 border border-slate-100 dark:border-stone-800 bg-slate-50 dark:bg-stone-800/40 rounded-2xl space-y-2">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-navy">📍 Locate on Map (Draggable Pin)</span>
+                                <span className="text-xs font-bold text-navy dark:text-white">📍 Auto GPS Location</span>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="outline"
-                                    className="text-[10px] h-7 px-2 text-accent border-accent hover:bg-accent hover:text-white"
+                                    className="text-[10px] h-7 px-2.5 font-bold text-amber-700 border-amber-400 bg-amber-50 hover:bg-amber-400 hover:text-slate-950 rounded-xl"
                                     onClick={() => {
                                         setAddressFormData(prev => ({
                                             ...prev,
@@ -1608,51 +1708,77 @@ const Profile = () => {
                                             state: "Andhra Pradesh",
                                             pincode: "524305"
                                         }));
-                                        alert("GPS auto-detected: Buchireddypalem, Andhra Pradesh!");
+                                        toast({ title: "GPS Detected", description: "Buchireddypalem, Andhra Pradesh (524305)" });
                                     }}
                                 >
-                                    🛰️ Auto GPS Location
+                                    🛰️ Auto GPS Fill
                                 </Button>
                             </div>
-                            <div className="h-28 bg-blue-50 rounded-xl relative overflow-hidden flex items-center justify-center border border-blue-200">
-                                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:16px_16px]" />
-                                <div className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute" />
+                            <div className="h-20 bg-blue-50/60 dark:bg-stone-800 rounded-xl relative overflow-hidden flex items-center justify-center border border-blue-200/60 dark:border-stone-700">
+                                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:14px_14px]" />
+                                <div className="w-3.5 h-3.5 bg-red-500 rounded-full animate-ping absolute" />
                                 <span className="text-2xl z-10 animate-bounce">📍</span>
-                                <span className="absolute bottom-1 right-2 text-[8px] bg-navy/80 text-white px-1.5 py-0.5 rounded">Drag pin to adjust</span>
+                                <span className="absolute bottom-1 right-2 text-[8px] bg-navy/80 text-white px-1.5 py-0.5 rounded font-mono">GPS Ready</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2"> <Label htmlFor="address-name">Full Name</Label> <Input id="address-name" value={addressFormData.name} onChange={(e) => setAddressFormData(prev => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" /> </div>
-                            <div className="space-y-2"> <Label htmlFor="address-phone">Phone Number</Label> <Input id="address-phone" value={addressFormData.phone} onChange={(e) => setAddressFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="Enter your phone number" /> </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="address-type">Address Type</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-name" className="text-xs font-bold text-slate-700 dark:text-slate-300">Recipient Name</Label>
+                                <Input id="address-name" value={addressFormData.name} onChange={(e) => setAddressFormData(prev => ({ ...prev, name: e.target.value }))} placeholder="Enter full name" className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-phone" className="text-xs font-bold text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                <Input id="address-phone" value={addressFormData.phone} onChange={(e) => setAddressFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="10-digit mobile number" className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-type" className="text-xs font-bold text-slate-700 dark:text-slate-300">Address Category</Label>
                                 <Select value={addressFormData.type} onValueChange={(value) => setAddressFormData(prev => ({ ...prev, type: value }))}>
-                                    <SelectTrigger> <SelectValue placeholder="Select address type" /> </SelectTrigger>
+                                    <SelectTrigger className="text-xs rounded-xl"> <SelectValue placeholder="Select type" /> </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="home">Home</SelectItem>
-                                        <SelectItem value="office">Office</SelectItem>
-                                        <SelectItem value="parents">Parents</SelectItem>
+                                        <SelectItem value="home">Home (All Day Delivery)</SelectItem>
+                                        <SelectItem value="office">Office (10 AM - 6 PM)</SelectItem>
+                                        <SelectItem value="parents">Parents / Family</SelectItem>
                                         <SelectItem value="other">Other</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2"> <Label htmlFor="address-pincode">Pincode</Label> <Input id="address-pincode" value={addressFormData.pincode} onChange={(e) => setAddressFormData(prev => ({ ...prev, pincode: e.target.value }))} placeholder="Enter pincode" /> </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-pincode" className="text-xs font-bold text-slate-700 dark:text-slate-300">Pincode</Label>
+                                <Input id="address-pincode" value={addressFormData.pincode} onChange={(e) => setAddressFormData(prev => ({ ...prev, pincode: e.target.value }))} placeholder="6-digit pincode" className="text-xs rounded-xl" />
+                            </div>
                         </div>
-                        <div className="space-y-2"> <Label htmlFor="address-street">Street Address</Label> <Textarea id="address-street" value={addressFormData.address} onChange={(e) => setAddressFormData(prev => ({ ...prev, address: e.target.value }))} placeholder="Enter your street address" rows={3} /> </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2"> <Label htmlFor="address-city">City</Label> <Input id="address-city" value={addressFormData.city} onChange={(e) => setAddressFormData(prev => ({ ...prev, city: e.target.value }))} placeholder="Enter your city" /> </div>
-                            <div className="space-y-2"> <Label htmlFor="address-state">State</Label> <Input id="address-state" value={addressFormData.state} onChange={(e) => setAddressFormData(prev => ({ ...prev, state: e.target.value }))} placeholder="Enter your state" /> </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="address-street" className="text-xs font-bold text-slate-700 dark:text-slate-300">Flat / House No. / Building / Street</Label>
+                            <Textarea id="address-street" value={addressFormData.address} onChange={(e) => setAddressFormData(prev => ({ ...prev, address: e.target.value }))} placeholder="Enter complete door address" rows={2} className="text-xs rounded-xl" />
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <input type="checkbox" id="default-address" checked={addressFormData.isDefault} onChange={(e) => setAddressFormData(prev => ({ ...prev, isDefault: e.target.checked }))} className="rounded border-gray-300" />
-                            <Label htmlFor="default-address" className="text-sm font-normal"> Set as default address </Label>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-city" className="text-xs font-bold text-slate-700 dark:text-slate-300">City / District</Label>
+                                <Input id="address-city" value={addressFormData.city} onChange={(e) => setAddressFormData(prev => ({ ...prev, city: e.target.value }))} placeholder="City name" className="text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address-state" className="text-xs font-bold text-slate-700 dark:text-slate-300">State</Label>
+                                <Input id="address-state" value={addressFormData.state} onChange={(e) => setAddressFormData(prev => ({ ...prev, state: e.target.value }))} placeholder="State name" className="text-xs rounded-xl" />
+                            </div>
                         </div>
-                        <DialogFooter>
-                            <div className="flex justify-end gap-3 w-full">
-                                <Button variant="outline" onClick={() => setShowAddAddress(false)} disabled={loading.saving}> Cancel </Button>
-                                <Button className="bg-navy hover:bg-navy/90" onClick={handleSaveAddress} disabled={loading.saving}>
-                                    {loading.saving ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>) : (editingAddress ? "Update Address" : "Add Address")}
+
+                        <div className="flex items-center space-x-2 pt-1">
+                            <input type="checkbox" id="default-address" checked={addressFormData.isDefault} onChange={(e) => setAddressFormData(prev => ({ ...prev, isDefault: e.target.checked }))} className="rounded border-gray-300 h-4 w-4 text-navy cursor-pointer" />
+                            <Label htmlFor="default-address" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                Set as default delivery address
+                            </Label>
+                        </div>
+
+                        <DialogFooter className="pt-2">
+                            <div className="flex justify-end gap-2.5 w-full">
+                                <Button variant="outline" onClick={() => setShowAddAddress(false)} disabled={loading.saving} className="rounded-xl text-xs font-bold">
+                                    Cancel
+                                </Button>
+                                <Button className="bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2 px-5 rounded-xl" onClick={handleSaveAddress} disabled={loading.saving}>
+                                    {loading.saving ? (<><Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Saving...</>) : (editingAddress ? "Update Address" : "Save Address")}
                                 </Button>
                             </div>
                         </DialogFooter>
@@ -1660,29 +1786,35 @@ const Profile = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Order Details Dialog */}
+            {/* ═══════════════════════════════════════════════ */}
+            {/* MODAL: ORDER DETAILS & STATUS TRACKING */}
+            {/* ═══════════════════════════════════════════════ */}
             <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[92vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 p-4 sm:p-6 text-left">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center justify-between">
-                            <span>Order Details - {selectedOrder?.orderNumber}</span>
-                            <Button variant="ghost" size="icon" onClick={() => setShowOrderDetails(false)}> <X className="h-4 w-4" /> </Button>
+                        <DialogTitle className="flex items-center justify-between text-base sm:text-lg font-black text-navy dark:text-white">
+                            <span>Order #{selectedOrder?.orderNumber}</span>
+                            <Button variant="ghost" size="icon" onClick={() => setShowOrderDetails(false)} className="rounded-full">
+                                <X className="h-4 w-4" />
+                            </Button>
                         </DialogTitle>
                     </DialogHeader>
 
                     {selectedOrder && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 pt-2">
                             {/* Order Status Timeline */}
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2"> <Package className="h-5 w-5" /> Order Status </h3>
+                            <div className="bg-blue-50/70 dark:bg-stone-800/50 p-4 rounded-2xl border border-blue-100 dark:border-stone-800">
+                                <h3 className="font-extrabold text-sm mb-3 flex items-center gap-2 text-navy dark:text-white">
+                                    <Package className="h-4 w-4 text-indigo-500" /> Order Tracking Timeline
+                                </h3>
                                 <div className="space-y-3">
-                                    {selectedOrder.orderStatus?.timeline?.map((timeline, index) => (
-                                        <div key={timeline._id} className="flex items-start gap-3">
-                                            <div className={`w-3 h-3 rounded-full mt-1.5 ${index === selectedOrder.orderStatus.timeline.length - 1 ? 'bg-green-500' : 'bg-blue-500'}`} />
-                                            <div className="flex-1">
-                                                <p className="font-medium capitalize">{timeline.status}</p>
-                                                <p className="text-sm text-muted-foreground">{timeline.description}</p>
-                                                <p className="text-xs text-muted-foreground"> {formatDateTime(timeline.timestamp)} </p>
+                                    {selectedOrder.orderStatus?.timeline?.map((timeline: any, index: number) => (
+                                        <div key={timeline._id || index} className="flex items-start gap-3">
+                                            <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${index === selectedOrder.orderStatus.timeline.length - 1 ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-indigo-400'}`} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-xs capitalize text-slate-800 dark:text-slate-200">{timeline.status}</p>
+                                                <p className="text-[11px] text-slate-500">{timeline.description}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{formatDateTime(timeline.timestamp)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -1691,24 +1823,27 @@ const Profile = () => {
 
                             {/* Order Items */}
                             <div>
-                                <h3 className="font-semibold text-lg mb-3">Order Items</h3>
-                                <div className="space-y-4">
-                                    {selectedOrder.orderItems?.map((item) => (
-                                        <div key={item._id} className="flex gap-4 p-3 border rounded-lg">
-                                            <div className="w-16 h-16 bg-muted rounded-md flex-shrink-0 overflow-hidden">
-                                                <img src={item.image.startsWith('http') ? item.image : `${API_BASE_URL}${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                                <h3 className="font-extrabold text-sm mb-3 text-navy dark:text-white">Purchased Items</h3>
+                                <div className="space-y-3">
+                                    {selectedOrder.orderItems?.map((item: any) => (
+                                        <div key={item._id} className="flex gap-3.5 p-3 border border-slate-100 dark:border-stone-800 rounded-2xl bg-slate-50/30 dark:bg-stone-800/30 items-center">
+                                            <div className="w-14 h-14 bg-white dark:bg-stone-800 rounded-xl flex-shrink-0 overflow-hidden border border-slate-100 dark:border-stone-700">
+                                                <img
+                                                    src={item.image.startsWith('http') ? item.image : `${API_BASE_URL}${item.image}`}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover"
+                                                />
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold">{item.name}</h4>
-                                                <div className="flex flex-wrap gap-4 mt-1 text-sm text-muted-foreground">
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">{item.name}</h4>
+                                                <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 mt-0.5">
                                                     <span>Qty: {item.quantity}</span>
-                                                    {item.color && item.color !== 'default' && (<span>Color: {item.color}</span>)}
-                                                    {item.size && item.size !== 'One Size' && (<span>Size: {item.size}</span>)}
+                                                    {item.color && item.color !== 'default' && (<span>• Color: {item.color}</span>)}
+                                                    {item.size && item.size !== 'One Size' && (<span>• Size: {item.size}</span>)}
                                                 </div>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="font-semibold">{formatCurrency(item.price)}</span>
-                                                    {item.originalPrice > item.price && (<span className="text-sm text-muted-foreground line-through"> {formatCurrency(item.originalPrice)} </span>)}
-                                                    <span className="ml-auto font-semibold"> {formatCurrency(item.itemTotal)} </span>
+                                                <div className="flex items-center justify-between mt-1">
+                                                    <span className="font-black text-xs text-slate-900 dark:text-amber-300">{formatCurrency(item.price)}</span>
+                                                    <span className="font-black text-xs text-emerald-600 dark:text-emerald-400">{formatCurrency(item.itemTotal)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1716,89 +1851,71 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Order Summary */}
-                            <div className="grid md:grid-cols-2 gap-6">
-                                {/* Shipping Address */}
-                                <div>
-                                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2"> <MapPin className="h-5 w-5" /> Shipping Address </h3>
-                                    <div className="p-3 border rounded-lg">
-                                        <p className="font-medium">{selectedOrder.shippingAddress?.name}</p>
-                                        <p className="text-sm text-muted-foreground">{selectedOrder.shippingAddress?.address}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - {selectedOrder.shippingAddress?.pincode}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground mt-2"> Phone: {selectedOrder.shippingAddress?.phone} </p>
-                                    </div>
+                            {/* Shipping & Payment Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 border border-slate-100 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-800/40">
+                                    <h4 className="font-bold text-xs mb-2 flex items-center gap-1.5 text-navy dark:text-white">
+                                        <MapPin className="h-3.5 w-3.5 text-rose-500" /> Delivery Address
+                                    </h4>
+                                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">{selectedOrder.shippingAddress?.name}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{selectedOrder.shippingAddress?.address}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - {selectedOrder.shippingAddress?.pincode}
+                                    </p>
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1">📞 {selectedOrder.shippingAddress?.phone}</p>
                                 </div>
 
-                                {/* Payment & Delivery Info */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2"> <CreditCard className="h-5 w-5" /> Payment Information </h3>
-                                        <div className="p-3 border rounded-lg">
-                                            <p className="font-medium capitalize"> {getPaymentMethodLabel(selectedOrder.paymentDetails?.method)} </p>
-                                            <p className="text-sm text-muted-foreground capitalize"> Status: {selectedOrder.paymentDetails?.status} </p>
-                                            <p className="text-sm text-muted-foreground"> Amount: {formatCurrency(selectedOrder.paymentDetails?.amount)} </p>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2"> <Calendar className="h-5 w-5" /> Delivery Information </h3>
-                                        <div className="p-3 border rounded-lg">
-                                            <p className="font-medium"> Expected Delivery: {formatDate(selectedOrder.deliveryDetails?.expectedDelivery)} </p>
-                                            <p className="text-sm text-muted-foreground"> Method: {selectedOrder.deliveryDetails?.shippingMethod} </p>
-                                        </div>
-                                    </div>
+                                <div className="p-4 border border-slate-100 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-800/40">
+                                    <h4 className="font-bold text-xs mb-2 flex items-center gap-1.5 text-navy dark:text-white">
+                                        <CreditCard className="h-3.5 w-3.5 text-indigo-500" /> Payment &amp; Method
+                                    </h4>
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Method: {getPaymentMethodLabel(selectedOrder.paymentDetails?.method)}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Payment Status: <strong className="uppercase text-emerald-600 font-black">{selectedOrder.paymentDetails?.status}</strong></p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Expected Delivery: {formatDate(selectedOrder.deliveryDetails?.expectedDelivery)}</p>
                                 </div>
                             </div>
 
-                            {/* Order Summary */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <h3 className="font-semibold text-lg mb-3">Order Summary</h3>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between"> <span>Subtotal ({selectedOrder.orderSummary?.itemsCount} items):</span> <span>{formatCurrency(selectedOrder.orderSummary?.subtotal)}</span> </div>
-                                    <div className="flex justify-between">
-                                        <span>Shipping:</span>
-                                        <span className={selectedOrder.orderSummary?.shipping === 0 ? 'text-green-600' : ''}>
-                                            {selectedOrder.orderSummary?.shipping === 0 ? 'Free' : formatCurrency(selectedOrder.orderSummary?.shipping)}
-                                        </span>
-                                    </div>
-                                    {selectedOrder.orderSummary?.discount > 0 && (
-                                        <div className="flex justify-between">
-                                            <span>Discount:</span>
-                                            <span className="text-green-600"> -{formatCurrency(selectedOrder.orderSummary?.discount)} </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between border-t pt-2 font-semibold text-lg">
-                                        <span>Total:</span>
-                                        <span>{formatCurrency(selectedOrder.orderSummary?.total)}</span>
-                                    </div>
+                            {/* Price Summary */}
+                            <div className="bg-slate-50 dark:bg-stone-800/60 p-4 rounded-2xl border border-slate-200 dark:border-stone-800 space-y-2 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Subtotal ({selectedOrder.orderSummary?.itemsCount} items):</span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">{formatCurrency(selectedOrder.orderSummary?.subtotal)}</span>
                                 </div>
-                            </div>
-
-                            {/* Order Metadata */}
-                            <div className="text-xs text-muted-foreground">
-                                <p>Order placed on: {formatDateTime(selectedOrder.createdAt)}</p>
-                                <p>Source: {selectedOrder.metadata?.source === 'buy_now' ? 'Buy Now' : 'Shopping Cart'}</p>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Shipping Charges:</span>
+                                    <span className={selectedOrder.orderSummary?.shipping === 0 ? 'text-emerald-600 font-bold' : 'font-bold'}>
+                                        {selectedOrder.orderSummary?.shipping === 0 ? 'FREE' : formatCurrency(selectedOrder.orderSummary?.shipping)}
+                                    </span>
+                                </div>
+                                {selectedOrder.orderSummary?.discount > 0 && (
+                                    <div className="flex justify-between text-emerald-600 font-bold">
+                                        <span>Discount Savings:</span>
+                                        <span>-{formatCurrency(selectedOrder.orderSummary?.discount)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between border-t border-slate-200 dark:border-stone-700 pt-2 font-black text-sm text-navy dark:text-amber-400">
+                                    <span>Grand Total Paid:</span>
+                                    <span>{formatCurrency(selectedOrder.orderSummary?.total)}</span>
+                                </div>
                             </div>
                         </div>
                     )}
                 </DialogContent>
             </Dialog>
 
-            {/* Add Card Modal Dialog */}
+            {/* ═══════════════════════════════════════════════ */}
+            {/* MODAL: ADD PAYMENT CARD */}
+            {/* ═══════════════════════════════════════════════ */}
             <Dialog open={showAddCardModal} onOpenChange={setShowAddCardModal}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="w-[92vw] sm:max-w-md rounded-3xl bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 p-4 sm:p-6 text-left">
                     <DialogHeader>
-                        <DialogTitle>Add Payment Method</DialogTitle>
+                        <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">Save Payment Method</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleAddCard} className="space-y-4 pt-2">
-                        <div>
-                            <Label className="text-xs font-bold mb-1 block">Card Network / Type</Label>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Card Network</Label>
                             <Select value={newCardData.cardType} onValueChange={(val) => setNewCardData(prev => ({ ...prev, cardType: val }))}>
-                                <SelectTrigger className="text-xs">
-                                    <SelectValue placeholder="Select Card Type" />
-                                </SelectTrigger>
+                                <SelectTrigger className="text-xs rounded-xl"> <SelectValue placeholder="Select Card Type" /> </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="VISA">VISA</SelectItem>
                                     <SelectItem value="Mastercard">Mastercard</SelectItem>
@@ -1807,82 +1924,85 @@ const Profile = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                            <Label className="text-xs font-bold mb-1 block">Card Number (Last 4 Digits)</Label>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Card Number (Last 4 Digits)</Label>
                             <Input
                                 type="text"
                                 maxLength={4}
                                 placeholder="e.g. 4242"
                                 value={newCardData.last4}
                                 onChange={(e) => setNewCardData(prev => ({ ...prev, last4: e.target.value }))}
-                                className="text-xs"
+                                className="text-xs rounded-xl font-mono"
                                 required
                             />
                         </div>
-                        <div>
-                            <Label className="text-xs font-bold mb-1 block">Expiry Date (MM/YY)</Label>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Expiry Date (MM/YY)</Label>
                             <Input
                                 type="text"
-                                placeholder="MM/YY (e.g. 12/28)"
+                                placeholder="12/28"
                                 value={newCardData.expiry}
                                 onChange={(e) => setNewCardData(prev => ({ ...prev, expiry: e.target.value }))}
-                                className="text-xs"
+                                className="text-xs rounded-xl font-mono"
                                 required
                             />
                         </div>
                         <DialogFooter className="pt-2">
-                            <Button type="button" variant="outline" onClick={() => setShowAddCardModal(false)} className="text-xs">Cancel</Button>
-                            <Button type="submit" className="bg-navy hover:bg-navy/90 text-white text-xs font-bold">Save Card</Button>
+                            <div className="flex justify-end gap-2 w-full">
+                                <Button type="button" variant="outline" onClick={() => setShowAddCardModal(false)} className="rounded-xl text-xs font-bold">
+                                    Cancel
+                                </Button>
+                                <Button type="submit" className="bg-navy hover:bg-navy/90 text-white text-xs font-bold rounded-xl px-5">
+                                    Save Card
+                                </Button>
+                            </div>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            {/* Email Verification Dialog */}
+            {/* ═══════════════════════════════════════════════ */}
+            {/* MODAL: EMAIL VERIFICATION OTP */}
+            {/* ═══════════════════════════════════════════════ */}
             <Dialog open={showEmailOtpModal} onOpenChange={setShowEmailOtpModal}>
-                <DialogContent className="sm:max-w-md bg-white border border-gray-200">
+                <DialogContent className="w-[92vw] sm:max-w-md bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 rounded-3xl p-4 sm:p-6 text-center">
                     <DialogHeader>
-                        <DialogTitle className="text-center text-xl font-bold text-navy">Verify Email Address</DialogTitle>
+                        <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">Verify Email Address</DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col items-center justify-center p-4 space-y-4">
-                        <p className="text-center text-sm text-muted-foreground">
-                            A 4-digit verification code has been sent to <span className="font-semibold text-foreground text-navy">{pendingEmail || userData?.email}</span>.
-                            <br />
-                            Please enter the code to complete email verification.
+                    <div className="py-4 space-y-4 text-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            A 4-digit verification code was sent to <strong className="text-navy dark:text-amber-400 font-bold">{pendingEmail || userData?.email}</strong>.
                         </p>
                         {emailOtpError && (
-                            <div className="w-full bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-xs text-center">
+                            <div className="bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-medium">
                                 {emailOtpError}
                             </div>
                         )}
                         <Input
                             type="text"
-                            placeholder="Enter 4-digit OTP"
+                            placeholder="OTP"
                             value={emailOtpCode}
                             onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, "");
                                 if (val.length <= 4) setEmailOtpCode(val);
                             }}
-                            className="text-center text-2xl font-bold tracking-widest h-12 w-48 text-navy border-gray-200"
+                            className="text-center text-2xl font-mono font-black tracking-widest h-12 w-44 mx-auto rounded-2xl border-slate-300 dark:border-stone-700"
                             inputMode="numeric"
                             maxLength={4}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            (For testing, use code: <span className="font-semibold text-navy font-bold">1234</span>)
+                        <p className="text-[10px] text-slate-400">
+                            (Simulator: code is <strong className="text-navy dark:text-amber-400 font-bold">1234</strong>)
                         </p>
                     </div>
-                    <DialogFooter className="sm:justify-center">
+                    <DialogFooter>
                         <Button
                             type="button"
-                            className="w-full bg-navy text-white hover:bg-navy/90 font-bold"
+                            className="w-full bg-navy text-white hover:bg-navy/90 font-black text-xs py-2.5 rounded-xl"
                             disabled={emailOtpLoading}
                             onClick={handleVerifyEmailOtp}
                         >
                             {emailOtpLoading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Verifying Email...
-                                </>
+                                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
                             ) : (
                                 "Verify & Confirm Email"
                             )}
@@ -1895,3 +2015,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

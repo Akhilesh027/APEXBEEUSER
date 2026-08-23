@@ -35,9 +35,8 @@ import {
   UploadCloud,
   Check,
   ExternalLink,
-  HelpCircle,
-  UserCheck,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -1078,15 +1077,26 @@ const EarnWithApexBee = () => {
             ApexBee provides the logistics, tech stack, and customer leads. Apply as a Vendor, Manufacturer, Wholesaler, Delivery Partner, or Franchise.
           </p>
 
-          <div className="flex flex-wrap gap-3 pt-3">
-            <Button className="bg-navy hover:bg-navy/90 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md border-none" onClick={() => setActiveView("applications")}>
-              <FileText className="w-4 h-4 mr-2" /> View My Applications
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-3">
+            <Button
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg hover:shadow-amber-500/20 hover:scale-[1.02] active:scale-95 transition-all border-none flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
+              onClick={() => {
+                fetchApplications();
+                setActiveView("applications");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            >
+              <FileText className="w-4 h-4 text-slate-950" /> View My Applications
             </Button>
-            <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 text-xs font-bold px-6 py-2.5 rounded-xl" onClick={() => {
-              const el = document.getElementById("quiz-finder-section");
-              el?.scrollIntoView({ behavior: "smooth" });
-            }}>
-              Find Best Fit Role
+            <Button
+              variant="outline"
+              className="border border-white/40 bg-white/10 hover:bg-white/20 text-white font-black text-xs sm:text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl backdrop-blur-md transition-all flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
+              onClick={() => {
+                const el = document.getElementById("quiz-finder-section");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" /> Find Best Fit Role
             </Button>
           </div>
         </div>

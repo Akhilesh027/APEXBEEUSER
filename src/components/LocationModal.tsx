@@ -1,27 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
-import { X, MapPin, Loader2, CheckCircle2, Home, Briefcase, Bookmark, Plus, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  X,
+  MapPin,
+  Loader2,
+  CheckCircle2,
+  Home,
+  Briefcase,
+  Bookmark,
+  Trash2,
+  Navigation,
+  Search,
+  ChevronRight,
+  Sparkles,
+  Building2,
+  Map
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Input } from "./ui/input";
+import {
+  getDeviceCoordinates,
+  reverseGeocode,
+  searchPlaces,
+  lookupPincode,
+  saveActiveLocation,
+  extractPincode,
+  LocationPayload,
+  PlaceSuggestion
+} from "@/utils/locationHelper";
 
 interface LocationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
-  // ✅ parent will receive confirmed location
-  onConfirm?: (payload: {
-    lat: number | null;
-    lng: number | null;
-    state: string;
-    district: string;
-    mandal: string;
-    colony: string;
-    pincode: string;
-    landmark?: string;
-    address: string;
-    locationType: "gps" | "manual" | "saved";
-    raw?: any;
-  }) => void;
+  onConfirm?: (payload: LocationPayload) => void;
 }
 
 type GeoState = {
@@ -30,6 +41,9 @@ type GeoState = {
   lng?: number;
   address?: string;
   colony?: string;
+  mandal?: string;
+  district?: string;
+  state?: string;
   pincode?: string;
   raw?: any;
   error?: string;
@@ -57,6 +71,12 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
   const [showManualForm, setShowManualForm] = useState(false);
   const [activeTab, setActiveTab] = useState<"detect" | "saved">("detect");
 
+  // Place search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<PlaceSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Manual form states
   const [manualLocation, setManualLocation] = useState({
     state: "",
     district: "",
@@ -65,14 +85,16 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
     pincode: "",
     landmark: "",
   });
+  const [isLookingUpPin, setIsLookingUpPin] = useState(false);
+  const [colonySuggestions, setColonySuggestions] = useState<string[]>([]);
 
+  // Saved location states
   const [saveAs, setSaveAs] = useState<"Home" | "Office" | "Other" | "none">("none");
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
 
-  // Load saved locations from backend if logged in, or local storage fallback
+  // Load saved locations
   useEffect(() => {
     if (!open) return;
-    // Clean up legacy mock locations if any
     localStorage.removeItem("mock_saved_locations");
 
     const token = localStorage.getItem("token");
@@ -101,7 +123,6 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
               address: a.address || `${a.street}, ${a.colony}, ${a.district}, ${a.state} - ${a.pincode}`,
             })).filter((a: SavedLocation) => !a.id.startsWith("loc_test_"));
             setSavedLocations(mapped);
-            if (mapped.length > 0) setActiveTab("saved");
             return;
           }
           loadLocalSavedLocations();
@@ -119,20 +140,141 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
           if (Array.isArray(parsed) && parsed.length > 0) {
             const clean = parsed.filter((m: any) => m && !m.id?.startsWith("loc_test_"));
             setSavedLocations(clean);
-            if (clean.length > 0) setActiveTab("saved");
             return;
           }
         } catch { }
       }
       setSavedLocations([]);
-      setActiveTab("detect");
     }
   }, [open]);
 
-  const canUseGeo = useMemo(
-    () => typeof window !== "undefined" && "geolocation" in navigator,
-    []
-  );
+  // Reset modal state when opening
+  useEffect(() => {
+    if (open) {
+      setGeo({ status: "idle" });
+      setShowManualForm(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSaveAs("none");
+      setColonySuggestions([]);
+    }
+  }, [open]);
+
+  // Debounced Place Search
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchPlaces(searchQuery);
+        setSearchResults(results);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Live GPS Detect
+  const handleDetectLiveLocation = async () => {
+    setGeo({ status: "locating" });
+    setSearchResults([]);
+    setSearchQuery("");
+
+    try {
+      const coords = await getDeviceCoordinates();
+      setGeo({ status: "geocoding", lat: coords.lat, lng: coords.lng });
+
+      const result = await reverseGeocode(coords.lat, coords.lng);
+
+      setGeo({
+        status: "ready",
+        lat: coords.lat,
+        lng: coords.lng,
+        address: result.address,
+        colony: result.colony,
+        mandal: result.mandal,
+        district: result.district,
+        state: result.state,
+        pincode: result.pincode,
+        raw: result.raw,
+      });
+
+      setManualLocation({
+        state: result.state,
+        district: result.district,
+        mandal: result.mandal,
+        colony: result.colony,
+        pincode: result.pincode,
+        landmark: "",
+      });
+    } catch (e: any) {
+      setGeo({
+        status: "error",
+        error: e?.message || "Could not detect location. Search your area above.",
+      });
+    }
+  };
+
+  // Select from Search Suggestion
+  const handleSelectSuggestion = (place: PlaceSuggestion) => {
+    setGeo({
+      status: "ready",
+      lat: place.lat || null as any,
+      lng: place.lng || null as any,
+      address: place.displayName,
+      colony: place.colony,
+      mandal: place.mandal,
+      district: place.district,
+      state: place.state,
+      pincode: place.pincode,
+    });
+
+    setManualLocation({
+      state: place.state,
+      district: place.district,
+      mandal: place.mandal,
+      colony: place.colony,
+      pincode: place.pincode,
+      landmark: "",
+    });
+
+    setSearchQuery(place.displayName);
+    setSearchResults([]);
+  };
+
+  // Pincode auto-lookup for manual form
+  const handlePincodeChange = async (val: string) => {
+    const clean = val.replace(/\D/g, "").slice(0, 6);
+    setManualLocation(prev => ({ ...prev, pincode: clean }));
+
+    if (clean.length === 6) {
+      setIsLookingUpPin(true);
+      try {
+        const details = await lookupPincode(clean);
+        if (details) {
+          setManualLocation(prev => ({
+            ...prev,
+            state: details.state || prev.state,
+            district: details.district || prev.district,
+            mandal: details.mandal || prev.mandal,
+            colony: prev.colony || (details.places.length > 0 ? details.places[0] : prev.colony),
+          }));
+          if (details.places && details.places.length > 0) {
+            setColonySuggestions(details.places);
+          }
+        }
+      } finally {
+        setIsLookingUpPin(false);
+      }
+    }
+  };
 
   const isManualFormValid = useMemo(() => {
     return (
@@ -140,152 +282,21 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
       manualLocation.district.trim() !== "" &&
       manualLocation.mandal.trim() !== "" &&
       manualLocation.colony.trim() !== "" &&
-      manualLocation.pincode.trim() !== ""
+      extractPincode(manualLocation.pincode).length === 6
     );
   }, [manualLocation]);
 
-  // Reset modal state each time it opens
-  useEffect(() => {
-    if (open) {
-      setGeo({ status: "idle" });
-      setShowManualForm(false);
-      setSaveAs("none");
-      setManualLocation({
-        state: "",
-        district: "",
-        mandal: "",
-        colony: "",
-        pincode: "",
-        landmark: "",
-      });
-    }
-  }, [open]);
-
-  const reverseGeocode = async (lat: number, lng: number) => {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${lat}&lon=${lng}`;
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error("Failed to fetch address");
-    const data = await res.json();
-    const addr = data?.address || {};
-
-    const colony =
-      addr.neighbourhood ||
-      addr.suburb ||
-      addr.residential ||
-      addr.quarter ||
-      addr.hamlet ||
-      addr.village ||
-      addr.town ||
-      addr.city_district ||
-      addr.city ||
-      addr.county ||
-      "Unknown area";
-
-    const pincode = addr.postcode || "";
-    const address = data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-
-    return { address, colony, pincode, raw: data };
-  };
-
-  const enableLocation = async () => {
-    if (!canUseGeo) {
-      setGeo({
-        status: "error",
-        error: "Geolocation is not supported in this browser.",
-      });
-      setShowManualForm(true);
-      return;
-    }
-
-    setGeo({ status: "locating" });
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        try {
-          setGeo({ status: "geocoding", lat, lng });
-          const { address, colony, pincode, raw } = await reverseGeocode(lat, lng);
-
-          setGeo({
-            status: "ready",
-            lat,
-            lng,
-            address,
-            colony,
-            pincode,
-            raw,
-          });
-
-          const rawAddr = raw?.address || {};
-          const stateVal = rawAddr.state || "";
-          const districtVal = rawAddr.state_district || rawAddr.county || rawAddr.district || "";
-          const mandalVal = rawAddr.subdistrict || rawAddr.municipality || rawAddr.city || rawAddr.town || "";
-          const colonyVal = colony && colony !== "Unknown area" ? colony : "";
-          const pincodeVal = pincode || "";
-
-          setManualLocation({
-            state: stateVal,
-            district: districtVal,
-            mandal: mandalVal,
-            colony: colonyVal,
-            pincode: pincodeVal,
-            landmark: "",
-          });
-
-          if (!pincodeVal || !colonyVal) {
-            setShowManualForm(true);
-          }
-        } catch (e: any) {
-          setGeo({
-            status: "error",
-            lat,
-            lng,
-            error: e?.message || "Could not get address from coordinates.",
-          });
-          setShowManualForm(true);
-        }
-      },
-      (err) => {
-        const msg =
-          err.code === 1
-            ? "Permission denied. Please allow location access."
-            : err.code === 2
-              ? "Position unavailable. Try again."
-              : "Location request timed out. Try again.";
-
-        setGeo({ status: "error", error: msg });
-        setShowManualForm(true);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0,
-      }
-    );
-  };
-
-  // Confirm and save location (if requested)
-  const confirmLocation = () => {
-    let payload: any = null;
+  // Apply & Save Confirmed Location
+  const handleConfirmLocation = () => {
+    let payload: LocationPayload | null = null;
 
     if (showManualForm) {
       const { state, district, mandal, colony, pincode, landmark } = manualLocation;
-      if (!state.trim() || !district.trim() || !mandal.trim() || !colony.trim() || !pincode.trim()) {
-        return;
-      }
+      const cleanPin = extractPincode(pincode);
+      if (!state.trim() || !district.trim() || !mandal.trim() || !colony.trim() || !cleanPin) return;
 
-      const addressParts = [
-        colony.trim(),
-        landmark.trim() ? `Near ${landmark.trim()}` : "",
-        mandal.trim(),
-        district.trim(),
-        state.trim(),
-      ].filter(Boolean);
-      const address = `${addressParts.join(", ")} - ${pincode.trim()}`;
+      const addressParts = [colony.trim(), landmark.trim() ? `Near ${landmark.trim()}` : "", mandal.trim(), district.trim(), state.trim()].filter(Boolean);
+      const address = `${addressParts.join(", ")} - ${cleanPin}`;
 
       payload = {
         lat: geo.lat || null,
@@ -294,80 +305,48 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
         district: district.trim(),
         mandal: mandal.trim(),
         colony: colony.trim(),
-        pincode: pincode.trim(),
+        pincode: cleanPin,
         landmark: landmark.trim() || undefined,
         address,
-        locationType: "manual" as const,
-        raw: geo.raw || null,
+        locationType: "manual",
       };
     } else {
-      if (geo.status !== "ready" || geo.lat == null || geo.lng == null) return;
-
-      const rawAddr = geo.raw?.address || {};
-      const stateVal = rawAddr.state || "";
-      const districtVal = rawAddr.state_district || rawAddr.county || rawAddr.district || "";
-      const mandalVal = rawAddr.subdistrict || rawAddr.municipality || rawAddr.city || rawAddr.town || "";
-      const colonyVal = geo.colony || "";
-      const pincodeVal = geo.pincode || "";
+      if (geo.status !== "ready") return;
 
       payload = {
-        lat: geo.lat,
-        lng: geo.lng,
-        state: stateVal,
-        district: districtVal,
-        mandal: mandalVal,
-        colony: colonyVal,
-        pincode: pincodeVal,
+        lat: geo.lat || null,
+        lng: geo.lng || null,
+        state: geo.state || manualLocation.state || "",
+        district: geo.district || manualLocation.district || "",
+        mandal: geo.mandal || manualLocation.mandal || "",
+        colony: geo.colony || manualLocation.colony || "Your Area",
+        pincode: extractPincode(geo.pincode || manualLocation.pincode),
         landmark: "",
-        address: geo.address || `${geo.lat}, ${geo.lng}`,
-        locationType: "gps" as const,
-        raw: geo.raw,
+        address: geo.address || `${geo.colony}, ${geo.district}`,
+        locationType: "gps",
       };
     }
 
     if (!payload) return;
 
-    // Handle "Save location" checkbox
     if (saveAs !== "none") {
       const isDuplicate = savedLocations.some(l => l.label === saveAs);
       const idPrefix = saveAs.toLowerCase();
       const nextLocations = isDuplicate
         ? savedLocations.map(l => l.label === saveAs ? { ...l, ...payload, id: `loc_${idPrefix}_${Date.now()}` } : l)
-        : [...savedLocations, { id: `loc_${idPrefix}_${Date.now()}`, label: saveAs, ...payload }];
+        : [...savedLocations, { id: `loc_${idPrefix}_${Date.now()}`, label: saveAs, ...payload } as SavedLocation];
 
       localStorage.setItem("saved_locations", JSON.stringify(nextLocations));
       setSavedLocations(nextLocations);
     }
 
-    // Save as current active location
-    const storagePayload = {
-      lat: payload.lat,
-      lng: payload.lng,
-      state: payload.state,
-      district: payload.district,
-      mandal: payload.mandal,
-      colony: payload.colony,
-      pincode: payload.pincode,
-      landmark: payload.landmark,
-      address: payload.address,
-      locationType: payload.locationType,
-    };
-    localStorage.setItem("user_location", JSON.stringify(storagePayload));
-    localStorage.setItem("userLocation", JSON.stringify(storagePayload));
-    localStorage.setItem("apexbee_user_location", JSON.stringify(storagePayload));
-    if (payload.pincode) {
-      localStorage.setItem("userPincode", payload.pincode);
-      localStorage.setItem("pincode", payload.pincode);
-    }
-    window.dispatchEvent(new Event("storage"));
-    window.dispatchEvent(new Event("user_location_updated"));
-
+    saveActiveLocation(payload);
     onConfirm?.(payload);
     onOpenChange(false);
   };
 
-  const selectSavedLocation = (loc: SavedLocation) => {
-    const payload = {
+  const handleSelectSavedLocation = (loc: SavedLocation) => {
+    const payload: LocationPayload = {
       lat: loc.lat || null,
       lng: loc.lng || null,
       state: loc.state,
@@ -377,19 +356,10 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
       pincode: loc.pincode,
       landmark: loc.landmark,
       address: loc.address,
-      locationType: "saved" as const,
+      locationType: "saved",
     };
 
-    localStorage.setItem("user_location", JSON.stringify(payload));
-    localStorage.setItem("userLocation", JSON.stringify(payload));
-    localStorage.setItem("apexbee_user_location", JSON.stringify(payload));
-    if (loc.pincode) {
-      localStorage.setItem("userPincode", loc.pincode);
-      localStorage.setItem("pincode", loc.pincode);
-    }
-    window.dispatchEvent(new Event("storage"));
-    window.dispatchEvent(new Event("user_location_updated"));
-
+    saveActiveLocation(payload);
     onConfirm?.(payload);
     onOpenChange(false);
   };
@@ -405,165 +375,261 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white border border-slate-100 rounded-3xl shadow-2xl p-6">
-        <button
-          onClick={close}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:text-navy hover:bg-slate-100 transition-colors"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="flex flex-col items-center py-4 space-y-5">
-          {/* Header Pin Icon */}
-          <div className="relative">
-            <div className="absolute inset-0 animate-ping">
-              <MapPin className="h-12 w-12 text-accent opacity-20" />
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] bg-white dark:bg-stone-900 border border-slate-100 dark:border-stone-800 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-navy via-slate-900 to-navy text-white px-4 sm:px-6 py-4 sm:py-5 relative shrink-0">
+          <button
+            onClick={close}
+            className="absolute right-3.5 top-3.5 rounded-full p-1.5 text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer border-none bg-transparent"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-accent text-white shadow-lg shadow-orange-500/20">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <MapPin className="h-12 w-12 text-accent relative" />
+            <div>
+              <h3 className="text-sm sm:text-base font-black tracking-tight">Select Delivery Location</h3>
+              <p className="text-[11px] sm:text-xs text-slate-300">Fast & precise 15–30 min hyperlocal delivery</p>
+            </div>
           </div>
 
-          <div className="text-center space-y-1">
-            <h3 className="text-lg font-black text-navy">Select Delivery Area</h3>
-            <p className="text-xs text-muted-foreground">
-              Choose how you want to select your delivery address.
-            </p>
-          </div>
-
-          {/* Location Dialog Tabs */}
-          <div className="w-full flex border-b border-slate-100">
+          {/* Navigation Tabs */}
+          <div className="flex mt-3 sm:mt-4 bg-white/10 p-1 rounded-xl text-xs font-bold gap-1">
             <button
               onClick={() => setActiveTab("detect")}
-              className={`flex-1 pb-2 text-xs font-bold transition ${activeTab === "detect" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
+              className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer border-none ${activeTab === "detect" ? "bg-white text-navy shadow-xs" : "text-white/80 hover:text-white bg-transparent"
                 }`}
             >
-              📍 Find/Enter Area
+              📍 Search or Detect
             </button>
             <button
               onClick={() => setActiveTab("saved")}
-              className={`flex-1 pb-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${activeTab === "saved" ? "border-b-2 border-accent text-accent" : "text-muted-foreground hover:text-navy"
+              className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none ${activeTab === "saved" ? "bg-white text-navy shadow-xs" : "text-white/80 hover:text-white bg-transparent"
                 }`}
             >
-              🏠 Saved Address ({savedLocations.length})
+              🏠 Saved ({savedLocations.length})
             </button>
           </div>
+        </div>
 
-          {/* Tab contents */}
+        <div className="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto flex-1">
           {activeTab === "detect" ? (
-            <div className="w-full space-y-4">
-              {showManualForm ? (
-                <div className="w-full space-y-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
-                  <p className="font-extrabold text-navy text-xs uppercase tracking-wider text-left mb-1">Enter Area Details</p>
-                  <div className="grid grid-cols-2 gap-3 text-left">
+            <div className="space-y-3.5 sm:space-y-4">
+              {/* 1. Live GPS Detection Quick Banner */}
+              <button
+                type="button"
+                onClick={handleDetectLiveLocation}
+                disabled={geo.status === "locating" || geo.status === "geocoding"}
+                className="w-full text-left p-3.5 rounded-2xl border-2 border-accent/30 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent hover:border-accent hover:bg-amber-500/15 transition group flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                    {geo.status === "locating" || geo.status === "geocoding" ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Navigation className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-navy flex items-center gap-1.5">
+                      Use Current GPS Location
+                      <span className="text-[9px] bg-accent text-white font-extrabold px-1.5 py-0.2 rounded-full">LIVE</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {geo.status === "locating"
+                        ? "Fetching device GPS coordinates..."
+                        : geo.status === "geocoding"
+                          ? "Locating colony, district & pincode..."
+                          : "Enable direct GPS for exact doorstep accuracy"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-accent group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
+              {/* 2. Instant Search Input */}
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search city, locality, colony, or pincode (e.g. Adilabad)..."
+                    className="h-10 pl-10 pr-9 text-xs rounded-xl border-slate-200 focus-visible:ring-accent bg-slate-50/50"
+                  />
+                  {isSearching && (
+                    <Loader2 className="absolute right-3.5 top-3 h-4 w-4 animate-spin text-accent" />
+                  )}
+                </div>
+
+                {/* Instant Search Suggestions Dropdown */}
+                {searchResults.length > 0 && (
+                  <div className="mt-1.5 bg-white border border-slate-100 rounded-2xl shadow-xl divide-y divide-slate-50 overflow-hidden z-20">
+                    {searchResults.map((place, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectSuggestion(place)}
+                        className="p-3 hover:bg-slate-50 cursor-pointer text-left transition flex items-center gap-3"
+                      >
+                        <div className="p-2 rounded-lg bg-slate-100 text-slate-600 shrink-0">
+                          <Building2 className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-black text-navy leading-tight">
+                            {place.colony} {place.pincode ? ` - ${place.pincode}` : ""}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {place.displayName}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Detected / Selected Location Card */}
+              {geo.status === "ready" && (
+                <div className="p-4 rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/40 text-left space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-800">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 fill-emerald-100" />
+                      Location Selected
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualForm(!showManualForm)}
+                      className="text-[11px] font-extrabold text-accent hover:underline"
+                    >
+                      {showManualForm ? "Hide Form" : "✏️ Edit Details"}
+                    </button>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-black text-navy">
+                        {geo.colony} {geo.pincode ? `(${geo.pincode})` : ""}
+                      </p>
+                      {geo.state && (
+                        <span className="text-[10px] bg-slate-100 text-navy font-bold px-2 py-0.5 rounded-md">
+                          {geo.district || geo.state}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                      {geo.address}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Manual Details Form (Toggleable or when needed) */}
+              {showManualForm && (
+                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/60 text-left space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold text-navy uppercase tracking-wider">Address Breakdown</p>
+                    {isLookingUpPin && (
+                      <span className="text-[10px] text-accent font-bold animate-pulse flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Verifying PIN...
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-navy">State *</label>
+                      <label className="text-[10px] font-bold text-navy">Pincode *</label>
                       <Input
-                        value={manualLocation.state}
-                        onChange={(e) => setManualLocation(p => ({ ...p, state: e.target.value }))}
-                        placeholder="e.g. Karnataka"
-                        className="h-9 text-xs rounded-xl border-slate-200"
+                        value={manualLocation.pincode}
+                        onChange={(e) => handlePincodeChange(e.target.value)}
+                        placeholder="e.g. 504001"
+                        maxLength={6}
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200 font-bold"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-navy">District *</label>
-                      <Input
-                        value={manualLocation.district}
-                        onChange={(e) => setManualLocation(p => ({ ...p, district: e.target.value }))}
-                        placeholder="e.g. Bangalore"
-                        className="h-9 text-xs rounded-xl border-slate-200"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-navy">Mandal / Taluk *</label>
-                      <Input
-                        value={manualLocation.mandal}
-                        onChange={(e) => setManualLocation(p => ({ ...p, mandal: e.target.value }))}
-                        placeholder="e.g. South"
-                        className="h-9 text-xs rounded-xl border-slate-200"
-                      />
-                    </div>
+
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-navy">Colony / Locality *</label>
                       <Input
                         value={manualLocation.colony}
                         onChange={(e) => setManualLocation(p => ({ ...p, colony: e.target.value }))}
-                        placeholder="e.g. Indiranagar"
-                        className="h-9 text-xs rounded-xl border-slate-200"
+                        placeholder="e.g. Teachers Colony"
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200"
                       />
                     </div>
+
+                    {colonySuggestions.length > 0 && (
+                      <div className="col-span-2 space-y-1">
+                        <p className="text-[9px] text-muted-foreground font-bold">Suggested Areas:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {colonySuggestions.slice(0, 5).map(place => (
+                            <button
+                              key={place}
+                              type="button"
+                              onClick={() => setManualLocation(p => ({ ...p, colony: place }))}
+                              className="text-[10px] bg-white border border-slate-200 hover:border-accent hover:text-accent px-2 py-0.5 rounded-lg text-slate-700 transition"
+                            >
+                              + {place}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-navy">Pincode *</label>
+                      <label className="text-[10px] font-bold text-navy">Mandal / Taluk *</label>
                       <Input
-                        value={manualLocation.pincode}
-                        onChange={(e) => setManualLocation(p => ({ ...p, pincode: e.target.value }))}
-                        placeholder="e.g. 560038"
-                        className="h-9 text-xs rounded-xl border-slate-200"
+                        value={manualLocation.mandal}
+                        onChange={(e) => setManualLocation(p => ({ ...p, mandal: e.target.value }))}
+                        placeholder="e.g. Adilabad Urban"
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200"
                       />
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-navy">District *</label>
+                      <Input
+                        value={manualLocation.district}
+                        onChange={(e) => setManualLocation(p => ({ ...p, district: e.target.value }))}
+                        placeholder="e.g. Adilabad"
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-navy">State *</label>
+                      <Input
+                        value={manualLocation.state}
+                        onChange={(e) => setManualLocation(p => ({ ...p, state: e.target.value }))}
+                        placeholder="e.g. Telangana"
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200"
+                      />
+                    </div>
+
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-navy">Landmark (Optional)</label>
                       <Input
                         value={manualLocation.landmark}
                         onChange={(e) => setManualLocation(p => ({ ...p, landmark: e.target.value }))}
-                        placeholder="e.g. Metro"
-                        className="h-9 text-xs rounded-xl border-slate-200"
+                        placeholder="e.g. Near Bus Stand"
+                        className="h-8 text-xs rounded-xl bg-white border-slate-200"
                       />
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-xs">
-                  {geo.status === "idle" && (
-                    <p className="text-muted-foreground text-center py-2">
-                      Click <strong>Enable Location</strong> to auto-detect your area or enter details manually.
-                    </p>
-                  )}
+              )}
 
-                  {(geo.status === "locating" || geo.status === "geocoding") && (
-                    <div className="flex flex-col items-center justify-center py-4 gap-2 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                      <span>
-                        {geo.status === "locating"
-                          ? "Locating device coordinates..."
-                          : "Retrieving pincode and colony..."}
-                      </span>
-                    </div>
-                  )}
-
-                  {geo.status === "ready" && (
-                    <div className="space-y-2 text-left">
-                      <div className="flex items-center gap-1.5 text-navy font-bold">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 fill-green-50" />
-                        Coordinates Identified
-                      </div>
-
-                      <p className="text-sm font-black text-navy leading-tight">
-                        {geo.colony} {geo.pincode ? ` - ${geo.pincode}` : ""}
-                      </p>
-
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                        {geo.address}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowManualForm(true)}
-                        className="text-xs text-accent hover:underline font-bold block mt-2"
-                      >
-                        ✏️ Adjust Address Details Manually
-                      </button>
-                    </div>
-                  )}
-
-                  {geo.status === "error" && (
-                    <p className="text-red-500 font-semibold text-center">{geo.error || "Unable to determine location."}</p>
-                  )}
+              {/* Error Notice */}
+              {geo.status === "error" && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-xs text-center font-medium">
+                  {geo.error}
                 </div>
               )}
 
-              {/* Saved checkbox selector (if ready or manual form active) */}
-              {((geo.status === "ready" && !showManualForm) || (showManualForm && isManualFormValid)) && (
-                <div className="w-full border border-slate-100 rounded-2xl p-3 bg-slate-50 flex items-center justify-between">
+              {/* Save As Selector */}
+              {(geo.status === "ready" || isManualFormValid) && (
+                <div className="border border-slate-100 rounded-2xl p-3 bg-slate-50 flex items-center justify-between">
                   <span className="text-xs font-bold text-navy">Save as:</span>
                   <div className="flex gap-1.5">
                     {(["Home", "Office", "Other"] as const).map(type => (
@@ -584,64 +650,42 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                 </div>
               )}
 
-              {/* Confirm / Find location buttons */}
-              <div className="space-y-2.5 w-full">
+              {/* Confirm / Apply Button */}
+              <div className="space-y-2 pt-1">
                 <Button
-                  className="w-full bg-accent hover:bg-accent-dark text-white rounded-xl py-2.5 font-bold shadow-md shadow-orange-500/10 text-xs"
-                  onClick={confirmLocation}
+                  className="w-full bg-accent hover:bg-accent-dark text-white rounded-xl py-3 font-black shadow-lg shadow-orange-500/20 text-xs uppercase tracking-wider"
+                  onClick={handleConfirmLocation}
                   disabled={showManualForm ? !isManualFormValid : geo.status !== "ready"}
                 >
-                  Confirm and Apply Location
+                  Confirm & Apply Location
                 </Button>
 
-                {showManualForm ? (
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl text-xs border-slate-200"
-                    onClick={() => {
-                      setShowManualForm(false);
-                      if (geo.status === "error") setGeo({ status: "idle" });
-                    }}
+                {!showManualForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowManualForm(true)}
+                    className="text-xs text-muted-foreground hover:text-navy font-bold block mx-auto py-1"
                   >
-                    Back to GPS Detection
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl text-xs border-slate-200"
-                    onClick={enableLocation}
-                    disabled={!canUseGeo || geo.status === "locating" || geo.status === "geocoding"}
-                  >
-                    {geo.status === "locating" || geo.status === "geocoding" ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin text-accent" />
-                        Detecting...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="h-4 w-4 mr-2 text-accent" />
-                        Auto Detect My Location
-                      </>
-                    )}
-                  </Button>
+                    Enter Address Details Manually
+                  </button>
                 )}
               </div>
             </div>
           ) : (
-            /* SAVED LOCATIONS VIEW */
-            <div className="w-full space-y-3 max-h-64 overflow-y-auto">
+            /* SAVED ADDRESSES TAB */
+            <div className="space-y-3">
               {savedLocations.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Bookmark className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                  <p className="text-xs">No saved locations yet.</p>
-                  <p className="text-[10px] mt-0.5">Detect or input a location and choose "Save As".</p>
+                <div className="text-center py-8 text-muted-foreground space-y-1">
+                  <Bookmark className="h-8 w-8 mx-auto text-slate-300" />
+                  <p className="text-xs font-bold text-navy">No saved addresses yet</p>
+                  <p className="text-[11px]">Detect or search your location and choose "Save As".</p>
                 </div>
               ) : (
                 savedLocations.map(loc => (
                   <div
                     key={loc.id}
-                    onClick={() => selectSavedLocation(loc)}
-                    className="w-full text-left p-3.5 border border-slate-100 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition hover:shadow-sm cursor-pointer flex items-center justify-between gap-3"
+                    onClick={() => handleSelectSavedLocation(loc)}
+                    className="p-3.5 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-white hover:border-accent/40 transition hover:shadow-sm cursor-pointer flex items-center justify-between gap-3 text-left"
                   >
                     <div className="flex gap-3 items-start min-w-0">
                       <div className="p-2 rounded-xl bg-white border border-slate-100 text-navy shrink-0 mt-0.5">
@@ -654,26 +698,26 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-black text-[#0A1128] text-xs leading-none">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-black text-navy text-xs">
                             {loc.customName || loc.label}
                           </p>
                           <span className="text-[9px] bg-amber-100 text-amber-900 font-extrabold px-1.5 py-0.5 rounded-md">
                             PIN: {loc.pincode}
                           </span>
                         </div>
-                        <p className="text-[10px] font-bold text-accent mt-1 leading-none">
+                        <p className="text-[10px] font-bold text-accent mt-0.5">
                           {loc.colony}, {loc.district} ({loc.state})
                         </p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-1 leading-normal">
+                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
                           {loc.address}
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={(e) => deleteSavedLocation(loc.id, e)}
-                      className="p-1 rounded-full text-muted-foreground hover:text-red-500 hover:bg-white border border-transparent hover:border-slate-100 transition"
-                      title="Delete Location"
+                      className="p-1 rounded-full text-muted-foreground hover:text-red-500 hover:bg-white transition"
+                      title="Delete"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -682,10 +726,6 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
               )}
             </div>
           )}
-
-          <Button variant="ghost" className="w-full text-muted-foreground text-xs rounded-xl" onClick={close}>
-            Cancel / Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

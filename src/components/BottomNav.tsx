@@ -103,7 +103,10 @@ export const BottomNav = () => {
       )}
 
       {/* 📱 MOBILE BOTTOM NAVBAR */}
-      <nav aria-label="Mobile Bottom Navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-2 py-2 font-sans">
+      <nav
+        aria-label="Mobile Bottom Navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] font-sans select-none"
+      >
         <div className="flex items-center justify-around max-w-md mx-auto relative">
 
           {/* 🚀 FAN-OUT SPEED DIAL (LEFT, CENTER, RIGHT) SPROUTING FROM APEXBEE */}
@@ -118,7 +121,7 @@ export const BottomNav = () => {
                 }`}
               style={{ transitionDelay: isBeeMenuOpen ? "100ms" : "0ms" }}
             >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/40 ring-2 ring-white group hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/40 ring-2 ring-white group hover:scale-110 active:scale-95 transition-transform">
                 <MessageSquare className="w-6 h-6 fill-white text-white" />
               </div>
               <span className="text-[10px] font-black text-white bg-[#0A1128]/90 px-2 py-0.5 rounded-full shadow-md whitespace-nowrap">
@@ -136,7 +139,7 @@ export const BottomNav = () => {
                 }`}
               style={{ transitionDelay: isBeeMenuOpen ? "150ms" : "0ms" }}
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-2xl shadow-blue-500/50 ring-4 ring-white group hover:scale-110 transition-transform relative">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-2xl shadow-blue-500/50 ring-4 ring-white group hover:scale-110 active:scale-95 transition-transform relative">
                 <Bot className="w-8 h-8 text-white animate-pulse" />
                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -158,7 +161,7 @@ export const BottomNav = () => {
                 }`}
               style={{ transitionDelay: isBeeMenuOpen ? "50ms" : "0ms" }}
             >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-[#0A1128] flex items-center justify-center shadow-xl shadow-amber-500/40 ring-2 ring-white group hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-[#0A1128] flex items-center justify-center shadow-xl shadow-amber-500/40 ring-2 ring-white group hover:scale-110 active:scale-95 transition-transform">
                 <Coins className="w-6 h-6 stroke-[2.5px] text-[#0A1128]" />
               </div>
               <span className="text-[10px] font-black text-white bg-[#0A1128]/90 px-2 py-0.5 rounded-full shadow-md whitespace-nowrap">
@@ -173,7 +176,7 @@ export const BottomNav = () => {
                 <button
                   key="bee-center-btn"
                   onClick={() => setIsBeeMenuOpen((v) => !v)}
-                  className="flex flex-col items-center justify-center -mt-5 cursor-pointer border-none bg-transparent group z-50 relative"
+                  className="flex flex-col items-center justify-center -mt-5 cursor-pointer border-none bg-transparent group z-50 relative active:scale-95 transition-transform"
                 >
                   <div
                     className={`w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-yellow-400 to-amber-500 text-[#0A1128] flex items-center justify-center text-2xl font-black shadow-lg shadow-amber-500/35 ring-4 ring-white transition-all duration-300 ${isBeeMenuOpen ? "scale-110 rotate-45 ring-amber-400" : "group-hover:scale-105"
@@ -198,7 +201,7 @@ export const BottomNav = () => {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all duration-200 cursor-pointer border-none bg-transparent relative ${isActive
+                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer border-none bg-transparent relative active:scale-95 ${isActive
                     ? "text-[#0A1128] font-bold scale-105"
                     : "text-slate-400 hover:text-slate-600 font-medium"
                   }`}
@@ -220,6 +223,9 @@ export const BottomNav = () => {
                 >
                   {item.label}
                 </span>
+                {isActive && (
+                  <span className="w-1 h-1 bg-[#F3BA12] rounded-full mt-0.5" />
+                )}
               </button>
             );
           })}

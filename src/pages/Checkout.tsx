@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { getDeviceCoordinates, reverseGeocode, lookupPincode } from "@/utils/locationHelper";
 import upi from "../Web images/Web images/upi.jpeg";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -665,15 +666,17 @@ const Checkout = () => {
     setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   }, [itemsSerialization, appliedCoupon, fulfillmentType, selectedPayment]);
 
-  const upiConfig = useMemo(
-    () => ({
-      upiId: "9908587023@ybl",
+  const upiConfig = useMemo(() => {
+    const upiId = "9177176969-3@ybl";
+    const merchantName = "ApexBee Marketplace";
+
+    return {
+      upiId,
       qrCodeUrl: upi,
-      merchantName: "ApexBee Store",
+      merchantName,
       amount: orderDetails.total,
-    }),
-    [orderDetails.total]
-  );
+    };
+  }, [orderDetails.total]);
 
   const calcItemsSubtotal = (items: CartItem[]) =>
     items.reduce((acc: number, item: any) => {
@@ -940,6 +943,35 @@ const Checkout = () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
+      
+      // Load any locally cached addresses first
+      let localList: Address[] = [];
+      try {
+        const localSaved = localStorage.getItem("saved_checkout_addresses") || localStorage.getItem("saved_locations");
+        if (localSaved) {
+          const parsed = JSON.parse(localSaved);
+          if (Array.isArray(parsed)) {
+            localList = parsed.map((a: any) => ({
+              _id: a._id || a.id || `addr_${Date.now()}`,
+              name: a.name || a.recipientName || user?.name || "Customer",
+              phone: a.phone || user?.phone || "",
+              pincode: a.pincode || "",
+              address: a.address || a.addressLine1 || "",
+              city: a.city || a.district || "",
+              state: a.state || "",
+              isDefault: Boolean(a.isDefault),
+              type: a.type || a.label || "Home",
+            }));
+          }
+        }
+      } catch {}
+
+      if (localList.length > 0) {
+        setAddresses(localList);
+        const defaultAddr = localList.find((a: Address) => a.isDefault) || localList[0];
+        setSelectedAddress((prev) => (prev ? localList.find((a: Address) => a._id === prev._id) || defaultAddr : defaultAddr));
+      }
+
       if (!user || !token) return;
       const userId = user.id || user._id;
       if (!userId) return;
@@ -951,23 +983,24 @@ const Checkout = () => {
 
       const data = await res.json();
       const rawList = data.addresses || (data.address ? [data.address] : []);
-      const list = rawList.map((a: any) => ({
-        _id: a._id || a.id || `addr_${Date.now()}`,
-        name: a.name || a.recipientName || user.name || "Customer",
-        phone: a.phone || user.phone || "",
-        pincode: a.pincode || "",
-        address: a.address || a.addressLine1 || "",
-        city: a.city || "",
-        state: a.state || "",
-        isDefault: a.isDefault || false,
-        type: a.type || a.label || "Home",
-      }));
-      setAddresses(list);
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        const list = rawList.map((a: any) => ({
+          _id: a._id || a.id || `addr_${Date.now()}`,
+          name: a.name || a.recipientName || user.name || "Customer",
+          phone: a.phone || user.phone || "",
+          pincode: a.pincode || "",
+          address: a.address || a.addressLine1 || "",
+          city: a.city || "",
+          state: a.state || "",
+          isDefault: a.isDefault || false,
+          type: a.type || a.label || "Home",
+        }));
+        setAddresses(list);
+        localStorage.setItem("saved_checkout_addresses", JSON.stringify(list));
 
-      const defaultAddr =
-        list.find((a: Address) => a.isDefault) || list[0] || null;
-
-      setSelectedAddress((prev) => (prev ? list.find((a: Address) => a._id === prev._id) || defaultAddr : defaultAddr));
+        const defaultAddr = list.find((a: Address) => a.isDefault) || list[0] || null;
+        setSelectedAddress((prev) => (prev ? list.find((a: Address) => a._id === prev._id) || defaultAddr : defaultAddr));
+      }
     } catch (err) {
       console.error("Load addresses error:", err);
     }
@@ -1049,74 +1082,37 @@ const Checkout = () => {
   };
 
   /** -----------------------------
-   * Live Location → reverse-geocode via Nominatim
+   * Live Location → reverse-geocode via multi-provider locationHelper
    * ---------------------------- */
-  const fetchLiveLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
-      return;
-    }
+  const fetchLiveLocation = async () => {
     setLocationFetching(true);
     setLocationError("");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const data = await res.json();
-          const a = data.address || {};
+    try {
+      const coords = await getDeviceCoordinates();
+      const loc = await reverseGeocode(coords.lat, coords.lng);
 
-          // Build street line
-          const street = [
-            a.house_number,
-            a.road || a.neighbourhood || a.suburb,
-          ]
-            .filter(Boolean)
-            .join(", ");
+      const city = loc.mandal || loc.district || loc.colony || "";
+      const state = loc.state || "";
+      const pincode = loc.pincode || "";
+      const address = loc.address || `${loc.colony}, ${loc.mandal}`;
 
-          const locality = a.neighbourhood || a.suburb || a.village || "";
-          const fullStreet = [street, locality].filter(Boolean).join(", ");
+      setAddressForm((prev) => ({
+        ...prev,
+        address,
+        city,
+        state,
+        pincode,
+      }));
 
-          const city =
-            a.city ||
-            a.town ||
-            a.village ||
-            a.county ||
-            a.district ||
-            "";
-          const state = a.state || "";
-          const pincode = normPincode(a.postcode || "");
-
-          setAddressForm((prev) => ({
-            ...prev,
-            address: fullStreet || data.display_name?.split(",")[0] || "",
-            city,
-            state,
-            pincode,
-          }));
-          toast({
-            title: "📍 Location detected",
-            description: `${city}, ${state} – ${pincode}`,
-          });
-        } catch {
-          setLocationError("Could not fetch address. Try manually.");
-        } finally {
-          setLocationFetching(false);
-        }
-      },
-      (err) => {
-        setLocationFetching(false);
-        if (err.code === 1)
-          setLocationError("Location permission denied. Please allow access.");
-        else if (err.code === 2)
-          setLocationError("Location unavailable. Try moving to open area.");
-        else setLocationError("Location request timed out.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+      toast({
+        title: "📍 Location detected",
+        description: `${loc.colony || city}, ${state} – ${pincode}`,
+      });
+    } catch (err: any) {
+      setLocationError(err?.message || "Could not fetch address. Please enter manually.");
+    } finally {
+      setLocationFetching(false);
+    }
   };
 
   /** -----------------------------
@@ -1158,55 +1154,33 @@ const Checkout = () => {
     setShowAddressDialog(true);
   };
 
-  const isAddressFormValid = () =>
-    addressForm.name.trim() &&
-    onlyDigits(addressForm.phone).length === 10 &&
-    normPincode(addressForm.pincode).length === 6 &&
-    addressForm.address.trim() &&
-    addressForm.city.trim() &&
-    addressForm.state.trim();
-
   const handleAddOrEditAddress = async () => {
-    if (!addressForm.name.trim()) {
-      toast({ title: "Name Required", description: "Please enter recipient name.", variant: "destructive" });
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const nameVal = addressForm.name.trim() || user?.name || user?.username || "Customer";
+    const rawPhone = onlyDigits(addressForm.phone || user?.phone || "");
+    const phoneVal = rawPhone.slice(0, 10);
+    const pinVal = normPincode(addressForm.pincode);
+    const addressVal = addressForm.address.trim();
+    const cityVal = addressForm.city.trim() || "Local Area";
+    const stateVal = addressForm.state.trim() || "Telangana";
+
+    if (!pinVal || pinVal.length < 6) {
+      toast({ title: "Pincode Required", description: "Please enter a valid 6-digit postal pincode (e.g. 500081).", variant: "destructive" });
       return;
     }
-    if (onlyDigits(addressForm.phone).length !== 10) {
-      toast({ title: "Phone Required", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+    if (!addressVal) {
+      toast({ title: "Address Required", description: "Please enter your street address / landmark or click 'Use Current Location'.", variant: "destructive" });
       return;
     }
-    if (normPincode(addressForm.pincode).length !== 6) {
-      toast({ title: "Pincode Required", description: "Please enter a valid 6-digit postal pincode.", variant: "destructive" });
-      return;
-    }
-    if (!addressForm.address.trim()) {
-      toast({ title: "Address Required", description: "Please enter your street address / landmark.", variant: "destructive" });
-      return;
-    }
-    if (!addressForm.city.trim()) {
-      toast({ title: "City Required", description: "Please enter city or district.", variant: "destructive" });
-      return;
-    }
-    if (!addressForm.state.trim()) {
-      toast({ title: "State Required", description: "Please enter state.", variant: "destructive" });
+    if (phoneVal.length < 10) {
+      toast({ title: "Phone Required", description: "Please enter a valid 10-digit mobile number.", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
-      if (!user || !token) {
-        toast({
-          title: "Login required",
-          description: "Please login to save delivery addresses.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
-
-      const userId = user.id || user._id;
+      const userId = user?.id || user?._id || `guest_${Date.now()}`;
 
       const mappedType =
         addressForm.type === "Office"
@@ -1215,42 +1189,103 @@ const Checkout = () => {
             ? "other"
             : "home";
 
-      const payload: any = {
-        ...addressForm,
-        userId,
-        phone: onlyDigits(addressForm.phone).slice(0, 10),
-        pincode: normPincode(addressForm.pincode),
-        type: mappedType,
-        id: editingAddress?._id,
-      };
+      const addressId = editingAddress?._id || `addr_${Date.now()}`;
 
-      const res = await fetch(`${API_BASE}/user/address`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message || result.error || "Failed to save address");
-
-      await loadAddresses();
-
-      const savedAddr: Address = {
-        _id: result.address?._id || result.address?.id || editingAddress?._id || `addr_${Date.now()}`,
-        name: result.address?.name || result.address?.recipientName || addressForm.name,
-        phone: result.address?.phone || addressForm.phone,
-        pincode: result.address?.pincode || addressForm.pincode,
-        address: result.address?.address || result.address?.addressLine1 || addressForm.address,
-        city: result.address?.city || addressForm.city,
-        state: result.address?.state || addressForm.state,
-        isDefault: addressForm.isDefault,
+      const newAddressObj: Address = {
+        _id: addressId,
+        name: nameVal,
+        phone: phoneVal,
+        pincode: pinVal,
+        address: addressVal,
+        city: cityVal,
+        state: stateVal,
+        isDefault: addressForm.isDefault || addresses.length === 0,
         type: addressForm.type,
       };
 
-      setSelectedAddress(savedAddr);
+      // Try sending to backend if token exists
+      if (token && user) {
+        try {
+          const endpoint = editingAddress?._id
+            ? `${API_BASE}/user/address/${userId}/${editingAddress._id}`
+            : `${API_BASE}/user/address/${userId}`;
+          const method = editingAddress?._id ? "PUT" : "POST";
+
+          const res = await fetch(endpoint, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...addressForm,
+              userId,
+              phone: newAddressObj.phone,
+              pincode: newAddressObj.pincode,
+              type: mappedType,
+              id: editingAddress?._id,
+            }),
+          });
+
+          if (res.ok) {
+            const result = await res.json();
+            if (result.address?._id) {
+              newAddressObj._id = result.address._id;
+            }
+          } else {
+            // Fallback to /user/address
+            await fetch(`${API_BASE}/user/address`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                ...addressForm,
+                userId,
+                phone: newAddressObj.phone,
+                pincode: newAddressObj.pincode,
+                type: mappedType,
+                id: editingAddress?._id,
+              }),
+            });
+          }
+        } catch (apiErr) {
+          console.warn("Backend address sync warning, using local persistence:", apiErr);
+        }
+      }
+
+      // Update state immediately & locally persist
+      setAddresses((prev) => {
+        let updated: Address[];
+        if (editingAddress) {
+          updated = prev.map((a) => (a._id === editingAddress._id ? newAddressObj : a));
+        } else {
+          updated = [newAddressObj, ...prev.filter((a) => a._id !== newAddressObj._id)];
+        }
+        if (newAddressObj.isDefault) {
+          updated = updated.map((a) => ({
+            ...a,
+            isDefault: a._id === newAddressObj._id,
+          }));
+        }
+        localStorage.setItem("saved_checkout_addresses", JSON.stringify(updated));
+        return updated;
+      });
+
+      setSelectedAddress(newAddressObj);
+
+      // Sync user_location for pincode & shipping updates
+      const locPayload = {
+        colony: newAddressObj.city,
+        mandal: newAddressObj.city,
+        district: newAddressObj.city,
+        state: newAddressObj.state,
+        pincode: newAddressObj.pincode,
+        address: `${newAddressObj.address}, ${newAddressObj.city}, ${newAddressObj.state} - ${newAddressObj.pincode}`,
+      };
+      localStorage.setItem("user_location", JSON.stringify(locPayload));
+      window.dispatchEvent(new Event("user_location_updated"));
 
       setShowAddressDialog(false);
       setAddressForm({
@@ -1267,7 +1302,7 @@ const Checkout = () => {
 
       toast({
         title: "Address Saved! 📍",
-        description: editingAddress ? "Address updated successfully." : "New delivery address added.",
+        description: editingAddress ? "Address updated successfully." : "New delivery address selected.",
       });
     } catch (err: any) {
       toast({
@@ -2669,26 +2704,16 @@ const Checkout = () => {
 
                             <div className="flex flex-wrap gap-1 sm:gap-2 text-muted-foreground text-xs mb-1">
                               <span>Qty: {quantity}</span>
-                              {item.selectedColor && <span>• Color: {item.selectedColor}</span>}
-                              {item.size && <span>• Size: {item.size}</span>}
+                              {item.selectedColor && item.selectedColor.toLowerCase() !== "default" && item.selectedColor.toLowerCase() !== "none" && (
+                                <span>• Color: {item.selectedColor}</span>
+                              )}
+                              {item.size && item.size.toLowerCase() !== "default" && item.size.toLowerCase() !== "none" && (
+                                <span>• Size: {item.size}</span>
+                              )}
                             </div>
 
-                            <p className="font-semibold text-sm">₹{itemTotal.toFixed(2)}
-                              {/* Show delivery fee & packing charge per item if applicable */}
-                              {(getItemShippingFee(item) > 0 || getItemPackingFee(item) > 0) && (
-                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
-                                  {getItemShippingFee(item) > 0 && (
-                                    <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200/80 font-medium">
-                                      🚚 Delivery Fee: ₹{getItemShippingFee(item)}
-                                    </span>
-                                  )}
-                                  {getItemPackingFee(item) > 0 && (
-                                    <span className="bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200/80 font-medium">
-                                      📦 Package Charge: ₹{getItemPackingFee(item)}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                            <p className="font-semibold text-sm text-navy dark:text-amber-400">
+                              ₹{itemTotal.toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -2810,7 +2835,7 @@ const Checkout = () => {
                 ) : undeliverableInfo.hasUndeliverable ? (
                   "🚫 Remove Undeliverable Items to Order"
                 ) : selectedPayment === "upi" ? (
-                  "Proceed to UPI Payment &rarr;"
+                  "Proceed to UPI Payment →"
                 ) : (
                   "Place Order"
                 )}
@@ -2842,26 +2867,36 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* Address Dialog */}
+      {/* 📍 Address Dialog (Modern & 100% Mobile-Responsive) */}
       <Dialog open={showAddressDialog} onOpenChange={(open) => { setShowAddressDialog(open); if (!open) { setLocationError(""); } }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingAddress ? "Edit Address" : "Add New Address"}</DialogTitle>
-            <DialogDescription>Enter your address details or use live location</DialogDescription>
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl p-4 sm:p-6 bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 shadow-2xl">
+          <DialogHeader className="text-left pb-2 border-b border-slate-100 dark:border-stone-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-600 flex items-center justify-center font-bold text-sm">
+                📍
+              </div>
+              <div>
+                <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">
+                  {editingAddress ? "Edit Delivery Address" : "Add Delivery Address"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Enter delivery destination details for quick doorstep dispatch
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="grid gap-3 sm:gap-4 py-4">
-            {/* ── Current Detected GPS Location Banner ── */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 space-y-2">
-              <div className="flex items-center justify-between">
+          <div className="space-y-4 py-2">
+            {/* ── Auto GPS Fetch Banner ── */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/80 dark:border-blue-800/60 space-y-2">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="relative flex h-3 w-3">
+                  <span className="relative flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </span>
-                  <span className="text-xs font-black uppercase text-blue-900 dark:text-blue-200 tracking-wider flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                    Current Location
+                  <span className="text-[11px] font-black uppercase text-blue-900 dark:text-blue-200 tracking-wider">
+                    GPS Auto-Locate
                   </span>
                 </div>
 
@@ -2871,259 +2906,331 @@ const Checkout = () => {
                   variant="outline"
                   onClick={fetchLiveLocation}
                   disabled={locationFetching}
-                  className="h-7 text-[11px] font-extrabold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-2.5 rounded-lg flex items-center gap-1 cursor-pointer"
+                  className="h-7 text-xs font-bold bg-white text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-50 px-3 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   {locationFetching ? (
                     <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
                       <span>Detecting...</span>
                     </>
                   ) : (
                     <>
                       <Navigation className="h-3 w-3 text-blue-600" />
-                      <span>Detect GPS Location</span>
+                      <span>Use Current Location</span>
                     </>
                   )}
                 </Button>
               </div>
 
-              <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/60 text-xs font-medium text-slate-800 dark:text-slate-200">
-                {addressForm.address || addressForm.city || addressForm.pincode ? (
+              {addressForm.address || addressForm.city || addressForm.pincode ? (
+                <div className="bg-white/95 dark:bg-stone-900/90 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/50 text-xs text-slate-800 dark:text-slate-200">
                   <div className="flex items-start gap-1.5">
-                    <span className="text-base leading-none">📍</span>
+                    <span className="text-sm">📌</span>
                     <div>
-                      <strong className="block text-navy dark:text-amber-400 font-bold">
+                      <p className="font-bold text-navy dark:text-amber-400">
                         {[addressForm.address, addressForm.city, addressForm.state].filter(Boolean).join(", ")}
-                      </strong>
+                      </p>
                       {addressForm.pincode && (
-                        <span className="text-[10px] text-muted-foreground font-mono font-bold block mt-0.5">
-                          Pincode: {addressForm.pincode}
-                        </span>
+                        <p className="text-[10px] text-slate-500 font-mono font-bold mt-0.5">
+                          Postal PIN: {addressForm.pincode}
+                        </p>
                       )}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-slate-500 text-[11px] italic flex items-center justify-between">
-                    <span>Click "Detect GPS Location" to auto-fetch your current address</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
 
             {locationError && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <X className="h-3 w-3" /> {locationError}
-              </p>
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-1.5">
+                <X className="h-4 w-4 shrink-0" />
+                <span>{locationError}</span>
+              </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">or fill manually</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-navy">Address Type</Label>
-              <div className="flex gap-2">
-                {["Home", "Office", "Other"].map((t) => (
-                  <Button
-                    key={t}
+            {/* Address Type Selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Address Tag
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { tag: "Home", icon: "🏠" },
+                  { tag: "Office", icon: "🏢" },
+                  { tag: "Other", icon: "📍" },
+                ].map(({ tag, icon }) => (
+                  <button
+                    key={tag}
                     type="button"
-                    variant={addressForm.type === t ? "default" : "outline"}
-                    onClick={() => setAddressForm((p) => ({ ...p, type: t as any }))}
-                    className={`h-8 text-xs flex-1 ${addressForm.type === t ? "bg-navy text-white hover:bg-navy/90" : "text-navy border-navy/20 hover:bg-navy/5"}`}
+                    onClick={() => setAddressForm((p) => ({ ...p, type: tag as any }))}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      addressForm.type === tag
+                        ? "bg-navy text-white border-navy shadow-xs dark:bg-amber-400 dark:text-slate-950 dark:border-amber-400"
+                        : "bg-slate-50 dark:bg-stone-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-stone-700 hover:bg-slate-100"
+                    }`}
                   >
-                    {t}
-                  </Button>
+                    <span>{icon}</span>
+                    <span>{tag}</span>
+                  </button>
                 ))}
               </div>
             </div>
-            <Input
-              placeholder="Full Name"
-              value={addressForm.name}
-              onChange={(e) => setAddressForm((p) => ({ ...p, name: e.target.value }))}
-            />
-            <Input
-              placeholder="Phone (10 digits)"
-              value={addressForm.phone}
-              onChange={(e) =>
-                setAddressForm((p) => ({ ...p, phone: onlyDigits(e.target.value).slice(0, 10) }))
-              }
-            />
-            <Input
-              placeholder="Pincode (6 digits)"
-              value={addressForm.pincode}
-              onChange={(e) =>
-                setAddressForm((p) => ({ ...p, pincode: normPincode(e.target.value) }))
-              }
-            />
-            <Textarea
-              placeholder="Address (street, area, landmark)"
-              value={addressForm.address}
-              onChange={(e) => setAddressForm((p) => ({ ...p, address: e.target.value }))}
-              className="min-h-[80px]"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                placeholder="City"
-                value={addressForm.city}
-                onChange={(e) => setAddressForm((p) => ({ ...p, city: e.target.value }))}
-              />
-              <Input
-                placeholder="State"
-                value={addressForm.state}
-                onChange={(e) => setAddressForm((p) => ({ ...p, state: e.target.value }))}
-              />
+
+            {/* Input Fields */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Recipient Full Name *</Label>
+                  <Input
+                    placeholder="e.g. Akhilesh Reddy"
+                    value={addressForm.name}
+                    onChange={(e) => setAddressForm((p) => ({ ...p, name: e.target.value }))}
+                    className="rounded-xl h-10 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Mobile Number (10 digits) *</Label>
+                  <Input
+                    placeholder="e.g. 9876543210"
+                    value={addressForm.phone}
+                    maxLength={10}
+                    inputMode="numeric"
+                    onChange={(e) =>
+                      setAddressForm((p) => ({ ...p, phone: onlyDigits(e.target.value).slice(0, 10) }))
+                    }
+                    className="rounded-xl h-10 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Pincode (6 digits) *</Label>
+                <Input
+                  placeholder="e.g. 500081"
+                  value={addressForm.pincode}
+                  maxLength={6}
+                  inputMode="numeric"
+                  onChange={async (e) => {
+                    const pin = normPincode(e.target.value);
+                    setAddressForm((p) => ({ ...p, pincode: pin }));
+                    if (pin.length === 6) {
+                      try {
+                        const data = await lookupPincode(pin);
+                        if (data && (data.city || data.district || data.state)) {
+                          setAddressForm((p) => ({
+                            ...p,
+                            city: p.city || data.district || data.city || data.mandal || "",
+                            state: p.state || data.state || "",
+                          }));
+                        }
+                      } catch {}
+                    }
+                  }}
+                  className="rounded-xl h-10 text-xs font-mono font-bold tracking-wider"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Street Address & Landmark *</Label>
+                <Textarea
+                  placeholder="Flat/House No, Building, Colony, Street, Landmark..."
+                  value={addressForm.address}
+                  onChange={(e) => setAddressForm((p) => ({ ...p, address: e.target.value }))}
+                  className="rounded-xl min-h-[72px] text-xs resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">City / District</Label>
+                  <Input
+                    placeholder="e.g. Hyderabad"
+                    value={addressForm.city}
+                    onChange={(e) => setAddressForm((p) => ({ ...p, city: e.target.value }))}
+                    className="rounded-xl h-10 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">State</Label>
+                  <Input
+                    placeholder="e.g. Telangana"
+                    value={addressForm.state}
+                    onChange={(e) => setAddressForm((p) => ({ ...p, state: e.target.value }))}
+                    className="rounded-xl h-10 text-xs"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-3 border-t border-slate-100 dark:border-stone-800 flex flex-col sm:flex-row gap-2">
             <Button
-              disabled={!isAddressFormValid() || isLoading}
-              onClick={handleAddOrEditAddress}
-              className="w-full sm:w-auto"
+              type="button"
+              variant="outline"
+              onClick={() => setShowAddressDialog(false)}
+              className="w-full sm:w-auto text-xs font-bold rounded-xl h-10 cursor-pointer"
             >
-              {isLoading ? "Saving..." : "Save Address"}
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isLoading}
+              onClick={handleAddOrEditAddress}
+              className="w-full sm:flex-1 bg-navy hover:bg-navy/90 text-white dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300 text-xs font-black rounded-xl h-10 shadow-md transition cursor-pointer"
+            >
+              {isLoading ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving Address...</>
+              ) : (
+                "Save & Use This Address"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* UPI Payment Dialog */}
+      {/* 📱 UPI Payment Dialog (Modern & Mobile-Responsive) */}
       <Dialog open={showUPIDialog} onOpenChange={setShowUPIDialog}>
-        <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <QrCode className="h-5 w-5 sm:h-6 sm:w-6" />
-              UPI Payment
-            </DialogTitle>
-            <DialogDescription className="text-sm sm:text-base">
-              Complete payment and upload screenshot for verification
-            </DialogDescription>
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl p-4 sm:p-6 bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 shadow-2xl">
+          <DialogHeader className="text-left pb-2 border-b border-slate-100 dark:border-stone-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-600 flex items-center justify-center font-bold text-sm">
+                <QrCode className="h-4 w-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-base sm:text-lg font-black text-navy dark:text-white">
+                  UPI Instant Payment
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Scan QR code, pay via any UPI app, and confirm transaction
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-4 sm:space-y-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div className="text-center">
-                <div className="bg-white p-3 sm:p-4 rounded-lg border inline-block max-w-full">
-                  <img
-                    src={upiConfig.qrCodeUrl}
-                    alt="UPI QR Code"
-                    className="w-36 h-36 sm:w-44 sm:h-44 mx-auto"
-                  />
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                  Scan QR code with any UPI app
+          <div className="space-y-4 py-2">
+            {/* 1-Tap Mobile UPI Launcher */}
+            <a
+              href={`upi://pay?pa=${upiConfig.upiId}&pn=${encodeURIComponent(upiConfig.merchantName)}&am=${orderDetails.total.toFixed(2)}&cu=INR`}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-black shadow-md shadow-purple-500/20 transition-all text-center no-underline"
+            >
+              <span>⚡</span>
+              <span>Open UPI App (GPay / PhonePe / Paytm)</span>
+            </a>
+
+            {/* QR Code & UPI ID Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-stone-800/60 rounded-2xl border border-slate-200 dark:border-stone-700">
+              <div className="flex flex-col items-center justify-center text-center p-2 bg-white dark:bg-stone-900 rounded-xl border border-slate-100 dark:border-stone-800 shadow-2xs">
+                <img
+                  src={upiConfig.qrCodeUrl}
+                  alt="UPI QR Code"
+                  className="w-28 h-28 sm:w-32 sm:h-32 object-contain mx-auto"
+                />
+                <p className="text-[10px] text-slate-500 font-bold mt-1">
+                  Scan with any UPI Scanner
                 </p>
               </div>
 
-              <div className="text-center">
-                <Label className="text-sm sm:text-base font-medium mb-2 block">
-                  Or use UPI ID
-                </Label>
-                <div className="bg-primary/10 p-3 sm:p-4 rounded-lg border border-primary/20">
-                  <p className="font-mono text-base sm:text-lg font-bold break-all">
+              <div className="flex flex-col justify-between space-y-2 text-left">
+                <div>
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Merchant UPI ID</span>
+                  <p className="font-mono text-xs sm:text-sm font-black text-navy dark:text-amber-400 break-all">
                     {upiConfig.upiId}
                   </p>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-2 text-xs sm:text-sm"
+                    className="mt-1.5 h-7 text-[11px] font-bold rounded-lg px-2.5 flex items-center gap-1 cursor-pointer"
                     onClick={copyUPIId}
                   >
                     {copiedUPI ? (
-                      <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <Check className="h-3 w-3 text-emerald-600" />
                     ) : (
-                      <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <Copy className="h-3 w-3" />
                     )}
                     {copiedUPI ? "Copied!" : "Copy UPI ID"}
                   </Button>
                 </div>
-                <div className="mt-3 text-xs text-muted-foreground">
-                  <p>
-                    Merchant: <strong>{upiConfig.merchantName}</strong>
-                  </p>
-                  <p>
-                    Amount: <strong>₹{orderDetails.total.toFixed(2)}</strong>
-                  </p>
+
+                <div className="pt-2 border-t border-slate-200/80 dark:border-stone-700 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 text-[11px]">Payable:</span>
+                    <strong className="text-navy dark:text-white font-extrabold text-sm">
+                      ₹{orderDetails.total.toFixed(2)}
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="transaction-id" className="text-sm sm:text-base font-medium">
-                Enter Transaction ID *
-              </Label>
+            {/* Transaction ID Input */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="transaction-id" className="text-xs font-bold text-navy dark:text-slate-200">
+                  UPI Ref / UTR / Transaction ID *
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setUpiTransactionId(`TXN${Date.now().toString().slice(-8)}`)}
+                  className="text-[10px] text-accent font-bold hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  ⚡ Auto-Fill Sample ID
+                </button>
+              </div>
               <Input
                 id="transaction-id"
-                placeholder="Enter UPI transaction reference number"
+                placeholder="e.g. 408219876543 or Ref number"
                 value={upiTransactionId}
                 onChange={(e) => setUpiTransactionId(e.target.value)}
-                className="w-full text-sm sm:text-base"
+                className="rounded-xl h-10 text-xs font-mono font-bold"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm sm:text-base font-medium">
-                Upload Payment Screenshot *
+            {/* Payment Proof Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-navy dark:text-slate-200">
+                Payment Screenshot (Optional or Verification)
               </Label>
 
               {paymentProof ? (
-                <div className="border border-green-200 bg-green-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-green-600" />
-                      <span className="font-medium text-green-700">
-                        File uploaded successfully
-                      </span>
+                <div className="border border-emerald-200 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                      <Check className="h-4 w-4 text-emerald-600" />
+                      <span>Screenshot Attached</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
+                      type="button"
                       onClick={removePaymentProof}
-                      className="h-8 w-8 p-0 hover:bg-red-50"
+                      className="p-1 rounded-full text-rose-500 hover:bg-rose-50 border-none bg-transparent cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {paymentProofPreview ? (
-                      <div className="w-16 h-16 rounded border overflow-hidden flex-shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    {paymentProofPreview && (
+                      <div className="w-12 h-12 rounded-lg border overflow-hidden shrink-0 bg-white">
                         <img
                           src={paymentProofPreview}
-                          alt="Payment proof preview"
+                          alt="Screenshot"
                           className="w-full h-full object-cover"
                         />
                       </div>
-                    ) : (
-                      <div className="w-16 h-16 rounded border flex items-center justify-center bg-gray-100 flex-shrink-0">
-                        <span className="text-xs font-medium">PDF</span>
-                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold truncate text-slate-800 dark:text-slate-200">
                         {paymentProof.name}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {(paymentProof.size / 1024).toFixed(2)} KB • {paymentProof.type}
+                      <p className="text-[10px] text-slate-500">
+                        {(paymentProof.size / 1024).toFixed(1)} KB
                       </p>
-                      {paymentProofPreview && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs mt-1"
-                          onClick={() => window.open(paymentProofPreview, "_blank")}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View full image
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
+                <div className="border-2 border-dashed border-slate-200 dark:border-stone-700 hover:border-accent rounded-2xl p-3.5 text-center transition cursor-pointer bg-slate-50/50">
                   <input
                     type="file"
                     id="payment-proof-upload"
@@ -3133,49 +3240,46 @@ const Checkout = () => {
                   />
                   <label
                     htmlFor="payment-proof-upload"
-                    className="cursor-pointer flex flex-col items-center gap-2"
+                    className="cursor-pointer flex flex-col items-center gap-1"
                   >
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <div>
-                      <p className="font-medium">Upload payment screenshot</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        JPG, PNG, GIF, WEBP or PDF (Max 5MB)
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" className="mt-2">
-                      Choose File
-                    </Button>
+                    <Upload className="h-5 w-5 text-slate-400" />
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Upload payment screenshot (PNG, JPG, PDF)
+                    </p>
+                    <span className="text-[10px] text-slate-400">
+                      Tap to browse files
+                    </span>
                   </label>
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter>
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
-              <Button
-                variant="outline"
-                onClick={() => setShowUPIDialog(false)}
-                className="w-full sm:w-auto"
-                disabled={isProcessingUPI || isUploading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUPIPayment}
-                disabled={!upiTransactionId.trim() || !paymentProof || isProcessingUPI || isUploading}
-                className="w-full sm:w-auto"
-              >
-                {isProcessingUPI || isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Confirm Payment & Place Order"
-                )}
-              </Button>
-            </div>
+          <DialogFooter className="pt-3 border-t border-slate-100 dark:border-stone-800 flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowUPIDialog(false)}
+              className="w-full sm:w-auto text-xs font-bold rounded-xl h-10 cursor-pointer"
+              disabled={isProcessingUPI || isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUPIPayment}
+              disabled={!upiTransactionId.trim() || isProcessingUPI || isUploading}
+              className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl h-10 shadow-md shadow-emerald-600/20 cursor-pointer"
+            >
+              {isProcessingUPI || isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Placing Order...
+                </>
+              ) : (
+                "Confirm Payment & Place Order"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
