@@ -119,10 +119,10 @@ export const Legal: React.FC = () => {
                 For regulatory, compliance, and Business Partner inquiries or grievances under Rule 3(2) of Information Technology (Intermediary Guidelines) Rules:
               </p>
               <div className="space-y-1 font-medium text-foreground">
-                <div><strong>Officer:</strong> S. Ramakrishna Murthy</div>
-                <div><strong>Email:</strong> grievance@apexbee.in</div>
-                <div><strong>Address:</strong> ApexBee Tech Tower, HITEC City, Hyderabad, 500081</div>
-                <div><strong>Response SLA:</strong> Within 48 hours</div>
+                <div><strong>Officer:</strong> Guru Swamy k</div>
+                <div><strong>Email:</strong> <a href="mailto:gvguru27@gmail.com" className="text-amber-500 hover:underline">gvguru27@gmail.com</a></div>
+                <div className="leading-snug"><strong>Address:</strong> 4-1-28, SR MASTHAN STREET, REVENUE WARD 2, Buchireddypalem, Buchireddipalem Mandalam, Nellore- 524305, Andhra Pradesh</div>
+                <div className="text-emerald-600 dark:text-emerald-400 pt-0.5"><strong>Response SLA:</strong> Within 48 hours</div>
               </div>
             </div>
 
@@ -151,7 +151,7 @@ export const Legal: React.FC = () => {
                 <div className="space-y-3">
                   <h3 className="text-base font-bold text-foreground">1. Introduction & Scope</h3>
                   <p className="text-muted-foreground">
-                    ApexBee Solutions Private Limited ("ApexBee", "we", "us", or "our") values your trust. This Privacy Policy describes how we collect, store, process, transfer, and protect your personal information when you use our web platform, mobile applications, and partner portals across India.
+                    APEXBEE TECHNOLOGIES PRIVATE LIMITED ("ApexBee", "we", "us", or "our") values your trust. This Privacy Policy describes how we collect, store, process, transfer, and protect your personal information when you use our web platform, mobile applications, and partner portals across India.
                   </p>
                 </div>
 

@@ -15,7 +15,8 @@ import {
   CheckCircle2, 
   Sparkles,
   Ticket,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,25 +72,28 @@ export const ContactUs: React.FC = () => {
 
   const offices = [
     {
-      city: "Hyderabad (HQ)",
-      type: "Global Headquarters & Tech Hub",
+      city: "Nellore (Corporate HQ)",
+      company: "APEXBEE TECHNOLOGIES PRIVATE LIMITED",
+      type: "Registered Corporate Headquarters",
+      address: "4-1-28, SR MASTHAN STREET, REVENUE WARD 2, Buchireddypalem, Buchireddipalem Mandalam, Nellore- 524305, Andhra Pradesh",
+      email: "info@apexbee.in",
+      phone: "+91 80088 12345",
+    },
+    {
+      city: "Hyderabad Hub",
+      company: "ApexBee Regional Operations",
+      type: "Tech & Operations Hub",
       address: "ApexBee Tower, HITEC City, Madhapur, Hyderabad, Telangana - 500081",
       email: "hyderabad@apexbee.in",
       phone: "+91 80088 12345",
     },
     {
-      city: "Vijayawada",
+      city: "Vijayawada Hub",
+      company: "ApexBee Regional Operations",
       type: "Regional Franchise Operations Hub",
       address: "MG Road, Benz Circle, Vijayawada, Andhra Pradesh - 520010",
       email: "ap.ops@apexbee.in",
       phone: "+91 80088 12346",
-    },
-    {
-      city: "Bengaluru",
-      type: "R&D & Logistics Innovation Lab",
-      address: "Indiranagar 100 Feet Road, Bengaluru, Karnataka - 560038",
-      email: "blr@apexbee.in",
-      phone: "+91 80088 12347",
     },
   ];
 
@@ -141,10 +145,10 @@ export const ContactUs: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <Mail className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-sm">Support Email</h3>
-            <p className="text-xs text-muted-foreground">Ticket tracking & grievance</p>
-            <a href="mailto:support@apexbee.in" className="text-xs font-bold text-emerald-500 hover:underline block pt-1">
-              support@apexbee.in
+            <h3 className="font-bold text-sm">Official Corporate Mail</h3>
+            <p className="text-xs text-muted-foreground">Enquiries & Corporate Desk</p>
+            <a href="mailto:info@apexbee.in" className="text-xs font-bold text-emerald-500 hover:underline block pt-1">
+              info@apexbee.in
             </a>
           </div>
 
@@ -301,6 +305,34 @@ export const ContactUs: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Grievance Redressal Officer Card */}
+            <div className="bg-card border border-amber-500/30 p-6 rounded-3xl space-y-3 bg-gradient-to-br from-amber-500/5 via-background to-orange-500/5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Grievance Redressal Officer</h3>
+                  <p className="text-[10px] text-muted-foreground">Consumer Protection & Compliance Cell</p>
+                </div>
+              </div>
+              <div className="text-xs space-y-1.5 text-muted-foreground pt-1">
+                <div><strong className="text-foreground">Officer:</strong> Guru Swamy k</div>
+                <div>
+                  <strong className="text-foreground">Email:</strong>{" "}
+                  <a href="mailto:gvguru27@gmail.com" className="text-amber-500 font-semibold hover:underline">
+                    gvguru27@gmail.com
+                  </a>
+                </div>
+                <div className="leading-snug">
+                  <strong className="text-foreground">Address:</strong> 4-1-28, SR MASTHAN STREET, REVENUE WARD 2, Buchireddypalem, Buchireddipalem Mandalam, Nellore- 524305, Andhra Pradesh
+                </div>
+                <div className="pt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <Clock className="w-3.5 h-3.5" /> Response SLA: Within 48 hours
+                </div>
               </div>
             </div>
 
