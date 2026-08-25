@@ -1667,6 +1667,10 @@ const Checkout = () => {
             currency: rzpInit.currency || "INR",
             name: "ApexBee Checkout",
             description: `Order Payment (₹${finalTotal.toFixed(2)})`,
+            image: "/logo.png",
+            theme: {
+              color: "#F5B800",
+            },
             prefill: {
               name: user.name || user.username || selectedAddress?.name || "Customer",
               email: user.email || "",

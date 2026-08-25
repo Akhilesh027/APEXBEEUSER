@@ -91,9 +91,22 @@ export const openRazorpayModal = async (
   return new Promise((resolve, reject) => {
     const key = options.key || getRazorpayKey();
 
-    const cleanContact = options.prefill?.contact
-      ? String(options.prefill.contact).replace(/\D/g, "").slice(-10)
-      : undefined;
+    let cleanContact: string | undefined = undefined;
+    if (options.prefill?.contact) {
+      const raw = String(options.prefill.contact).trim();
+      const digitsOnly = raw.replace(/\D/g, "");
+      if (digitsOnly.length === 10) {
+        cleanContact = `+91${digitsOnly}`;
+      } else if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) {
+        cleanContact = `+${digitsOnly}`;
+      } else if (digitsOnly.length > 10) {
+        cleanContact = `+91${digitsOnly.slice(-10)}`;
+      } else if (raw.startsWith("+")) {
+        cleanContact = raw;
+      } else if (digitsOnly.length > 0) {
+        cleanContact = `+91${digitsOnly}`;
+      }
+    }
 
     const rzpOptions: any = {
       key,
@@ -101,15 +114,15 @@ export const openRazorpayModal = async (
       currency: options.currency || "INR",
       name: options.name || "ApexBee",
       description: options.description || "Secure Payment",
-      image: options.image || "/icon.jpeg",
+      image: options.image || "/logo.png",
       order_id: options.order_id,
       prefill: {
         ...(options.prefill || {}),
-        contact: cleanContact || options.prefill?.contact || "",
+        contact: cleanContact || "",
       },
       notes: options.notes || {},
       theme: {
-        color: options.theme?.color || "#0A1128",
+        color: options.theme?.color || "#F5B800",
       },
       handler: (response: RazorpaySuccessResponse) => {
         resolve(response);
