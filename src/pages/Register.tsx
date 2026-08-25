@@ -392,10 +392,17 @@ const Register = () => {
                   <div className="space-y-3">
                     <Input type="text" name="name" placeholder="Full name" value={formData.name} onChange={handleInputChange} required />
                     <Input type="email" name="email" placeholder="Email address" value={formData.email} onChange={handleInputChange} required />
-                    <Input type="tel" name="phone" placeholder="Phone number" value={formData.phone} onChange={(e) => {
+                    <Input type="tel" name="phone" placeholder="10-digit mobile number" value={formData.phone} onChange={(e) => {
                       const onlyNums = e.target.value.replace(/\D/g, "");
-                      if (onlyNums.length <= 10) setFormData(p => ({ ...p, phone: onlyNums }));
-                    }} inputMode="numeric" pattern="[0-9]{10}" maxLength={10} required />
+                      const clean = onlyNums.startsWith("91") && onlyNums.length >= 12
+                        ? onlyNums.slice(2, 12)
+                        : onlyNums.startsWith("0") && onlyNums.length >= 11
+                          ? onlyNums.slice(1, 11)
+                          : onlyNums.length > 10
+                            ? onlyNums.slice(-10)
+                            : onlyNums;
+                      setFormData(p => ({ ...p, phone: clean }));
+                    }} inputMode="tel" maxLength={14} required />
                     <div className="space-y-1">
                       <div className="relative">
                         <Input type={showPassword ? "text" : "password"} name="password" placeholder="Password (min 6 characters)" value={formData.password} onChange={handleInputChange} required minLength={6} className="pr-10" />

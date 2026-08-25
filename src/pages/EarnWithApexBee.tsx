@@ -840,9 +840,8 @@ const EarnWithApexBee = () => {
     const type = selectedOpp?.id || "";
 
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
-      const activeSubs = selectedSubcategories.length > 0 ? selectedSubcategories : (subCategory ? [subCategory] : []);
-      if (!businessName.trim() || !primaryCategory.trim() || activeSubs.length === 0 || !panNumber.trim()) {
-        alert("Please fill in Business Name, Primary Category, select at least one Subcategory, and PAN Number.");
+      if (!businessName.trim() || !primaryCategory.trim() || !panNumber.trim()) {
+        alert("Please fill in Business Name, Primary Category, and PAN Number.");
         return;
       }
     } else if (type === "franchise") {
@@ -1711,9 +1710,9 @@ const EarnWithApexBee = () => {
                 {primaryCategory && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories *</label>
+                      <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories (Optional)</label>
                       <span className="text-[10px] text-emerald-600 font-bold">
-                        (Multi-select enabled: Click chips to toggle)
+                        (Optional: Click chips to select specific subcategories, or leave blank)
                       </span>
                     </div>
 

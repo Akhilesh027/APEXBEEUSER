@@ -19,7 +19,12 @@ import {
   CalendarDays,
   Navigation,
   ShieldCheck,
+  CreditCard,
+  Sparkles,
+  Zap,
+  Lock,
 } from "lucide-react";
+import { openRazorpayModal } from "@/utils/razorpay";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +65,7 @@ type CouponRule = {
   maxDiscount?: number;
   minOrder?: number;
   firstOrderOnly?: boolean;
-  allowedPayments?: Array<"upi" | "wallet" | "cod">;
+  allowedPayments?: Array<"razorpay" | "upi" | "wallet" | "cod">;
   expiresAt?: string;
 };
 
@@ -80,6 +85,19 @@ type PickupLocation = {
  * ---------------------------- */
 const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");
 const normPincode = (p: any) => onlyDigits(String(p || "")).slice(0, 6);
+const normPhone = (p: any): string => {
+  const digits = onlyDigits(String(p || ""));
+  if (digits.startsWith("91") && digits.length >= 12) {
+    return digits.slice(2, 12);
+  }
+  if (digits.startsWith("0") && digits.length >= 11) {
+    return digits.slice(1, 11);
+  }
+  if (digits.length > 10) {
+    return digits.slice(-10);
+  }
+  return digits;
+};
 
 /**
  * ✅ unify "pickup/preorder" flags from product/cart
@@ -333,7 +351,7 @@ const Checkout = () => {
   const [scheduleStartDate, setScheduleStartDate] = useState<string>(new Date(Date.now() + 86400000).toISOString().split("T")[0]);
 
   // Payment & Wallet
-  const [selectedPayment, setSelectedPayment] = useState<"upi" | "wallet" | "cod">("cod");
+  const [selectedPayment, setSelectedPayment] = useState<"razorpay" | "upi" | "wallet" | "cod">("razorpay");
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
   const [useRewardPoints, setUseRewardPoints] = useState(false);
@@ -691,7 +709,7 @@ const Checkout = () => {
   const checkCouponValidity = (
     coupon: CouponRule,
     baseAmount: number,
-    payment: "upi" | "wallet" | "cod"
+    payment: "razorpay" | "upi" | "wallet" | "cod"
   ) => {
     const now = new Date();
     if (coupon.expiresAt) {
@@ -943,7 +961,7 @@ const Checkout = () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
       const token = localStorage.getItem("token");
-      
+
       // Load any locally cached addresses first
       let localList: Address[] = [];
       try {
@@ -964,7 +982,7 @@ const Checkout = () => {
             }));
           }
         }
-      } catch {}
+      } catch { }
 
       if (localList.length > 0) {
         setAddresses(localList);
@@ -1157,8 +1175,7 @@ const Checkout = () => {
   const handleAddOrEditAddress = async () => {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     const nameVal = addressForm.name.trim() || user?.name || user?.username || "Customer";
-    const rawPhone = onlyDigits(addressForm.phone || user?.phone || "");
-    const phoneVal = rawPhone.slice(0, 10);
+    const phoneVal = normPhone(addressForm.phone || user?.phone || "");
     const pinVal = normPincode(addressForm.pincode);
     const addressVal = addressForm.address.trim();
     const cityVal = addressForm.city.trim() || "Local Area";
@@ -1390,7 +1407,7 @@ const Checkout = () => {
     }
   };
 
-  const handlePaymentSelection = (method: "upi" | "wallet" | "cod") => {
+  const handlePaymentSelection = (method: "razorpay" | "upi" | "wallet" | "cod") => {
     if (method === "cod" && outOfLocalInfo.hasOutOfLocal) {
       toast({
         title: "Cash on Delivery (COD) Not Available",
@@ -1519,7 +1536,7 @@ const Checkout = () => {
    * Order
    * ---------------------------- */
   const handlePlaceOrder = async (
-    paymentMethod: "upi" | "wallet" | "cod" = selectedPayment
+    paymentMethod: "razorpay" | "upi" | "wallet" | "cod" = selectedPayment
   ) => {
     // Delivery requires address
     if (fulfillmentType === "delivery" && !selectedAddress) {
@@ -1622,6 +1639,52 @@ const Checkout = () => {
         return;
       }
 
+      // Handle Razorpay Online Payment Flow
+      let razorpayTransactionDetails: any = null;
+      if (finalPaymentMethod === "razorpay" && finalTotal > 0) {
+        const rzpInitRes = await fetch(`${API_BASE}/payment/create-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            amount: finalTotal,
+            userId: user.id || user._id,
+            receipt: `rcpt_${Date.now()}`
+          })
+        });
+
+        const rzpInit = await rzpInitRes.json();
+        if (!rzpInitRes.ok || !rzpInit.success) {
+          throw new Error(rzpInit.message || "Failed to initialize Razorpay checkout");
+        }
+
+        try {
+          const rzpResponse = await openRazorpayModal({
+            order_id: rzpInit.orderId,
+            amount: rzpInit.amount,
+            currency: rzpInit.currency || "INR",
+            name: "ApexBee Checkout",
+            description: `Order Payment (₹${finalTotal.toFixed(2)})`,
+            prefill: {
+              name: user.name || user.username || selectedAddress?.name || "Customer",
+              email: user.email || "",
+              contact: selectedAddress?.phone || user.phone || ""
+            }
+          });
+          razorpayTransactionDetails = rzpResponse;
+        } catch (rzpErr: any) {
+          setIsLoading(false);
+          toast({
+            title: "Payment Cancelled",
+            description: rzpErr.message || "Razorpay payment was cancelled.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
       const mappedItems = orderDetails.items.map((item: any) => {
         const price = getItemPrice(item);
         const quantity = Number(item.quantity || 1);
@@ -1702,13 +1765,18 @@ const Checkout = () => {
         paymentDetails: {
           method: finalPaymentMethod,
           amount: finalTotal,
-          status: (finalPaymentMethod === "upi" || finalPaymentMethod === "cod") ? "pending_verification" : "completed",
+          status: (finalPaymentMethod === "razorpay" || finalPaymentMethod === "wallet") ? "completed" : (finalPaymentMethod === "cod" ? "pending" : "pending_verification"),
           transactionId:
-            finalPaymentMethod === "wallet"
-              ? `WALLET_${Date.now()}`
-              : finalPaymentMethod === "cod"
-                ? `COD_${Date.now()}`
-                : upiTransactionId || `TXN_${Date.now()}`,
+            finalPaymentMethod === "razorpay"
+              ? razorpayTransactionDetails?.razorpay_payment_id || `RZP_${Date.now()}`
+              : finalPaymentMethod === "wallet"
+                ? `WALLET_${Date.now()}`
+                : finalPaymentMethod === "cod"
+                  ? `COD_${Date.now()}`
+                  : upiTransactionId || `TXN_${Date.now()}`,
+          razorpayOrderId: razorpayTransactionDetails?.razorpay_order_id,
+          razorpayPaymentId: razorpayTransactionDetails?.razorpay_payment_id,
+          razorpaySignature: razorpayTransactionDetails?.razorpay_signature,
           upiDetails,
         },
 
@@ -1751,7 +1819,7 @@ const Checkout = () => {
           startDate: scheduleStartDate
         } : null,
 
-        status: finalPaymentMethod === "upi" ? "payment_pending" : "confirmed",
+        status: (finalPaymentMethod === "razorpay" || finalPaymentMethod === "wallet" || finalPaymentMethod === "cod") ? "confirmed" : "payment_pending",
       };
 
       let response: Response;
@@ -1885,7 +1953,7 @@ const Checkout = () => {
           : "Home";
     setAddressForm({
       name: String(addr.name || ""),
-      phone: onlyDigits(String(addr.phone || "")).slice(0, 10),
+      phone: normPhone(addr.phone),
       pincode: normPincode(addr.pincode),
       address: String(addr.address || ""),
       city: String(addr.city || ""),
@@ -2429,8 +2497,39 @@ const Checkout = () => {
                     onValueChange={(v: any) => handlePaymentSelection(v)}
                     className="space-y-3"
                   >
+                    {/* Razorpay Online Gateway Option */}
+                    <div className={`p-4 rounded-2xl border-2 transition-all ${selectedPayment === "razorpay"
+                      ? "bg-amber-50/70 border-amber-500 shadow-md ring-1 ring-amber-400/40"
+                      : "bg-white border-slate-200/80 hover:border-slate-300"
+                      }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <RadioGroupItem value="razorpay" id="razorpay" className="mt-1 text-amber-600" />
+                          <div>
+                            <Label htmlFor="razorpay" className="cursor-pointer font-black flex items-center gap-2 text-sm sm:text-base text-navy">
+                              <Sparkles className="h-4 w-4 text-amber-600" />
+                              Razorpay Secure Online Payment
+                            </Label>
+                            <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
+                              Instant payment via <strong>UPI</strong> (Google Pay, PhonePe, Paytm), <strong>Credit/Debit Cards</strong>, <strong>NetBanking</strong> & Wallets.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              {["Google Pay", "PhonePe", "Paytm", "Cards", "NetBanking"].map((badge) => (
+                                <span key={badge} className="text-[10px] bg-slate-100 border border-slate-200 font-bold px-2 py-0.5 rounded-md text-slate-700">
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 shadow-xs">
+                          ⚡ Instant & Auto
+                        </span>
+                      </div>
+                    </div>
+
                     {/* COD Option with Out-of-Local Blocking */}
-                    <div className={`p-3 rounded-2xl border transition-all ${outOfLocalInfo.hasOutOfLocal
+                    <div className={`p-3.5 rounded-2xl border transition-all ${outOfLocalInfo.hasOutOfLocal
                       ? "bg-red-50/40 border-red-200 opacity-90"
                       : selectedPayment === "cod"
                         ? "bg-amber-50/40 border-amber-300 shadow-xs"
@@ -2484,14 +2583,14 @@ const Checkout = () => {
                             ))}
                           </div>
                           <p className="mt-2 text-[11px] font-bold text-red-900 flex items-center gap-1">
-                            <span>👉</span> Please pay online via <strong>UPI</strong> or <strong>Wallet</strong> to proceed.
+                            <span>👉</span> Please pay online via <strong>Razorpay</strong>, <strong>UPI</strong> or <strong>Wallet</strong> to proceed.
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {/* UPI Payment Option */}
-                    <div className={`p-3 rounded-2xl border transition-all ${selectedPayment === "upi"
+                    {/* Manual UPI QR Option */}
+                    <div className={`p-3.5 rounded-2xl border transition-all ${selectedPayment === "upi"
                       ? "bg-amber-50/50 border-amber-400 shadow-xs"
                       : "bg-slate-50/50 border-slate-200/80"
                       }`}>
@@ -2500,28 +2599,15 @@ const Checkout = () => {
                           <RadioGroupItem value="upi" id="upi" />
                           <Label htmlFor="upi" className="cursor-pointer font-bold flex items-center gap-2 text-sm sm:text-base text-navy">
                             <QrCode className="h-4 w-4 text-accent" />
-                            UPI Payment (Fast & Secure)
+                            Manual UPI QR (Upload Screenshot Proof)
                           </Label>
                         </div>
-                        <span className="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          Recommended
+                        <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          Manual Proof
                         </span>
                       </div>
                     </div>
                   </RadioGroup>
-
-                  {/* Future payment gateways preview */}
-                  <div className="border-t border-gray-100 pt-4 mt-4">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">More Payment Methods (Coming Soon)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["Razorpay Gateway", "UPI Instant Auto", "Credit/Debit Card", "Net Banking"].map((m) => (
-                        <div key={m} className="border border-gray-100 rounded-lg p-2 bg-gray-50/50 opacity-60 flex justify-between items-center text-xs text-gray-500 font-medium">
-                          <span>{m}</span>
-                          <span className="text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold uppercase">Soon</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -2830,10 +2916,12 @@ const Checkout = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
+                    Processing Secure Payment...
                   </>
                 ) : undeliverableInfo.hasUndeliverable ? (
                   "🚫 Remove Undeliverable Items to Order"
+                ) : selectedPayment === "razorpay" ? (
+                  `⚡ Pay ₹${orderDetails.total.toFixed(2)} with Razorpay`
                 ) : selectedPayment === "upi" ? (
                   "Proceed to UPI Payment →"
                 ) : (
@@ -2963,11 +3051,10 @@ const Checkout = () => {
                     key={tag}
                     type="button"
                     onClick={() => setAddressForm((p) => ({ ...p, type: tag as any }))}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      addressForm.type === tag
-                        ? "bg-navy text-white border-navy shadow-xs dark:bg-amber-400 dark:text-slate-950 dark:border-amber-400"
-                        : "bg-slate-50 dark:bg-stone-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-stone-700 hover:bg-slate-100"
-                    }`}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${addressForm.type === tag
+                      ? "bg-navy text-white border-navy shadow-xs dark:bg-amber-400 dark:text-slate-950 dark:border-amber-400"
+                      : "bg-slate-50 dark:bg-stone-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-stone-700 hover:bg-slate-100"
+                      }`}
                   >
                     <span>{icon}</span>
                     <span>{tag}</span>
@@ -2993,10 +3080,10 @@ const Checkout = () => {
                   <Input
                     placeholder="e.g. 9876543210"
                     value={addressForm.phone}
-                    maxLength={10}
-                    inputMode="numeric"
+                    maxLength={14}
+                    inputMode="tel"
                     onChange={(e) =>
-                      setAddressForm((p) => ({ ...p, phone: onlyDigits(e.target.value).slice(0, 10) }))
+                      setAddressForm((p) => ({ ...p, phone: normPhone(e.target.value) }))
                     }
                     className="rounded-xl h-10 text-xs font-mono"
                   />
@@ -3023,7 +3110,7 @@ const Checkout = () => {
                             state: p.state || data.state || "",
                           }));
                         }
-                      } catch {}
+                      } catch { }
                     }
                   }}
                   className="rounded-xl h-10 text-xs font-mono font-bold tracking-wider"

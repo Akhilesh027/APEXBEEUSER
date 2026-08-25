@@ -23,8 +23,11 @@ import {
   Search,
   AlertCircle,
   ShieldCheck,
+  Sparkles,
+  Lock,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { openRazorpayModal } from "@/utils/razorpay";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -193,7 +196,7 @@ const WalletPage: React.FC = () => {
     fetchWalletData();
   }, [fetchWalletData]);
 
-  // Handle Add Funds Submit
+  // Handle Add Funds Submit via Razorpay
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
     const numAmt = Number(addAmount);
@@ -203,15 +206,20 @@ const WalletPage: React.FC = () => {
     }
 
     const token = localStorage.getItem("token");
-    if (!token) {
+    const userRaw = localStorage.getItem("user");
+    if (!token || !userRaw) {
       toast({ title: "Authentication Required", description: "Please login to add funds.", variant: "destructive" });
       navigate("/login");
       return;
     }
 
+    const user = JSON.parse(userRaw);
+
     try {
       setSubmittingAdd(true);
-      const res = await fetch(`${API_BASE}/wallet/add-funds`, {
+
+      // 1. Create Razorpay Wallet Deposit Order on Backend
+      const res = await fetch(`${API_BASE}/payment/create-wallet-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -223,17 +231,71 @@ const WalletPage: React.FC = () => {
         }),
       });
 
-      const json = await res.json();
-      if (res.ok && json.success) {
+      const orderData = await res.json();
+      if (!res.ok || !orderData.success) {
+        throw new Error(orderData.message || "Failed to initialize Razorpay wallet recharge.");
+      }
+
+      // 2. Open Razorpay Checkout Modal
+      let rzpResponse: any;
+      try {
+        rzpResponse = await openRazorpayModal({
+          order_id: orderData.orderId,
+          amount: orderData.amount,
+          currency: orderData.currency || "INR",
+          name: "ApexBee Wallet Recharge",
+          description: `Add ${formatCurrency(numAmt)} to Wallet`,
+          prefill: {
+            name: user.name || user.username || "Customer",
+            email: user.email || "",
+            contact: user.phone || "",
+          },
+          theme: {
+            color: "#059669",
+          },
+        });
+      } catch (modalErr: any) {
+        toast({
+          title: "Top-up Cancelled",
+          description: modalErr.message || "Wallet deposit payment was cancelled.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 3. Verify Razorpay Payment and Credit Wallet on Backend
+      const verifyRes = await fetch(`${API_BASE}/payment/verify-wallet-deposit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: numAmt,
+          razorpayOrderId: rzpResponse.razorpay_order_id,
+          razorpayPaymentId: rzpResponse.razorpay_payment_id,
+          razorpaySignature: rzpResponse.razorpay_signature,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (verifyRes.ok && verifyData.success) {
         setAddSuccessMsg(`Successfully added ${formatCurrency(numAmt)} to your ApexWallet!`);
-        toast({ title: "Wallet Top-up Successful! 💰", description: `Added ${formatCurrency(numAmt)} to your wallet.` });
+        toast({
+          title: "Wallet Top-up Successful! 💰",
+          description: `Payment ID: ${rzpResponse.razorpay_payment_id}. Balance credited!`,
+        });
         setTimeout(() => {
           setAddFundsOpen(false);
           setAddSuccessMsg("");
           fetchWalletData();
         }, 1500);
       } else {
-        toast({ title: "Top-up Failed", description: json.message || "Failed to add funds. Please try again.", variant: "destructive" });
+        toast({
+          title: "Top-up Verification Failed",
+          description: verifyData.message || "Failed to verify wallet credit. Please contact support.",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Error adding funds to wallet.", variant: "destructive" });
@@ -788,6 +850,16 @@ const WalletPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-emerald-950 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Secured by Razorpay Payment Gateway
+                </span>
+                <span className="text-[10px] bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-black uppercase">
+                  Instant
+                </span>
+              </div>
+
               <div className="pt-2 flex gap-2">
                 <Button
                   type="button"
@@ -801,9 +873,14 @@ const WalletPage: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={submittingAdd}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl py-2.5 text-xs border-none shadow-md"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl py-2.5 text-xs border-none shadow-md flex items-center justify-center gap-1.5"
                 >
-                  {submittingAdd ? "Processing..." : `Pay ₹${addAmount || "0"} & Add Funds`}
+                  {submittingAdd ? "Processing..." : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {`Pay ₹${addAmount || "0"} with Razorpay`}
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

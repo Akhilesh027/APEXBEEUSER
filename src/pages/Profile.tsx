@@ -1362,11 +1362,10 @@ const Profile = () => {
                                         {addresses.map((address) => (
                                             <div
                                                 key={address._id || address.id}
-                                                className={`p-4 sm:p-5 border rounded-2xl transition-all relative ${
-                                                    address.isDefault
-                                                        ? 'border-amber-400 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm'
-                                                        : 'border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900'
-                                                }`}
+                                                className={`p-4 sm:p-5 border rounded-2xl transition-all relative ${address.isDefault
+                                                    ? 'border-amber-400 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm'
+                                                    : 'border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900'
+                                                    }`}
                                             >
                                                 <div className="flex justify-between items-start mb-3">
                                                     <div className="flex items-center gap-2 flex-wrap">

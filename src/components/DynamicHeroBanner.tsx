@@ -213,9 +213,8 @@ export const DynamicHeroBanner: React.FC<DynamicHeroBannerProps> = ({
                   <button
                     key={idx}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                      currentIndex === idx ? 'w-6 sm:w-8 bg-amber-400' : 'w-1.5 sm:w-2 bg-white/40 hover:bg-white/70'
-                    }`}
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${currentIndex === idx ? 'w-6 sm:w-8 bg-amber-400' : 'w-1.5 sm:w-2 bg-white/40 hover:bg-white/70'
+                      }`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}

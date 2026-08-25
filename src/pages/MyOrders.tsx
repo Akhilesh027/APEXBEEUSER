@@ -240,6 +240,7 @@ const RETURN_STATUS_LABELS: Record<ReturnStatus, { label: string; color: string 
 };
 
 const paymentLabel: Record<string, string> = {
+  razorpay: "Razorpay Online",
   cod: "Cash on Delivery",
   upi: "UPI",
   wallet: "ApexBee Wallet",
@@ -273,16 +274,25 @@ const normalizeId = (v: any): string => {
 
 const getStatusConfig = (status?: string) => {
   const map: Record<string, { icon: any; color: string; label: string; bgColor: string; borderColor: string }> = {
-    pending: { icon: Clock, color: "text-orange-500", label: "Pending", bgColor: "bg-orange-50", borderColor: "border-orange-200" },
-    confirmed: { icon: CheckCircle, color: "text-blue-500", label: "Confirmed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-    processing: { icon: Package, color: "text-purple-500", label: "Processing", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    shipped: { icon: Truck, color: "text-indigo-500", label: "Shipped", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
+    pending: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+    placed: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+    Placed: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+    confirmed: { icon: CheckCircle, color: "text-emerald-600", label: "Order Confirmed", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
+    Confirmed: { icon: CheckCircle, color: "text-emerald-600", label: "Order Confirmed", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
+    processing: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+    packed: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+    Packed: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+    shipped: { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
+    Shipped: { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
+    'Out for Delivery': { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
     delivered: { icon: CheckCircle, color: "text-green-600", label: "Delivered", bgColor: "bg-green-50", borderColor: "border-green-200" },
+    Delivered: { icon: CheckCircle, color: "text-green-600", label: "Delivered", bgColor: "bg-green-50", borderColor: "border-green-200" },
     cancelled: { icon: AlertCircle, color: "text-red-500", label: "Cancelled", bgColor: "bg-red-50", borderColor: "border-red-200" },
+    Cancelled: { icon: AlertCircle, color: "text-red-500", label: "Cancelled", bgColor: "bg-red-50", borderColor: "border-red-200" },
     refunded: { icon: RotateCcw, color: "text-gray-500", label: "Refunded", bgColor: "bg-gray-50", borderColor: "border-gray-200" },
     returned: { icon: RotateCcw, color: "text-purple-500", label: "Returned", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    payment_pending: { icon: Clock, color: "text-orange-500", label: "Payment Pending", bgColor: "bg-orange-50", borderColor: "border-orange-200" },
-    payment_verified: { icon: CheckCircle, color: "text-green-600", label: "Payment Verified", bgColor: "bg-green-50", borderColor: "border-green-200" },
+    payment_pending: { icon: Clock, color: "text-amber-600", label: "Payment Pending", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+    payment_verified: { icon: CheckCircle, color: "text-emerald-600", label: "Payment Verified", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
     payment_failed: { icon: AlertCircle, color: "text-red-500", label: "Payment Failed", bgColor: "bg-red-50", borderColor: "border-red-200" },
     accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
     Accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
@@ -292,7 +302,7 @@ const getStatusConfig = (status?: string) => {
     'Picked Up': { icon: Package, color: "text-indigo-600", label: "Picked Up 📦", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
     'Reached Customer': { icon: MapPin, color: "text-sky-600", label: "Rider Arrived 📍", bgColor: "bg-sky-50", borderColor: "border-sky-200" },
   };
-  return map[status || ""] || { icon: Package, color: "text-gray-500", label: status || "Unknown", bgColor: "bg-gray-50", borderColor: "border-gray-200" };
+  return map[status || ""] || { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" };
 };
 
 // Active = not delivered / not cancelled / not returned / not refunded
@@ -1426,8 +1436,8 @@ const MyOrders = () => {
 
                                   <p className="flex justify-between">
                                     <span>Payment Status:</span>
-                                    <strong className={`font-bold capitalize ${order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                      {order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' ? 'Verified / Paid ✅' : order.paymentDetails?.status || 'Pending Verification'}
+                                    <strong className={`font-bold capitalize ${order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' || (order as any).paymentStatus === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                      {order.paymentDetails?.status === 'completed' || order.paymentDetails?.status === 'Paid' || (order as any).paymentStatus === 'Paid' ? 'Verified / Paid ✅' : order.paymentDetails?.status || 'Pending Verification'}
                                     </strong>
                                   </p>
 

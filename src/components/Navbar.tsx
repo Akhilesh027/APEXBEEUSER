@@ -390,20 +390,39 @@ const Navbar = () => {
 
   const handleMarkAsRead = async (notifId: string) => {
     const { token } = getUserData();
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_BASE}/notifications/${notifId}/read`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setNotifications(prev =>
-          prev.map(n => n._id === notifId ? { ...n, isRead: true, status: 'read' } : n)
-        );
-        setUnreadCount(c => Math.max(0, c - 1));
+    setNotifications(prev =>
+      prev.map(n => n._id === notifId ? { ...n, isRead: true, status: 'read' } : n)
+    );
+    setUnreadCount(c => Math.max(0, c - 1));
+
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/notifications/${notifId}/read`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Error marking notification as read:", err);
       }
-    } catch (err) {
-      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const { token } = getUserData();
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, isRead: true, status: 'read' }))
+    );
+    setUnreadCount(0);
+
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/notifications/mark-all-read`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Error marking all notifications as read:", err);
+      }
     }
   };
 
@@ -529,6 +548,9 @@ const Navbar = () => {
     };
 
     const handleOpenLocModal = () => setOpenLocationModal(true);
+    const handleNotificationEvent = () => {
+      fetchUserData();
+    };
     const handleUserLocationUpdated = () => {
       const nextLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
       if (nextLoc) {
@@ -545,10 +567,14 @@ const Navbar = () => {
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("open_location_modal", handleOpenLocModal);
     window.addEventListener("user_location_updated", handleUserLocationUpdated);
+    window.addEventListener("refresh_notifications", handleNotificationEvent);
+    window.addEventListener("notification_received", handleNotificationEvent);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("open_location_modal", handleOpenLocModal);
       window.removeEventListener("user_location_updated", handleUserLocationUpdated);
+      window.removeEventListener("refresh_notifications", handleNotificationEvent);
+      window.removeEventListener("notification_received", handleNotificationEvent);
     };
   }, [fetchUserData, fetchCategories]);
 
@@ -843,7 +869,6 @@ const Navbar = () => {
       if (portalDropdownOpen && portalRef.current && !portalRef.current.contains(t)) setPortalDropdownOpen(false);
       if (langOpen && langRef.current && !langRef.current.contains(t)) setLangOpen(false);
       if (searchFocused && searchRef.current && !searchRef.current.contains(t)) setSearchFocused(false);
-      if (notificationsOpen && notificationRef.current && !notificationRef.current.contains(t)) setNotificationsOpen(false);
     };
 
     const onEsc = (e: KeyboardEvent) => {
@@ -2102,10 +2127,14 @@ const Navbar = () => {
 
       {/* 🔔 Universal Notification Modal */}
       {notificationsOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[150] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-16 sm:pt-4 animate-in fade-in duration-200">
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[150] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-16 sm:pt-4 animate-in fade-in duration-200 cursor-pointer"
+          onClick={() => setNotificationsOpen(false)}
+        >
           <div
-            className="bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 cursor-default"
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-stone-800 bg-slate-50/70 dark:bg-stone-900 flex items-center justify-between">
@@ -2126,13 +2155,8 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
-                    className="text-[11px] text-amber-600 hover:text-amber-700 font-bold border-none bg-transparent cursor-pointer"
-                    onClick={() => {
-                      setNotifications((prev) =>
-                        prev.map((n) => ({ ...n, isRead: true, status: "read" }))
-                      );
-                      setUnreadCount(0);
-                    }}
+                    className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-bold border-none bg-transparent cursor-pointer"
+                    onClick={handleMarkAllRead}
                   >
                     Mark all read
                   </button>
@@ -2159,11 +2183,10 @@ const Navbar = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveNotificationTab(tab.key)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap border-none cursor-pointer ${
-                    activeNotificationTab === tab.key
-                      ? "bg-navy text-white shadow-xs dark:bg-amber-400 dark:text-slate-950"
-                      : "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-stone-800 hover:bg-slate-200"
-                  }`}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap border-none cursor-pointer ${activeNotificationTab === tab.key
+                    ? "bg-navy text-white shadow-xs dark:bg-amber-400 dark:text-slate-950"
+                    : "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-stone-800 hover:bg-slate-200"
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -2176,39 +2199,38 @@ const Navbar = () => {
                 <div className="text-center py-12 text-slate-400 space-y-2">
                   <span className="text-3xl block">📭</span>
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300">No notifications in this category</p>
-                  <p className="text-[11px]">We'll notify you when orders or new offers arrive!</p>
+                  <p className="text-[11px]">We'll notify you when orders or new updates arrive!</p>
                 </div>
               ) : (
                 filteredNotifications.map((n: any) => {
                   const isUnread = !n.isRead && n.status !== "read";
+                  const targetLink = n.deepLink || n.link || (n.category === 'orders' ? '/my-orders' : n.category === 'wallet' ? '/referrals' : '');
                   return (
                     <div
                       key={n._id}
                       onClick={() => {
                         if (isUnread) handleMarkAsRead(n._id);
-                        if (n.link) {
-                          navigate(n.link);
+                        if (targetLink) {
+                          navigate(targetLink);
                           setNotificationsOpen(false);
                         }
                       }}
-                      className={`p-3.5 rounded-2xl transition-all text-left flex gap-3 cursor-pointer border ${
-                        isUnread
-                          ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/50 hover:bg-amber-100/60 shadow-2xs"
-                          : "bg-slate-50/70 dark:bg-stone-800/40 border-slate-100 dark:border-stone-800 hover:bg-slate-100/80"
-                      }`}
+                      className={`p-3.5 rounded-2xl transition-all text-left flex gap-3 cursor-pointer border ${isUnread
+                        ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/50 hover:bg-amber-100/60 shadow-2xs"
+                        : "bg-slate-50/70 dark:bg-stone-800/40 border-slate-100 dark:border-stone-800 hover:bg-slate-100/80"
+                        }`}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span
-                            className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                              n.category === "orders"
-                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                                : n.category === "offers"
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${n.category === "orders"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                              : n.category === "offers"
                                 ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
                                 : n.category === "wallet"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
-                            }`}
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
+                              }`}
                           >
                             {n.category === "franchise" ? "Network" : n.category}
                           </span>
