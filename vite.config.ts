@@ -10,8 +10,9 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:5500",
+        target: "https://server.apexbee.in",
         changeOrigin: true,
+        secure: true,
       },
     },
   },
