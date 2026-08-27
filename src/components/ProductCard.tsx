@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Star, Heart, Share2, Clock, MapPin,
   Calendar, ShieldCheck, CheckCircle2, Zap, ShoppingCart,
-  RefreshCw, Lock, Award, Flame, Eye, Store, Phone, MessageCircle, Navigation, Coins
+  RefreshCw, Lock, Award, Flame, Eye, Store, Phone, MessageCircle, Navigation, Coins,
+  ShoppingBag, Repeat
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
@@ -262,15 +263,101 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
   const distanceText = rawDistKm > 0 ? `${rawDistKm.toFixed(1)} km` : "1.8 km";
 
+  // Self Pickup & Subscription Availability
+  const isSelfPickup = Boolean(
+    product.isSelfPickup === true ||
+    product.selfPickup === true ||
+    product.allowSelfPickup === true ||
+    product.deliveryScope === 'local' ||
+    product.sellerId?.isSelfPickup === true
+  );
+
+  const isSubscriptionAvailable = Boolean(
+    product.isSubscriptionAvailable === true ||
+    product.subscriptionAvailable === true ||
+    product.isSubscription === true ||
+    product.allowSubscription === true ||
+    (Array.isArray(product.subscriptionOptions) && product.subscriptionOptions.length > 0)
+  );
+
+  // Real Store Open / Closed Status Calculation based on MongoDB vendor data and live hours
+  const vendorObj = fetchedVendor || (typeof product.sellerId === 'object' ? product.sellerId : null);
+  const rawLiveStatus = vendorObj?.liveStatus || product.liveStatus || product.storeStatus || (vendorObj?.status === 'suspended' || vendorObj?.status === 'inactive' ? 'closed' : null);
+
+  let storeStatusLabel = "Shop Open";
+  let storeStatusType: "open" | "closed" | "busy" | "preorder" = "open";
+
+  if (rawLiveStatus === "closed" || rawLiveStatus === "temporarily_closed") {
+    storeStatusLabel = "Shop Closed";
+    storeStatusType = "closed";
+  } else if (rawLiveStatus === "busy") {
+    storeStatusLabel = "Shop Busy";
+    storeStatusType = "busy";
+  } else if (rawLiveStatus === "vacation") {
+    storeStatusLabel = "On Vacation";
+    storeStatusType = "closed";
+  } else if (rawLiveStatus === "accepting_preorders") {
+    storeStatusLabel = "Pre-Orders Only";
+    storeStatusType = "preorder";
+  } else if (vendorObj?.businessHours) {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const now = new Date();
+    const currentDayName = days[now.getDay()];
+    const todayHours = vendorObj.businessHours[currentDayName];
+
+    if (todayHours) {
+      if (todayHours.enabled === false) {
+        storeStatusLabel = "Closed Today";
+        storeStatusType = "closed";
+      } else if (todayHours.open && todayHours.close) {
+        const [openH, openM] = todayHours.open.split(':').map(Number);
+        const [closeH, closeM] = todayHours.close.split(':').map(Number);
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        const openMins = openH * 60 + (openM || 0);
+        const closeMins = closeH * 60 + (closeM || 0);
+
+        if (currentMins < openMins || currentMins > closeMins) {
+          storeStatusLabel = `Closed (Opens ${todayHours.open})`;
+          storeStatusType = "closed";
+        } else {
+          storeStatusLabel = "Shop Open";
+          storeStatusType = "open";
+        }
+      }
+    }
+  }
+
+  // Real Store Contact Details
+  const storePhone =
+    vendorObj?.mobile ||
+    vendorObj?.phone ||
+    vendorObj?.storeDesign?.phone ||
+    product.sellerId?.mobile ||
+    product.sellerId?.phone ||
+    product.sellerMobile ||
+    "";
+
+  const storeWhatsapp =
+    vendorObj?.whatsappNumber ||
+    vendorObj?.whatsapp ||
+    storePhone;
+
   // 3-Level Referral Commission Earnings Calculation
   const commissionShares = product.adminPricing?.commissionShares || [];
   const getCommissionShare = (type: string, defaultPct: number) => {
     const sh = Array.isArray(commissionShares)
-      ? commissionShares.find((s: any) => s.type === type && s.isActive !== false)
+      ? commissionShares.find((s: any) => s && s.type === type && s.isActive !== false)
       : null;
     if (sh) {
-      if (typeof sh.percent === "number") return { percent: sh.percent, amount: sh.amount };
-      if (typeof sh.amount === "number") return { percent: null, amount: sh.amount };
+      if (typeof sh.amount === "number" && !isNaN(sh.amount) && sh.amount > 0) {
+        return { percent: null, amount: sh.amount };
+      }
+      if (typeof sh.percent === "number" && !isNaN(sh.percent) && sh.percent > 0) {
+        return { percent: sh.percent, amount: sh.amount ?? null };
+      }
+    }
+    if (product.referralCommission && typeof product.referralCommission[type] === "number") {
+      return { percent: product.referralCommission[type], amount: null };
     }
     return { percent: defaultPct, amount: null };
   };
@@ -279,26 +366,53 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const l2Share = getCommissionShare("level2", 5);
   const l3Share = getCommissionShare("level3", 2.5);
 
-  const platformFeePct = Number(product.adminPricing?.platformFeePercent || 15);
-  const commissionBase = product.adminPricing?.commissionBase || "platform_fee";
+  const platformFeePct = Number(
+    product.adminPricing?.platformFeePercent ??
+    product.platformCommissionPercent ??
+    product.platformFeePercent ??
+    10
+  );
+  const distributedFrom = product.adminPricing?.distributedFrom || "platform_fee";
+  const vendorCommPct = Number(product.adminPricing?.vendorCommissionPercent ?? product.vendorCommissionPercent ?? 0);
+  const vendorCommAmount = (sellingPrice * vendorCommPct) / 100;
+  const platformFeeAmount = (sellingPrice * platformFeePct) / 100;
+
+  const distributionPool = Number(
+    product.adminPricing?.distributionPool ??
+    (distributedFrom === 'apexbee_commission'
+      ? vendorCommAmount
+      : distributedFrom === 'both'
+        ? (vendorCommAmount + platformFeeAmount)
+        : distributedFrom === 'none'
+          ? 0
+          : platformFeeAmount)
+  );
 
   const calculateEarning = (share: { percent: number | null; amount: number | null }) => {
-    if (share.amount !== null && share.amount > 0) return share.amount;
-    const pct = share.percent ?? 0;
-    if (commissionBase === "sale_price") {
-      return Math.round((sellingPrice * pct) / 100);
+    if (share.amount !== null && share.amount !== undefined && Number(share.amount) > 0) {
+      return Number(share.amount);
     }
-    const pool = (sellingPrice * platformFeePct) / 100;
-    return Math.round((pool * pct) / 100);
+    const pct = Number(share.percent ?? 0);
+    const pool = distributionPool > 0 ? distributionPool : platformFeeAmount;
+    return (pool * pct) / 100;
   };
 
-  const level1Earning = Math.max(1, calculateEarning(l1Share));
-  const level2Earning = Math.max(1, calculateEarning(l2Share));
-  const level3Earning = Math.max(1, calculateEarning(l3Share));
+  const l1 = calculateEarning(l1Share);
+  const l2 = calculateEarning(l2Share);
+  const l3 = calculateEarning(l3Share);
+  const calculatedAvg = Math.round(((l1 + l2 + l3) / 3) * 100) / 100;
 
-  const level1PctStr = l1Share.percent !== null ? `${l1Share.percent}%` : `Flat`;
-  const level2PctStr = l2Share.percent !== null ? `${l2Share.percent}%` : `Flat`;
-  const level3PctStr = l3Share.percent !== null ? `${l3Share.percent}%` : `Flat`;
+  const rawEstimatedEarn = Number(
+    product.adminPricing?.estimatedEarning ??
+    product.adminPricing?.averageReferralEarning ??
+    product.adminPricing?.referralEarnings?.average ??
+    product.adminPricing?.referralEarnings?.level1 ??
+    calculatedAvg
+  );
+
+  const estimatedEarn = rawEstimatedEarn > 0
+    ? (rawEstimatedEarn % 1 === 0 ? rawEstimatedEarn : Math.round(rawEstimatedEarn * 10) / 10)
+    : Math.max(1, Math.round(sellingPrice * 0.01));
 
   // Vendor / Product Real Coupons extraction
   const vendorCoupons: any[] = Array.isArray(product.coupons) && product.coupons.length > 0
@@ -315,30 +429,59 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const soldCount = product.soldCount || null;
   const imageCount = product.images?.length || 1;
 
-  // Real Specifications / Highlights Extraction
+  // Brand & Specifications Extraction
+  const brandName =
+    product.brand ||
+    product.brandName ||
+    product.brandTitle ||
+    (typeof product.attributes === 'object' && (product.attributes?.Brand || product.attributes?.brand)) ||
+    (typeof product.specifications === 'object' && (product.specifications?.Brand || product.specifications?.brand)) ||
+    (storeName && storeName !== "ApexBee Store" ? storeName : "");
+
   const specsList: string[] = [];
-  if (Array.isArray(product.specifications) && product.specifications.length > 0) {
-    product.specifications.slice(0, 3).forEach((s: any) => {
-      if (typeof s === "string") specsList.push(s);
-      else if (s?.key && s?.value) specsList.push(`${s.key}: ${s.value}`);
-      else if (s?.name && s?.value) specsList.push(`${s.name}: ${s.value}`);
-    });
-  } else if (typeof product.specifications === "object" && product.specifications !== null) {
-    Object.entries(product.specifications).slice(0, 3).forEach(([k, v]) => {
-      specsList.push(`${k}: ${v}`);
-    });
-  } else if (Array.isArray(product.highlights) && product.highlights.length > 0) {
-    product.highlights.slice(0, 3).forEach((h: any) => typeof h === "string" && specsList.push(h));
-  } else if (Array.isArray(product.features) && product.features.length > 0) {
-    product.features.slice(0, 3).forEach((f: any) => typeof f === "string" && specsList.push(f));
+  if (brandName) {
+    specsList.push(`Brand: ${brandName}`);
   }
 
-  // Fallback to real product attributes if no explicit specs array exists
-  if (specsList.length === 0) {
-    if (product.weight || product.unit || product.netWeight) specsList.push(`Weight: ${product.weight || product.unit || product.netWeight}`);
-    if (product.brand) specsList.push(`Brand: ${product.brand}`);
-    if (product.material) specsList.push(`Material: ${product.material}`);
-    if (product.category) specsList.push(`Type: ${product.category}`);
+  if (Array.isArray(product.specifications) && product.specifications.length > 0) {
+    product.specifications.forEach((s: any) => {
+      if (typeof s === "string" && !specsList.includes(s)) specsList.push(s);
+      else if (s?.key && s?.value) {
+        const val = `${s.key}: ${s.value}`;
+        if (!specsList.includes(val)) specsList.push(val);
+      }
+      else if (s?.name && s?.value) {
+        const val = `${s.name}: ${s.value}`;
+        if (!specsList.includes(val)) specsList.push(val);
+      }
+    });
+  } else if (typeof product.specifications === "object" && product.specifications !== null) {
+    Object.entries(product.specifications).forEach(([k, v]) => {
+      if (k.toLowerCase() !== 'brand') {
+        specsList.push(`${k}: ${v}`);
+      }
+    });
+  }
+
+  if (typeof product.attributes === "object" && product.attributes !== null) {
+    Object.entries(product.attributes).forEach(([k, v]) => {
+      if (v && k.toLowerCase() !== 'brand') {
+        const str = `${k}: ${v}`;
+        if (!specsList.includes(str)) specsList.push(str);
+      }
+    });
+  }
+
+  if (product.weight || product.unit || product.netWeight) {
+    const wStr = `Weight: ${product.weight || product.unit || product.netWeight}`;
+    if (!specsList.includes(wStr)) specsList.push(wStr);
+  }
+  if (product.material) {
+    const mStr = `Material: ${product.material}`;
+    if (!specsList.includes(mStr)) specsList.push(mStr);
+  }
+  if (product.category && !specsList.some(s => s.startsWith("Type:") || s.startsWith("Category:"))) {
+    specsList.push(`Type: ${product.category}`);
   }
 
   const handleShare = (e: React.MouseEvent) => {
@@ -556,9 +699,23 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
         </div>
 
         {/* Bottom-Right Store Status */}
-        <div className="absolute bottom-1.5 right-1.5 bg-white/95 backdrop-blur-md border border-emerald-400 px-1.5 py-0.2 rounded-md shadow-2xs flex items-center gap-1 text-[7.5px] font-extrabold text-emerald-700">
-          <Store className="w-2.5 h-2.5 text-emerald-600" />
-          <span>Store Open</span>
+        <div className={`absolute bottom-1.5 right-1.5 bg-white/95 backdrop-blur-md border px-1.5 py-0.2 rounded-md shadow-2xs flex items-center gap-1 text-[7.5px] font-extrabold ${storeStatusType === "open"
+            ? "border-emerald-400 text-emerald-700"
+            : storeStatusType === "busy"
+              ? "border-amber-400 text-amber-700"
+              : storeStatusType === "preorder"
+                ? "border-indigo-400 text-indigo-700"
+                : "border-rose-400 text-rose-700"
+          }`}>
+          <Store className={`w-2.5 h-2.5 ${storeStatusType === "open"
+              ? "text-emerald-600"
+              : storeStatusType === "busy"
+                ? "text-amber-600"
+                : storeStatusType === "preorder"
+                  ? "text-indigo-600"
+                  : "text-rose-600"
+            }`} />
+          <span>{storeStatusLabel}</span>
         </div>
       </div>
 
@@ -601,17 +758,35 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1">
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open("tel:+919876543210"); }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (storePhone) {
+                  window.open(`tel:${storePhone}`);
+                } else {
+                  toast({ title: "Call Store", description: `Contacting ${storeName}...` });
+                }
+              }}
               className="w-4.5 h-4.5 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-indigo-600 cursor-pointer p-0 shadow-2xs"
-              title="Call Store"
+              title={storePhone ? `Call ${storeName} (${storePhone})` : "Call Store"}
             >
               <Phone className="w-2.5 h-2.5" />
             </button>
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); alert("Opening chat with store..."); }}
-              className="w-4.5 h-4.5 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-amber-600 cursor-pointer p-0 shadow-2xs"
-              title="Chat with Store"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (storeWhatsapp) {
+                  const cleanNum = storeWhatsapp.replace(/[^0-9]/g, '');
+                  const waUrl = cleanNum.startsWith('91') ? `https://wa.me/${cleanNum}` : `https://wa.me/91${cleanNum}`;
+                  window.open(waUrl, '_blank');
+                } else {
+                  toast({ title: "Chat with Store", description: `Opening inquiry with ${storeName}...` });
+                }
+              }}
+              className="w-4.5 h-4.5 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-emerald-600 cursor-pointer p-0 shadow-2xs"
+              title={storeWhatsapp ? `WhatsApp ${storeName}` : "Chat with Store"}
             >
               <MessageCircle className="w-2.5 h-2.5" />
             </button>
@@ -640,14 +815,26 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               </h3>
             </Link>
 
-            {/* Trust Tags */}
+            {/* Feature & Trust Tags */}
             <div className="flex items-center gap-1 text-[8.5px] font-extrabold flex-wrap pt-0.5">
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-md">✔ Verified Store</span>
+              {isSelfPickup && (
+                <span className="bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" title="Self Pickup Available at Store">
+                  <ShoppingBag className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                  <span>Self Pickup</span>
+                </span>
+              )}
+              {isSubscriptionAvailable && (
+                <span className="bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" title="Daily/Weekly Subscription Available">
+                  <Repeat className="w-2.5 h-2.5 text-teal-600 shrink-0" />
+                  <span>Subscribe</span>
+                </span>
+              )}
               <span className="bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded-md">⭐ Top Seller</span>
             </div>
 
-            {/* Pricing */}
-            <div className="pt-1">
+            {/* Pricing & Est. Earn Section */}
+            <div className="pt-1 space-y-1">
               <div className="flex items-baseline gap-1.5 flex-wrap">
                 <span className="text-xl font-black text-rose-600 font-heading leading-none">
                   {money(sellingPrice)}
@@ -665,20 +852,35 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
                   </>
                 )}
               </div>
-              {savings > 0 && (
-                <p className="text-[9.5px] font-black text-emerald-600 leading-none mt-1">
-                  You Save {money(savings)}
-                </p>
-              )}
+
+              {/* Savings & Referral Reward Badges Row */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {savings > 0 && (
+                  <span className="text-[9.5px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md leading-none whitespace-nowrap">
+                    Save {money(savings)}
+                  </span>
+                )}
+
+                {/* Clean, Polished Referral Reward Badge */}
+                {estimatedEarn > 0 && (
+                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-950 border border-amber-300/90 px-1.5 py-0.5 rounded-md shadow-2xs text-[9.5px] font-bold whitespace-nowrap">
+                    <Coins className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Refer & Earn: <b className="text-emerald-700 font-black">₹{estimatedEarn}</b></span>
+                  </span>
+                )}
+              </div>
 
               {/* Product Specifications Section */}
               {specsList.length > 0 && (
-                <div className="mt-1.5 pt-1 border-t border-slate-100 flex items-center gap-1 flex-wrap max-w-full">
+                <div className="mt-1 pt-1 border-t border-slate-100 flex items-center gap-1 flex-wrap max-w-full">
                   <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-tight shrink-0">Specs:</span>
-                  {specsList.map((spec, idx) => (
+                  {specsList.slice(0, 3).map((spec, idx) => (
                     <span
                       key={idx}
-                      className="bg-slate-100 text-slate-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded border border-slate-200/80 shrink-0 truncate max-w-[130px]"
+                      className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border shrink-0 truncate max-w-[180px] ${spec.startsWith('Brand:')
+                          ? 'bg-amber-50 text-amber-900 border-amber-200'
+                          : 'bg-slate-100 text-slate-800 border-slate-200/80'
+                        }`}
                       title={spec}
                     >
                       {spec}
@@ -689,52 +891,22 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             </div>
           </div>
 
-          {/* Right 1-Col: Delivery Box & 3-Level Referral Earnings Badge */}
-          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-xl p-1.5 space-y-1 text-[8.5px] font-bold text-slate-700 relative">
+          {/* Right 1-Col: Delivery Time, Distance & Pickup Box */}
+          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-xl p-2 space-y-1 text-[9px] font-bold text-slate-700 flex flex-col justify-center">
             <div className="flex items-center gap-1 text-emerald-700">
-              <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span className="truncate">{deliveryMins}</span>
             </div>
             <div className="flex items-center gap-1 text-indigo-700">
-              <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span className="truncate">{distanceText}</span>
             </div>
-
-            {/* 3-Level Referral Earning Badge & Hover Tooltip */}
-            <div className="mt-0.5 pt-1 border-t border-slate-200/80 bg-amber-500/10 text-amber-900 px-1 py-0.5 rounded-lg group/ref cursor-pointer transition hover:bg-amber-500/20 relative">
-              <div className="flex items-center justify-between text-[7.5px] font-black">
-                <span className="flex items-center gap-0.5 text-amber-800">
-                  <Coins className="w-2.5 h-2.5 text-amber-600 animate-pulse shrink-0" />
-                  <span>Est. Earn</span>
-                </span>
-                <span className="text-emerald-700 font-extrabold">₹{level1Earning}</span>
+            {isSelfPickup && (
+              <div className="flex items-center gap-1 text-blue-700 pt-0.5 border-t border-slate-200/70 text-[8px]" title="Self Pickup Available">
+                <ShoppingBag className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                <span className="truncate">Self Pickup</span>
               </div>
-
-              {/* Hover Popover showing Level 1, Level 2, Level 3 breakdown */}
-              <div className="hidden group-hover/ref:block absolute right-0 bottom-full mb-1 w-48 bg-slate-900 text-white rounded-xl p-2.5 shadow-2xl z-50 text-[8.5px] border border-amber-400/40 space-y-1 pointer-events-none">
-                <div className="font-black text-amber-400 border-b border-slate-700 pb-1 flex items-center justify-between">
-                  <span>🚀 Network Rewards</span>
-                  <span className="text-[6.5px] bg-amber-400/20 text-amber-300 px-1 rounded uppercase tracking-wider font-black">Share</span>
-                </div>
-                <div className="space-y-0.5 text-slate-200">
-                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
-                    <span>Tier 1 (Direct Friend):</span>
-                    <span className="font-extrabold text-emerald-400">₹{level1Earning} ({level1PctStr})</span>
-                  </div>
-                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
-                    <span>Tier 2 (Invited by Friend):</span>
-                    <span className="font-extrabold text-amber-300">₹{level2Earning} ({level2PctStr})</span>
-                  </div>
-                  <div className="flex justify-between items-center bg-slate-800/90 px-1.5 py-0.5 rounded">
-                    <span>Tier 3 (3rd-Gen Team):</span>
-                    <span className="font-extrabold text-indigo-300">₹{level3Earning} ({level3PctStr})</span>
-                  </div>
-                </div>
-                <p className="text-[7px] text-slate-400 italic pt-0.5 leading-tight">
-                  *Network rewards per order. Final rewards are credited after successful order delivery.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

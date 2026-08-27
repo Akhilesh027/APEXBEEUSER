@@ -562,22 +562,20 @@ const WalletPage: React.FC = () => {
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/60 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto">
               <button
                 onClick={() => setActiveTab("transactions")}
-                className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                  activeTab === "transactions"
-                    ? "bg-[#0F172A] text-[#F5B800] shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
+                className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${activeTab === "transactions"
+                  ? "bg-[#0F172A] text-[#F5B800] shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
               >
                 📜 All Transactions ({ledgerEntries.length})
               </button>
 
               <button
                 onClick={() => setActiveTab("withdrawals")}
-                className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                  activeTab === "withdrawals"
-                    ? "bg-[#0F172A] text-[#F5B800] shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
+                className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${activeTab === "withdrawals"
+                  ? "bg-[#0F172A] text-[#F5B800] shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
               >
                 💸 Withdrawals ({withdrawals.length})
               </button>
@@ -601,11 +599,10 @@ const WalletPage: React.FC = () => {
                     <button
                       key={type}
                       onClick={() => setTxFilter(type)}
-                      className={`flex-1 sm:flex-initial px-3 py-1 rounded-lg font-bold capitalize transition ${
-                        txFilter === type
-                          ? "bg-white dark:bg-slate-800 text-slate-950 dark:text-[#F5B800] font-black shadow-xs border border-slate-200 dark:border-slate-700"
-                          : "text-slate-500 dark:text-slate-400 hover:text-slate-900"
-                      }`}
+                      className={`flex-1 sm:flex-initial px-3 py-1 rounded-lg font-bold capitalize transition ${txFilter === type
+                        ? "bg-white dark:bg-slate-800 text-slate-950 dark:text-[#F5B800] font-black shadow-xs border border-slate-200 dark:border-slate-700"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900"
+                        }`}
                     >
                       {type}
                     </button>
@@ -651,11 +648,10 @@ const WalletPage: React.FC = () => {
                       >
                         <div className="flex items-start sm:items-center gap-3.5">
                           <div
-                            className={`p-3 rounded-2xl shrink-0 ${
-                              isCredit
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                : "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20"
-                            }`}
+                            className={`p-3 rounded-2xl shrink-0 ${isCredit
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20"
+                              }`}
                           >
                             {isCredit ? (
                               <ArrowDownLeft className="h-5 w-5" />
@@ -685,21 +681,19 @@ const WalletPage: React.FC = () => {
 
                         <div className="text-right w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100 dark:border-slate-800">
                           <span
-                            className={`text-base font-black ${
-                              isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"
-                            }`}
+                            className={`text-base font-black ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"
+                              }`}
                           >
                             {isCredit ? "+" : "-"}{formatCurrency(tx.amount)}
                           </span>
 
                           <span
-                            className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full mt-1 ${
-                              tx.status === "completed" || !tx.status
-                                ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
-                                : tx.status === "pending"
+                            className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full mt-1 ${tx.status === "completed" || !tx.status
+                              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
+                              : tx.status === "pending"
                                 ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-500/30"
                                 : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-500/30"
-                            }`}
+                              }`}
                           >
                             {tx.status || "Completed"}
                           </span>
@@ -742,13 +736,12 @@ const WalletPage: React.FC = () => {
                       >
                         <div className="flex items-start sm:items-center gap-3.5">
                           <div
-                            className={`p-3 rounded-2xl shrink-0 ${
-                              isApproved
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                : isRejected
+                            className={`p-3 rounded-2xl shrink-0 ${isApproved
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : isRejected
                                 ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20"
                                 : "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                            }`}
+                              }`}
                           >
                             {isApproved ? (
                               <CheckCircle2 className="h-5 w-5" />
@@ -765,19 +758,18 @@ const WalletPage: React.FC = () => {
                                 Withdrawal Request: {formatCurrency(w.amount)}
                               </h4>
                               <Badge
-                                className={`text-[9px] font-black uppercase ${
-                                  isApproved
-                                    ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
-                                    : isRejected
+                                className={`text-[9px] font-black uppercase ${isApproved
+                                  ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
+                                  : isRejected
                                     ? "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border border-red-500/30"
                                     : "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-500/30"
-                                }`}
+                                  }`}
                               >
                                 {w.status === "approved"
                                   ? "Approved & Transferred"
                                   : w.status === "rejected"
-                                  ? "Rejected"
-                                  : "Pending Approval"}
+                                    ? "Rejected"
+                                    : "Pending Approval"}
                               </Badge>
                             </div>
 
@@ -859,11 +851,10 @@ const WalletPage: React.FC = () => {
                       key={preset}
                       type="button"
                       onClick={() => setAddAmount(preset)}
-                      className={`py-2 rounded-xl text-xs font-black border transition cursor-pointer ${
-                        addAmount === preset
-                          ? "bg-[#F5B800] text-slate-950 border-[#F5B800] shadow-sm"
-                          : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
-                      }`}
+                      className={`py-2 rounded-xl text-xs font-black border transition cursor-pointer ${addAmount === preset
+                        ? "bg-[#F5B800] text-slate-950 border-[#F5B800] shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                        }`}
                     >
                       +₹{preset}
                     </button>
@@ -884,11 +875,10 @@ const WalletPage: React.FC = () => {
                       key={method.key}
                       type="button"
                       onClick={() => setAddMethod(method.key as any)}
-                      className={`p-3 rounded-2xl border-2 text-center flex flex-col items-center gap-1 font-bold transition cursor-pointer ${
-                        addMethod === method.key
-                          ? "bg-amber-500/10 border-[#F5B800] text-slate-900 dark:text-white"
-                          : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
-                      }`}
+                      className={`p-3 rounded-2xl border-2 text-center flex flex-col items-center gap-1 font-bold transition cursor-pointer ${addMethod === method.key
+                        ? "bg-amber-500/10 border-[#F5B800] text-slate-900 dark:text-white"
+                        : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                        }`}
                     >
                       {method.icon}
                       <span className="text-[10px] font-black">{method.label}</span>
@@ -950,11 +940,10 @@ const WalletPage: React.FC = () => {
 
           {withdrawMsg && (
             <div
-              className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
-                withdrawMsg.type === "success"
-                  ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                  : "bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"
-              }`}
+              className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${withdrawMsg.type === "success"
+                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                : "bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"
+                }`}
             >
               {withdrawMsg.type === "success" ? (
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -993,22 +982,20 @@ const WalletPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setWithdrawMethod("upi")}
-                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${
-                    withdrawMethod === "upi"
-                      ? "bg-[#0F172A] text-[#F5B800] border-[#0F172A]"
-                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                  }`}
+                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${withdrawMethod === "upi"
+                    ? "bg-[#0F172A] text-[#F5B800] border-[#0F172A]"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                    }`}
                 >
                   Instant UPI
                 </button>
                 <button
                   type="button"
                   onClick={() => setWithdrawMethod("bank")}
-                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${
-                    withdrawMethod === "bank"
-                      ? "bg-[#0F172A] text-[#F5B800] border-[#0F172A]"
-                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                  }`}
+                  className={`py-2 rounded-xl font-extrabold border transition cursor-pointer ${withdrawMethod === "bank"
+                    ? "bg-[#0F172A] text-[#F5B800] border-[#0F172A]"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                    }`}
                 >
                   Bank Transfer
                 </button>

@@ -221,6 +221,12 @@ type WithdrawalRequest = {
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
+const formatINR = (val: number | string | undefined | null) =>
+  Number(val || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
 const Referrals = () => {
   const { toast } = useToast();
 
@@ -739,7 +745,7 @@ const Referrals = () => {
 
       toast({
         title: "Withdrawal Requested Successfully 🎉",
-        description: `Reference ID: ${refId} • Requested: ₹${Math.round(amt)} • Net Payout: ₹${Math.round(net)}`,
+        description: `Reference ID: ${refId} • Requested: ₹${formatINR(amt)} • Net Payout: ₹${formatINR(net)}`,
         className: "bg-slate-900 text-white border-amber-400 font-bold",
       });
 
@@ -1160,11 +1166,11 @@ const Referrals = () => {
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
                   <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Lifetime Earned</p>
-                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-amber-400">₹{Math.round(stats.totalEarned || 0)}</p>
+                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-amber-400">₹{formatINR(stats.totalEarned || 0)}</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
                   <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Pending Settlement</p>
-                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-yellow-400">₹{Math.round(walletHold)}</p>
+                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-yellow-400">₹{formatINR(walletHold)}</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
                   <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Current Rank</p>
@@ -1176,7 +1182,7 @@ const Referrals = () => {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10 text-center w-full lg:w-80 shadow-inner flex flex-col gap-3 sm:gap-4">
               <div>
                 <p className="text-[11px] sm:text-xs text-indigo-200 font-semibold uppercase tracking-wider">Available Wallet Balance</p>
-                <p className="text-2xl sm:text-3xl font-black mt-0.5 sm:mt-1 text-emerald-400 font-sans">₹{Math.round(walletAvailable)}</p>
+                <p className="text-2xl sm:text-3xl font-black mt-0.5 sm:mt-1 text-emerald-400 font-sans">₹{formatINR(walletAvailable)}</p>
                 <p className="text-[9.5px] sm:text-[10px] text-slate-300 mt-1 sm:mt-2 opacity-95">
                   Withdrawable Limit: ₹500 - ₹50,000 / day
                 </p>
@@ -1392,7 +1398,7 @@ const Referrals = () => {
                                     {u.firstOrderQualified ? "Active member" : "KYC pending"}
                                   </span>
                                 </td>
-                                <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(u.totalCommissionGenerated || 0)}</td>
+                                <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1451,11 +1457,11 @@ const Referrals = () => {
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2 text-xs">
                       <div className="flex justify-between text-slate-600">
                         <span>Direct Signup Bonus:</span>
-                        <span className="font-bold text-navy">₹{calculatedEstimations.directInviteIncome}</span>
+                        <span className="font-bold text-navy">₹{formatINR(calculatedEstimations.directInviteIncome)}</span>
                       </div>
                       <div className="flex justify-between text-slate-600">
                         <span>If all make purchases:</span>
-                        <span className="font-bold text-emerald-600">₹{calculatedEstimations.purchaseIncomeIfAllBuy}</span>
+                        <span className="font-bold text-emerald-600">₹{formatINR(calculatedEstimations.purchaseIncomeIfAllBuy)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -1484,7 +1490,7 @@ const Referrals = () => {
                                 <p className="text-[10px] text-slate-400">Total: {row.count} invites</p>
                               </div>
                             </div>
-                            <span className="font-extrabold text-emerald-700">₹{Math.round(row.earnings)}</span>
+                            <span className="font-extrabold text-emerald-700">₹{formatINR(row.earnings)}</span>
                           </div>
                         ))}
                       </div>
@@ -1500,12 +1506,12 @@ const Referrals = () => {
             {/* Top Stats Summary row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
               {[
-                { label: "Total Earnings", value: `₹${Math.round(stats.totalEarned || 0)}`, color: "text-navy" },
+                { label: "Total Earnings", value: `₹${formatINR(stats.totalEarned || 0)}`, color: "text-navy" },
                 { label: "Active Referrals", value: allReferredUsers.filter(u => u.firstOrderQualified).length.toString(), color: "text-green-700" },
                 { label: "Orders Generated", value: allReferredUsers.reduce((sum, u) => sum + (u.totalPurchases || 0), 0).toString(), color: "text-indigo-700" },
-                { label: "Pending Splits", value: `₹${Math.round(stats.pendingBalance || 0)}`, color: "text-amber-600" },
-                { label: "Direct Comm", value: `₹${Math.round(stats.directEarnings || 0)}`, color: "text-purple-700" },
-                { label: "Indirect Comm", value: `₹${Math.round(stats.indirectEarnings || 0)}`, color: "text-blue-700" },
+                { label: "Pending Splits", value: `₹${formatINR(stats.pendingBalance || 0)}`, color: "text-amber-600" },
+                { label: "Direct Comm", value: `₹${formatINR(stats.directEarnings || 0)}`, color: "text-purple-700" },
+                { label: "Indirect Comm", value: `₹${formatINR(stats.indirectEarnings || 0)}`, color: "text-blue-700" },
               ].map(s => (
                 <Card key={s.label} className="border border-slate-200/80 shadow-sm rounded-2xl">
                   <CardContent className="p-3 sm:p-4">
@@ -1593,7 +1599,7 @@ const Referrals = () => {
                               </Badge>
                             </td>
                             <td className="p-3 text-slate-500">{row.category}</td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{row.amount}</td>
+                            <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(row.amount)}</td>
                             <td className="p-3 text-center">
                               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${row.status === 'released' || row.status === 'credited' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                                 {row.status.toUpperCase()}
@@ -1690,7 +1696,7 @@ const Referrals = () => {
                             </td>
                             <td className="p-3 text-slate-400">{new Date(u.createdAt).toLocaleDateString("en-IN")}</td>
                             <td className="p-3 text-center font-bold text-slate-700">{u.totalPurchases || 0}</td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(u.totalCommissionGenerated || 0)}</td>
+                            <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
                             <td className="p-3 text-center">
                               {isUserQualified(u) ? (
                                 <div className="inline-flex flex-col items-center gap-0.5">
@@ -1769,12 +1775,12 @@ const Referrals = () => {
                               </Badge>
                             </td>
                             <td className="p-3 text-right text-slate-600 font-medium">
-                              {c.orderValue && c.orderValue > 0 ? `₹${Math.round(c.orderValue)}` : "—"}
+                              {c.orderValue && c.orderValue > 0 ? `₹${formatINR(c.orderValue)}` : "—"}
                             </td>
                             <td className="p-3 text-right text-slate-500">
                               {c.commissionPercentage !== undefined && c.commissionPercentage !== null ? `${c.commissionPercentage}%` : "—"}
                             </td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{Math.round(c.commissionAmount || c.amount || 0)}</td>
+                            <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(c.commissionAmount || c.amount || 0)}</td>
                             <td className="p-3 text-center">
                               <Badge className="bg-green-150 border border-green-250 text-green-700 hover:bg-green-150 text-[9px] font-bold">
                                 Added to Wallet
@@ -1838,7 +1844,7 @@ const Referrals = () => {
                               </div>
                               <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
                                 <div className="text-xs">
-                                  <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{Math.round(u1.totalCommissionGenerated || 0)}</p>
+                                  <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
                                   <p className="text-[9px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
                                 </div>
                                 <span className="text-slate-400 text-[10px] sm:text-xs">{isL1Expanded ? "▲" : "▼"}</span>
@@ -1866,7 +1872,7 @@ const Referrals = () => {
                                         </div>
                                         <div className="text-right flex items-center gap-2 sm:gap-3 shrink-0">
                                           <div className="text-xs">
-                                            <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{Math.round(u2.totalCommissionGenerated || 0)}</p>
+                                            <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{formatINR(u2.totalCommissionGenerated || 0)}</p>
                                           </div>
                                           <span className="text-slate-400 text-[9px] sm:text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
                                         </div>
@@ -1881,7 +1887,7 @@ const Referrals = () => {
                                                 <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
                                                 <p className="font-semibold text-slate-700 text-[10.5px] sm:text-xs truncate">{u3.name}</p>
                                               </div>
-                                              <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0">₹{Math.round(u3.totalCommissionGenerated || 0)}</span>
+                                              <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0">₹{formatINR(u3.totalCommissionGenerated || 0)}</span>
                                             </div>
                                           ))}
                                         </div>
@@ -2081,9 +2087,9 @@ const Referrals = () => {
                   {/* CLEAR BALANCE & FEE HIGHLIGHT BANNER */}
                   <div className="mt-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-xs text-slate-100 font-semibold space-y-1.5 shadow-2xs">
                     <div className="flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm font-black">
-                      <span>Total: <strong className="text-amber-300 font-black">₹{stats.walletBalance || stats.availableBalance || 0}</strong></span>
+                      <span>Total: <strong className="text-amber-300 font-black">₹{formatINR(stats.walletBalance || stats.availableBalance || 0)}</strong></span>
                       <span className="text-slate-400">•</span>
-                      <span>Hold: <strong className="text-orange-300 font-black">₹{stats.walletHold || stats.pendingBalance || 0}</strong></span>
+                      <span>Hold: <strong className="text-orange-300 font-black">₹{formatINR(stats.walletHold || stats.pendingBalance || 0)}</strong></span>
                     </div>
                     <div className="text-[10.5px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
                       <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM)</strong></span>
@@ -2105,15 +2111,15 @@ const Referrals = () => {
                       <div className="mt-3 bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs space-y-2 text-slate-800 shadow-2xs">
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-slate-600">Requested Amount</span>
-                          <span className="font-extrabold text-slate-900">₹{Number(withdrawAmount)}</span>
+                          <span className="font-extrabold text-slate-900">₹{formatINR(Number(withdrawAmount))}</span>
                         </div>
                         <div className="flex justify-between items-center text-rose-700 font-semibold">
                           <span>Fee: 15% (TDS + PLATFORM)</span>
-                          <span className="font-bold">- ₹{calcWithdrawFee(Number(withdrawAmount)).fee}</span>
+                          <span className="font-bold">- ₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).fee)}</span>
                         </div>
                         <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-xs sm:text-sm font-black">
                           <span className="text-slate-900">Net Bank Payout</span>
-                          <span className="text-emerald-700">₹{calcWithdrawFee(Number(withdrawAmount)).net}</span>
+                          <span className="text-emerald-700">₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).net)}</span>
                         </div>
                       </div>
                     )}
@@ -2200,7 +2206,7 @@ const Referrals = () => {
                                 </span>
                               </td>
                               <td className="p-3 text-slate-500 font-medium">{new Date(w.createdAt).toLocaleDateString("en-IN")}</td>
-                              <td className="p-3 text-right font-black text-slate-900 text-xs">₹{Math.round(w.amount)}</td>
+                              <td className="p-3 text-right font-black text-slate-900 text-xs">₹{formatINR(w.amount)}</td>
                               <td className="p-3 text-center">
                                 <Badge className={
                                   w.status === "paid" ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" :
@@ -2236,7 +2242,7 @@ const Referrals = () => {
 
           <div className="py-3 sm:py-4 space-y-3">
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center text-xs font-semibold text-slate-700">
-              {otpAction === "bank" ? "Modifying verified bank details." : `Requesting payout of ₹${otpTargetAmount}.`}
+              {otpAction === "bank" ? "Modifying verified bank details." : `Requesting payout of ₹${formatINR(otpTargetAmount)}.`}
             </div>
 
             <div className="space-y-1">
@@ -2323,7 +2329,7 @@ const Referrals = () => {
                           <p className="text-[10px] text-slate-400 mt-0.5">{new Date(o.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-extrabold text-navy">₹{Math.round(o.totalAmount)}</p>
+                          <p className="font-extrabold text-navy">₹{formatINR(o.totalAmount)}</p>
                           <Badge variant="outline" className="text-[9px] bg-white text-slate-700">{o.status}</Badge>
                         </div>
                       </div>
