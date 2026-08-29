@@ -187,6 +187,25 @@ html {
   animation: map-pulse 2s infinite ease-in-out;
 }
 
+@keyframes sale-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-sale-marquee {
+  display: inline-flex;
+  width: max-content;
+  animation: sale-marquee 10s linear infinite;
+}
+
+.animate-sale-marquee:hover {
+  animation-play-state: paused;
+}
+
 /* Form controls & Dropdown dark mode styling */
 select {
   color-scheme: light dark;

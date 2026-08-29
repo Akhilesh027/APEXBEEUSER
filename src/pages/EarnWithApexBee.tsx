@@ -36,11 +36,28 @@ import {
   Check,
   ExternalLink,
   DollarSign,
-  Sparkles
+  Sparkles,
+  Lock,
+  ShieldCheck,
+  CreditCard
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -336,6 +353,7 @@ const APPLICATION_STATUS: Record<string, { label: string; color: string }> = {
   under_review: { label: "KYC Under Verification 🔍", color: "bg-purple-100 text-purple-800 border-purple-300" },
   verified: { label: "Verified & Approved! 🎉", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
   approved: { label: "Verified & Approved! 🎉", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  waitlist: { label: "Priority Waitlist ⏳", color: "bg-amber-100 text-amber-900 border-amber-300" },
   rejected: { label: "Not Approved", color: "bg-rose-100 text-rose-800 border-rose-300" },
 };
 
@@ -598,6 +616,7 @@ const EarnWithApexBee = () => {
   const [formMobile, setFormMobile] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formLocation, setFormLocation] = useState("");
+  const [formPincode, setFormPincode] = useState("");
   const [formExperience, setFormExperience] = useState("");
   const [formRemarks, setFormRemarks] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -621,11 +640,52 @@ const EarnWithApexBee = () => {
   const [fssaiNumber, setFssaiNumber] = useState("");
   const [cuisines, setCuisines] = useState("");
   const [foodPreference, setFoodPreference] = useState("Both");
+  const [franchisePaymentMode, setFranchisePaymentMode] = useState<"ADVANCE" | "FULL">("ADVANCE");
+  const [territoryAvailability, setTerritoryAvailability] = useState<any>(null);
+  const [checkingTerritory, setCheckingTerritory] = useState(false);
+  const [bookingSuccessModal, setBookingSuccessModal] = useState<any>(null);
+
+  // Check territory availability and fetch admin configured fee live
+  useEffect(() => {
+    if (selectedOpp?.id !== "franchise" || !selectedState) {
+      setTerritoryAvailability(null);
+      return;
+    }
+
+    const checkAvailability = async () => {
+      try {
+        setCheckingTerritory(true);
+        const lvl = franchiseLevel === "state" ? "State" : franchiseLevel === "district" ? "District" : "Mandal";
+        let url = `${API_BASE}/territories/availability?level=${lvl}&state=${encodeURIComponent(selectedState)}`;
+        if (lvl !== "State" && selectedDistrict) {
+          url += `&district=${encodeURIComponent(selectedDistrict)}`;
+        }
+        if (lvl === "Mandal" && selectedMandal) {
+          url += `&mandal=${encodeURIComponent(selectedMandal)}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && data.success) {
+          setTerritoryAvailability(data);
+        } else {
+          setTerritoryAvailability(null);
+        }
+      } catch (err) {
+        console.error("Error checking territory availability:", err);
+      } finally {
+        setCheckingTerritory(false);
+      }
+    };
+
+    const timer = setTimeout(checkAvailability, 300);
+    return () => clearTimeout(timer);
+  }, [selectedOpp?.id, franchiseLevel, selectedState, selectedDistrict, selectedMandal]);
 
   useEffect(() => {
     const fetchTerritories = async () => {
       try {
-        const res = await fetch(`${API_BASE}/business-applications/territories`);
+        const res = await fetch(`${API_BASE}/territories`);
         const data = await res.json();
 
         if (data?.success && Array.isArray(data.territories)) {
@@ -660,9 +720,12 @@ const EarnWithApexBee = () => {
           });
 
           setLocationData(finalData);
+        } else {
+          setLocationData({});
         }
       } catch (err) {
-        console.error("Error fetching territories:", err);
+        console.error("Error fetching live backend territories:", err);
+        setLocationData({});
       }
     };
 
@@ -779,10 +842,11 @@ const EarnWithApexBee = () => {
 
   const fetchApplications = useCallback(async () => {
     const { user, token } = getAuth();
-    if (!user || !token) return;
-    const uid = user._id || user.id;
+    const uid = user?._id || user?.id || (user?.email ? encodeURIComponent(user.email) : "all");
     try {
-      const res = await fetch(`${API_BASE}/business-applications/user/${uid}`, { headers: { Authorization: `Bearer ${token}` } });
+      const headers: any = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/business-applications/user/${uid}`, { headers });
       const data = await res.json();
       if (data?.applications) setApplications(data.applications);
     } catch { /* silent */ }
@@ -799,6 +863,7 @@ const EarnWithApexBee = () => {
     setFormEmail(user?.email || "");
     setFormMobile(user?.phone || "");
     setFormLocation("");
+    setFormPincode("");
     setFormExperience("");
     setFormRemarks("");
     const defaultCat = parentCategoryList[0]?.name || "Devotional & Puja";
@@ -827,6 +892,8 @@ const EarnWithApexBee = () => {
   };
 
   const handleSubmitApplication = async () => {
+    const { user, token } = getAuth();
+
     if (!formName.trim() || !formMobile.trim() || !formEmail.trim() || !formLocation.trim()) {
       alert("Please fill in Name, Mobile, Email, and Full Address.");
       return;
@@ -845,10 +912,182 @@ const EarnWithApexBee = () => {
         return;
       }
     } else if (type === "franchise") {
-      if (!businessName.trim() || !franchiseLevel.trim() || !investmentCapacity.trim() || !panNumber.trim()) {
-        alert("Please fill in Business Name, Franchise Level, Investment Capacity, and PAN Number.");
+      if (!businessName.trim() || !panNumber.trim() || !aadhaarNumber.trim()) {
+        alert("Please fill in Hub/Business Name, PAN Number, and Aadhaar Number.");
         return;
       }
+
+      if (territoryAvailability?.isAvailable === false) {
+        // Submit Waitlist / Next Opportunity Application (No payment needed)
+        setSubmitting(true);
+        try {
+          const authHeaders: any = {
+            "Content-Type": "application/json",
+          };
+          if (token) {
+            authHeaders.Authorization = `Bearer ${token}`;
+          }
+
+          const payload = {
+            userId: user?._id || user?.id || formEmail,
+            roleId: "franchise",
+            applicationType: "franchise",
+            businessName: businessName || formName,
+            ownerName: formName,
+            mobile: formMobile,
+            email: formEmail,
+            state: selectedState,
+            district: selectedDistrict || "District HQ",
+            mandal: selectedMandal || "Mandal HQ",
+            address: formLocation,
+            pincode: formPincode || "500001",
+            panNumber,
+            aadhaarNumber,
+            gstNumber,
+            franchiseLevel: franchiseLevel || "mandal",
+            investmentCapacity: "Ready for allocation",
+            isWaitlisted: true,
+            waitlistTerritoryFtid: territoryAvailability?.territory?.ftid || "",
+            remarks: formRemarks,
+          };
+
+          const res = await fetch(`${API_BASE}/business-applications`, {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json();
+          if (res.ok && data.success) {
+            alert(`🎉 Application Saved! You are now on the priority waitlist for ${[selectedMandal, selectedDistrict, selectedState].filter(Boolean).join(", ")}. We will contact you for the next opportunity or expansion.`);
+            fetchApplications();
+            setActiveView("applications");
+          } else {
+            alert(data.message || "Failed to submit waitlist application");
+          }
+        } catch (err: any) {
+          alert("Error submitting application: " + err.message);
+        } finally {
+          setSubmitting(false);
+        }
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          alert("Failed to load Razorpay payment gateway. Please check your internet connection.");
+          setSubmitting(false);
+          return;
+        }
+
+        const lvl = franchiseLevel === "state" ? "State" : franchiseLevel === "district" ? "District" : "Mandal";
+
+        const selectedAmount = franchisePaymentMode === "ADVANCE"
+          ? (territoryAvailability?.minBookingAdvance || 20000)
+          : (territoryAvailability?.annualFranchiseFee || 60000);
+
+        // 1. Create Razorpay Order
+        const orderRes = await fetch(`${API_BASE}/franchises/booking/create-order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formName,
+            email: formEmail,
+            phone: formMobile,
+            level: lvl,
+            state: selectedState,
+            district: selectedDistrict,
+            mandal: selectedMandal,
+            businessName,
+            paymentMode: franchisePaymentMode,
+            amount: selectedAmount,
+            annualFee: territoryAvailability?.annualFranchiseFee,
+            minBookingAdvance: territoryAvailability?.minBookingAdvance,
+          }),
+        });
+
+        const orderData = await orderRes.json();
+
+        if (!orderRes.ok || !orderData.success) {
+          alert(orderData.message || "Failed to create franchise booking order");
+          setSubmitting(false);
+          return;
+        }
+
+        // 2. Open Razorpay Modal with clean formatting and exact amount
+        const options = {
+          key: orderData.keyId || "rzp_test_TTsnL7mJseMdFz",
+          amount: Math.round(Number(orderData.amount) * 100),
+          currency: "INR",
+          name: "ApexBee Franchise Network",
+          description: `${franchisePaymentMode === "ADVANCE" ? "Advance Booking" : "1-Year Full Franchise Fee"} (${orderData.territoryDetails?.name || selectedMandal || selectedDistrict || selectedState})`,
+          order_id: orderData.orderId,
+          prefill: {
+            name: formName,
+            email: formEmail,
+            contact: formMobile,
+          },
+          theme: { color: "#0A1128" },
+          handler: async function (response: any) {
+            try {
+              // 3. Verify Payment & Lock Territory
+              const verifyRes = await fetch(`${API_BASE}/franchises/booking/verify-payment`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  applicantDetails: {
+                    name: formName,
+                    email: formEmail,
+                    phone: formMobile,
+                    level: lvl,
+                    state: selectedState,
+                    district: selectedDistrict,
+                    mandal: selectedMandal,
+                    businessName,
+                    address: formLocation,
+                    pincode: formPincode || "500001",
+                    panNumber,
+                    aadhaarNumber,
+                    gstNumber,
+                    paymentMode: franchisePaymentMode,
+                    amountPaid: orderData.amount,
+                  },
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (verifyRes.ok && verifyData.success) {
+                setBookingSuccessModal(verifyData.receipt || verifyData.territory);
+                fetchApplications();
+              } else {
+                alert(verifyData.message || "Payment verification failed");
+              }
+            } catch (vErr: any) {
+              alert("Payment verification error: " + vErr.message);
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setSubmitting(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err: any) {
+        alert(err.message || "Payment initiation failed");
+        setSubmitting(false);
+      }
+      return;
     } else if (type === "entrepreneur") {
       if (!panNumber.trim()) {
         alert("Please fill in your PAN Number.");
@@ -1825,14 +2064,14 @@ const EarnWithApexBee = () => {
 
             {selectedOpp.id === "franchise" ? (
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
-                <h4 className="text-sm font-semibold text-navy">Franchise Details</h4>
+                <h4 className="text-sm font-semibold text-navy">Franchise Hub & Identity Information</h4>
                 <div>
                   <label className="text-xs font-bold text-slate-600 block mb-1">Proposed Franchise Hub Name *</label>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="E.g. Pune City Central Hub"
+                    placeholder="E.g. Sri City Central Hub"
                     className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
                   />
                 </div>
@@ -1844,39 +2083,39 @@ const EarnWithApexBee = () => {
                       onChange={(e) => setFranchiseLevel(e.target.value)}
                       className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
                     >
-                      <option value="mandal">Mandal Hub</option>
-                      <option value="district">District Hub</option>
-                      <option value="state">State HQ Hub</option>
+                      <option value="mandal">Mandal Hub (MF)</option>
+                      <option value="district">District Hub (DF)</option>
+                      <option value="state">State HQ Hub (SF)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Capital Investment *</label>
-                    <input
-                      type="text"
-                      value={investmentCapacity}
-                      onChange={(e) => setInvestmentCapacity(e.target.value)}
-                      placeholder="E.g. ₹2-₹5 Lakhs"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
                     <input
                       type="text"
                       value={panNumber}
                       onChange={(e) => setPanNumber(e.target.value)}
-                      placeholder="PAN code"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      placeholder="e.g. ABCDE1234F"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Aadhaar Number *</label>
                     <input
                       type="text"
                       value={aadhaarNumber}
                       onChange={(e) => setAadhaarNumber(e.target.value)}
-                      placeholder="Aadhaar code"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      placeholder="12-digit Aadhaar"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">GSTIN (Optional)</label>
+                    <input
+                      type="text"
+                      value={gstNumber}
+                      onChange={(e) => setGstNumber(e.target.value)}
+                      placeholder="GSTIN Code"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
                     />
                   </div>
                 </div>
@@ -2090,12 +2329,25 @@ const EarnWithApexBee = () => {
               </div>
             ) : null}
 
-            {/* Cascading Location Selection */}
+            {/* Cascading Location Selection - Purely from Backend Database */}
             <div className="space-y-3 pt-4 border-t text-left">
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Territory Location Selection *</h4>
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Territory Location Selection *
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {stateOptions.length} State{stateOptions.length === 1 ? "" : "s"} Configured in Backend
+                </span>
+              </div>
+
               {stateOptions.length === 0 ? (
-                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-medium">
-                  📍 <strong>No operational territories added yet.</strong> Territories will become available once configured by the admin team.
+                <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 font-medium space-y-1">
+                  <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                    📍 No backend territories added yet
+                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    Territories configured in Admin Panel (Territory Management) will strictly appear here.
+                  </p>
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-3 gap-3">
@@ -2108,51 +2360,191 @@ const EarnWithApexBee = () => {
                         setSelectedDistrict("");
                         setSelectedMandal("");
                       }}
-                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer focus:ring-2 focus:ring-navy/30"
+                      required
                     >
                       <option value="">-- Select State --</option>
                       {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
 
-                  {selectedState ? (
-                    <div>
-                      <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
+                    {selectedState ? (
                       <select
                         value={selectedDistrict}
                         onChange={(e) => {
                           setSelectedDistrict(e.target.value);
                           setSelectedMandal("");
                         }}
-                        className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
+                        className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer focus:ring-2 focus:ring-navy/30"
+                        required
                       >
                         <option value="">-- Select District --</option>
                         {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
-                      Select State first
-                    </div>
-                  )}
+                    ) : (
+                      <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium h-9">
+                        Select State first
+                      </div>
+                    )}
+                  </div>
 
-                  {selectedState && selectedDistrict ? (
-                    <div>
-                      <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
-                      <select
-                        value={selectedMandal}
-                        onChange={(e) => setSelectedMandal(e.target.value)}
-                        className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer"
-                      >
-                        <option value="">-- Select Mandal --</option>
-                        {mandalOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
+                    {selectedState && selectedDistrict ? (
+                      mandalOptions.length > 0 ? (
+                        <select
+                          value={selectedMandal}
+                          onChange={(e) => setSelectedMandal(e.target.value)}
+                          className="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold text-slate-700 h-9 cursor-pointer focus:ring-2 focus:ring-navy/30"
+                          required
+                        >
+                          <option value="">-- Select Mandal --</option>
+                          {mandalOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      ) : (
+                        <div className="bg-slate-50 border rounded-lg px-3 py-2 text-[11px] text-slate-500 font-medium h-9 flex items-center">
+                          All Mandals in {selectedDistrict}
+                        </div>
+                      )
+                    ) : (
+                      <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium h-9">
+                        Select District first
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Live Territory Fee & Availability Breakdown - Displayed right after State/Location Selection */}
+              {selectedOpp?.id === "franchise" && selectedState && (
+                <div className="pt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-navy uppercase tracking-wider">
+                      Franchise Fee & Territory Allocation
+                    </h4>
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      ⚡ Exclusive Territory Allocation
+                    </span>
+                  </div>
+
+                  {checkingTerritory ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-center gap-2 text-xs text-slate-600 font-medium">
+                      <Loader2 className="w-4 h-4 animate-spin text-navy" />
+                      <span>Verifying territory vacancy & official fee structure...</span>
                     </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-dashed rounded-lg p-2.5 flex items-center justify-center text-[11px] text-gray-400 font-medium">
-                      Select District first
-                    </div>
-                  )}
+                  ) : territoryAvailability ? (
+                    territoryAvailability.isAvailable === false ? (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-3 text-left">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 font-black text-amber-900 text-xs uppercase tracking-wider">
+                            <Lock className="w-4 h-4 text-amber-600" />
+                            <span>Territory Currently Allocated</span>
+                          </div>
+                          <span className="text-[10px] font-black bg-amber-500 text-white px-2.5 py-0.5 rounded-full">
+                            🔒 ALLOCATED
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          The <strong>{franchiseLevel.toUpperCase()}</strong> territory for{" "}
+                          <strong>{[selectedMandal, selectedDistrict, selectedState].filter(Boolean).join(", ")}</strong> is currently active under partner{" "}
+                          <span className="font-black text-amber-950 underline">{territoryAvailability.currentFranchisee?.name || "Active Regional Partner"}</span>.
+                        </p>
+                        <div className="bg-white/90 border border-amber-200/80 p-3.5 rounded-xl space-y-1.5 shadow-sm">
+                          <div className="text-xs font-bold text-navy flex items-center gap-1.5">
+                            <span>⭐ Save Profile for Next Opportunity / Expansion</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600">
+                            You can submit your application profile below without any upfront fee. If this territory becomes vacant or opens sub-jurisdictions, your application will be prioritized!
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gradient-to-br from-amber-500/10 via-emerald-500/5 to-primary/10 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-navy uppercase tracking-wider">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            <span>Territory Available For Instant Booking</span>
+                          </div>
+                          <span className="text-[10px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                            🟢 100% VACANT
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/80 p-3 rounded-xl border border-slate-200/80">
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase">Official Annual Fee</div>
+                            <div className="text-lg font-black text-navy">
+                              ₹{Number(territoryAvailability.annualFranchiseFee || 0).toLocaleString("en-IN")}
+                              <span className="text-[10px] font-semibold text-slate-400"> / year</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase">
+                              Min. Advance to Lock ({territoryAvailability.advanceBookingType === 'percentage' ? `${territoryAvailability.advanceBookingValue}%` : 'Fixed'})
+                            </div>
+                            <div className="text-lg font-black text-emerald-600">
+                              ₹{Number(territoryAvailability.minBookingAdvance || 0).toLocaleString("en-IN")}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Payment Mode Selector */}
+                        <div className="space-y-2">
+                          <label className="block text-[11px] font-black text-slate-700 uppercase">
+                            Select Payment Option to Lock Territory *
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setFranchisePaymentMode("ADVANCE")}
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${franchisePaymentMode === "ADVANCE"
+                                  ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                                }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-extrabold">Pay Advance Booking</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${franchisePaymentMode === "ADVANCE" ? "bg-amber-400 text-slate-900" : "bg-slate-100 text-slate-600"}`}>
+                                  Recommended
+                                </span>
+                              </div>
+                              <div className={`text-base font-black mt-1 ${franchisePaymentMode === "ADVANCE" ? "text-amber-300" : "text-emerald-600"}`}>
+                                ₹{Number(territoryAvailability.minBookingAdvance || 0).toLocaleString("en-IN")}
+                              </div>
+                              <p className={`text-[10px] mt-0.5 ${franchisePaymentMode === "ADVANCE" ? "text-slate-200" : "text-slate-500"}`}>
+                                Locks territory in your name now. Pay balance before launching.
+                              </p>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setFranchisePaymentMode("FULL")}
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${franchisePaymentMode === "FULL"
+                                  ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                                }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-extrabold">Pay Full Annual Fee (100%)</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${franchisePaymentMode === "FULL" ? "bg-emerald-400 text-slate-900" : "bg-slate-100 text-slate-600"}`}>
+                                  Full Allotment
+                                </span>
+                              </div>
+                              <div className={`text-base font-black mt-1 ${franchisePaymentMode === "FULL" ? "text-amber-300" : "text-navy"}`}>
+                                ₹{Number(territoryAvailability.annualFranchiseFee || 0).toLocaleString("en-IN")}
+                              </div>
+                              <p className={`text-[10px] mt-0.5 ${franchisePaymentMode === "FULL" ? "text-slate-200" : "text-slate-500"}`}>
+                                Complete 1-year franchise fee. Instant operational clearance.
+                              </p>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ) : null}
                 </div>
               )}
             </div>
@@ -2168,12 +2560,26 @@ const EarnWithApexBee = () => {
             </div>
 
             <Button
-              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-2.5 rounded-xl text-xs"
+              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
               onClick={handleSubmitApplication}
               disabled={submitting}
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Submit Business Application
+              {selectedOpp?.id === "franchise" ? (
+                territoryAvailability?.isAvailable === false ? (
+                  <>
+                    <FileText className="w-4 h-4 text-amber-300" />
+                    Submit Profile for Next Opportunity / Waitlist
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 text-amber-400" />
+                    Pay ₹{Number(franchisePaymentMode === "ADVANCE" ? (territoryAvailability?.minBookingAdvance || 20000) : (territoryAvailability?.annualFranchiseFee || 60000)).toLocaleString("en-IN")} via Razorpay & Lock Territory
+                  </>
+                )
+              ) : (
+                "Submit Business Application"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -2312,6 +2718,15 @@ const EarnWithApexBee = () => {
                         </p>
                       </div>
                     </div>
+                  ) : app.status === "waitlist" ? (
+                    <div className="p-3.5 bg-amber-500/10 border border-amber-300 text-amber-950 text-xs rounded-xl space-y-1 font-bold">
+                      <p className="flex items-center gap-1.5 text-amber-900 font-extrabold">
+                        ⏳ Queued for Next Territory Opening / Expansion
+                      </p>
+                      <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                        Your application profile has been registered in the priority waitlist queue for this jurisdiction. If this territory becomes vacant or sub-districts open, our territory team will contact you directly!
+                      </p>
+                    </div>
                   ) : app.status === "pending_approval" || app.status === "pending" ? (
                     <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl space-y-1 font-bold">
                       <p className="flex items-center gap-1.5 text-amber-800 font-extrabold">
@@ -2345,6 +2760,73 @@ const EarnWithApexBee = () => {
         {activeView === "apply" && renderApplyForm()}
         {activeView === "applications" && renderApplications()}
       </div>
+
+      {/* Franchise Booking Success & Allocation Modal */}
+      <Dialog open={!!bookingSuccessModal} onOpenChange={() => setBookingSuccessModal(null)}>
+        <DialogContent className="max-w-md bg-white rounded-2xl p-6 text-center space-y-4">
+          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+            <Check className="w-8 h-8 stroke-[3]" />
+          </div>
+
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-navy">
+              🎉 Territory Successfully Locked!
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 font-medium">
+              Your franchise application and booking payment are confirmed. Please complete Document Verification (KYC) to activate your franchise partner portal access.
+            </DialogDescription>
+          </DialogHeader>
+
+          {bookingSuccessModal && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left text-xs space-y-2">
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-semibold">Territory FTID:</span>
+                <span className="font-mono font-black text-navy">{bookingSuccessModal.ftid || "APX-TER-001"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-semibold">Territory Jurisdiction:</span>
+                <span className="font-bold text-slate-900">{bookingSuccessModal.territoryName || bookingSuccessModal.name}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-semibold">Amount Paid:</span>
+                <span className="font-black text-emerald-600">₹{Number(bookingSuccessModal.amountPaid || 0).toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-semibold">Payment Status:</span>
+                <span className="font-black text-emerald-700">{bookingSuccessModal.paymentStatus === "PAID_FULL" ? "100% PAID" : "ADVANCE PAID (LOCKED)"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Payment Ref:</span>
+                <span className="font-mono text-[11px] text-slate-700">{bookingSuccessModal.paymentId || "rzp_success"}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              onClick={() => {
+                setBookingSuccessModal(null);
+                setActiveView("applications");
+                fetchApplications();
+              }}
+              className="w-full bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4 text-emerald-400" /> Proceed to Document Verification (KYC)
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBookingSuccessModal(null);
+                setActiveView("applications");
+                fetchApplications();
+              }}
+              className="w-full rounded-xl text-xs font-bold"
+            >
+              View Application Dashboard
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
