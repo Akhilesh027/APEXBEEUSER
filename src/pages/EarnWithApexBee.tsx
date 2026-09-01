@@ -59,7 +59,7 @@ const loadRazorpayScript = (): Promise<boolean> => {
   });
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5500/api";
 
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
@@ -286,8 +286,8 @@ const OPPORTUNITIES: Opportunity[] = [
     trainingProcess: ["2-day corporate training", "Territory planning workshop", "Team management certification", "Monthly strategy reviews"],
     faqs: [
       { q: "What investment is required?", a: "Varies by territory tier. You can lock your exclusive territory with a nominal advance booking (from 20%)." },
-      { q: "Is the territory exclusive?", a: "Yes, you receive 100% exclusive franchise allocation rights for your territory." },
-      { q: "Is the booking fee refundable?", a: "Yes, 100% refundable. If your application or KYC is rejected during verification, the full amount is refunded." },
+      { q: "Is the territory exclusive?", a: "Yes, you receive exclusive franchise allocation rights for your territory." },
+      { q: "Is the booking fee refundable?", a: "Yes, fully refundable. If your application or KYC is rejected during verification, your paid amount is refunded." },
     ],
     investment: "High",
     difficulty: "High",
@@ -2227,7 +2227,7 @@ const EarnWithApexBee = () => {
                     >
                       <option value="RESTAURANT">Restaurant / Fine Dining</option>
                       <option value="STREET_FOOD">Street Food / Fast Food Stall</option>
-                      <option value="CAFE_BAKERY">Café, Bakery & Beverages</option>
+                      <option value="CAFE_BAKERY_BEVERAGES">Café, Bakery & Beverages</option>
                       <option value="SWEETS_DESSERTS">Sweets & Desserts Shop</option>
                     </select>
                   </div>
@@ -2564,8 +2564,8 @@ const EarnWithApexBee = () => {
                               type="button"
                               onClick={() => setFranchisePaymentMode("ADVANCE")}
                               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${franchisePaymentMode === "ADVANCE"
-                                  ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
-                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                                ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
+                                : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                                 }`}
                             >
                               <div className="flex justify-between items-center">
@@ -2586,8 +2586,8 @@ const EarnWithApexBee = () => {
                               type="button"
                               onClick={() => setFranchisePaymentMode("FULL")}
                               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${franchisePaymentMode === "FULL"
-                                  ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
-                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                                ? "bg-navy text-white border-navy shadow-md ring-2 ring-amber-400/40"
+                                : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                                 }`}
                             >
                               <div className="flex justify-between items-center">
@@ -2606,11 +2606,11 @@ const EarnWithApexBee = () => {
                           </div>
                         </div>
 
-                        {/* 100% Refund Guarantee Notice */}
+                        {/* Refund Guarantee Notice */}
                         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-left">
                           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                           <div className="text-[11px] text-emerald-900 leading-relaxed">
-                            <span className="font-bold text-emerald-950">100% Refund Guarantee:</span> In case your franchise application or KYC verification is not approved or rejected, your paid amount will be <strong>100% refunded</strong> back to your original payment source.
+                            <span className="font-bold text-emerald-950">Refund Guarantee:</span> In case your franchise application or KYC verification is not approved or rejected, your paid amount will be <strong>fully refunded</strong> back to your original payment source.
                           </div>
                         </div>
                       </div>
@@ -2670,7 +2670,7 @@ const EarnWithApexBee = () => {
             {selectedOpp?.id === "franchise" && isTerritoryFullySelected && territoryAvailability?.isAvailable === true && (
               <p className="text-[11px] text-center text-slate-500 font-medium flex items-center justify-center gap-1.5 pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span><strong>100% Refund Policy:</strong> In case of rejection during verification, the full amount is refunded.</span>
+                <span><strong>Refund Policy:</strong> In case of rejection during verification, your paid amount is fully refunded.</span>
               </p>
             )}
           </CardContent>
