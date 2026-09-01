@@ -285,8 +285,9 @@ const OPPORTUNITIES: Opportunity[] = [
     ],
     trainingProcess: ["2-day corporate training", "Territory planning workshop", "Team management certification", "Monthly strategy reviews"],
     faqs: [
-      { q: "What investment is required?", a: "Varies by tier: District ₹2L, Mandal ₹5L, State ₹15L+." },
-      { q: "Is the territory exclusive?", a: "Yes, you get exclusive rights for your region." },
+      { q: "What investment is required?", a: "Varies by territory tier. You can lock your exclusive territory with a nominal advance booking (from 20%)." },
+      { q: "Is the territory exclusive?", a: "Yes, you receive 100% exclusive franchise allocation rights for your territory." },
+      { q: "Is the booking fee refundable?", a: "Yes, 100% refundable. If your application or KYC is rejected during verification, the full amount is refunded." },
     ],
     investment: "High",
     difficulty: "High",
@@ -645,9 +646,38 @@ const EarnWithApexBee = () => {
   const [checkingTerritory, setCheckingTerritory] = useState(false);
   const [bookingSuccessModal, setBookingSuccessModal] = useState<any>(null);
 
+  const stateOptions = useMemo(() => {
+    return Object.keys(locationData || {});
+  }, [locationData]);
+
+  const districtOptions = useMemo(() => {
+    if (!selectedState || !locationData[selectedState]) return [];
+    return Object.keys(locationData[selectedState] || {});
+  }, [selectedState, locationData]);
+
+  const mandalOptions = useMemo(() => {
+    if (!selectedState || !selectedDistrict || !locationData[selectedState]?.[selectedDistrict]) return [];
+    return locationData[selectedState][selectedDistrict] || [];
+  }, [selectedState, selectedDistrict, locationData]);
+
+  const isTerritoryFullySelected = useMemo(() => {
+    if (!selectedState) return false;
+    if (selectedOpp?.id !== "franchise") {
+      return Boolean(selectedDistrict);
+    }
+    if (franchiseLevel === "state") return true;
+    if (franchiseLevel === "district") return Boolean(selectedDistrict);
+    if (franchiseLevel === "mandal") {
+      if (!selectedDistrict) return false;
+      if (mandalOptions.length > 0) return Boolean(selectedMandal);
+      return true;
+    }
+    return true;
+  }, [selectedOpp?.id, selectedState, selectedDistrict, selectedMandal, franchiseLevel, mandalOptions]);
+
   // Check territory availability and fetch admin configured fee live
   useEffect(() => {
-    if (selectedOpp?.id !== "franchise" || !selectedState) {
+    if (selectedOpp?.id !== "franchise" || !isTerritoryFullySelected) {
       setTerritoryAvailability(null);
       return;
     }
@@ -680,7 +710,7 @@ const EarnWithApexBee = () => {
 
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
-  }, [selectedOpp?.id, franchiseLevel, selectedState, selectedDistrict, selectedMandal]);
+  }, [selectedOpp?.id, franchiseLevel, selectedState, selectedDistrict, selectedMandal, isTerritoryFullySelected]);
 
   useEffect(() => {
     const fetchTerritories = async () => {
@@ -811,20 +841,6 @@ const EarnWithApexBee = () => {
     }
   }, [selectedDistrict, selectedState, locationData]);
 
-  const stateOptions = useMemo(() => {
-    return Object.keys(locationData || {});
-  }, [locationData]);
-
-  const districtOptions = useMemo(() => {
-    if (!selectedState || !locationData[selectedState]) return [];
-    return Object.keys(locationData[selectedState] || {});
-  }, [selectedState, locationData]);
-
-  const mandalOptions = useMemo(() => {
-    if (!selectedState || !selectedDistrict || !locationData[selectedState]?.[selectedDistrict]) return [];
-    return locationData[selectedState][selectedDistrict] || [];
-  }, [selectedState, selectedDistrict, locationData]);
-
   const handleGoToPortal = (oppId: string) => {
     const { user } = getAuth();
     const userRoles = Array.isArray(user?.roles) ? user.roles : [];
@@ -899,12 +915,36 @@ const EarnWithApexBee = () => {
       return;
     }
 
-    if (!selectedState || !selectedDistrict || !selectedMandal) {
-      alert("Please select State, District, and Mandal.");
+    if (!selectedState) {
+      alert("Please select State.");
       return;
     }
 
     const type = selectedOpp?.id || "";
+
+    if (type === "franchise") {
+      if (franchiseLevel !== "state" && !selectedDistrict) {
+        alert("Please select District.");
+        return;
+      }
+      if (franchiseLevel === "mandal" && mandalOptions.length > 0 && !selectedMandal) {
+        alert("Please select Mandal.");
+        return;
+      }
+      if (!isTerritoryFullySelected) {
+        alert("Please complete territory location selection first.");
+        return;
+      }
+    } else {
+      if (!selectedDistrict) {
+        alert("Please select District.");
+        return;
+      }
+      if (mandalOptions.length > 0 && !selectedMandal) {
+        alert("Please select Mandal.");
+        return;
+      }
+    }
 
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
       if (!businessName.trim() || !primaryCategory.trim() || !panNumber.trim()) {
@@ -2369,8 +2409,14 @@ const EarnWithApexBee = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">District *</label>
-                    {selectedState ? (
+                    <label className="text-xs font-bold text-slate-600 block mb-1">
+                      District {selectedOpp?.id === "franchise" && franchiseLevel === "state" ? "(N/A for State HQ)" : "*"}
+                    </label>
+                    {selectedOpp?.id === "franchise" && franchiseLevel === "state" ? (
+                      <div className="bg-slate-50 border rounded-lg px-3 py-2 text-[11px] text-slate-500 font-medium h-9 flex items-center">
+                        All Districts (State HQ)
+                      </div>
+                    ) : selectedState ? (
                       <select
                         value={selectedDistrict}
                         onChange={(e) => {
@@ -2391,8 +2437,18 @@ const EarnWithApexBee = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Mandal *</label>
-                    {selectedState && selectedDistrict ? (
+                    <label className="text-xs font-bold text-slate-600 block mb-1">
+                      Mandal {selectedOpp?.id === "franchise" && (franchiseLevel === "state" || franchiseLevel === "district") ? "(N/A for Hub Level)" : "*"}
+                    </label>
+                    {selectedOpp?.id === "franchise" && franchiseLevel === "state" ? (
+                      <div className="bg-slate-50 border rounded-lg px-3 py-2 text-[11px] text-slate-500 font-medium h-9 flex items-center">
+                        All Mandals (State HQ)
+                      </div>
+                    ) : selectedOpp?.id === "franchise" && franchiseLevel === "district" ? (
+                      <div className="bg-slate-50 border rounded-lg px-3 py-2 text-[11px] text-slate-500 font-medium h-9 flex items-center">
+                        All Mandals in {selectedDistrict || "District"}
+                      </div>
+                    ) : selectedState && selectedDistrict ? (
                       mandalOptions.length > 0 ? (
                         <select
                           value={selectedMandal}
@@ -2417,8 +2473,8 @@ const EarnWithApexBee = () => {
                 </div>
               )}
 
-              {/* Live Territory Fee & Availability Breakdown - Displayed right after State/Location Selection */}
-              {selectedOpp?.id === "franchise" && selectedState && (
+              {/* Live Territory Fee & Availability Breakdown - Only shown for Franchise */}
+              {selectedOpp?.id === "franchise" && (
                 <div className="pt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-navy uppercase tracking-wider">
@@ -2429,7 +2485,14 @@ const EarnWithApexBee = () => {
                     </span>
                   </div>
 
-                  {checkingTerritory ? (
+                  {!isTerritoryFullySelected ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-slate-600 font-medium">
+                      <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>
+                        Please select your {franchiseLevel === "state" ? "State" : franchiseLevel === "district" ? "State & District" : "State, District & Mandal"} above to check live territory availability and official franchise fee.
+                      </span>
+                    </div>
+                  ) : checkingTerritory ? (
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-center gap-2 text-xs text-slate-600 font-medium">
                       <Loader2 className="w-4 h-4 animate-spin text-navy" />
                       <span>Verifying territory vacancy & official fee structure...</span>
@@ -2542,6 +2605,14 @@ const EarnWithApexBee = () => {
                             </button>
                           </div>
                         </div>
+
+                        {/* 100% Refund Guarantee Notice */}
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-left">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <div className="text-[11px] text-emerald-900 leading-relaxed">
+                            <span className="font-bold text-emerald-950">100% Refund Guarantee:</span> In case your franchise application or KYC verification is not approved or rejected, your paid amount will be <strong>100% refunded</strong> back to your original payment source.
+                          </div>
+                        </div>
                       </div>
                     )
                   ) : null}
@@ -2560,13 +2631,27 @@ const EarnWithApexBee = () => {
             </div>
 
             <Button
-              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-60"
               onClick={handleSubmitApplication}
-              disabled={submitting}
+              disabled={submitting || (selectedOpp?.id === "franchise" && checkingTerritory)}
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {selectedOpp?.id === "franchise" ? (
-                territoryAvailability?.isAvailable === false ? (
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Processing Application...
+                </>
+              ) : selectedOpp?.id === "franchise" ? (
+                !isTerritoryFullySelected ? (
+                  <>
+                    <MapPin className="w-4 h-4 text-amber-400" />
+                    Select Territory to Proceed
+                  </>
+                ) : checkingTerritory ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-400 mr-2" />
+                    Verifying Territory Availability...
+                  </>
+                ) : territoryAvailability?.isAvailable === false ? (
                   <>
                     <FileText className="w-4 h-4 text-amber-300" />
                     Submit Profile for Next Opportunity / Waitlist
@@ -2581,6 +2666,13 @@ const EarnWithApexBee = () => {
                 "Submit Business Application"
               )}
             </Button>
+
+            {selectedOpp?.id === "franchise" && isTerritoryFullySelected && territoryAvailability?.isAvailable === true && (
+              <p className="text-[11px] text-center text-slate-500 font-medium flex items-center justify-center gap-1.5 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span><strong>100% Refund Policy:</strong> In case of rejection during verification, the full amount is refunded.</span>
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
