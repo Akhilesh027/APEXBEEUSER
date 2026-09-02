@@ -879,7 +879,7 @@ const EarnWithApexBee = () => {
     setFormEmail(user?.email || "");
     setFormMobile(user?.phone || "");
     setFormLocation("");
-    setFormPincode("");
+    setFormPincode(user?.pincode ? String(user.pincode).trim() : "");
     setFormExperience("");
     setFormRemarks("");
     const defaultCat = parentCategoryList[0]?.name || "Devotional & Puja";
@@ -911,7 +911,17 @@ const EarnWithApexBee = () => {
     const { user, token } = getAuth();
 
     if (!formName.trim() || !formMobile.trim() || !formEmail.trim() || !formLocation.trim()) {
-      alert("Please fill in Name, Mobile, Email, and Full Address.");
+      alert("Please fill in Name, Mobile, Email, and Address / Location.");
+      return;
+    }
+
+    if (!formPincode.trim()) {
+      alert("Please enter your PIN Code.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formPincode.trim())) {
+      alert("Please enter a valid 6-digit PIN Code.");
       return;
     }
 
@@ -980,7 +990,7 @@ const EarnWithApexBee = () => {
             district: selectedDistrict || "District HQ",
             mandal: selectedMandal || "Mandal HQ",
             address: formLocation,
-            pincode: formPincode || "500001",
+            pincode: formPincode.trim(),
             panNumber,
             aadhaarNumber,
             gstNumber,
@@ -1090,7 +1100,7 @@ const EarnWithApexBee = () => {
                     mandal: selectedMandal,
                     businessName,
                     address: formLocation,
-                    pincode: formPincode || "500001",
+                    pincode: formPincode.trim(),
                     panNumber,
                     aadhaarNumber,
                     gstNumber,
@@ -1196,7 +1206,7 @@ const EarnWithApexBee = () => {
         foodPreference: isFood ? foodPreference : "Both",
         ownerName: formName,
         address: formLocation,
-        pincode: "500001",
+        pincode: formPincode.trim(),
         state: selectedState,
         district: selectedDistrict,
         mandal: selectedMandal,
@@ -1940,17 +1950,34 @@ const EarnWithApexBee = () => {
               { label: "Full Name *", value: formName, set: setFormName, placeholder: "Enter your full name", type: "text" },
               { label: "Mobile Number *", value: formMobile, set: setFormMobile, placeholder: "+91 XXXXX XXXXX", type: "tel" },
               { label: "Email Address *", value: formEmail, set: setFormEmail, placeholder: "you@email.com", type: "email" },
-              { label: "Location / City *", value: formLocation, set: setFormLocation, placeholder: "Your city or district", type: "text" },
+              { label: "Address / Location *", value: formLocation, set: setFormLocation, placeholder: "Door No, Street, Landmark, Area", type: "text" },
+              {
+                label: "PIN Code *",
+                value: formPincode,
+                set: (val: string) => setFormPincode(val.replace(/\D/g, "").slice(0, 6)),
+                placeholder: "Enter 6-digit PIN Code",
+                type: "text",
+                maxLength: 6,
+              },
               { label: "Relevant Experience", value: formExperience, set: setFormExperience, placeholder: "Brief summary of your experience", type: "text" },
             ].map((field, i) => (
               <div key={i} className="text-left">
-                <label className="text-xs font-bold text-slate-600 block mb-1">{field.label}</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-bold text-slate-600 block">{field.label}</label>
+                  {field.label === "PIN Code *" && formPincode && formPincode.length < 6 && (
+                    <span className="text-[10px] text-amber-600 font-semibold">{formPincode.length}/6 digits</span>
+                  )}
+                  {field.label === "PIN Code *" && formPincode.length === 6 && (
+                    <span className="text-[10px] text-emerald-600 font-bold">✓ 6 digits entered</span>
+                  )}
+                </div>
                 <input
                   type={field.type}
                   value={field.value}
                   onChange={(e) => field.set(e.target.value)}
                   placeholder={field.placeholder}
-                  className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                  maxLength={(field as any).maxLength}
+                  className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-medium"
                 />
               </div>
             ))}
@@ -2755,6 +2782,21 @@ const EarnWithApexBee = () => {
                   </Badge>
                 </div>
 
+                {/* Plain display of applicant address and pincode */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    <span className="text-slate-400 font-medium">📍 Address:</span>
+                    <span className="font-semibold text-slate-800">{app.address || app.location || "N/A"}</span>
+                    {(app.mandal || app.district || app.state) && (
+                      <span className="text-slate-500 font-medium">({[app.mandal, app.district, app.state].filter(Boolean).join(", ")})</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    <span className="text-slate-400 font-medium">PIN Code:</span>
+                    <span className="font-mono font-bold text-navy">{app.pincode || "N/A"}</span>
+                  </div>
+                </div>
+
                 <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
                   {app.status === "verified" || app.status === "approved" ? (
                     <div className="space-y-3">
@@ -2879,6 +2921,12 @@ const EarnWithApexBee = () => {
                 <span className="text-slate-500 font-semibold">Territory Jurisdiction:</span>
                 <span className="font-bold text-slate-900">{bookingSuccessModal.territoryName || bookingSuccessModal.name}</span>
               </div>
+              {formPincode && (
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500 font-semibold">PIN Code:</span>
+                  <span className="font-mono font-bold text-navy">{formPincode}</span>
+                </div>
+              )}
               <div className="flex justify-between border-b border-slate-200 pb-1.5">
                 <span className="text-slate-500 font-semibold">Amount Paid:</span>
                 <span className="font-black text-emerald-600">₹{Number(bookingSuccessModal.amountPaid || 0).toLocaleString("en-IN")}</span>

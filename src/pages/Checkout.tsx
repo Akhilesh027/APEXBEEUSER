@@ -928,7 +928,7 @@ const Checkout = () => {
             _id: `store_pickup_${firstItem._id || firstItem.productId || 'default'}`,
             name: `🏪 ${storeName} (In-Store Pickup)`,
             address: storeAddress,
-            pincode: pincode || '500001',
+            pincode: pincode || firstItem.vendorPincode || firstItem.sellerId?.pincode || '',
             slots: [
               { date: 'Today', time: '10:00 AM - 01:00 PM' },
               { date: 'Today', time: '02:00 PM - 06:00 PM' },
