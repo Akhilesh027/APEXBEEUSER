@@ -2926,9 +2926,9 @@ const Home = () => {
                               )}
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
-                              <span>📍 {shop.locality || shop.city || 'Hyderabad'}</span>
-                              <span className="text-amber-600 font-bold">Same-Day Express</span>
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold gap-2">
+                              <span className="truncate">📍 {shop.locality || (shop.mandal ? `${shop.mandal}, ${shop.district || ''}` : '') || shop.district || shop.city || shop.village || (shop.pincode ? `PIN ${shop.pincode}` : shop.state) || 'Local Store'}</span>
+                              <span className="text-amber-600 font-bold shrink-0">Same-Day Express</span>
                             </div>
                           </div>
                         </div>

@@ -592,10 +592,68 @@ export const LocalStores: React.FC = () => {
                   const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
 
                   const ratingAvg = shop.rating?.average || 4.8;
-                  const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
-                  const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
                   const firstOffer = shop.offers?.[0];
                   const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
+                  const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
+
+                  // Accurate store location calculation (avoiding hardcoded 'Hyderabad' fallback)
+                  const locationText = (() => {
+                    if (shop.locality && shop.locality.trim()) {
+                      return shop.district && shop.district.toLowerCase() !== shop.locality.toLowerCase()
+                        ? `${shop.locality}, ${shop.district}`
+                        : shop.locality;
+                    }
+                    if (shop.mandal && shop.mandal.trim()) {
+                      return shop.district && shop.district.toLowerCase() !== shop.mandal.toLowerCase()
+                        ? `${shop.mandal}, ${shop.district}`
+                        : shop.mandal;
+                    }
+                    if (shop.village && shop.village.trim()) {
+                      return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
+                    }
+                    if (shop.district && shop.district.trim()) {
+                      return shop.district.trim();
+                    }
+                    if (shop.city && shop.city.trim()) {
+                      return shop.city.trim();
+                    }
+                    if (shop.address && typeof shop.address === "string") {
+                      const parts = shop.address.split(',').map((s: string) => s.trim()).filter(Boolean);
+                      if (parts.length > 0) {
+                        return parts.slice(-2).join(', ');
+                      }
+                    }
+                    if (shop.pincode || shop.pinCode) {
+                      return `PIN ${shop.pincode || shop.pinCode}`;
+                    }
+                    return shop.state || "Local Store";
+                  })();
+
+                  // Accurate distance calculation
+                  const distanceText = (() => {
+                    if (userLocation?.lat && userLocation?.lng && shop.location?.coordinates && Array.isArray(shop.location.coordinates) && shop.location.coordinates.length === 2) {
+                      const [shopLng, shopLat] = shop.location.coordinates;
+                      if (shopLat && shopLng && !isNaN(Number(shopLat)) && !isNaN(Number(shopLng))) {
+                        const R = 6371;
+                        const dLat = (Number(shopLat) - userLocation.lat) * (Math.PI / 180);
+                        const dLon = (Number(shopLng) - userLocation.lng) * (Math.PI / 180);
+                        const a =
+                          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                          Math.cos(userLocation.lat * (Math.PI / 180)) * Math.cos(Number(shopLat) * (Math.PI / 180)) *
+                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        const d = R * c;
+                        return `${d.toFixed(1)} km`;
+                      }
+                    }
+                    if (typeof shop.distanceInKm === 'number' && shop.searchMode === 'gps') {
+                      return `${shop.distanceInKm.toFixed(1)} km`;
+                    }
+                    if (shop.pincode || shop.pinCode) {
+                      return `PIN: ${shop.pincode || shop.pinCode}`;
+                    }
+                    return "Local Outlet";
+                  })();
 
                   return (
                     <div
@@ -660,14 +718,14 @@ export const LocalStores: React.FC = () => {
                             </p>
                           </div>
 
-                          <div className="flex items-center justify-between text-xs text-slate-600 pt-3 border-t border-slate-100 font-semibold">
-                            <div className="flex items-center space-x-1">
+                          <div className="flex items-center justify-between text-xs text-slate-600 pt-3 border-t border-slate-100 font-semibold gap-2">
+                            <div className="flex items-center space-x-1 shrink-0">
                               <Clock className="w-3.5 h-3.5 text-amber-500" />
                               <span>{deliveryTime}</span>
                             </div>
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="w-3.5 h-3.5 text-amber-500" />
-                              <span>{distance} • {shop.city || 'Hyderabad'}</span>
+                            <div className="flex items-center space-x-1 truncate max-w-[65%] justify-end" title={`${distanceText} • ${locationText}`}>
+                              <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span className="truncate">{distanceText} • {locationText}</span>
                             </div>
                           </div>
                         </div>

@@ -599,9 +599,9 @@ const StorePage = () => {
       console.error(e);
     }
 
-    setSubCustomerName(storedName || "K. Ananya Reddy");
-    setSubCustomerPhone(storedPhone || "9550379505");
-    setSubDeliveryAddress(storedAddress || "Flat 402, Sri Sai Nivas Apartments, Road No. 3, Vasavi Colony, LB Nagar, Hyderabad - 500074");
+    setSubCustomerName(storedName || "");
+    setSubCustomerPhone(storedPhone || "");
+    setSubDeliveryAddress(storedAddress || "");
 
     setIsSubModalOpen(true);
   };
