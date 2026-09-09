@@ -71,10 +71,7 @@ export const loadRazorpayScript = (): Promise<boolean> => {
  * Gets the configured Razorpay Key ID
  */
 export const getRazorpayKey = (): string => {
-  return (
-    import.meta.env.VITE_RAZORPAY_KEY_ID ||
-    "rzp_test_TTsnL7mJseMdFz"
-  );
+  return import.meta.env.VITE_RAZORPAY_KEY_ID || "";
 };
 
 /**

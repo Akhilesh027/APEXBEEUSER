@@ -246,6 +246,7 @@ const WalletPage: React.FC = () => {
       let rzpResponse: any;
       try {
         rzpResponse = await openRazorpayModal({
+          key: orderData.keyId,
           order_id: orderData.orderId,
           amount: orderData.amount,
           currency: orderData.currency || "INR",

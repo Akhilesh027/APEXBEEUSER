@@ -1662,6 +1662,7 @@ const Checkout = () => {
 
         try {
           const rzpResponse = await openRazorpayModal({
+            key: rzpInit.keyId,
             order_id: rzpInit.orderId,
             amount: rzpInit.amount,
             currency: rzpInit.currency || "INR",

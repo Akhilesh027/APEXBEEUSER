@@ -1068,7 +1068,7 @@ const EarnWithApexBee = () => {
 
         // 2. Open Razorpay Modal with clean formatting and exact amount
         const options = {
-          key: orderData.keyId || "rzp_test_TTsnL7mJseMdFz",
+          key: orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "",
           amount: Math.round(Number(orderData.amount) * 100),
           currency: "INR",
           name: "ApexBee Franchise Network",
