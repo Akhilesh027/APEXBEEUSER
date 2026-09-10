@@ -18,6 +18,16 @@ const formatCurrency = (amount: any) => {
   }).format(value);
 };
 
+const normalizeImageUrl = (raw: any): string => {
+  if (!raw) return "";
+  const str = typeof raw === "string" ? raw.trim() : (raw?.url || raw?.secure_url || raw?.src || raw?.path || "");
+  if (!str) return "";
+  if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:") || str.startsWith("blob:") || str.startsWith("/placeholder")) {
+    return str;
+  }
+  return `https://server.apexbee.in${str.startsWith("/") ? "" : "/"}${str}`;
+};
+
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const initialProduct: any = {
@@ -264,24 +274,64 @@ const ProductDetail = () => {
 
   // Mapped fields for backend schema / legacy compatibility
   const title = product.name || product.itemName || "Product";
-  const variantImages = selectedVariant?.images && selectedVariant.images.length > 0 ? selectedVariant.images : null;
+  
   const productImages = useMemo(() => {
     const list: string[] = [];
-    if (product.thumbnail) {
-      list.push(product.thumbnail);
+    const addImg = (raw: any) => {
+      const normalized = normalizeImageUrl(raw);
+      if (normalized && !list.includes(normalized)) {
+        list.push(normalized);
+      }
+    };
+
+    // 1. Primary: Main Cover Thumbnail from vendor upload
+    if (product.thumbnail) addImg(product.thumbnail);
+    if (product.coverThumbnail) addImg(product.coverThumbnail);
+    if (product.coverImage) addImg(product.coverImage);
+    if (product.mainThumbnail) addImg(product.mainThumbnail);
+    if (product.mainImage) addImg(product.mainImage);
+
+    // 2. Additional gallery images
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach((img: any) => addImg(img));
+    } else if (typeof product.images === "string" && product.images.trim()) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed)) parsed.forEach((img: any) => addImg(img));
+        else if (typeof parsed === "string") addImg(parsed);
+        else addImg(product.images);
+      } catch {
+        product.images.split(",").forEach((s: string) => addImg(s.trim()));
+      }
     }
-    if (product.images && product.images.length > 0) {
-      product.images.forEach((img: string) => {
-        if (img && !list.includes(img)) {
-          list.push(img);
-        }
-      });
-    }
+
+    // 3. Add other fallbacks if not already present
+    if (product.image) addImg(product.image);
+    if (product.photo) addImg(product.photo);
+    if (product.picture) addImg(product.picture);
+    if (Array.isArray(product.photos)) product.photos.forEach((img: any) => addImg(img));
+    if (Array.isArray(product.itemImages)) product.itemImages.forEach((img: any) => addImg(img));
+    if (Array.isArray(product.gallery)) product.gallery.forEach((img: any) => addImg(img));
+
     if (list.length === 0) {
       list.push("/placeholder.svg");
     }
     return list;
-  }, [product.thumbnail, product.images]);
+  }, [product.thumbnail, product.coverThumbnail, product.coverImage, product.mainThumbnail, product.mainImage, product.images, product.image, product.photo, product.picture, product.photos, product.itemImages, product.gallery]);
+
+  const variantImages = useMemo(() => {
+    if (!selectedVariant) return null;
+    if (Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0) {
+      const vList = selectedVariant.images.map(normalizeImageUrl).filter(Boolean);
+      return vList.length > 0 ? vList : null;
+    }
+    if (selectedVariant.image || selectedVariant.thumbnail) {
+      const single = normalizeImageUrl(selectedVariant.image || selectedVariant.thumbnail);
+      return single ? [single] : null;
+    }
+    return null;
+  }, [selectedVariant]);
+
   const images = variantImages || productImages;
 
   const shippingCharge = Number(
@@ -420,7 +470,7 @@ const ProductDetail = () => {
               id: prodData._id,
               type: "product",
               title: prodData.name || prodData.itemName,
-              image: prodData.images?.[0] || prodData.thumbnail || "/placeholder-product.png",
+              image: normalizeImageUrl((Array.isArray(prodData.images) && prodData.images[0]) || prodData.thumbnail || prodData.image) || "/placeholder-product.png",
               price: prodData.baseSellingPrice ?? prodData.afterDiscount,
               originalPrice: prodData.baseMrp ?? prodData.userPrice,
               url: `/product/${prodData._id}`,
@@ -579,7 +629,7 @@ const ProductDetail = () => {
       sellingPrice: selectedVariant
         ? selectedVariant.sellingPrice
         : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0),
-      image: images[0],
+      image: images[mainImageIndex] || images[0],
       images: images,
       quantity,
       selectedColor: selectedAttrs.color || "default",
@@ -735,26 +785,39 @@ const ProductDetail = () => {
         <div className="grid md:grid-cols-2 gap-12">
           {/* LEFT IMAGES */}
           <div>
-            <div className="bg-blue-light rounded-2xl overflow-hidden mb-4">
+            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden mb-4 shadow-sm relative group flex items-center justify-center min-h-[360px] max-h-[480px]">
               <img
                 src={images[mainImageIndex] || "/placeholder.svg"}
                 alt={title}
-                className="aspect-[3/4] w-full object-cover"
+                className="aspect-[3/4] w-full max-h-[480px] object-contain transition-all duration-300 drop-shadow-sm"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
               />
             </div>
 
-            <div className="flex gap-3 overflow-x-auto">
-              {images.map((img: string, index: number) => (
-                <div
-                  key={index}
-                  onClick={() => setMainImageIndex(index)}
-                  className={`w-20 h-20 rounded-lg cursor-pointer p-1 border ${index === mainImageIndex ? "border-accent" : "border-gray-300"
+            {images.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 px-1">
+                {images.map((img: string, index: number) => (
+                  <button
+                    type="button"
+                    key={index}
+                    onClick={() => setMainImageIndex(index)}
+                    onMouseEnter={() => setMainImageIndex(index)}
+                    className={`w-20 h-20 rounded-xl cursor-pointer p-1 border-2 transition-all overflow-hidden shrink-0 ${
+                      index === mainImageIndex
+                        ? "border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-105 bg-amber-50/60"
+                        : "border-slate-200 hover:border-slate-400 bg-white opacity-70 hover:opacity-100"
                     }`}
-                >
-                  <img src={img} alt="thumb" className="w-full h-full object-cover rounded-lg" />
-                </div>
-              ))}
-            </div>
+                  >
+                    <img
+                      src={img}
+                      alt={`thumb-${index}`}
+                      className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* RIGHT DETAILS */}

@@ -598,12 +598,12 @@ const Checkout = () => {
     });
   };
 
-  // Auto-switch away from COD if out-of-local items are detected
+  // Ensure COD and manual UPI are blocked and auto-switch to Razorpay
   useEffect(() => {
-    if (outOfLocalInfo.hasOutOfLocal && selectedPayment === "cod") {
-      setSelectedPayment("upi");
+    if (selectedPayment === "cod" || selectedPayment === "upi") {
+      setSelectedPayment("razorpay");
     }
-  }, [outOfLocalInfo.hasOutOfLocal, selectedPayment]);
+  }, [selectedPayment]);
 
   /** ✅ compute if pickup is possible based on items + location (pickup is ONLY possible when customer is in the local store area) */
   const pickupPossible = useMemo(() => {
@@ -1408,10 +1408,10 @@ const Checkout = () => {
   };
 
   const handlePaymentSelection = (method: "razorpay" | "upi" | "wallet" | "cod") => {
-    if (method === "cod" && outOfLocalInfo.hasOutOfLocal) {
+    if (method === "cod") {
       toast({
-        title: "Cash on Delivery (COD) Not Available",
-        description: "COD is only available for 15-min local deliveries. One or more items in your cart are being shipped from outside your local area.",
+        title: "Cash on Delivery (COD) Blocked",
+        description: "Cash on Delivery is currently disabled. Please pay online using Razorpay (UPI/Cards), UPI QR, or Wallet.",
         variant: "destructive",
       });
       return;
@@ -1604,10 +1604,10 @@ const Checkout = () => {
       finalPaymentMethod = "wallet";
     }
 
-    if (finalPaymentMethod === "cod" && outOfLocalInfo.hasOutOfLocal) {
+    if (finalPaymentMethod === "cod") {
       toast({
-        title: "COD Blocked for Out-of-Local Shipping",
-        description: "Cash on Delivery is only supported for local 15-min delivery items. Please complete your order using UPI or Wallet.",
+        title: "Cash on Delivery (COD) Blocked",
+        description: "Cash on Delivery is currently disabled. Please complete your order using Razorpay (UPI/Cards), UPI QR, or Wallet.",
         variant: "destructive",
       });
       return;
@@ -2533,82 +2533,24 @@ const Checkout = () => {
                       </div>
                     </div>
 
-                    {/* COD Option with Out-of-Local Blocking */}
-                    <div className={`p-3.5 rounded-2xl border transition-all ${outOfLocalInfo.hasOutOfLocal
-                      ? "bg-red-50/40 border-red-200 opacity-90"
-                      : selectedPayment === "cod"
-                        ? "bg-amber-50/40 border-amber-300 shadow-xs"
-                        : "bg-slate-50/50 border-slate-200/80"
-                      }`}>
+                    {/* COD Option (Disabled / Blocked) */}
+                    <div className="p-3.5 rounded-2xl border bg-slate-100/60 border-slate-200 opacity-60 cursor-not-allowed">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <RadioGroupItem
                             value="cod"
                             id="cod"
-                            disabled={outOfLocalInfo.hasOutOfLocal}
+                            disabled={true}
                           />
                           <Label
                             htmlFor="cod"
-                            className={`font-bold text-sm sm:text-base ${outOfLocalInfo.hasOutOfLocal
-                              ? "text-slate-400 cursor-not-allowed line-through"
-                              : "cursor-pointer text-navy"
-                              }`}
+                            className="font-bold text-sm sm:text-base text-slate-400 cursor-not-allowed line-through"
                           >
                             Cash on Delivery (COD)
                           </Label>
                         </div>
-                        {outOfLocalInfo.hasOutOfLocal ? (
-                          <span className="text-[10px] bg-red-100 text-red-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <span>🚫</span> Blocked (Out-of-Local)
-                          </span>
-                        ) : (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <span>⚡</span> Local 15-Min Only
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Out of Local Explanation & Product List */}
-                      {outOfLocalInfo.hasOutOfLocal && (
-                        <div className="mt-2.5 pt-2.5 border-t border-red-100/80 text-xs">
-                          <p className="font-extrabold text-red-900 flex items-center gap-1.5">
-                            <span>⚠️</span> COD is not available for inter-city / out-of-station delivery
-                          </p>
-                          <p className="text-[11px] text-red-700 mt-1 leading-relaxed">
-                            Cash on Delivery is only supported for local store deliveries. The following product(s) in your cart are being shipped from outside your local delivery zone:
-                          </p>
-                          <div className="mt-2 space-y-1 bg-white/80 p-2 rounded-xl border border-red-200/60">
-                            {outOfLocalInfo.outOfLocalItems.map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-[11px] text-slate-800 font-semibold gap-2">
-                                <span className="truncate">📦 {item.name}</span>
-                                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono shrink-0">
-                                  Origin PIN: {item.vendorPin}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="mt-2 text-[11px] font-bold text-red-900 flex items-center gap-1">
-                            <span>👉</span> Please pay online via <strong>Razorpay</strong>, <strong>UPI</strong> or <strong>Wallet</strong> to proceed.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Manual UPI QR Option */}
-                    <div className={`p-3.5 rounded-2xl border transition-all ${selectedPayment === "upi"
-                      ? "bg-amber-50/50 border-amber-400 shadow-xs"
-                      : "bg-slate-50/50 border-slate-200/80"
-                      }`}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="upi" id="upi" />
-                          <Label htmlFor="upi" className="cursor-pointer font-bold flex items-center gap-2 text-sm sm:text-base text-navy">
-                            <QrCode className="h-4 w-4 text-accent" />
-                            Manual UPI QR (Upload Screenshot Proof)
-                          </Label>
-                        </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                          Manual Proof
+                        <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
+                          <span>🚫</span> Disabled (Online Only)
                         </span>
                       </div>
                     </div>

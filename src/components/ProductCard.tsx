@@ -87,11 +87,58 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       });
   }, [vendorId, product]);
 
-  // Real Image handling
-  const rawImg = product.images?.[0] || product.thumbnail || product.image;
-  const image = rawImg
-    ? (rawImg.startsWith("http") ? rawImg : `https://server.apexbee.in${rawImg}`)
-    : "/placeholder-product.png";
+  // Real Image handling - Strictly prioritize Main Cover Thumbnail (product.thumbnail)
+  const getThumbnailImage = (p: any): string => {
+    if (!p) return "/placeholder-product.png";
+    
+    // 1. Primary: Main Cover Thumbnail from vendor upload
+    let firstRaw: any =
+      p.thumbnail ||
+      p.coverThumbnail ||
+      p.coverImage ||
+      p.mainThumbnail ||
+      p.mainImage;
+
+    // 2. Fallback: First image from images gallery array
+    if (!firstRaw) {
+      if (Array.isArray(p.images) && p.images.length > 0) {
+        firstRaw = p.images[0];
+      } else if (typeof p.images === "string" && p.images.trim()) {
+        try {
+          const parsed = JSON.parse(p.images);
+          if (Array.isArray(parsed) && parsed.length > 0) firstRaw = parsed[0];
+          else if (typeof parsed === "string") firstRaw = parsed;
+          else firstRaw = p.images;
+        } catch {
+          const seg = p.images.split(",")[0]?.trim();
+          if (seg) firstRaw = seg;
+        }
+      }
+    }
+
+    // 3. Fallbacks
+    if (!firstRaw) {
+      firstRaw =
+        p.image ||
+        p.photo ||
+        p.picture ||
+        (Array.isArray(p.itemImages) && p.itemImages.length > 0 ? p.itemImages[0] : null) ||
+        (Array.isArray(p.photos) && p.photos.length > 0 ? p.photos[0] : null) ||
+        (Array.isArray(p.gallery) && p.gallery.length > 0 ? p.gallery[0] : null);
+    }
+
+    if (!firstRaw) return "/placeholder-product.png";
+
+    const str = typeof firstRaw === "string" ? firstRaw.trim() : (firstRaw?.url || firstRaw?.secure_url || firstRaw?.src || firstRaw?.path || "");
+    if (!str) return "/placeholder-product.png";
+
+    if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:") || str.startsWith("blob:") || str.startsWith("/placeholder")) {
+      return str;
+    }
+    return `https://server.apexbee.in${str.startsWith("/") ? "" : "/"}${str}`;
+  };
+
+  const image = getThumbnailImage(product);
 
   // Real Pricing
   const sellingPrice = Number(
@@ -610,17 +657,17 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const baseWidth = isCustomWidth ? "w-full" : "w-[260px] sm:w-[300px] shrink-0";
 
   return (
-    <div className={`${baseWidth} min-h-[420px] h-[420px] sm:h-[430px] bg-white rounded-xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className || ""}`}>
+    <div className={`${baseWidth} min-h-[390px] h-[390px] sm:h-[400px] bg-white rounded-xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className || ""}`}>
 
       {/* ═══════════════════════════════════════════════════════
-         1. HERO IMAGE STAGE (Mobile-optimized 140px - 155px height)
+         1. HERO IMAGE STAGE (Mobile-optimized 135px - 145px height)
          ═══════════════════════════════════════════════════════ */}
-      <div className="relative w-full h-[140px] sm:h-[155px] bg-gradient-to-b from-slate-50 via-orange-50/10 to-slate-100/60 flex items-center justify-center p-2 shrink-0 overflow-hidden z-0">
+      <div className="relative w-full h-[135px] sm:h-[145px] bg-gradient-to-b from-slate-50 via-orange-50/10 to-slate-100/60 flex items-center justify-center p-2 shrink-0 overflow-hidden z-0">
         <Link to={`/product/${productId}`} className="w-full h-full flex items-center justify-center overflow-hidden">
           <img
             src={image}
             alt={title}
-            className="max-h-[125px] sm:max-h-[140px] max-w-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-500"
+            className="max-h-[120px] sm:max-h-[130px] max-w-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80"; }}
           />
@@ -793,19 +840,19 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       {/* ═══════════════════════════════════════════════════════
          3. PRODUCT DETAILS, PRICING & DELIVERY BOX
          ═══════════════════════════════════════════════════════ */}
-      <div className="px-2.5 sm:px-3 py-1.5 flex-1 flex flex-col justify-between bg-white text-slate-900 space-y-1">
+      <div className="px-2.5 sm:px-3 py-1.5 flex-1 flex flex-col justify-between bg-white text-slate-900">
         {/* Top Split: Title & Price (Left 2-Cols) | Delivery Box (Right 1-Col) */}
         <div className="grid grid-cols-3 gap-1.5 items-start">
           {/* Left 2-Cols: Title, Tags & Price */}
-          <div className="col-span-2 space-y-0.5">
+          <div className="col-span-2 flex flex-col justify-between gap-1">
             <Link to={`/product/${productId}`} className="hover:text-amber-600 transition">
-              <h3 className="text-[11.5px] sm:text-[12px] font-extrabold text-slate-900 leading-snug line-clamp-2">
+              <h3 className="text-[12px] sm:text-[13px] font-black text-slate-900 leading-snug line-clamp-2">
                 {title}
               </h3>
             </Link>
 
             {/* Feature & Trust Tags (Two Rows) */}
-            <div className="space-y-0.5 pt-0.5">
+            <div className="space-y-0.5">
               <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-extrabold flex-nowrap overflow-hidden">
                 <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0">✔ Verified Store</span>
                 <span className="bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">⭐ Top Seller</span>
@@ -818,16 +865,16 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
             {/* Pricing Section */}
             <div className="pt-0.5 flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-lg sm:text-xl font-black text-rose-600 font-heading leading-none">
+              <span className="text-xl sm:text-2xl font-black text-rose-600 font-heading leading-none">
                 {money(sellingPrice)}
               </span>
               {mrp > sellingPrice && (
                 <>
-                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 line-through font-semibold">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 line-through font-bold">
                     {money(mrp)}
                   </span>
                   {discountPct > 0 && (
-                    <span className="bg-emerald-100 text-emerald-800 font-black text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5 rounded-md">
+                    <span className="bg-emerald-100 text-emerald-800 font-black text-[8.5px] sm:text-[9.5px] px-1.5 py-0.5 rounded-md">
                       {discountPct}% OFF
                     </span>
                   )}
@@ -837,12 +884,12 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           </div>
 
           {/* Right 1-Col: Delivery Time, Distance, Subscription & Pickup Box */}
-          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-lg sm:rounded-xl p-1.5 space-y-0.5 text-[8px] sm:text-[8.5px] font-bold text-slate-700 flex flex-col justify-center">
-            <div className="flex items-center gap-1 text-emerald-700" title="Delivery Time">
+          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-lg sm:rounded-xl p-1.5 space-y-1 text-[8px] sm:text-[8.5px] font-bold text-slate-700 flex flex-col justify-center">
+            <div className="flex items-center gap-1 text-emerald-700 font-extrabold" title="Delivery Time">
               <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
               <span className="truncate">{deliveryMins}</span>
             </div>
-            <div className="flex items-center gap-1 text-indigo-700" title="Distance">
+            <div className="flex items-center gap-1 text-indigo-700 font-extrabold" title="Distance">
               <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
               <span className="truncate">{distanceText}</span>
             </div>
@@ -862,7 +909,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
         </div>
 
         {/* FULL WIDTH SINGLE ROW: Save ₹... | ⚡ Instant Credit | Earn by refer: ₹... (In ONE ROW on Mobile) */}
-        <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 w-full flex-nowrap overflow-hidden text-[7.5px] sm:text-[9px]">
+        <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 w-full flex-nowrap overflow-hidden text-[8px] sm:text-[9px]">
           {savings > 0 && (
             <span className="font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md leading-none whitespace-nowrap shrink-0">
               Save {money(savings)}
