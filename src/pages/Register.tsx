@@ -252,6 +252,7 @@ const Register = () => {
       }
 
       window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("auth_state_changed"));
       toast({ title: "Account created!", description: "Your account has been created successfully." });
       setShowOtpDialog(false);
 

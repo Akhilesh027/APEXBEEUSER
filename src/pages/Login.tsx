@@ -107,6 +107,7 @@ const Login = () => {
     }
 
     window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("auth_state_changed"));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

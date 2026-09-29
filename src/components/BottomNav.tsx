@@ -11,26 +11,68 @@ export const BottomNav = () => {
   const [isBeeMenuOpen, setIsBeeMenuOpen] = useState(false);
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    setIsLoggedIn(!!userStr);
+    const syncAuthStateAndCounts = () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
 
-    const updateCounts = () => {
-      const localCart = localStorage.getItem("local_cart");
-      if (localCart) {
-        try {
+        const hasToken = Boolean(token && token !== "undefined" && token !== "null" && token.trim() !== "");
+        let hasValidUser = false;
+
+        if (userStr && userStr !== "undefined" && userStr !== "null" && userStr.trim() !== "") {
+          try {
+            const parsed = JSON.parse(userStr);
+            if (parsed && typeof parsed === "object") {
+              hasValidUser = Boolean(parsed._id || parsed.id || parsed.email || parsed.phone || parsed.name);
+            }
+          } catch {
+            hasValidUser = false;
+          }
+        }
+
+        setIsLoggedIn(hasToken || hasValidUser);
+      } catch {
+        setIsLoggedIn(false);
+      }
+
+      try {
+        const localCart = localStorage.getItem("local_cart");
+        if (localCart) {
           const items = JSON.parse(localCart);
           if (Array.isArray(items)) {
-            const sum = items.reduce((a, b) => a + (b.quantity || 1), 0);
+            const sum = items.reduce((a: number, b: any) => a + (Number(b.quantity) || 1), 0);
             setCartCount(sum);
+          } else {
+            setCartCount(0);
           }
-        } catch { }
+        } else {
+          setCartCount(0);
+        }
+      } catch {
+        setCartCount(0);
       }
     };
 
-    updateCounts();
-    window.addEventListener("storage", updateCounts);
-    return () => window.removeEventListener("storage", updateCounts);
-  }, []);
+    syncAuthStateAndCounts();
+
+    const handleSync = () => {
+      syncAuthStateAndCounts();
+    };
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("auth_state_changed", handleSync);
+    window.addEventListener("user_logged_in", handleSync);
+    window.addEventListener("user_logged_out", handleSync);
+    window.addEventListener("cart_updated", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("auth_state_changed", handleSync);
+      window.removeEventListener("user_logged_in", handleSync);
+      window.removeEventListener("user_logged_out", handleSync);
+      window.removeEventListener("cart_updated", handleSync);
+    };
+  }, [location.pathname]);
 
   const navItems = [
     {

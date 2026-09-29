@@ -238,6 +238,8 @@ const Navbar = () => {
     closeAllPopovers();
 
     navigate("/login");
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("auth_state_changed"));
   }, [navigate, closeAllPopovers]);
 
   // ✅ cart count
