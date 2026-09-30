@@ -90,7 +90,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   // Real Image handling - Strictly prioritize Main Cover Thumbnail (product.thumbnail)
   const getThumbnailImage = (p: any): string => {
     if (!p) return "/placeholder-product.png";
-    
+
     // 1. Primary: Main Cover Thumbnail from vendor upload
     let firstRaw: any =
       p.thumbnail ||

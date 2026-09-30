@@ -46,6 +46,7 @@ import AbhiAssistant from "./components/AbhiAssistant";
 import LocalStores from "./pages/LocalStores";
 import { FoodDining } from "./pages/FoodDining";
 import { RestaurantDetail } from "./pages/RestaurantDetail";
+import PublicPayInvoice from "./pages/PublicPayInvoice";
 import BottomNav from "./components/BottomNav";
 import InstallPwaBanner from "./components/InstallPwaBanner";
 
@@ -149,6 +150,9 @@ const App = () => (
           <Route path="/cancellation-policy" element={<Legal />} />
           <Route path="/franchise-policy" element={<Legal />} />
           <Route path="/vendor-policy" element={<Legal />} />
+
+          {/* ===== Public Payment Link Route ===== */}
+          <Route path="/pay/:token" element={<PublicPayInvoice />} />
 
           {/* ===== Protected Routes — require login ===== */}
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />

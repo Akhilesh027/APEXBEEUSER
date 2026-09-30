@@ -59,7 +59,7 @@ const loadRazorpayScript = (): Promise<boolean> => {
   });
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5500/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const PORTAL_LINKS: Record<string, string> = {
   admin: "http://localhost:5173",
@@ -645,6 +645,8 @@ const EarnWithApexBee = () => {
   const [territoryAvailability, setTerritoryAvailability] = useState<any>(null);
   const [checkingTerritory, setCheckingTerritory] = useState(false);
   const [bookingSuccessModal, setBookingSuccessModal] = useState<any>(null);
+  const [appSearchInput, setAppSearchInput] = useState("");
+  const [searchingApps, setSearchingApps] = useState(false);
 
   const stateOptions = useMemo(() => {
     return Object.keys(locationData || {});
@@ -856,15 +858,31 @@ const EarnWithApexBee = () => {
     window.location.href = url;
   };
 
-  const fetchApplications = useCallback(async () => {
+  const fetchApplications = useCallback(async (forcedEmail?: string, forcedPhone?: string) => {
     const { user, token } = getAuth();
-    const uid = user?._id || user?.id || (user?.email ? encodeURIComponent(user.email) : "all");
+    const email = forcedEmail || user?.email || localStorage.getItem("apexbee_applicant_email") || "";
+    const phone = forcedPhone || user?.phone || user?.mobile || localStorage.getItem("apexbee_applicant_phone") || "";
+    const uid = user?._id || user?.id || (email ? encodeURIComponent(email) : "all");
+
     try {
       const headers: any = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/business-applications/user/${uid}`, { headers });
+
+      let url = `${API_BASE}/business-applications/user/${uid}?t=${Date.now()}`;
+      if (email) url += `&email=${encodeURIComponent(email)}`;
+      if (phone) url += `&phone=${encodeURIComponent(phone)}`;
+
+      const res = await fetch(url, { headers });
       const data = await res.json();
-      if (data?.applications) setApplications(data.applications);
+      if (data?.applications && Array.isArray(data.applications)) {
+        setApplications(data.applications);
+        if (forcedEmail && data.applications.length > 0) {
+          localStorage.setItem("apexbee_applicant_email", forcedEmail.trim());
+        }
+        if (forcedPhone && data.applications.length > 0) {
+          localStorage.setItem("apexbee_applicant_phone", forcedPhone.trim());
+        }
+      }
     } catch { /* silent */ }
   }, []);
 
@@ -1034,11 +1052,14 @@ const EarnWithApexBee = () => {
 
         const lvl = franchiseLevel === "state" ? "State" : franchiseLevel === "district" ? "District" : "Mandal";
 
-        const selectedAmount = franchisePaymentMode === "ADVANCE"
-          ? (territoryAvailability?.minBookingAdvance || 20000)
-          : (territoryAvailability?.annualFranchiseFee || 60000);
+        const baseFeeAmount = franchisePaymentMode === "ADVANCE"
+          ? Number(territoryAvailability?.minBookingAdvance || 20000)
+          : Number(territoryAvailability?.annualFranchiseFee || 60000);
 
-        // 1. Create Razorpay Order
+        const gstAmount = Math.round((baseFeeAmount * 18) / 100);
+        const totalPayableAmount = baseFeeAmount + gstAmount;
+
+        // 1. Create Razorpay Order with 18% GST
         const orderRes = await fetch(`${API_BASE}/franchises/booking/create-order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1052,7 +1073,9 @@ const EarnWithApexBee = () => {
             mandal: selectedMandal,
             businessName,
             paymentMode: franchisePaymentMode,
-            amount: selectedAmount,
+            baseAmount: baseFeeAmount,
+            gstAmount: gstAmount,
+            amount: totalPayableAmount,
             annualFee: territoryAvailability?.annualFranchiseFee,
             minBookingAdvance: territoryAvailability?.minBookingAdvance,
           }),
@@ -1113,8 +1136,24 @@ const EarnWithApexBee = () => {
               const verifyData = await verifyRes.json();
 
               if (verifyRes.ok && verifyData.success) {
+                if (verifyData.user) {
+                  localStorage.setItem("user", JSON.stringify(verifyData.user));
+                }
+                if (verifyData.token) {
+                  localStorage.setItem("token", verifyData.token);
+                }
+                if (formEmail) localStorage.setItem("apexbee_applicant_email", formEmail.trim());
+                if (formMobile) localStorage.setItem("apexbee_applicant_phone", formMobile.trim());
+
+                if (verifyData.application) {
+                  setApplications((prev) => {
+                    const filtered = prev.filter((a) => a._id !== verifyData.application._id);
+                    return [verifyData.application, ...filtered];
+                  });
+                }
+
                 setBookingSuccessModal(verifyData.receipt || verifyData.territory);
-                fetchApplications();
+                fetchApplications(formEmail.trim(), formMobile.trim());
               } else {
                 alert(verifyData.message || "Payment verification failed");
               }
@@ -2603,6 +2642,7 @@ const EarnWithApexBee = () => {
                               </div>
                               <div className={`text-base font-black mt-1 ${franchisePaymentMode === "ADVANCE" ? "text-amber-300" : "text-emerald-600"}`}>
                                 ₹{Number(territoryAvailability.minBookingAdvance || 0).toLocaleString("en-IN")}
+                                <span className="text-[10px] font-normal text-slate-300 ml-1">+ 18% GST</span>
                               </div>
                               <p className={`text-[10px] mt-0.5 ${franchisePaymentMode === "ADVANCE" ? "text-slate-200" : "text-slate-500"}`}>
                                 Locks territory in your name now. Pay balance before launching.
@@ -2625,6 +2665,7 @@ const EarnWithApexBee = () => {
                               </div>
                               <div className={`text-base font-black mt-1 ${franchisePaymentMode === "FULL" ? "text-amber-300" : "text-navy"}`}>
                                 ₹{Number(territoryAvailability.annualFranchiseFee || 0).toLocaleString("en-IN")}
+                                <span className="text-[10px] font-normal text-slate-300 ml-1">+ 18% GST</span>
                               </div>
                               <p className={`text-[10px] mt-0.5 ${franchisePaymentMode === "FULL" ? "text-slate-200" : "text-slate-500"}`}>
                                 Complete 1-year franchise fee. Instant operational clearance.
@@ -2632,6 +2673,37 @@ const EarnWithApexBee = () => {
                             </button>
                           </div>
                         </div>
+
+                        {/* GST and Total Price Breakdown */}
+                        {(() => {
+                          const baseAmt = franchisePaymentMode === "ADVANCE"
+                            ? Number(territoryAvailability.minBookingAdvance || 20000)
+                            : Number(territoryAvailability.annualFranchiseFee || 60000);
+                          const gstAmt = Math.round((baseAmt * 18) / 100);
+                          const totalAmt = baseAmt + gstAmt;
+
+                          return (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-left">
+                              <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                Payment Breakdown
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Base {franchisePaymentMode === "ADVANCE" ? "Advance Fee" : "Annual License Fee"}:</span>
+                                  <span className="font-semibold text-slate-800">₹{baseAmt.toLocaleString("en-IN")}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Applicable GST (18%):</span>
+                                  <span className="font-semibold text-slate-800">+₹{gstAmt.toLocaleString("en-IN")}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-black text-navy border-t border-slate-200 pt-1.5 mt-1">
+                                  <span>Total Payable via Razorpay:</span>
+                                  <span className="text-emerald-600">₹{totalAmt.toLocaleString("en-IN")}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Refund Guarantee Notice */}
                         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-left">
@@ -2686,7 +2758,14 @@ const EarnWithApexBee = () => {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 text-amber-400" />
-                    Pay ₹{Number(franchisePaymentMode === "ADVANCE" ? (territoryAvailability?.minBookingAdvance || 20000) : (territoryAvailability?.annualFranchiseFee || 60000)).toLocaleString("en-IN")} via Razorpay & Lock Territory
+                    {(() => {
+                      const baseAmt = franchisePaymentMode === "ADVANCE"
+                        ? Number(territoryAvailability?.minBookingAdvance || 20000)
+                        : Number(territoryAvailability?.annualFranchiseFee || 60000);
+                      const gstAmt = Math.round((baseAmt * 18) / 100);
+                      const totalAmt = baseAmt + gstAmt;
+                      return `Pay ₹${totalAmt.toLocaleString("en-IN")} (Incl. 18% GST) via Razorpay & Lock Territory`;
+                    })()}
                   </>
                 )
               ) : (
@@ -2713,21 +2792,75 @@ const EarnWithApexBee = () => {
         <ChevronLeft className="w-4 h-4" /> Back to Opportunities
       </button>
 
-      <div className="flex justify-between items-center pb-2 border-b">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-2 border-b">
         <h2 className="text-2xl font-black text-navy">My Applications</h2>
-        <Button variant="outline" size="sm" onClick={fetchApplications} className="rounded-xl border-slate-200 font-bold text-xs h-9">
-          Refresh List
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Input
+            placeholder="Search by Email or Mobile..."
+            value={appSearchInput}
+            onChange={(e) => setAppSearchInput(e.target.value)}
+            className="h-9 text-xs rounded-xl border-slate-200 w-full sm:w-64"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && appSearchInput.trim()) {
+                fetchApplications(appSearchInput.trim(), appSearchInput.trim());
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            onClick={async () => {
+              setSearchingApps(true);
+              await fetchApplications(appSearchInput.trim() || undefined, appSearchInput.trim() || undefined);
+              setSearchingApps(false);
+            }}
+            className="bg-navy text-white text-xs font-bold h-9 rounded-xl px-4 shrink-0 cursor-pointer"
+            disabled={searchingApps}
+          >
+            {searchingApps ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search / Refresh"}
+          </Button>
+        </div>
       </div>
 
       {applications.length === 0 ? (
-        <div className="text-center py-12 border border-dashed rounded-2xl bg-white max-w-md mx-auto space-y-4">
+        <div className="text-center py-10 border border-dashed rounded-2xl bg-white max-w-lg mx-auto p-6 space-y-4 shadow-sm">
           <span className="text-4xl block">📋</span>
-          <h4 className="font-extrabold text-navy text-sm">No applications found</h4>
-          <p className="text-xs text-slate-400">You haven't applied for any partnership roles yet.</p>
-          <Button className="bg-navy text-white text-xs font-bold py-2 rounded-xl" onClick={() => setActiveView("home")}>
-            Browse Opportunities
-          </Button>
+          <h4 className="font-extrabold text-navy text-sm">No applications found in current session</h4>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            If you recently submitted an application or completed a franchise booking payment, enter your registered <strong>Email</strong> or <strong>Mobile Number</strong> below to retrieve your application:
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <Input
+              type="text"
+              placeholder="e.g. partner@example.com or 9876543210"
+              value={appSearchInput}
+              onChange={(e) => setAppSearchInput(e.target.value)}
+              className="text-xs rounded-xl h-10 border-slate-300"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && appSearchInput.trim()) {
+                  fetchApplications(appSearchInput.trim(), appSearchInput.trim());
+                }
+              }}
+            />
+            <Button
+              className="bg-navy hover:bg-navy/90 text-white font-bold text-xs h-10 px-5 rounded-xl shrink-0 cursor-pointer"
+              disabled={searchingApps || !appSearchInput.trim()}
+              onClick={async () => {
+                setSearchingApps(true);
+                await fetchApplications(appSearchInput.trim(), appSearchInput.trim());
+                setSearchingApps(false);
+              }}
+            >
+              {searchingApps ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />}
+              Find My Application
+            </Button>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-3">
+            <Button variant="ghost" className="text-xs text-slate-500 font-bold" onClick={() => setActiveView("home")}>
+              Browse Opportunities
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
@@ -2947,7 +3080,7 @@ const EarnWithApexBee = () => {
               onClick={() => {
                 setBookingSuccessModal(null);
                 setActiveView("applications");
-                fetchApplications();
+                fetchApplications(formEmail.trim(), formMobile.trim());
               }}
               className="w-full bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -2958,7 +3091,7 @@ const EarnWithApexBee = () => {
               onClick={() => {
                 setBookingSuccessModal(null);
                 setActiveView("applications");
-                fetchApplications();
+                fetchApplications(formEmail.trim(), formMobile.trim());
               }}
               className="w-full rounded-xl text-xs font-bold"
             >

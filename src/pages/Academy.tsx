@@ -281,8 +281,8 @@ export default function Academy() {
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 4) {
-      setOtpError('Please enter a 4-digit code.');
+    if (!otpCode || otpCode.length !== 6) {
+      setOtpError('Please enter a 6-digit code.');
       return;
     }
     setLoading(true);
@@ -838,11 +838,11 @@ export default function Academy() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          maxLength={4}
-                          className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none text-center tracking-widest flex-1 max-w-[120px] font-bold"
+                          maxLength={6}
+                          className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none text-center tracking-widest flex-1 max-w-[150px] font-bold"
                           value={otpCode}
                           onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                          placeholder="XXXX"
+                          placeholder="XXXXXX"
                         />
                         <Button
                           onClick={handleVerifyOtp}

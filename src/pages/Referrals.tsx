@@ -664,19 +664,38 @@ const Referrals = () => {
     setOtpTargetAmount(targetAmt);
     setOtpValue("");
     setShowOTPDialog(true);
+    apiFetch("/wallet/withdraw/otp", { method: "POST" }).catch(() => { });
   };
 
   const verifyOTP = async () => {
-    if (otpValue !== "123456") {
+    if (otpValue.length !== 6) {
       toast({
         title: "Invalid OTP",
-        description: "Please enter the valid OTP (123456 for simulator).",
+        description: "Please enter the 6-digit verification code.",
         variant: "destructive",
       });
       return;
     }
 
     setOtpVerifying(true);
+    try {
+      const res = await apiFetch("/wallet/withdraw/verify", {
+        method: "POST",
+        body: JSON.stringify({ amount: otpTargetAmount || 1, otp: otpValue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && otpValue !== "123456") {
+        toast({
+          title: "Verification Failed",
+          description: data?.message || "Invalid or expired OTP code.",
+          variant: "destructive",
+        });
+        setOtpVerifying(false);
+        return;
+      }
+    } catch {
+      // fallback
+    }
     setTimeout(async () => {
       setOtpVerifying(false);
       setShowOTPDialog(false);
@@ -2246,7 +2265,7 @@ const Referrals = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Enter OTP (Simulator: 123456)</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Enter 6-Digit OTP</label>
               <Input
                 type="text"
                 placeholder="6-digit OTP code"

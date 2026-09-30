@@ -155,8 +155,8 @@ const Register = () => {
   };
 
   const handleVerifyAndRegister = async () => {
-    if (otpCode.length !== 4) {
-      setOtpError("Please enter a valid 4-digit code.");
+    if (otpCode.length !== 6) {
+      setOtpError("Please enter a valid 6-digit code.");
       return;
     }
     setOtpLoading(true);
@@ -172,7 +172,7 @@ const Register = () => {
 
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
-        setOtpError(verifyData?.message || "Invalid OTP code. Please enter '1234'.");
+        setOtpError(verifyData?.message || "Invalid OTP code. Please enter the 6-digit code sent to your mobile.");
         setOtpLoading(false);
         return;
       }
@@ -507,7 +507,7 @@ const Register = () => {
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-4 space-y-4">
             <p className="text-center text-sm text-muted-foreground">
-              A 4-digit verification code has been sent to <span className="font-semibold text-foreground text-navy">{formData.phone}</span>.
+              A 6-digit verification code has been sent to <span className="font-semibold text-foreground text-navy">{formData.phone}</span>.
               <br />
               Please enter the code to complete registration.
             </p>
@@ -518,19 +518,16 @@ const Register = () => {
             )}
             <Input
               type="text"
-              placeholder="Enter 4-digit OTP"
+              placeholder="Enter 6-digit OTP"
               value={otpCode}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, "");
-                if (val.length <= 4) setOtpCode(val);
+                if (val.length <= 6) setOtpCode(val);
               }}
-              className="text-center text-2xl font-bold tracking-widest h-12 w-48 text-navy border-gray-200"
+              className="text-center text-2xl font-bold tracking-widest h-12 w-56 text-navy border-gray-200"
               inputMode="numeric"
-              maxLength={4}
+              maxLength={6}
             />
-            <p className="text-xs text-muted-foreground">
-              (For testing, use code: <span className="font-semibold">1234</span>)
-            </p>
           </div>
           <DialogFooter className="sm:justify-center">
             <Button

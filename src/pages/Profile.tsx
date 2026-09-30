@@ -403,33 +403,30 @@ const Profile = () => {
             setEmailOtpLoading(false);
             toast({
                 title: "OTP Sent Successfully!",
-                description: `Verification code sent to ${emailToUse}. (For testing, use code: 1234)`,
+                description: `Verification code sent to ${emailToUse}.`,
             });
         }
     };
 
     const handleVerifyEmailOtp = async () => {
-        if (emailOtpCode.length !== 4) {
-            setEmailOtpError("Please enter a valid 4-digit verification code.");
+        if (emailOtpCode.length !== 6) {
+            setEmailOtpError("Please enter a valid 6-digit verification code.");
             return;
         }
         setEmailOtpLoading(true);
         setEmailOtpError("");
 
         try {
-            const isDevFallback = emailOtpCode === "1234";
-            if (!isDevFallback) {
-                const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: pendingEmail || userData?.email, otp: emailOtpCode }),
-                });
-                if (!res.ok) {
-                    const data = await res.json();
-                    setEmailOtpError(data?.message || "Invalid OTP code. Try '1234'.");
-                    setEmailOtpLoading(false);
-                    return;
-                }
+            const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: pendingEmail || userData?.email, otp: emailOtpCode }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                setEmailOtpError(data?.message || "Invalid OTP code. Please enter the valid code.");
+                setEmailOtpLoading(false);
+                return;
             }
 
             const updatedEmail = pendingEmail || userData?.email;
@@ -450,7 +447,7 @@ const Profile = () => {
             setTimeout(() => setSuccess(""), 3000);
         } catch (err) {
             console.error("Email verification error:", err);
-            setEmailOtpError("Server error verifying OTP. Try code '1234'.");
+            setEmailOtpError("Server error verifying OTP. Please try again.");
         } finally {
             setEmailOtpLoading(false);
         }
@@ -1970,7 +1967,7 @@ const Profile = () => {
                     </DialogHeader>
                     <div className="py-4 space-y-4 text-center">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            A 4-digit verification code was sent to <strong className="text-navy dark:text-amber-400 font-bold">{pendingEmail || userData?.email}</strong>.
+                            A 6-digit verification code was sent to <strong className="text-navy dark:text-amber-400 font-bold">{pendingEmail || userData?.email}</strong>.
                         </p>
                         {emailOtpError && (
                             <div className="bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-medium">
@@ -1979,19 +1976,16 @@ const Profile = () => {
                         )}
                         <Input
                             type="text"
-                            placeholder="OTP"
+                            placeholder="6-digit OTP"
                             value={emailOtpCode}
                             onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, "");
-                                if (val.length <= 4) setEmailOtpCode(val);
+                                if (val.length <= 6) setEmailOtpCode(val);
                             }}
-                            className="text-center text-2xl font-mono font-black tracking-widest h-12 w-44 mx-auto rounded-2xl border-slate-300 dark:border-stone-700"
+                            className="text-center text-2xl font-mono font-black tracking-widest h-12 w-56 mx-auto rounded-2xl border-slate-300 dark:border-stone-700"
                             inputMode="numeric"
-                            maxLength={4}
+                            maxLength={6}
                         />
-                        <p className="text-[10px] text-slate-400">
-                            (Simulator: code is <strong className="text-navy dark:text-amber-400 font-bold">1234</strong>)
-                        </p>
                     </div>
                     <DialogFooter>
                         <Button

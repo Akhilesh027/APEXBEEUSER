@@ -274,7 +274,7 @@ const ProductDetail = () => {
 
   // Mapped fields for backend schema / legacy compatibility
   const title = product.name || product.itemName || "Product";
-  
+
   const productImages = useMemo(() => {
     const list: string[] = [];
     const addImg = (raw: any) => {
@@ -802,11 +802,10 @@ const ProductDetail = () => {
                     key={index}
                     onClick={() => setMainImageIndex(index)}
                     onMouseEnter={() => setMainImageIndex(index)}
-                    className={`w-20 h-20 rounded-xl cursor-pointer p-1 border-2 transition-all overflow-hidden shrink-0 ${
-                      index === mainImageIndex
-                        ? "border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-105 bg-amber-50/60"
-                        : "border-slate-200 hover:border-slate-400 bg-white opacity-70 hover:opacity-100"
-                    }`}
+                    className={`w-20 h-20 rounded-xl cursor-pointer p-1 border-2 transition-all overflow-hidden shrink-0 ${index === mainImageIndex
+                      ? "border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-105 bg-amber-50/60"
+                      : "border-slate-200 hover:border-slate-400 bg-white opacity-70 hover:opacity-100"
+                      }`}
                   >
                     <img
                       src={img}

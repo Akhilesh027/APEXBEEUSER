@@ -229,26 +229,44 @@ const Cart = () => {
     }
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (phone.length !== 10) return;
     setOtpLoading(true);
-    setTimeout(() => {
-      setOtpLoading(false);
+    try {
+      await fetch(`${API_BASE}/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
       setOtpSent(true);
       setCountdown(60);
       playBeep();
-      alert("Simulated OTP '1234' sent to your phone number!");
-    }, 600);
+      alert("A 6-digit OTP has been sent to your phone number!");
+    } catch {
+      alert("Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  const handleVerifyOtp = () => {
-    if (otp !== "1234") {
-      alert("Incorrect OTP code. Please enter '1234' for guest verification.");
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      alert("Please enter a valid 6-digit OTP code.");
       return;
     }
     setOtpLoading(true);
-    setTimeout(() => {
-      setOtpLoading(false);
+    try {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data?.message || "Incorrect OTP code. Please enter the valid 6-digit code.");
+        setOtpLoading(false);
+        return;
+      }
       const guestUser = {
         id: `guest-${Date.now()}`,
         name: "Guest Customer",
@@ -258,7 +276,7 @@ const Cart = () => {
         isGuest: true
       };
       localStorage.setItem("user", JSON.stringify(guestUser));
-      localStorage.setItem("token", "mock-guest-token-12345");
+      localStorage.setItem("token", `guest-token-${Date.now()}`);
       setShowGuestModal(false);
 
       if (pendingSingleItem) {
@@ -278,7 +296,11 @@ const Cart = () => {
         });
       }
       window.dispatchEvent(new Event("storage"));
-    }, 600);
+    } catch {
+      alert("Error verifying OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
