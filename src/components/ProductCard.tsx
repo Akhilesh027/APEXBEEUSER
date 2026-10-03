@@ -55,15 +55,27 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     return null;
   });
 
+  // Vendor detail availability check to prevent redundant network spam
+  const hasVendorName = Boolean(
+    product.shopName ||
+    product.storeName ||
+    product.businessName ||
+    product.sellerId?.shopName ||
+    product.sellerId?.storeName ||
+    product.sellerId?.businessName ||
+    product.sellerId?.name ||
+    product.brand
+  );
+
   useEffect(() => {
-    if (!vendorId) return;
+    if (!vendorId || hasVendorName) return;
 
     if (vendorDetailsCache.has(vendorId)) {
       setFetchedVendor(vendorDetailsCache.get(vendorId));
       return;
     }
 
-    // Fetch vendor details from API using vendorId if shopName is not populated on product object
+    // Only fetch vendor details if store/shop name is completely absent
     axios
       .get(`${API_BASE}/vendors/${vendorId}`)
       .then((res) => {
@@ -85,7 +97,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           })
           .catch(() => { });
       });
-  }, [vendorId, product]);
+  }, [vendorId, hasVendorName]);
 
   // Real Image handling - Strictly prioritize Main Cover Thumbnail (product.thumbnail)
   const getThumbnailImage = (p: any): string => {

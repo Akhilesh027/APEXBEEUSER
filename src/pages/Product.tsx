@@ -90,6 +90,9 @@ function getRecentlyViewedProducts(): Product[] {
   catch { return []; }
 }
 
+// Module-level category cache across page visits
+let memoryCategoryCache: Category[] | null = null;
+
 // ═══════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════
@@ -98,7 +101,7 @@ const ProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(() => memoryCategoryCache || []);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -174,6 +177,7 @@ const ProductsPage = () => {
 
   // ─── Fetch data ───
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         setLoading(true);
@@ -193,17 +197,27 @@ const ProductsPage = () => {
         if (loc?.mandal) prodUrl += `&mandal=${encodeURIComponent(loc.mandal)}`;
         if (loc?.district) prodUrl += `&district=${encodeURIComponent(loc.district)}`;
 
-        const [catRes, prodRes] = await Promise.all([
-          fetch(`${API_BASE}/categories`),
+        const fetchCatsPromise = !memoryCategoryCache
+          ? fetch(`${API_BASE}/categories`)
+              .then((r) => (r.ok ? r.json() : null))
+              .catch(() => null)
+          : Promise.resolve(null);
+
+        const [catJson, prodRes] = await Promise.all([
+          fetchCatsPromise,
           fetch(prodUrl),
         ]);
-        if (!catRes.ok) throw new Error(`Categories API failed (${catRes.status})`);
+
+        if (catJson) {
+          const catList = extractArray<Category>(catJson);
+          if (catList.length > 0) {
+            memoryCategoryCache = catList;
+            if (isMounted) setCategories(catList);
+          }
+        }
+
         if (!prodRes.ok) throw new Error(`Products API failed (${prodRes.status})`);
-
-        const catJson = await catRes.json();
         const prodJson = await prodRes.json();
-
-        setCategories(extractArray<Category>(catJson));
         const rawList = extractArray<Product>(prodJson);
 
         // Filter local products on client
@@ -219,14 +233,23 @@ const ProductsPage = () => {
           return false;
         });
 
-        setProducts(filteredList);
+        if (isMounted) {
+          setProducts(filteredList);
+        }
       } catch (e: any) {
         console.error("ProductsPage load error:", e);
-        setErrorMsg(e?.message || "Failed to load products");
+        if (isMounted) {
+          setErrorMsg(e?.message || "Failed to load products");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     })();
+    return () => {
+      isMounted = false;
+    };
   }, [userLocation]);
 
   // Wishlist status
