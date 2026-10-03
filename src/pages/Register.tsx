@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Briefcase, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Briefcase, Sparkles, AlertCircle } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
@@ -22,6 +22,7 @@ const Register = () => {
     referralCode: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -64,6 +65,49 @@ const Register = () => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
     setError("");
+    if (fieldErrors[name as keyof typeof fieldErrors]) {
+      setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    const cleanEmail = formData.email.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) return;
+    try {
+      const res = await fetch(`${API_BASE}/auth/check-exists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+      const data = await res.json();
+      if (data?.exists && data?.emailExists) {
+        setFieldErrors(prev => ({ ...prev, email: "This email address is already registered. Please sign in or use another email." }));
+      } else {
+        setFieldErrors(prev => ({ ...prev, email: undefined }));
+      }
+    } catch {
+      // Ignore background check network errors
+    }
+  };
+
+  const handlePhoneBlur = async () => {
+    const cleanPhone = formData.phone.trim();
+    if (cleanPhone.length < 10) return;
+    try {
+      const res = await fetch(`${API_BASE}/auth/check-exists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
+      const data = await res.json();
+      if (data?.exists && data?.phoneExists) {
+        setFieldErrors(prev => ({ ...prev, phone: "This phone number is already registered. Please sign in or use another number." }));
+      } else {
+        setFieldErrors(prev => ({ ...prev, phone: undefined }));
+      }
+    } catch {
+      // Ignore background check network errors
+    }
   };
 
   // Guest flow
@@ -129,21 +173,32 @@ const Register = () => {
         return;
       }
 
-      // 1. Send OTP first
+      // 1. Send OTP with purpose: "register" (Backend validates user existence BEFORE sending OTP)
       const otpRes = await fetch(`${API_BASE}/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone, email: formData.email }),
+        body: JSON.stringify({
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          purpose: "register"
+        }),
       });
 
-      if (!otpRes.ok) {
-        const otpData = await otpRes.json();
-        setError(otpData?.message || "Failed to send verification code. Please try again.");
+      const otpData = await otpRes.json();
+      if (!otpRes.ok || !otpData?.success) {
+        const errorMsg = otpData?.message || "Failed to send verification code. Please try again.";
+        setError(errorMsg);
+        if (otpData?.emailExists) {
+          setFieldErrors(prev => ({ ...prev, email: errorMsg }));
+        }
+        if (otpData?.phoneExists) {
+          setFieldErrors(prev => ({ ...prev, phone: errorMsg }));
+        }
         setLoading(false);
         return;
       }
 
-      // 2. Open OTP dialog
+      // 2. Open OTP dialog ONLY if verification code was successfully sent
       setOtpCode("");
       setOtpError("");
       setShowOtpDialog(true);
@@ -392,18 +447,57 @@ const Register = () => {
                   )}
                   <div className="space-y-3">
                     <Input type="text" name="name" placeholder="Full name" value={formData.name} onChange={handleInputChange} required />
-                    <Input type="email" name="email" placeholder="Email address" value={formData.email} onChange={handleInputChange} required />
-                    <Input type="tel" name="phone" placeholder="10-digit mobile number" value={formData.phone} onChange={(e) => {
-                      const onlyNums = e.target.value.replace(/\D/g, "");
-                      const clean = onlyNums.startsWith("91") && onlyNums.length >= 12
-                        ? onlyNums.slice(2, 12)
-                        : onlyNums.startsWith("0") && onlyNums.length >= 11
-                          ? onlyNums.slice(1, 11)
-                          : onlyNums.length > 10
-                            ? onlyNums.slice(-10)
-                            : onlyNums;
-                      setFormData(p => ({ ...p, phone: clean }));
-                    }} inputMode="tel" maxLength={14} required />
+                    <div>
+                      <Input
+                        type="email"
+                        name="email"
+                        placeholder="Email address"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        onBlur={handleEmailBlur}
+                        className={fieldErrors.email ? "border-red-500 focus-visible:ring-red-400" : ""}
+                        required
+                      />
+                      {fieldErrors.email && (
+                        <p className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>{fieldErrors.email}</span>
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Input
+                        type="tel"
+                        name="phone"
+                        placeholder="10-digit mobile number"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          const onlyNums = e.target.value.replace(/\D/g, "");
+                          const clean = onlyNums.startsWith("91") && onlyNums.length >= 12
+                            ? onlyNums.slice(2, 12)
+                            : onlyNums.startsWith("0") && onlyNums.length >= 11
+                              ? onlyNums.slice(1, 11)
+                              : onlyNums.length > 10
+                                ? onlyNums.slice(-10)
+                                : onlyNums;
+                          setFormData(p => ({ ...p, phone: clean }));
+                          if (fieldErrors.phone) {
+                            setFieldErrors(prev => ({ ...prev, phone: undefined }));
+                          }
+                        }}
+                        onBlur={handlePhoneBlur}
+                        className={fieldErrors.phone ? "border-red-500 focus-visible:ring-red-400" : ""}
+                        inputMode="tel"
+                        maxLength={14}
+                        required
+                      />
+                      {fieldErrors.phone && (
+                        <p className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>{fieldErrors.phone}</span>
+                        </p>
+                      )}
+                    </div>
                     <div className="space-y-1">
                       <div className="relative">
                         <Input type={showPassword ? "text" : "password"} name="password" placeholder="Password (min 6 characters)" value={formData.password} onChange={handleInputChange} required minLength={6} className="pr-10" />

@@ -393,7 +393,7 @@ const Profile = () => {
             await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: emailToUse, phone: userData?.phone || "0000000000" }),
+                body: JSON.stringify({ email: emailToUse, phone: userData?.phone || "0000000000", purpose: "email_verification" }),
             });
         } catch (err) {
             console.error("Error sending email OTP:", err);

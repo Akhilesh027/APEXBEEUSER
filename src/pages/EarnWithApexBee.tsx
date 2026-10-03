@@ -364,13 +364,19 @@ const getAuth = () => {
   return { user, token };
 };
 
-const getRequiredDocs = (roleId: string) => {
+type KycDocRequirement = {
+  key: string;
+  label: string;
+  optional?: boolean;
+};
+
+const getRequiredDocs = (roleId: string): KycDocRequirement[] => {
   const r = roleId.toLowerCase().trim();
   if (r === "vendor" || r === "wholesaler" || r === "manufacturer" || r === "franchise") {
     return [
       { key: "aadhaar", label: "Aadhaar Card (Front & Back)" },
       { key: "pan", label: "PAN Card" },
-      { key: "gst", label: "GST Certificate / Business Registration" }
+      { key: "gst", label: "GST Certificate / Business Registration", optional: true }
     ];
   } else if (r === "delivery_partner") {
     return [
@@ -437,7 +443,7 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
     const { token } = getAuth();
     if (!token) return;
 
-    const missingDocs = docsList.filter(d => !application.documents?.[d.key] && !selectedFiles[d.key]);
+    const missingDocs = docsList.filter(d => !d.optional && !application.documents?.[d.key] && !selectedFiles[d.key]);
     if (missingDocs.length > 0) {
       setIsError(true);
       setStatusMsg(`Please select files for: ${missingDocs.map(d => d.label).join(", ")}`);
@@ -500,7 +506,14 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
 
           return (
             <div key={doc.key} className="p-3 bg-white border rounded-lg space-y-2">
-              <label className="text-xs font-semibold text-gray-700 block">{doc.label}</label>
+              <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
+                <span>{doc.label}</span>
+                {doc.optional && (
+                  <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                    Optional
+                  </span>
+                )}
+              </label>
 
               {existingUrl && !editFields[doc.key] ? (
                 <div className="space-y-2">
@@ -566,7 +579,7 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
         </p>
       )}
 
-      {(Object.keys(selectedFiles).length > 0 || docsList.some(d => !application.documents?.[d.key])) && (
+      {(Object.keys(selectedFiles).length > 0 || docsList.some(d => !d.optional && !application.documents?.[d.key])) && (
         <Button
           type="submit"
           className="w-full bg-navy hover:bg-navy/90 text-white font-semibold text-xs py-2"
@@ -630,6 +643,14 @@ const EarnWithApexBee = () => {
   const [gstNumber, setGstNumber] = useState("");
   const [panNumber, setPanNumber] = useState("");
   const [aadhaarNumber, setAadhaarNumber] = useState("");
+
+  const handlePanChange = (val: string) => {
+    setPanNumber(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10));
+  };
+
+  const handleGstChange = (val: string) => {
+    setGstNumber(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15));
+  };
   const [franchiseLevel, setFranchiseLevel] = useState("mandal");
   const [investmentCapacity, setInvestmentCapacity] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -1009,9 +1030,9 @@ const EarnWithApexBee = () => {
             mandal: selectedMandal || "Mandal HQ",
             address: formLocation,
             pincode: formPincode.trim(),
-            panNumber,
+            panNumber: panNumber ? panNumber.trim().toUpperCase() : "",
             aadhaarNumber,
-            gstNumber,
+            gstNumber: gstNumber ? gstNumber.trim().toUpperCase() : "",
             franchiseLevel: franchiseLevel || "mandal",
             investmentCapacity: "Ready for allocation",
             isWaitlisted: true,
@@ -1124,9 +1145,9 @@ const EarnWithApexBee = () => {
                     businessName,
                     address: formLocation,
                     pincode: formPincode.trim(),
-                    panNumber,
+                    panNumber: panNumber ? panNumber.trim().toUpperCase() : "",
                     aadhaarNumber,
-                    gstNumber,
+                    gstNumber: gstNumber ? gstNumber.trim().toUpperCase() : "",
                     paymentMode: franchisePaymentMode,
                     amountPaid: orderData.amount,
                   },
@@ -1254,8 +1275,8 @@ const EarnWithApexBee = () => {
         subCategory: assignedSubCategory,
         subCategories: assignedApprovedSubcategories,
         approvedSubcategories: assignedApprovedSubcategories,
-        gstNumber,
-        panNumber,
+        gstNumber: gstNumber ? gstNumber.trim().toUpperCase() : "",
+        panNumber: panNumber ? panNumber.trim().toUpperCase() : "",
         aadhaarNumber,
         franchiseLevel,
         investmentCapacity,
@@ -2139,19 +2160,21 @@ const EarnWithApexBee = () => {
                     <input
                       type="text"
                       value={gstNumber}
-                      onChange={(e) => setGstNumber(e.target.value)}
+                      onChange={(e) => handleGstChange(e.target.value)}
                       placeholder="e.g. 22AAAAA0000A1Z5"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      maxLength={15}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 uppercase font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number * (Capital Letters)</label>
                     <input
                       type="text"
                       value={panNumber}
-                      onChange={(e) => setPanNumber(e.target.value)}
+                      onChange={(e) => handlePanChange(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                      maxLength={10}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-mono font-semibold uppercase"
                     />
                   </div>
                   <div>
@@ -2195,13 +2218,14 @@ const EarnWithApexBee = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number * (Capital Letters)</label>
                     <input
                       type="text"
                       value={panNumber}
-                      onChange={(e) => setPanNumber(e.target.value)}
+                      onChange={(e) => handlePanChange(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                      maxLength={10}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-mono font-semibold uppercase"
                     />
                   </div>
                   <div>
@@ -2219,9 +2243,10 @@ const EarnWithApexBee = () => {
                     <input
                       type="text"
                       value={gstNumber}
-                      onChange={(e) => setGstNumber(e.target.value)}
+                      onChange={(e) => handleGstChange(e.target.value)}
                       placeholder="GSTIN Code"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-semibold"
+                      maxLength={15}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-mono font-semibold uppercase"
                     />
                   </div>
                 </div>
@@ -2338,19 +2363,21 @@ const EarnWithApexBee = () => {
                     <input
                       type="text"
                       value={gstNumber}
-                      onChange={(e) => setGstNumber(e.target.value)}
+                      onChange={(e) => handleGstChange(e.target.value)}
                       placeholder="15-digit GSTIN Number"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      maxLength={15}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 uppercase font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number (Optional)</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number (Optional, Capital Letters)</label>
                     <input
                       type="text"
                       value={panNumber}
-                      onChange={(e) => setPanNumber(e.target.value)}
-                      placeholder="10-digit PAN Number"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      onChange={(e) => handlePanChange(e.target.value)}
+                      placeholder="10-digit PAN (e.g. ABCDE1234F)"
+                      maxLength={10}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 uppercase font-mono"
                     />
                   </div>
                 </div>
@@ -2384,13 +2411,14 @@ const EarnWithApexBee = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number * (Capital Letters)</label>
                     <input
                       type="text"
                       value={panNumber}
-                      onChange={(e) => setPanNumber(e.target.value)}
+                      onChange={(e) => handlePanChange(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      maxLength={10}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-mono uppercase"
                     />
                   </div>
                   <div>
@@ -2412,13 +2440,14 @@ const EarnWithApexBee = () => {
                 <h4 className="text-sm font-semibold text-navy">Identity & Network Details</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number *</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">PAN Number * (Capital Letters)</label>
                     <input
                       type="text"
                       value={panNumber}
-                      onChange={(e) => setPanNumber(e.target.value)}
+                      onChange={(e) => handlePanChange(e.target.value)}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700"
+                      maxLength={10}
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-mono uppercase"
                     />
                   </div>
                   <div>

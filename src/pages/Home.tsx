@@ -3131,49 +3131,6 @@ const Home = () => {
             </section>
           )}
 
-          {/* 10. Festival Quick-Action Widget */}
-          <section className="container mx-auto px-3 sm:px-4 py-1.5 sm:py-2 text-left">
-            <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-pink-600 text-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 border border-amber-500/20">
-              <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-9xl font-bold translate-x-5 -translate-y-5">🌸</div>
-              <div className="space-y-2.5 max-w-xl z-10">
-                <span className="text-[9px] font-black text-amber-200 bg-white/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">Festival Specials</span>
-                <h3 className="text-xl font-black text-white">{personalization?.festival?.title || "🪔 Varalakshmi Vratham is coming up!"}</h3>
-                <p className="text-xs text-white/90 leading-relaxed font-semibold">{personalization?.festival?.desc || "Ensure complete puja preparation. Instantly book your bundle or custom items with 30-min guaranteed doorstep delivery."}</p>
-                <div className="flex flex-wrap items-center gap-1.5 pt-1 font-bold">
-                  {(personalization?.festival?.items || ["🌼 Flowers", "🍎 Fruits", "🛍 Pooja Kit", "🥥 Coconut", "🍌 Banana", "🪔 Deepam"]).map((item: string) => (
-                    <span key={item} className="text-[9px] bg-white/20 border border-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition" onClick={() => navigate("/categories")}>{item}</span>
-                  ))}
-                </div>
-              </div>
-              <Button
-                onClick={() => navigate("/categories")}
-                className="bg-white hover:bg-slate-50 text-rose-600 hover:scale-105 transition-all duration-300 font-extrabold text-xs rounded-xl px-6 py-3.5 shadow-lg shrink-0 border-none cursor-pointer z-10"
-              >
-                {personalization?.festival?.actionLabel || "🛒 Order Puja Bundle"}
-              </Button>
-            </div>
-          </section>
-
-          {/* Festival Raksha Bandhan Offers Banner Card */}
-          <section className="container mx-auto px-3 sm:px-4 py-1.5 text-left">
-            <div className="bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
-              <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-7xl font-bold">✨</div>
-              <div className="z-10 max-w-lg">
-                <div className="inline-block bg-white/20 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  {festivalBanner?.discount || "20% OFF"}
-                </div>
-                <h4 className="font-extrabold text-sm sm:text-base mt-1.5">{festivalBanner?.title || "Festival Raksha Bandhan Offers!"} 🎁</h4>
-                <p className="text-[11px] text-white/90 mt-1 leading-relaxed">{festivalBanner?.description || "Send local sweet boxes to siblings. Get 20% off from local sweet shops."}</p>
-              </div>
-              <Button
-                onClick={() => navigate(festivalBanner?.link || "/categories")}
-                className="bg-white hover:bg-slate-100 text-rose-600 font-bold text-xs rounded-xl shrink-0 z-10 py-2.5 px-4 shadow border-none cursor-pointer"
-              >
-                View Festive Deals
-              </Button>
-            </div>
-          </section>
-
           {/* 11. AI Suggestions widget (Abhi Suggests) */}
           <section className="container mx-auto px-3 sm:px-4 py-1.5 text-left">
             <div className="bg-gradient-to-r from-amber-50/70 via-yellow-50/40 to-white border border-amber-200/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all duration-300">
@@ -3401,33 +3358,6 @@ const Home = () => {
             )}
           </section>
 
-          {/* 16. Community updates & rewards */}
-          <section className="container mx-auto px-4 py-6">
-            <div className="text-left">
-              {/* Rewards Card */}
-              <div className="p-5 sm:p-6 rounded-3xl border bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border-amber-300/60 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-                <div className="space-y-2 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 text-amber-900 bg-amber-100 px-3 py-1 rounded-full text-xs font-black">
-                    <Gift className="h-3.5 w-3.5 text-amber-600" /> Rewards & Cashbacks
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading">KYC Verification Reward</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                    Complete your profile and verify KYC to lock in your first ₹50 sign-up bonus credited directly to your wallet.
-                  </p>
-                  <Button size="sm" className="bg-[#0A1128] hover:bg-amber-500 text-amber-400 hover:text-[#0A1128] font-black text-xs rounded-xl border-none cursor-pointer px-5 py-2.5 shadow-sm transition" onClick={() => navigate("/profile")}>
-                    Verify Profile & Claim Bonus
-                  </Button>
-                </div>
-                <div className="text-right bg-white p-4 rounded-2xl border border-amber-200 shrink-0 shadow-xs min-w-[140px]">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider font-mono">Available Balance</p>
-                  <p className="text-2xl sm:text-3xl font-black text-[#0A1128] mt-0.5">₹5,000</p>
-                  <p className="text-[10px] text-emerald-600 font-black mt-0.5 flex items-center justify-end gap-1">
-                    <span>✓</span> Wallet Loaded
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
 
           {/* Community Updates Feed */}
           <section className="container mx-auto px-4 py-8">
@@ -3437,7 +3367,6 @@ const Home = () => {
             <div className="space-y-3">
               {[
                 { title: "ApexBee expands to 12 new pincodes in South Bangalore", date: "Today", desc: "Local stores across JP Nagar, Jayanagar, and BTM are now live with same-day deliveries." },
-                { title: "MLM Leader Conference announced in Bangalore", date: "2 days ago", desc: "Learn building large referral teams and doubling passive earnings from top network industry leaders." },
                 { title: "KYC verification guidelines updated for instant payouts", date: "5 days ago", desc: "Ensure your bank account details and PAN card match for immediate referral payout clearance." },
               ].map((feed, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white hover:bg-muted/5 transition flex items-start gap-3 text-left shadow-sm">

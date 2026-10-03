@@ -236,7 +236,7 @@ const Cart = () => {
       await fetch(`${API_BASE}/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone, purpose: "checkout" }),
       });
       setOtpSent(true);
       setCountdown(60);

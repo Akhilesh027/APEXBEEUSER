@@ -20,6 +20,7 @@ import {
   Navigation,
   ShieldCheck,
   CreditCard,
+  Banknote,
   Sparkles,
   Zap,
   Lock,
@@ -324,6 +325,9 @@ const Checkout = () => {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [locationFetching, setLocationFetching] = useState(false);
   const [locationError, setLocationError] = useState<string>("");
+
+  // Mobile Step-by-Step Checkout: 1 = Address & Fulfillment, 2 = Delivery Preferences, 3 = Payment & Summary
+  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
   // Fulfillment & Delivery Preferences
   const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">(
@@ -2006,6 +2010,39 @@ const Checkout = () => {
     return "";
   }, [orderDetails.items, userPincode]);
 
+  const canProceedToStep2 = () => {
+    if (undeliverableInfo.hasUndeliverable) {
+      toast({
+        title: "Undeliverable Items",
+        description: "Please remove undeliverable local items from your cart to continue.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (fulfillmentType === "delivery" && !selectedAddress) {
+      toast({
+        title: "Address Required",
+        description: "Please select or add a delivery address to continue.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (fulfillmentType === "pickup" && (!pickupPossible || !pickupLocationId || !pickupSlot)) {
+      toast({
+        title: "Pickup Details Required",
+        description: "Please select a pickup location and slot to continue.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const canProceedToStep3 = () => {
+    if (!canProceedToStep2()) return false;
+    return true;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
       <Navbar />
@@ -2021,17 +2058,129 @@ const Checkout = () => {
             <h1 className="text-2xl sm:text-4xl font-black text-white font-heading">Complete Your Order</h1>
           </div>
 
-          <div className="flex items-center space-x-3 text-xs text-amber-300 font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur">
-            <span>1. Address</span>
+          <div className="hidden sm:flex items-center space-x-3 text-xs text-amber-300 font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur">
+            <span className={mobileStep === 1 ? "text-white underline font-extrabold" : ""}>1. Address</span>
             <span>→</span>
-            <span>2. Delivery</span>
+            <span className={mobileStep === 2 ? "text-white underline font-extrabold" : ""}>2. Delivery</span>
             <span>→</span>
-            <span className="text-white underline font-extrabold">3. Payment</span>
+            <span className={mobileStep === 3 ? "text-white underline font-extrabold" : ""}>3. Payment</span>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 space-y-6 sm:space-y-8">
+
+        {/* MOBILE EXCLUSIVE STEP-BY-STEP PROGRESS BAR */}
+        <div className="block lg:hidden bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs">
+          <div className="flex items-center justify-between relative px-2">
+            {/* Step 1 */}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileStep(1);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+            >
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 1
+                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                    : mobileStep > 1
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+              >
+                {mobileStep > 1 ? <Check className="w-4 h-4 stroke-[3]" /> : "1"}
+              </div>
+              <span
+                className={`text-[11px] font-extrabold tracking-tight ${mobileStep === 1
+                    ? "text-navy"
+                    : mobileStep > 1
+                      ? "text-emerald-700"
+                      : "text-slate-400"
+                  }`}
+              >
+                Address
+              </span>
+            </button>
+
+            {/* Connecting Line 1 to 2 */}
+            <div className="flex-1 h-0.5 mx-2 bg-slate-200 relative -mt-4">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300"
+                style={{ width: mobileStep > 1 ? "100%" : "0%" }}
+              />
+            </div>
+
+            {/* Step 2 */}
+            <button
+              type="button"
+              onClick={() => {
+                if (canProceedToStep2()) {
+                  setMobileStep(2);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+            >
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 2
+                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                    : mobileStep > 2
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+              >
+                {mobileStep > 2 ? <Check className="w-4 h-4 stroke-[3]" /> : "2"}
+              </div>
+              <span
+                className={`text-[11px] font-extrabold tracking-tight ${mobileStep === 2
+                    ? "text-navy"
+                    : mobileStep > 2
+                      ? "text-emerald-700"
+                      : "text-slate-400"
+                  }`}
+              >
+                Delivery
+              </span>
+            </button>
+
+            {/* Connecting Line 2 to 3 */}
+            <div className="flex-1 h-0.5 mx-2 bg-slate-200 relative -mt-4">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300"
+                style={{ width: mobileStep > 2 ? "100%" : "0%" }}
+              />
+            </div>
+
+            {/* Step 3 */}
+            <button
+              type="button"
+              onClick={() => {
+                if (canProceedToStep3()) {
+                  setMobileStep(3);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+            >
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 3
+                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+              >
+                3
+              </div>
+              <span
+                className={`text-[11px] font-extrabold tracking-tight ${mobileStep === 3 ? "text-navy" : "text-slate-400"
+                  }`}
+              >
+                Payment
+              </span>
+            </button>
+          </div>
+        </div>
 
         {/* Pre-order banner */}
         {preOrderInfo.hasPreOrder && preOrderInfo.availableOnMax && (
@@ -2046,7 +2195,7 @@ const Checkout = () => {
           {/* Left */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Fulfillment */}
-            <div className="bg-white rounded-lg border p-4 sm:p-6">
+            <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
               <h2 className="text-lg font-semibold mb-4">Fulfillment</h2>
 
               <RadioGroup
@@ -2209,7 +2358,7 @@ const Checkout = () => {
 
             {/* Delivery Address */}
             {fulfillmentType === "delivery" && (
-              <div className="bg-white rounded-lg border p-4 sm:p-6">
+              <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold">Delivery Address</h2>
                   <Button variant="outline" size="sm" onClick={onOpenAddNewAddress} className="w-full sm:w-auto">
@@ -2270,7 +2419,7 @@ const Checkout = () => {
 
             {/* 🚨 UNDELIVERABLE LOCAL ITEMS ALERT BANNER */}
             {undeliverableInfo.hasUndeliverable && (
-              <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-3.5">
+              <div className={`bg-red-50 border-2 border-red-500 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-3.5 ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
                     🚫
@@ -2315,9 +2464,74 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* Mobile Step 1: Cart Items Preview & Continue Button */}
+            <div className={`${mobileStep === 1 ? "block lg:hidden" : "hidden"} space-y-4`}>
+              <div className="bg-white rounded-lg border p-4 text-left">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm text-navy flex items-center gap-1.5">
+                    <span>🛍️</span> Cart Items ({orderDetails.items.length})
+                  </h3>
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    Subtotal: ₹{orderDetails.subtotal.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                  {orderDetails.items.map((it: any, idx: number) => (
+                    <div key={idx} className="flex-shrink-0 w-20 text-center">
+                      <div className="w-16 h-16 mx-auto rounded-lg border p-1 bg-slate-50 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={it.images?.[0] || it.image || "/placeholder.png"}
+                          alt={it.itemName || it.name}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-700 truncate mt-1 font-medium">{it.itemName || it.name}</p>
+                      <p className="text-[10px] font-bold text-navy">₹{(getItemPrice(it) * (it.quantity || 1)).toFixed(0)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  if (canProceedToStep2()) {
+                    setMobileStep(2);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Continue to Delivery Preferences</span>
+                <span>→</span>
+              </Button>
+            </div>
+
+            {/* Mobile Step 2: Selected Address Summary Pill */}
+            <div className={`${mobileStep === 2 ? "block lg:hidden" : "hidden"}`}>
+              <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 truncate min-w-0">
+                  <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="truncate text-slate-800 font-medium">
+                    Deliver to: <strong>{selectedAddress?.name || "Selected Address"}</strong> ({userPincode || selectedAddress?.pincode})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileStep(1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="text-xs font-bold text-navy hover:underline shrink-0 ml-2 cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
             {/* 📝 Delivery Preferences */}
             {fulfillmentType === "delivery" && (
-              <div className="bg-white rounded-lg border p-4 sm:p-6 text-left space-y-4">
+              <div className={`bg-white rounded-lg border p-4 sm:p-6 text-left space-y-4 ${mobileStep === 2 ? "block" : "hidden lg:block"}`}>
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy flex items-center gap-2">
                     <span>{outOfLocalInfo.hasOutOfLocal ? "📦" : "📝"}</span>
@@ -2445,7 +2659,7 @@ const Checkout = () => {
             )}
 
             {/* Discounts & Wallet Deductions */}
-            <div className="bg-white rounded-lg border p-4 sm:p-6">
+            <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 💰 Discounts & Wallet Deductions
               </h2>
@@ -2488,80 +2702,65 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment */}
-            <div className="bg-white rounded-lg border p-4 sm:p-6">
-              <h2 className="text-lg font-semibold mb-4">Payment Method</h2>
+            {/* Payment Method */}
+            <div className={`bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
+              <h2 className="text-sm sm:text-base font-bold text-navy mb-3 flex items-center justify-between">
+                <span>Payment Method</span>
+                <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  100% Safe & Secure
+                </span>
+              </h2>
+
               {orderDetails.total === 0 ? (
-                <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800 font-medium">
-                  🎉 Total amount is covered by deductions! Click "Place Order" to finalize.
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-900 font-medium flex items-center gap-2">
+                  <span>🎉</span>
+                  <span>Covered by discounts & wallet balance! Click "Place Order" to finalize.</span>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <RadioGroup
-                    value={selectedPayment}
-                    onValueChange={(v: any) => handlePaymentSelection(v)}
-                    className="space-y-3"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Button 1: Online Payment */}
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentSelection("razorpay")}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition cursor-pointer text-left ${selectedPayment === "razorpay"
+                        ? "border-amber-500 bg-amber-50/70 text-slate-900 shadow-xs ring-1 ring-amber-400/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
+                      }`}
                   >
-                    {/* Razorpay Online Gateway Option */}
-                    <div className={`p-4 rounded-2xl border-2 transition-all ${selectedPayment === "razorpay"
-                      ? "bg-amber-50/70 border-amber-500 shadow-md ring-1 ring-amber-400/40"
-                      : "bg-white border-slate-200/80 hover:border-slate-300"
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPayment === "razorpay" ? "bg-amber-500 text-slate-950 shadow-xs" : "bg-slate-100 text-slate-600"
                       }`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <RadioGroupItem value="razorpay" id="razorpay" className="mt-1 text-amber-600" />
-                          <div>
-                            <Label htmlFor="razorpay" className="cursor-pointer font-black flex items-center gap-2 text-sm sm:text-base text-navy">
-                              <Sparkles className="h-4 w-4 text-amber-600" />
-                              Razorpay Secure Online Payment
-                            </Label>
-                            <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
-                              Instant payment via <strong>UPI</strong> (Google Pay, PhonePe, Paytm), <strong>Credit/Debit Cards</strong>, <strong>NetBanking</strong> & Wallets.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                              {["Google Pay", "PhonePe", "Paytm", "Cards", "NetBanking"].map((badge) => (
-                                <span key={badge} className="text-[10px] bg-slate-100 border border-slate-200 font-bold px-2 py-0.5 rounded-md text-slate-700">
-                                  {badge}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 shadow-xs">
-                          ⚡ Instant & Auto
-                        </span>
-                      </div>
+                      <CreditCard className="w-5 h-5" />
                     </div>
+                    <span className="text-sm font-bold text-slate-900 flex-1">Online Payment</span>
+                    {selectedPayment === "razorpay" && (
+                      <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </span>
+                    )}
+                  </button>
 
-                    {/* COD Option (Disabled / Blocked) */}
-                    <div className="p-3.5 rounded-2xl border bg-slate-100/60 border-slate-200 opacity-60 cursor-not-allowed">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem
-                            value="cod"
-                            id="cod"
-                            disabled={true}
-                          />
-                          <Label
-                            htmlFor="cod"
-                            className="font-bold text-sm sm:text-base text-slate-400 cursor-not-allowed line-through"
-                          >
-                            Cash on Delivery (COD)
-                          </Label>
-                        </div>
-                        <span className="text-[10px] bg-slate-200 text-slate-600 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
-                          <span>🚫</span> Disabled (Online Only)
-                        </span>
-                      </div>
+                  {/* Button 2: Cash on Delivery */}
+                  <button
+                    type="button"
+                    disabled
+                    className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-slate-400 cursor-not-allowed text-left opacity-60"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-slate-200/80 text-slate-400 flex items-center justify-center shrink-0">
+                      <Banknote className="w-5 h-5" />
                     </div>
-                  </RadioGroup>
+                    <span className="text-sm font-medium text-slate-500 flex-1">Cash on Delivery</span>
+                    <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      Disabled
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
 
             {/* 🎁 Gift Wrap */}
             {fulfillmentType === "delivery" && (
-              <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3">
+              <div className={`bg-white rounded-lg border p-4 sm:p-6 space-y-3 ${mobileStep === 2 ? "block" : "hidden lg:block"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-navy flex items-center gap-1.5">🎁 Gift Wrap (+₹29)</p>
@@ -2591,8 +2790,80 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* Mobile Step 2: Navigation Buttons */}
+            <div className={`${mobileStep === 2 ? "block lg:hidden" : "hidden"} pt-2 flex items-center gap-3`}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setMobileStep(1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="flex-1 border-slate-300 text-slate-700 font-bold py-3.5 rounded-2xl text-xs cursor-pointer"
+              >
+                ← Back to Address
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (canProceedToStep3()) {
+                    setMobileStep(3);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                className="flex-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Continue to Payment</span>
+                <span>→</span>
+              </Button>
+            </div>
+
+            {/* Mobile Step 3: Summary Badges */}
+            <div className={`${mobileStep === 3 ? "block lg:hidden" : "hidden"} bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3 space-y-1.5 text-xs text-left`}>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-slate-800 truncate min-w-0">
+                  <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span className="truncate"><strong>{selectedAddress?.name}</strong> • {userPincode || selectedAddress?.pincode}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileStep(1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="text-[11px] font-bold text-navy hover:underline shrink-0 ml-2 cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-amber-200/60">
+                <span className="flex items-center gap-1.5 text-slate-700 truncate min-w-0">
+                  <span>🚚</span>
+                  <span className="truncate font-medium">
+                    {outOfLocalInfo.hasOutOfLocal
+                      ? "National Courier (3-5 Days)"
+                      : deliveryMode === "express"
+                        ? "Express (15-30 Min)"
+                        : deliveryMode === "same_day"
+                          ? "Same Day Delivery"
+                          : "Standard Local Delivery"}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileStep(2);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="text-[11px] font-bold text-navy hover:underline shrink-0 ml-2 cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
             {/* Coupon */}
-            <div className="bg-white rounded-lg border p-4 sm:p-6">
+            <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <Ticket className="h-5 w-5" /> Apply Coupon
@@ -2694,7 +2965,7 @@ const Checkout = () => {
           </div>
 
           {/* Right: Summary & Product Details - STICKY FIXED WHILE SCROLLING */}
-          <div className="lg:col-span-1 lg:sticky lg:top-24 z-30 self-start">
+          <div className={`lg:col-span-1 lg:sticky lg:top-24 z-30 self-start ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
             <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-200">
               <div className="mb-4 sm:mb-6">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -2868,7 +3139,7 @@ const Checkout = () => {
                 ) : undeliverableInfo.hasUndeliverable ? (
                   "🚫 Remove Undeliverable Items to Order"
                 ) : selectedPayment === "razorpay" ? (
-                  `⚡ Pay ₹${orderDetails.total.toFixed(2)} with Razorpay`
+                  `Pay ₹${orderDetails.total.toFixed(2)} Online`
                 ) : selectedPayment === "upi" ? (
                   "Proceed to UPI Payment →"
                 ) : (
@@ -2897,6 +3168,20 @@ const Checkout = () => {
                       : "Please select pickup location + slot"}
                   </p>
                 )}
+
+              {/* Mobile Back Button to Step 2 */}
+              <div className="block lg:hidden mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileStep(2);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-navy underline cursor-pointer py-1"
+                >
+                  ← Back to Delivery Preferences
+                </button>
+              </div>
             </div>
           </div>
         </div>
