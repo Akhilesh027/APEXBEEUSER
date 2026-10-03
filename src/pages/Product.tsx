@@ -208,6 +208,7 @@ const ProductsPage = () => {
 
         // Filter local products on client
         const filteredList = rawList.filter((p: any) => {
+          if (p.isActive === false || p.status === 'Inactive') return false;
           const scope = p.deliveryScope;
           const isPan = p.isPanIndia || scope === "pan_india" || scope === "both";
           if (isPan) return true;
