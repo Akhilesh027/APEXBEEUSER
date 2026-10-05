@@ -2,7 +2,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBannerStrip } from "@/components/DynamicBannerStrip";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, Store, Tag, Bookmark, Heart, Truck, Gift } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, Store, Tag, Bookmark, Heart, Truck, Gift, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -681,7 +683,7 @@ const Cart = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 pb-32 lg:pb-12 space-y-8">
         {/* DYNAMIC CART PROMOTIONAL STRIP (Managed via Admin Panel) */}
         <DynamicBannerStrip
           placement="cart_strip"
@@ -928,7 +930,123 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* 📱 STICKY MOBILE CHECKOUT BAR (Safely elevated above BottomNav) */}
+      {cartItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-2.5 z-40 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] font-sans">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total</span>
+            <div className="flex items-baseline gap-1.5 truncate">
+              <span className="text-base font-black text-slate-900 font-mono">{formatCurrency(total)}</span>
+              {discount > 0 && (
+                <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200 shrink-0">
+                  Save {formatCurrency(discount)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCheckout}
+            className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition active:scale-95 shrink-0"
+          >
+            <span>Proceed to Checkout</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       <Footer />
+
+      {/* GUEST CHECKOUT / QUICK LOGIN MODAL */}
+      <Dialog open={showGuestModal} onOpenChange={setShowGuestModal}>
+        <DialogContent className="sm:max-w-md bg-white p-6 rounded-3xl border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 font-heading">
+              Quick Login / Guest Checkout
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Enter your mobile number to receive an instant OTP and proceed to checkout securely.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Mobile Number</label>
+              <div className="flex gap-2">
+                <span className="inline-flex items-center px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600">
+                  +91
+                </span>
+                <Input
+                  type="tel"
+                  maxLength={10}
+                  placeholder="10-digit mobile number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  disabled={otpSent}
+                  className="rounded-xl text-xs font-bold"
+                />
+              </div>
+            </div>
+
+            {!otpSent ? (
+              <Button
+                onClick={handleSendOtp}
+                disabled={phone.length !== 10 || otpLoading}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs py-2.5"
+              >
+                {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Send 6-Digit OTP
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Enter 6-Digit OTP</label>
+                  <Input
+                    type="number"
+                    maxLength={6}
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                    className="rounded-xl text-xs font-bold text-center tracking-widest text-lg"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleVerifyOtp}
+                  disabled={otp.length !== 6 || otpLoading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs py-2.5"
+                >
+                  {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Verify & Proceed to Checkout
+                </Button>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                  <span>{countdown > 0 ? `Resend in ${countdown}s` : "Didn't receive code?"}</span>
+                  {countdown === 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      className="font-bold text-amber-600 hover:underline"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="relative border-t border-slate-100 pt-3 text-center">
+              <Link
+                to="/login"
+                className="text-xs font-bold text-slate-500 hover:text-slate-900 transition"
+              >
+                Already have an account? <span className="text-amber-600 underline">Sign In</span>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -75,12 +75,7 @@ export async function getDeviceCoordinates(): Promise<{ lat: number; lng: number
         });
       },
       (err1) => {
-        if (err1.code === 1) {
-          reject(new Error("Location access denied. Please allow location permissions in your browser or search your area."));
-          return;
-        }
-
-        // Secondary fallback without forced hardware lock
+        // If timeout or unavailable, attempt low accuracy network-assisted GPS fallback
         navigator.geolocation.getCurrentPosition(
           (pos2) => {
             resolve({
@@ -90,16 +85,16 @@ export async function getDeviceCoordinates(): Promise<{ lat: number; lng: number
             });
           },
           (err2) => {
-            const msg =
-              err2.code === 1
-                ? "Location permission was denied. Please allow browser location."
-                : "Unable to detect GPS coordinates. Please search your area in the search box.";
-            reject(new Error(msg));
+            if (err1.code === 1 || err2.code === 1) {
+              reject(new Error("Location permission denied. Please allow location access in your device settings or select your area below."));
+            } else {
+              reject(new Error("Unable to acquire GPS lock. Please search your area or enter your pincode below."));
+            }
           },
-          { enableHighAccuracy: false, timeout: 12000, maximumAge: 0 }
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
         );
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
     );
   });
 }

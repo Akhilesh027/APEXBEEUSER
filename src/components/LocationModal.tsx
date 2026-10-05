@@ -64,6 +64,13 @@ type SavedLocation = {
   lng?: number | null;
 };
 
+const POPULAR_HUBS = [
+  { colony: "Adilabad Town", mandal: "Adilabad", district: "Adilabad", state: "Telangana", pincode: "504001", address: "Adilabad Town, Adilabad, Telangana - 504001" },
+  { colony: "Nirmal", mandal: "Nirmal", district: "Nirmal", state: "Telangana", pincode: "504106", address: "Nirmal, Telangana - 504106" },
+  { colony: "Mancherial", mandal: "Mancherial", district: "Mancherial", state: "Telangana", pincode: "504208", address: "Mancherial, Telangana - 504208" },
+  { colony: "Hyderabad", mandal: "Hyderabad", district: "Hyderabad", state: "Telangana", pincode: "500001", address: "Hyderabad, Telangana - 500001" },
+];
+
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
 const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) => {
@@ -217,9 +224,31 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
     } catch (e: any) {
       setGeo({
         status: "error",
-        error: e?.message || "Could not detect location. Search your area above.",
+        error: e?.message || "Could not detect GPS coordinates. Please select your area below.",
       });
+      setShowManualForm(true);
     }
+  };
+
+  const handleSelectHub = (hub: typeof POPULAR_HUBS[0]) => {
+    setGeo({
+      status: "ready",
+      address: hub.address,
+      colony: hub.colony,
+      mandal: hub.mandal,
+      district: hub.district,
+      state: hub.state,
+      pincode: hub.pincode,
+    });
+    setManualLocation({
+      state: hub.state,
+      district: hub.district,
+      mandal: hub.mandal,
+      colony: hub.colony,
+      pincode: hub.pincode,
+      landmark: "",
+    });
+    setShowManualForm(false);
   };
 
   // Select from Search Suggestion
@@ -488,6 +517,32 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Quick Popular Location Chips */}
+              <div className="space-y-1.5 text-left">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-amber-500" />
+                  <span>Popular Locations (Tap to Select)</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {POPULAR_HUBS.map((hub) => (
+                    <button
+                      key={hub.pincode}
+                      type="button"
+                      onClick={() => handleSelectHub(hub)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 ${
+                        geo.pincode === hub.pincode
+                          ? "bg-amber-500 text-slate-950 border-amber-600 shadow-xs"
+                          : "bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      <span>📍</span>
+                      <span>{hub.colony}</span>
+                      <span className="text-[9.5px] opacity-75 font-mono">({hub.pincode})</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* 3. Detected / Selected Location Card */}

@@ -778,7 +778,7 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-32 md:pb-12">
       <Navbar />
 
       <section className="container mx-auto px-4 py-8">
@@ -1437,12 +1437,12 @@ const ProductDetail = () => {
         </div>
       )}
 
-      {/* Sticky Mobile Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 z-40 flex gap-3 shadow-lg">
-        <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-bold h-11" disabled={isOutOfStock}>
+      {/* Sticky Mobile Action Bar (Safely elevated above BottomNav) */}
+      <div className="md:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2.5 z-40 flex gap-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-extrabold h-11 rounded-xl shadow-sm text-xs cursor-pointer" disabled={isOutOfStock}>
           Add to Cart
         </Button>
-        <Button onClick={handleBuyNow} className="flex-1 bg-navy hover:bg-navy/90 text-white font-bold h-11" disabled={isOutOfStock}>
+        <Button onClick={handleBuyNow} className="flex-1 bg-navy hover:bg-navy/90 text-white font-black h-11 rounded-xl shadow-sm text-xs cursor-pointer" disabled={isOutOfStock}>
           Buy Now
         </Button>
       </div>

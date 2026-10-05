@@ -1074,7 +1074,7 @@ const Category = () => {
         </div>
 
         {/* ═══════════════ MAIN CATEGORY CONTAINER ═══════════════ */}
-        <div className="w-full max-w-[1400px] mx-auto px-1.5 sm:px-4 lg:px-8 flex flex-row items-start gap-1.5 sm:gap-3 lg:gap-5 py-2 sm:py-3 lg:py-4 h-[calc(100vh-125px)] overflow-hidden font-sans">
+        <div className="w-full max-w-[1400px] mx-auto px-1.5 sm:px-4 lg:px-8 flex flex-row items-start gap-1.5 sm:gap-3 lg:gap-5 py-2 sm:py-3 lg:py-4 h-[calc(100dvh-160px)] sm:h-[calc(100vh-125px)] overflow-hidden font-sans">
 
           {/* ── LEFT SIDEBAR (SHOWS ONLY CHILD CATEGORIES OF ACTIVE SUBCATEGORY) ── */}
           <div className="w-[100px] sm:w-[140px] lg:w-[260px] shrink-0 bg-white rounded-xl shadow-xs h-full overflow-y-auto border border-slate-200/80 font-sans flex flex-col divide-y divide-slate-100">

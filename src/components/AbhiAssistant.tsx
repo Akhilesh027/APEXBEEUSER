@@ -264,7 +264,7 @@ export const AbhiAssistant = () => {
         />
       )}
 
-      <div ref={containerRef} className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end max-w-[calc(100vw-2rem)]">
+      <div ref={containerRef} className="fixed bottom-[68px] lg:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end max-w-[calc(100vw-2rem)]">
         {/* Expanded Dialog Box */}
         {isOpen && (
           <div className="bg-white w-[calc(100vw-2rem)] sm:w-[420px] max-w-[420px] h-[82vh] max-h-[620px] rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-4 transition-all duration-300 transform translate-y-0 opacity-100 font-sans">

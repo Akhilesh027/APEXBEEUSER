@@ -237,7 +237,13 @@ export const BottomNav = () => {
             const isActive =
               item.path === "/"
                 ? location.pathname === "/"
-                : location.pathname.startsWith(item.path);
+                : item.path === "/categories"
+                  ? location.pathname.startsWith("/categor")
+                  : item.path === "/my-orders"
+                    ? location.pathname.startsWith("/my-orders") || location.pathname.startsWith("/track-order")
+                    : item.path === "/profile"
+                      ? location.pathname.startsWith("/profile") || location.pathname.startsWith("/account")
+                      : location.pathname.startsWith(item.path);
 
             return (
               <button

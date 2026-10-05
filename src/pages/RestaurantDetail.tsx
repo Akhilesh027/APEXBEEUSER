@@ -388,7 +388,7 @@ export const RestaurantDetail: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 text-amber-600 absolute right-3 top.1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-amber-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 

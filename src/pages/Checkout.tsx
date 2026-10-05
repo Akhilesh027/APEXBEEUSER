@@ -24,6 +24,8 @@ import {
   Sparkles,
   Zap,
   Lock,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { openRazorpayModal } from "@/utils/razorpay";
 import {
@@ -448,8 +450,12 @@ const Checkout = () => {
       return { hasOutOfLocal: false, outOfLocalItems: [], reasons: [] };
     }
 
-    const outOfLocalItems: any[] = [];
     const customerPin = normPincode(userPincode || selectedAddress?.pincode || "");
+    if (!customerPin) {
+      return { hasOutOfLocal: false, outOfLocalItems: [], reasons: [] };
+    }
+
+    const outOfLocalItems: any[] = [];
 
     orderDetails.items.forEach((item: any) => {
       const p = item.product || item.productId || item;
@@ -483,12 +489,8 @@ const Checkout = () => {
 
       const dist = Number(item.calculatedDistanceKm ?? p.calculatedDistanceKm ?? 0);
       const isFar = dist > 25; // Beyond 25km local radius
-      const isLocalStoreMatch = Boolean(customerPin && vendorPin && customerPin === vendorPin && dist <= 25);
+      const isLocalStoreMatch = Boolean(vendorPin && customerPin === vendorPin && dist <= 25);
 
-      // Dynamic check:
-      // - If vendor PIN and customer PIN exist and don't match => out of local
-      // - If distance > 25km => out of local
-      // - If product has PAN-India courier scope and is not at customer's local store => out of local
       const isOut = Boolean(
         (vendorPin && customerPin && vendorPin !== customerPin) ||
         isFar ||
@@ -519,8 +521,13 @@ const Checkout = () => {
       return { hasUndeliverable: false, undeliverableItems: [] };
     }
 
-    const undeliverableItems: any[] = [];
     const customerPin = normPincode(userPincode || selectedAddress?.pincode || "");
+    // If customer has not provided an address / pincode yet, do NOT prematurely mark items undeliverable
+    if (!customerPin) {
+      return { hasUndeliverable: false, undeliverableItems: [] };
+    }
+
+    const undeliverableItems: any[] = [];
 
     orderDetails.items.forEach((item: any) => {
       const p = item.product || item.productId || item;
@@ -553,11 +560,10 @@ const Checkout = () => {
       );
 
       const dist = Number(item.calculatedDistanceKm ?? p.calculatedDistanceKm ?? 0);
-      const isFar = dist > 25; // Beyond 25km local radius
-      const isLocalStoreMatch = Boolean(customerPin && vendorPin && customerPin === vendorPin && dist <= 25);
+      const isFar = dist > 25;
 
-      // If an item is NOT PAN-India (strictly local), and is not at customer's local store => UNDELIVERABLE!
-      if (!isPanScope && (!isLocalStoreMatch || (customerPin && vendorPin && customerPin !== vendorPin) || isFar)) {
+      // Only strictly local products with a defined vendor pin can be blocked if vendor and customer pins differ
+      if (!isPanScope && vendorPin && (customerPin !== vendorPin || isFar)) {
         undeliverableItems.push({
           id: item._id || item.productId || p._id || p.id,
           name: item.name || item.itemName || p.name || "Product",
@@ -2044,11 +2050,11 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden w-full max-w-[100vw]">
       <Navbar />
 
       {/* BRAND HEADER BANNER */}
-      <div className="bg-[#0A1128] text-white py-8 px-4 sm:px-8 border-b border-amber-500/20 mb-6">
+      <div className="bg-[#0A1128] text-white py-8 px-4 sm:px-8 border-b border-amber-500/20 mb-6 w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-extrabold border border-amber-500/30">
@@ -2068,11 +2074,11 @@ const Checkout = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 space-y-6 sm:space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-36 lg:pb-12 space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden">
 
         {/* MOBILE EXCLUSIVE STEP-BY-STEP PROGRESS BAR */}
-        <div className="block lg:hidden bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs">
-          <div className="flex items-center justify-between relative px-2">
+        <div className="block lg:hidden bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs w-full overflow-hidden">
+          <div className="flex items-center justify-between relative px-1 sm:px-2 w-full">
             {/* Step 1 */}
             <button
               type="button"
@@ -2080,7 +2086,7 @@ const Checkout = () => {
                 setMobileStep(1);
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer min-w-0 shrink-0"
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 1
@@ -2105,7 +2111,7 @@ const Checkout = () => {
             </button>
 
             {/* Connecting Line 1 to 2 */}
-            <div className="flex-1 h-0.5 mx-2 bg-slate-200 relative -mt-4">
+            <div className="flex-1 h-0.5 mx-1.5 sm:mx-2 bg-slate-200 relative -mt-4 min-w-[14px]">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: mobileStep > 1 ? "100%" : "0%" }}
@@ -2121,7 +2127,7 @@ const Checkout = () => {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer min-w-0 shrink-0"
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 2
@@ -2146,7 +2152,7 @@ const Checkout = () => {
             </button>
 
             {/* Connecting Line 2 to 3 */}
-            <div className="flex-1 h-0.5 mx-2 bg-slate-200 relative -mt-4">
+            <div className="flex-1 h-0.5 mx-1.5 sm:mx-2 bg-slate-200 relative -mt-4 min-w-[14px]">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: mobileStep > 2 ? "100%" : "0%" }}
@@ -2162,7 +2168,7 @@ const Checkout = () => {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className="flex flex-col items-center gap-1 z-10 cursor-pointer"
+              className="flex flex-col items-center gap-1 z-10 cursor-pointer min-w-0 shrink-0"
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 3
@@ -2184,16 +2190,16 @@ const Checkout = () => {
 
         {/* Pre-order banner */}
         {preOrderInfo.hasPreOrder && preOrderInfo.availableOnMax && (
-          <div className="mb-4 rounded-lg border bg-amber-50 border-amber-200 p-3 text-sm">
+          <div className="mb-4 rounded-lg border bg-amber-50 border-amber-200 p-3 text-sm w-full overflow-hidden">
             ⏳ Pre-order items included. Ready on / after:{" "}
             <strong>{new Date(preOrderInfo.availableOnMax).toDateString()}</strong>
             <span className="ml-2 text-green-700 font-medium">• Shipping Free ✅</span>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-start relative">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-start relative w-full min-w-0">
           {/* Left */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full min-w-0">
             {/* Fulfillment */}
             <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
               <h2 className="text-lg font-semibold mb-4">Fulfillment</h2>
@@ -2465,8 +2471,8 @@ const Checkout = () => {
             )}
 
             {/* Mobile Step 1: Cart Items Preview & Continue Button */}
-            <div className={`${mobileStep === 1 ? "block lg:hidden" : "hidden"} space-y-4`}>
-              <div className="bg-white rounded-lg border p-4 text-left">
+            <div className={`${mobileStep === 1 ? "block lg:hidden" : "hidden"} space-y-4 w-full overflow-hidden`}>
+              <div className="bg-white rounded-lg border p-4 text-left w-full overflow-hidden">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-sm text-navy flex items-center gap-1.5">
                     <span>🛍️</span> Cart Items ({orderDetails.items.length})
@@ -2475,7 +2481,7 @@ const Checkout = () => {
                     Subtotal: ₹{orderDetails.subtotal.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full">
                   {orderDetails.items.map((it: any, idx: number) => (
                     <div key={idx} className="flex-shrink-0 w-20 text-center">
                       <div className="w-16 h-16 mx-auto rounded-lg border p-1 bg-slate-50 flex items-center justify-center overflow-hidden">
@@ -2622,24 +2628,24 @@ const Checkout = () => {
                   <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Delivery Instructions for Driver
                   </Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full min-w-0">
                     {[
-                      { id: "call_before", label: "Call Before Delivery", icon: "📞" },
-                      { id: "ring_bell", label: "Ring Doorbell", icon: "🔔" },
-                      { id: "leave_gate", label: "Leave at Gate / Door", icon: "🚪" },
-                      { id: "contactless", label: "Contactless Drop-off", icon: "🛡️" },
+                      { id: "call_before", label: "Call Driver", icon: "📞" },
+                      { id: "ring_bell", label: "Ring Bell", icon: "🔔" },
+                      { id: "leave_gate", label: "Leave at Gate", icon: "🚪" },
+                      { id: "contactless", label: "Contactless", icon: "🛡️" },
                     ].map((inst) => (
                       <button
                         type="button"
                         key={inst.id}
                         onClick={() => setDeliveryInstruction(inst.id)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer text-left ${deliveryInstruction === inst.id
+                        className={`flex items-center gap-1.5 p-2 sm:p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer text-left min-w-0 overflow-hidden ${deliveryInstruction === inst.id
                           ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-xs ring-1 ring-indigo-400/30"
                           : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
                           }`}
                       >
-                        <span className="text-sm">{inst.icon}</span>
-                        <span className="truncate">{inst.label}</span>
+                        <span className="text-sm shrink-0">{inst.icon}</span>
+                        <span className="truncate min-w-0">{inst.label}</span>
                       </button>
                     ))}
                   </div>
@@ -2811,7 +2817,7 @@ const Checkout = () => {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }
                 }}
-                className="flex-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Continue to Payment</span>
                 <span>→</span>
@@ -2965,7 +2971,7 @@ const Checkout = () => {
           </div>
 
           {/* Right: Summary & Product Details - STICKY FIXED WHILE SCROLLING */}
-          <div className={`lg:col-span-1 lg:sticky lg:top-24 z-30 self-start ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
+          <div className={`lg:col-span-1 lg:sticky lg:top-24 z-30 self-start w-full min-w-0 ${mobileStep === 3 ? "block" : "hidden lg:block"}`}>
             <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-200">
               <div className="mb-4 sm:mb-6">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -3186,6 +3192,132 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {/* 📱 STICKY MOBILE CHECKOUT / PROCEED ACTION BAR (Safely elevated above BottomNav) */}
+      {orderDetails.items.length > 0 && (
+        <div className="lg:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-2.5 z-40 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] font-sans">
+          {/* Left Info & Step Navigation */}
+          <div className="flex items-center gap-2 min-w-0">
+            {mobileStep > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileStep((prev) => (prev === 3 ? 2 : 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="h-8 w-8 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 cursor-pointer transition active:scale-95 shadow-2xs"
+                title="Go back to previous step"
+                aria-label="Previous step"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                {mobileStep === 1 ? "Step 1: Address" : mobileStep === 2 ? "Step 2: Delivery" : "Total Payable"}
+              </span>
+              <div className="flex items-baseline gap-1.5 truncate">
+                <span className="text-base font-black text-slate-900 font-mono">
+                  ₹{orderDetails.total.toFixed(2)}
+                </span>
+                {(mrpDiscount > 0 || couponDiscount > 0) && (
+                  <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200 shrink-0">
+                    Save ₹{(mrpDiscount + couponDiscount).toFixed(0)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Action Button */}
+          {mobileStep === 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (canProceedToStep2()) {
+                  setMobileStep(2);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              disabled={undeliverableInfo.hasUndeliverable}
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>Proceed to Delivery</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {mobileStep === 2 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (canProceedToStep3()) {
+                  setMobileStep(3);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0"
+            >
+              <span>Proceed to Payment</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {mobileStep === 3 && (
+            <button
+              type="button"
+              disabled={
+                isLoading ||
+                undeliverableInfo.hasUndeliverable ||
+                (fulfillmentType === "delivery" && !selectedAddress) ||
+                (fulfillmentType === "pickup" && (!pickupPossible || !pickupLocationId || !pickupSlot))
+              }
+              onClick={() => {
+                if (undeliverableInfo.hasUndeliverable) {
+                  toast({
+                    title: "Cannot Proceed",
+                    description: "Please remove undeliverable local items from your cart to place this order.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                if (selectedPayment === "upi") setShowUPIDialog(true);
+                else handlePlaceOrder();
+              }}
+              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${
+                undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : undeliverableInfo.hasUndeliverable ? (
+                <span>🚫 Fix Items</span>
+              ) : selectedPayment === "razorpay" ? (
+                <>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Pay ₹{orderDetails.total.toFixed(0)}</span>
+                </>
+              ) : selectedPayment === "upi" ? (
+                <>
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>Pay via UPI</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Place Order</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 📍 Address Dialog (Modern & 100% Mobile-Responsive) */}
       <Dialog open={showAddressDialog} onOpenChange={(open) => { setShowAddressDialog(open); if (!open) { setLocationError(""); } }}>

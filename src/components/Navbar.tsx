@@ -1036,7 +1036,7 @@ const Navbar = () => {
   }, [loggedInUser, rolesList, hasBusinessPartnerRole]);
 
   return (
-    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full font-sans">
+    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full max-w-full overflow-x-hidden font-sans">
       {/* ========================================================
           📱 MOBILE TOP BAR (Row 1 on Mobile: Logo + Location + Icons)
           ======================================================== */}
@@ -1092,7 +1092,7 @@ const Navbar = () => {
       {/* ========================================================
           📱 MOBILE SEARCH BAR & HORIZONTAL CATEGORY ACTION STRIP (Row 2)
           ======================================================== */}
-      <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5">
+      <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full overflow-hidden">
         {/* Mobile Search Input */}
         <div className="relative" ref={searchRef}>
           <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
@@ -1236,7 +1236,7 @@ const Navbar = () => {
         </div>
 
         {/* Horizontal Quick-Action Category Action Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 w-full max-w-full">
           <Link
             to="/products"
             className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"

@@ -563,7 +563,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     const user = JSON.parse(localStorage.getItem("user") || "null");
-    if (!user?._id) {
+    const userId = user?.id || user?._id;
+    if (!userId) {
       const local = localStorage.getItem("local_cart");
       let list = [];
       try { list = JSON.parse(local || "[]"); } catch { list = []; }
@@ -578,7 +579,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
     const token = localStorage.getItem("token");
     axios.post(`${API_BASE}/cart/add`, {
-      userId: user._id,
+      userId,
       productId,
       name: title,
       price: sellingPrice,
@@ -594,6 +595,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     e.stopPropagation();
 
     const user = JSON.parse(localStorage.getItem("user") || "null");
+    const userId = user?.id || user?._id;
     const vPin = product.sellerId?.pincode || product.sellerId?.pinCode || product.sellerId?.location?.pincode || fetchedVendor?.pincode || fetchedVendor?.pinCode || product.vendorPincode || product.pincode;
 
     const cartItem = {
@@ -631,7 +633,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       }
     };
 
-    if (!user?._id) {
+    if (!userId) {
       const local = localStorage.getItem("local_cart");
       let list = [];
       try { list = JSON.parse(local || "[]"); } catch { list = []; }
@@ -650,7 +652,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(`${API_BASE}/cart/add`, {
-        userId: user._id,
+        userId,
         productId,
         name: title,
         price: sellingPrice,
@@ -669,7 +671,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const baseWidth = isCustomWidth ? "w-full" : "w-[260px] sm:w-[300px] shrink-0";
 
   return (
-    <div className={`${baseWidth} min-h-[390px] h-[390px] sm:h-[400px] bg-white rounded-xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className || ""}`}>
+    <div className={`${baseWidth} min-h-[390px] sm:min-h-[405px] h-full bg-white rounded-xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative font-sans text-slate-900 ${className || ""}`}>
 
       {/* ═══════════════════════════════════════════════════════
          1. HERO IMAGE STAGE (Mobile-optimized 135px - 145px height)
@@ -769,9 +771,9 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       {/* ═══════════════════════════════════════════════════════
          2. SLEEK COMPACT STORE STRIP (26px height)
          ═══════════════════════════════════════════════════════ */}
-      <div className="bg-slate-50/95 border-y border-slate-100 px-2 py-0.5 flex items-center justify-between text-[8.5px] shrink-0 h-[26px]">
+      <div className="bg-slate-50/95 border-y border-slate-100 px-2 py-0.5 flex items-center justify-between text-[8.5px] shrink-0 h-[26px] gap-1">
         {/* Left: Store Avatar, Name & Verified Check */}
-        <div className="flex items-center gap-1 min-w-0">
+        <div className="flex items-center gap-1 min-w-0 flex-1">
           <div className="w-4 h-4 rounded-md overflow-hidden bg-amber-100 border border-slate-200 shrink-0 flex items-center justify-center">
             {storeLogo ? (
               <img
@@ -784,25 +786,25 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               <Store className="w-2.5 h-2.5 text-amber-700" />
             )}
           </div>
-          <span className="font-extrabold text-slate-800 truncate max-w-[100px] sm:max-w-[120px]" title={storeName}>{storeName}</span>
+          <span className="font-extrabold text-slate-800 truncate min-w-0" title={storeName}>{storeName}</span>
           <CheckCircle2 className="w-2.5 h-2.5 text-blue-500 fill-blue-500 text-white shrink-0" />
         </div>
 
         {/* Middle & Right: Dual Rating Badges & Lucide Action Icons */}
         <div className="flex items-center gap-1 shrink-0 font-bold">
-          <span className="flex items-center gap-0.5 text-amber-700 bg-white px-1 py-0.2 rounded border border-amber-200/70" title="Store Rating">
+          <span className="flex items-center gap-0.5 text-amber-700 bg-white px-1 py-0.2 rounded border border-amber-200/70 shrink-0" title="Store Rating">
             <Star className="w-2 h-2 fill-amber-400 text-amber-400" />
             <span className="text-[8px] font-black">{storeRating}</span>
             <span className="text-slate-400 text-[6.5px]">({storeRatingCount})</span>
           </span>
 
-          <span className="flex items-center gap-0.5 text-indigo-700 bg-white px-1 py-0.2 rounded border border-indigo-200/70" title="Product Rating">
+          <span className="hidden min-[280px]:flex items-center gap-0.5 text-indigo-700 bg-white px-1 py-0.2 rounded border border-indigo-200/70 shrink-0" title="Product Rating">
             <Star className="w-2 h-2 fill-indigo-400 text-indigo-500" />
             <span className="text-[8px] font-black">{productRating}</span>
             <span className="text-slate-400 text-[6.5px]">({productRatingCount})</span>
           </span>
 
-          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1">
+          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1 shrink-0">
             <button
               type="button"
               onClick={(e) => {
@@ -814,7 +816,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
                   toast({ title: "Call Store", description: `Contacting ${storeName}...` });
                 }
               }}
-              className="w-4.5 h-4.5 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-indigo-600 cursor-pointer p-0 shadow-2xs"
+              className="w-4 h-4 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-indigo-600 cursor-pointer p-0 shadow-2xs"
               title={storePhone ? `Call ${storeName} (${storePhone})` : "Call Store"}
             >
               <Phone className="w-2.5 h-2.5" />
@@ -832,7 +834,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
                   toast({ title: "Chat with Store", description: `Opening inquiry with ${storeName}...` });
                 }
               }}
-              className="w-4.5 h-4.5 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-emerald-600 cursor-pointer p-0 shadow-2xs"
+              className="w-4 h-4 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:text-emerald-600 cursor-pointer p-0 shadow-2xs"
               title={storeWhatsapp ? `WhatsApp ${storeName}` : "Chat with Store"}
             >
               <MessageCircle className="w-2.5 h-2.5" />
@@ -840,7 +842,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeName)}`); }}
-              className="w-4.5 h-4.5 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 cursor-pointer p-0 shadow-2xs"
+              className="w-4 h-4 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 cursor-pointer p-0 shadow-2xs"
               title="Navigate to Store"
             >
               <Navigation className="w-2.5 h-2.5 text-emerald-600" />
@@ -852,11 +854,11 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       {/* ═══════════════════════════════════════════════════════
          3. PRODUCT DETAILS, PRICING & DELIVERY BOX
          ═══════════════════════════════════════════════════════ */}
-      <div className="px-2.5 sm:px-3 py-1.5 flex-1 flex flex-col justify-between bg-white text-slate-900">
-        {/* Top Split: Title & Price (Left 2-Cols) | Delivery Box (Right 1-Col) */}
-        <div className="grid grid-cols-3 gap-1.5 items-start">
-          {/* Left 2-Cols: Title, Tags & Price */}
-          <div className="col-span-2 flex flex-col justify-between gap-1">
+      <div className="px-2.5 sm:px-3 py-1.5 flex-1 flex flex-col justify-between bg-white text-slate-900 gap-1.5">
+        {/* Top Split: Title & Price (Left 3-Cols) | Delivery Box (Right 2-Cols) */}
+        <div className="grid grid-cols-5 gap-1.5 items-start">
+          {/* Left 3-Cols: Title, Tags & Price */}
+          <div className="col-span-3 flex flex-col justify-between gap-1 min-w-0">
             <Link to={`/product/${productId}`} className="hover:text-amber-600 transition">
               <h3 className="text-[12px] sm:text-[13px] font-black text-slate-900 leading-snug line-clamp-2">
                 {title}
@@ -867,26 +869,26 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             <div className="space-y-0.5">
               <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-extrabold flex-nowrap overflow-hidden">
                 <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0">✔ Verified Store</span>
-                <span className="bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">⭐ Top Seller</span>
+                <span className="bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">⭐ Top</span>
               </div>
               <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-extrabold flex-nowrap overflow-hidden">
-                <span className="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded-md shrink-0">⚡ Fast Dispatch</span>
-                <span className="bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-md shrink-0">🛡️ 100% Genuine</span>
+                <span className="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded-md shrink-0">⚡ Fast</span>
+                <span className="bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-md shrink-0">🛡️ 100% Real</span>
               </div>
             </div>
 
             {/* Pricing Section */}
-            <div className="pt-0.5 flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-black text-rose-600 font-heading leading-none">
+            <div className="pt-0.5 flex items-baseline gap-1 sm:gap-1.5 flex-wrap">
+              <span className="text-lg sm:text-xl font-black text-rose-600 font-heading leading-none">
                 {money(sellingPrice)}
               </span>
               {mrp > sellingPrice && (
                 <>
-                  <span className="text-[10px] sm:text-[11px] text-slate-400 line-through font-bold">
+                  <span className="text-[9.5px] sm:text-[10.5px] text-slate-400 line-through font-bold">
                     {money(mrp)}
                   </span>
                   {discountPct > 0 && (
-                    <span className="bg-emerald-100 text-emerald-800 font-black text-[8.5px] sm:text-[9.5px] px-1.5 py-0.5 rounded-md">
+                    <span className="bg-emerald-100 text-emerald-800 font-black text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded-md">
                       {discountPct}% OFF
                     </span>
                   )}
@@ -895,8 +897,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             </div>
           </div>
 
-          {/* Right 1-Col: Delivery Time, Distance, Subscription & Pickup Box */}
-          <div className="col-span-1 bg-slate-50 border border-slate-200/90 rounded-lg sm:rounded-xl p-1.5 space-y-1 text-[8px] sm:text-[8.5px] font-bold text-slate-700 flex flex-col justify-center">
+          {/* Right 2-Cols: Delivery Time, Distance, Subscription & Pickup Box */}
+          <div className="col-span-2 bg-slate-50 border border-slate-200/90 rounded-lg sm:rounded-xl p-1.5 space-y-1 text-[8px] sm:text-[8.5px] font-bold text-slate-700 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-1 text-emerald-700 font-extrabold" title="Delivery Time">
               <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
               <span className="truncate">{deliveryMins}</span>
@@ -920,8 +922,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           </div>
         </div>
 
-        {/* FULL WIDTH SINGLE ROW: Save ₹... | ⚡ Instant Credit | Earn by refer: ₹... (In ONE ROW on Mobile) */}
-        <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 w-full flex-nowrap overflow-hidden text-[8px] sm:text-[9px]">
+        {/* FULL WIDTH ROW: Save ₹... | ⚡ Instant Credit | Earn by refer: ₹... */}
+        <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 w-full flex-wrap sm:flex-nowrap overflow-hidden text-[8px] sm:text-[9px]">
           {savings > 0 && (
             <span className="font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md leading-none whitespace-nowrap shrink-0">
               Save {money(savings)}
@@ -935,7 +937,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           {estimatedEarn > 0 && (
             <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-950 border border-amber-300/90 px-1.5 py-0.5 rounded-md shadow-2xs font-bold whitespace-nowrap shrink-0">
               <Coins className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600 shrink-0" />
-              <span>Earn by refer: <b className="text-emerald-700 font-black">₹{estimatedEarn}</b></span>
+              <span>Earn: <b className="text-emerald-700 font-black">₹{estimatedEarn}</b></span>
             </span>
           )}
         </div>
@@ -964,14 +966,14 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
         {/* Buttons & Trust Strip Container */}
         <div className="p-2 space-y-1.5">
           {/* Full-width Primary Buttons Row */}
-          <div className="flex items-center gap-2 w-full">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full">
             <button
               type="button"
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-extrabold border border-slate-300 py-1.5 px-2.5 rounded-md flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer text-[10px] disabled:opacity-50"
+              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-extrabold border border-slate-300 py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50"
             >
-              <ShoppingCart className="w-3.5 h-3.5 text-slate-700" />
+              <ShoppingCart className="w-3.5 h-3.5 text-slate-700 shrink-0" />
               <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
             </button>
 
@@ -979,30 +981,30 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               type="button"
               onClick={handleBuyNow}
               disabled={isOutOfStock}
-              className="flex-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black py-1.5 px-2.5 rounded-md flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[10px] disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50"
             >
-              <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+              <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950 shrink-0" />
               <span>Buy Now</span>
             </button>
           </div>
 
           {/* Trust Badges Strip */}
           <div className="grid grid-cols-4 gap-1 pt-1 border-t border-slate-200/60 text-slate-600 text-[7px] font-bold text-center">
-            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 rounded-lg border border-slate-100">
-              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
-              <span>Guaranteed</span>
+            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 px-0.5 rounded-lg border border-slate-100 truncate" title="Guaranteed Quality">
+              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+              <span className="truncate">Guaranteed</span>
             </div>
-            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 rounded-lg border border-slate-100">
-              <RefreshCw className="w-2.5 h-2.5 text-blue-600" />
-              <span>5 Days Return</span>
+            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 px-0.5 rounded-lg border border-slate-100 truncate" title="5 Days Return">
+              <RefreshCw className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+              <span className="truncate">5d Return</span>
             </div>
-            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 rounded-lg border border-slate-100">
-              <Lock className="w-2.5 h-2.5 text-purple-600" />
-              <span>Secure Pay</span>
+            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 px-0.5 rounded-lg border border-slate-100 truncate" title="Secure Payment">
+              <Lock className="w-2.5 h-2.5 text-purple-600 shrink-0" />
+              <span className="truncate">Secure Pay</span>
             </div>
-            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 rounded-lg border border-slate-100">
-              <Award className="w-2.5 h-2.5 text-amber-600" />
-              <span>Genuine</span>
+            <div className="flex items-center justify-center gap-0.5 bg-white py-0.5 px-0.5 rounded-lg border border-slate-100 truncate" title="100% Genuine">
+              <Award className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+              <span className="truncate">Genuine</span>
             </div>
           </div>
         </div>

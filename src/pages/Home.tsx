@@ -1961,7 +1961,7 @@ const Home = () => {
             <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("quick-shortcuts-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                className="hidden sm:flex md:hidden absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
                 aria-label="Scroll Left"
               >
                 <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -2013,7 +2013,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("quick-shortcuts-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                className="hidden sm:flex md:hidden absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
                 aria-label="Scroll Right"
               >
                 <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -2068,7 +2068,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => scrollHorizontally("trending-products-scroll", "left")}
-                  className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
+                  className="hidden sm:flex absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
                   aria-label="Scroll Left"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -2083,7 +2083,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => scrollHorizontally("trending-products-scroll", "right")}
-                  className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
+                  className="hidden sm:flex absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 shadow-xl border border-slate-200/90 items-center justify-center text-slate-800 hover:bg-[#0A1128] hover:text-amber-400 hover:scale-110 transition-all cursor-pointer opacity-90 group-hover:opacity-100"
                   aria-label="Scroll Right"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -2309,7 +2309,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("featured-products-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
                 aria-label="Scroll Right"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -2338,7 +2338,7 @@ const Home = () => {
             <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("daily-needs-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 flex items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -2351,7 +2351,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("daily-needs-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 flex items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -2436,7 +2436,7 @@ const Home = () => {
             <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("devotional-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -2449,7 +2449,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("devotional-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -2482,7 +2482,7 @@ const Home = () => {
             <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("food-products-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 flex items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -2495,7 +2495,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("food-products-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 flex items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -2563,7 +2563,7 @@ const Home = () => {
             <div className="relative group px-1">
               <button
                 onClick={() => scrollHorizontally("shopping-products-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 flex items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -2576,7 +2576,7 @@ const Home = () => {
 
               <button
                 onClick={() => scrollHorizontally("shopping-products-scroll", "right")}
-                className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 flex items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -2718,7 +2718,7 @@ const Home = () => {
               <div className="relative group">
                 <button
                   onClick={() => scrollHorizontally("deals-products-scroll", "left")}
-                  className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
                   aria-label="Scroll Left"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -2750,7 +2750,7 @@ const Home = () => {
 
                 <button
                   onClick={() => scrollHorizontally("deals-products-scroll", "right")}
-                  className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
                   aria-label="Scroll Right"
                 >
                   <ChevronRight className="h-5 w-5" />

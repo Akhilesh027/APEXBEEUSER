@@ -644,7 +644,7 @@ const ProductsPage = () => {
       {/* ══════════════════════════════════════ */}
       {/* CLEAN COMPACT SEARCH HEADER            */}
       {/* ══════════════════════════════════════ */}
-      <section className="bg-white border-b border-slate-200 py-3.5 px-4 sm:px-6 shadow-xs sticky top-16 z-20">
+      <section className="bg-white border-b border-slate-200 py-3.5 px-4 sm:px-6 shadow-xs">
         <div className="container mx-auto space-y-3">
           {/* Breadcrumb + Search Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

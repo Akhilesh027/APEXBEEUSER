@@ -71,7 +71,11 @@ export const loadRazorpayScript = (): Promise<boolean> => {
  * Gets the configured Razorpay Key ID
  */
 export const getRazorpayKey = (): string => {
-  return import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+  const envKey = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+  if (envKey && envKey.startsWith("rzp_")) {
+    return envKey;
+  }
+  return "rzp_test_ThlZYDDvRmTvhl";
 };
 
 /**
@@ -86,7 +90,10 @@ export const openRazorpayModal = async (
   }
 
   return new Promise((resolve, reject) => {
-    const key = options.key || getRazorpayKey();
+    let key = options.key || getRazorpayKey();
+    if (!key || !key.startsWith("rzp_")) {
+      key = "rzp_test_ThlZYDDvRmTvhl";
+    }
 
     let cleanContact: string | undefined = undefined;
     if (options.prefill?.contact) {
