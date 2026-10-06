@@ -305,7 +305,7 @@ export const FoodDining: React.FC = () => {
       restaurantId: r._id || r.id,
       name: r.restaurantName || r.name,
       cuisine: Array.isArray(r.cuisines) ? r.cuisines.join(', ') : r.cuisines || 'Multi-Cuisine & Dining',
-      locality: r.locality || r.city || 'Hyderabad',
+      locality: r.locality || r.mandal || r.district || r.city || (r.pincode ? `PIN ${r.pincode}` : 'Local Dining'),
       pincode: r.pincode || r.zipcode || r.address?.pincode || '',
       mandal: r.mandal || '',
       district: r.district || '',
@@ -474,8 +474,8 @@ export const FoodDining: React.FC = () => {
             logo: shop.logo || shop.storeDesign?.logo || shop.logoUrl,
             cuisines: shop.categories || (shop.category ? [shop.category] : ['Multi-Cuisine & Fast Food']),
             locality: shop.locality || shop.mandal || shop.district || shop.city || 'Local Outlet',
-            city: shop.city || shop.district || 'Hyderabad',
-            state: shop.state || 'Telangana',
+            city: shop.city || shop.district || shop.mandal || '',
+            state: shop.state || '',
             pincode: shop.pincode || shop.zipcode || (shop.address && typeof shop.address === 'object' ? shop.address.pincode : ''),
             mandal: shop.mandal || '',
             district: shop.district || '',
@@ -1210,7 +1210,7 @@ export const FoodDining: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-1">
                               <MapPin className="w-3.5 h-3.5 text-amber-500" />
-                              <span>{rest.locality || rest.city || 'Hyderabad'}</span>
+                              <span>{rest.locality || rest.mandal || rest.district || rest.city || (rest.pincode ? `PIN ${rest.pincode}` : 'Local Kitchen')}</span>
                             </div>
                           </div>
                         </div>

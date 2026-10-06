@@ -937,7 +937,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           {estimatedEarn > 0 && (
             <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-950 border border-amber-300/90 px-1.5 py-0.5 rounded-md shadow-2xs font-bold whitespace-nowrap shrink-0">
               <Coins className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600 shrink-0" />
-              <span>Earn: <b className="text-emerald-700 font-black">₹{estimatedEarn}</b></span>
+              <span>Earn: <b className="text-emerald-700 font-black">~₹{estimatedEarn}</b></span>
             </span>
           )}
         </div>

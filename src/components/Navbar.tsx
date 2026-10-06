@@ -292,11 +292,16 @@ const Navbar = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setOrdersCount(Number(data?.count) || 0);
+          const count = Number(data?.count) || 0;
+          setOrdersCount(count);
+          localStorage.setItem("orders_count", String(count));
+          window.dispatchEvent(new Event("orders_updated"));
         } else if (response.status === 401) {
           handleLogout();
         } else {
           setOrdersCount(0);
+          localStorage.setItem("orders_count", "0");
+          window.dispatchEvent(new Event("orders_updated"));
         }
       } catch (error) {
         console.error("Error fetching orders count:", error);
@@ -1324,52 +1329,9 @@ const Navbar = () => {
                 COMMUNITY
               </Link>
 
-              {/* Earn With Us Dropdown */}
-              <div className="relative" ref={earnRef}>
-                <Button
-                  variant="ghost"
-                  className="flex items-center gap-1 hover:text-accent hover:bg-transparent text-[11px] xl:text-xs font-bold p-0 h-auto"
-                  onClick={() => setEarnDropdownOpen((v) => !v)}
-                >
-                  EARN WITH US <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
-
-                {earnDropdownOpen && (
-                  <div className="absolute top-full left-0 bg-white text-black rounded-xl border border-slate-100 shadow-xl mt-2 w-64 z-50 overflow-hidden text-xs py-1">
-                    <Link
-                      to="/earn-with-apexbee"
-                      className="block px-4 py-2.5 font-extrabold text-accent hover:bg-slate-50 border-b border-slate-100"
-                      onClick={() => setEarnDropdownOpen(false)}
-                    >
-                      🚀 OPPORTUNITIES MARKETPLACE
-                    </Link>
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
-                      onClick={() => handleOpenForm("Become a Vendor", "vendor")}
-                    >
-                      BECOME A VENDOR
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
-                      onClick={() => handleOpenForm("Become a Franchiser", "franchiser")}
-                    >
-                      BECOME A FRANCHISER
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
-                      onClick={() => handleOpenForm("Become a Freelancer", "freelancer")}
-                    >
-                      BECOME A FREELANCER
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-slate-50 font-semibold cursor-pointer border-none bg-transparent"
-                      onClick={() => handleOpenForm("Become an Entrepreneur", "entrepreneur")}
-                    >
-                      BECOME AN ENTREPRENEUR
-                    </button>
-                  </div>
-                )}
-              </div>
+              <Link to="/earn-with-apexbee" className="hover:text-accent transition">
+                EARN WITH US
+              </Link>
 
               <Link to="/referrals" className="hover:text-accent transition text-amber-400 font-extrabold">
                 REFER & EARN

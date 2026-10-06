@@ -1437,8 +1437,8 @@ const ProductDetail = () => {
         </div>
       )}
 
-      {/* Sticky Mobile Action Bar (Safely elevated above BottomNav) */}
-      <div className="md:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2.5 z-40 flex gap-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      {/* Sticky Mobile Action Bar (Positioned flush at bottom with safe-area support) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-50 flex gap-2.5 shadow-[0_-4px_25px_rgba(0,0,0,0.1)]">
         <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-extrabold h-11 rounded-xl shadow-sm text-xs cursor-pointer" disabled={isOutOfStock}>
           Add to Cart
         </Button>

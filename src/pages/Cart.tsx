@@ -662,7 +662,7 @@ const Cart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] pb-24 lg:pb-0">
       <Navbar />
 
       {/* TOP HEADER BANNER */}
@@ -930,9 +930,9 @@ const Cart = () => {
         </div>
       </div>
 
-      {/* 📱 STICKY MOBILE CHECKOUT BAR (Safely elevated above BottomNav) */}
+      {/* 📱 STICKY MOBILE CHECKOUT BAR (Clean flush bottom bar) */}
       {cartItems.length > 0 && (
-        <div className="lg:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-2.5 z-40 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] font-sans">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.1)] font-sans">
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total</span>
             <div className="flex items-baseline gap-1.5 truncate">

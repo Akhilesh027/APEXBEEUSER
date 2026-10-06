@@ -638,7 +638,7 @@ const ProductsPage = () => {
   // RENDER
   // ═══════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#f8f9fb] font-sans text-slate-900">
+    <div className="min-h-screen bg-[#f8f9fb] font-sans text-slate-900 pb-20 lg:pb-0">
       <Navbar />
 
       {/* ══════════════════════════════════════ */}
@@ -903,15 +903,125 @@ const ProductsPage = () => {
               </div>
             ) : (
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 justify-items-center sm:justify-items-stretch">
-                  {paginatedProducts.map((p: any) => (
-                    <ProductCard
-                      key={p._id || p.id}
-                      product={p}
-                      className="w-full"
-                    />
-                  ))}
-                </div>
+                {viewMode === "grid" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 justify-items-center sm:justify-items-stretch">
+                    {paginatedProducts.map((p: any) => (
+                      <ProductCard
+                        key={p._id || p.id}
+                        product={p}
+                        className="w-full"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-slate-200/80 divide-y divide-slate-100 overflow-hidden shadow-xs">
+                    {paginatedProducts.map((p: any) => {
+                      const title = p.itemName || p.name || "Product";
+                      const img = (Array.isArray(p.images) && p.images[0]) || p.thumbnail || p.image || "/placeholder-product.png";
+                      const sellingPrice = Number(p.adminPricing?.sellingPrice ?? p.baseSellingPrice ?? p.sellingPrice ?? p.afterDiscount ?? p.price ?? 0);
+                      const mrp = Number(p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? p.mrp ?? p.originalPrice ?? 0);
+                      const discountPct = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+                      const rating = p.rating ?? 4.8;
+                      const reviews = p.reviews ?? 45;
+                      const isPan = p.isPanIndia || p.deliveryScope === "both" || p.deliveryScope === "pan_india";
+                      const dist = p.calculatedDistanceKm ? `${Number(p.calculatedDistanceKm).toFixed(1)} km` : "Nearby";
+
+                      return (
+                        <div
+                          key={p._id || p.id}
+                          onClick={() => navigate(`/product/${p._id || p.id}`)}
+                          className="group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-5 gap-3.5 hover:bg-slate-50/70 transition cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            {/* Product Thumbnail */}
+                            <div className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-xl bg-slate-50 border border-slate-200/80 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                              <img
+                                src={img}
+                                alt={title}
+                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300"
+                                loading="lazy"
+                              />
+                              {discountPct > 0 && (
+                                <span className="absolute top-1 left-1 bg-rose-500 text-white text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded shadow-2xs">
+                                  {discountPct}% OFF
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Details */}
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {isPan ? (
+                                  <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                    🇮🇳 PAN-INDIA
+                                  </span>
+                                ) : (
+                                  <span className="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                    ⚡ LOCAL 15-MIN
+                                  </span>
+                                )}
+                                {p.brand && (
+                                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                    {p.brand}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-medium text-slate-400">
+                                  • {dist}
+                                </span>
+                              </div>
+
+                              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-amber-600 transition leading-snug line-clamp-2">
+                                {title}
+                              </h4>
+
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-0.5 text-xs font-black text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
+                                  ★ {rating}
+                                </span>
+                                <span className="text-[11px] text-slate-400 font-medium">
+                                  ({reviews} Reviews)
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price & Action */}
+                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <div className="text-left sm:text-right">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-base sm:text-lg font-black text-rose-600 font-heading">
+                                  ₹{money(sellingPrice)}
+                                </span>
+                                {mrp > sellingPrice && (
+                                  <span className="text-[10px] sm:text-xs text-slate-400 line-through font-medium">
+                                    ₹{money(mrp)}
+                                  </span>
+                                )}
+                              </div>
+                              {mrp > sellingPrice && (
+                                <p className="text-[10px] text-emerald-600 font-bold">
+                                  Save ₹{money(mrp - sellingPrice)}
+                                </p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/product/${p._id || p.id}`);
+                              }}
+                              className="px-4 py-2 bg-[#0A1128] hover:bg-slate-800 text-amber-400 font-black text-xs rounded-xl shadow-xs transition cursor-pointer border-none flex items-center gap-1"
+                            >
+                              <span>View Product</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* ── PAGINATION CONTROLS ── */}
                 {filtered.length > 0 && (

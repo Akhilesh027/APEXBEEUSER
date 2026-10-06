@@ -3193,9 +3193,9 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* 📱 STICKY MOBILE CHECKOUT / PROCEED ACTION BAR (Safely elevated above BottomNav) */}
+      {/* 📱 STICKY MOBILE CHECKOUT / PROCEED ACTION BAR (Clean flush bottom bar) */}
       {orderDetails.items.length > 0 && (
-        <div className="lg:hidden fixed bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-2.5 z-40 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] font-sans">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.1)] font-sans">
           {/* Left Info & Step Navigation */}
           <div className="flex items-center gap-2 min-w-0">
             {mobileStep > 1 && (

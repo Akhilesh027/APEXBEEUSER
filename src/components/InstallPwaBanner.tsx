@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Download, X, Smartphone, Sparkles } from "lucide-react";
 const logo = "/logo.png";
 
 export const InstallPwaBanner = () => {
+  const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -72,7 +74,14 @@ export const InstallPwaBanner = () => {
     sessionStorage.setItem("pwa_banner_dismissed", "true");
   };
 
-  if (!showPrompt || isInstalled) return null;
+  if (
+    !showPrompt ||
+    isInstalled ||
+    location.pathname.startsWith("/checkout") ||
+    location.pathname.startsWith("/pay")
+  ) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-16 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 animate-bounce-subtle">

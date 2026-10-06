@@ -1548,7 +1548,7 @@ const Home = () => {
         />
       )}
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background pb-16 lg:pb-0">
           <Navbar />
 
           {/* ⚠️ Insufficient Wallet Funds Warning Banner for Subscription Delivery */}
@@ -3006,7 +3006,42 @@ const Home = () => {
                     const name = rest.name || rest.businessName || "Restaurant Partner";
                     const cuisines = Array.isArray(rest.cuisines) ? rest.cuisines.join(', ') : (rest.cuisines || rest.food || 'Multi-Cuisine');
                     const eta = `${rest.averagePreparationMinutes || rest.estimatedDeliveryMinutes || 20} mins`;
-                    const locality = rest.locality || rest.city || 'Hyderabad';
+                    // Accurate outlet location calculation (avoids hardcoded 'Hyderabad' fallback)
+                    const locality = (() => {
+                      const loc = (rest.locality || rest.colony || rest.mandal || rest.village || "").trim();
+                      const dist = (rest.district || rest.city || "").trim();
+                      if (loc) {
+                        return dist && dist.toLowerCase() !== loc.toLowerCase() ? `${loc}, ${dist}` : loc;
+                      }
+                      if (dist) {
+                        return dist;
+                      }
+                      if (rest.address && typeof rest.address === "string") {
+                        const parts = rest.address.split(",").map((s: string) => s.trim()).filter(Boolean);
+                        if (parts.length > 0) {
+                          return parts.slice(-2).join(", ");
+                        }
+                      }
+                      if (rest.pincode || rest.pinCode) {
+                        return `PIN ${rest.pincode || rest.pinCode}`;
+                      }
+                      const uLoc = userLocation || (() => {
+                        try {
+                          return JSON.parse(localStorage.getItem("user_location") || localStorage.getItem("userLocation") || "null");
+                        } catch {
+                          return null;
+                        }
+                      })();
+                      if (uLoc) {
+                        const uArea = (uLoc.colony || uLoc.mandal || uLoc.village || "").trim();
+                        const uDist = (uLoc.district || uLoc.city || "").trim();
+                        if (uArea && uDist && uArea.toLowerCase() !== uDist.toLowerCase()) return `${uArea}, ${uDist}`;
+                        if (uArea) return uArea;
+                        if (uDist) return uDist;
+                        if (uLoc.pincode) return `PIN ${uLoc.pincode}`;
+                      }
+                      return rest.state || "Local Kitchen";
+                    })();
                     const isOpen = rest.isOpen !== false;
                     const id = rest.id || rest._id;
 

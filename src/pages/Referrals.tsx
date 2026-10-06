@@ -28,6 +28,7 @@ import {
   Filter,
   Download,
   Phone,
+  Mail,
   Play,
   CheckCircle,
   HelpCircle,
@@ -382,23 +383,50 @@ const Referrals = () => {
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [level1Users, level2Users, level3Users]);
 
-  // Combined real earnings ledger matching user specifications
+  // Filter out system accounts (like ApexBee System) from the Weekly Top Referrers leaderboard
+  const filteredLeaderboardData = useMemo(() => {
+    return leaderboardData
+      .filter((row) => {
+        const name = (row.name || "").toLowerCase();
+        const email = (row.email || "").toLowerCase();
+        const code = (row.referralCode || "").toLowerCase();
+        return (
+          !name.includes("apexbee") &&
+          !name.includes("system") &&
+          !email.includes("apexbee") &&
+          !email.includes("system") &&
+          code !== "system" &&
+          code !== "apexbee"
+        );
+      })
+      .map((row, idx) => ({ ...row, displayRank: idx + 1 }));
+  }, [leaderboardData]);
+
+  // Combined real earnings ledger matching user specifications (excludes 0 amount entries)
   const transactionLedgerList = useMemo<EarningRow[]>(() => {
     const list: EarningRow[] = [];
 
     commissionHistory.forEach((c) => {
-      const allowedTypes = [
-        "Signup Bonus",
-        "First Purchase",
-        "Product Commission",
-        "Membership",
-        "Vendor",
-        "Franchise",
-        "Recurring"
-      ];
-      let displayType = c.commissionType;
-      if (!allowedTypes.includes(displayType)) {
+      const amt = Math.round(Number(c.commissionAmount || c.amount || 0));
+      // STRICT REQUIREMENT: Do not show 0 amount items
+      if (amt <= 0) return;
+
+      const rawType = (c.commissionType || (c as any).transactionType || (c as any).rewardReason || (c as any).type || "").toLowerCase();
+      let displayType = "Product Commission";
+      if (rawType.includes("first") || rawType.includes("first_order") || rawType.includes("first_purchase") || rawType === "first purchase") {
+        displayType = "First Purchase";
+      } else if (rawType.includes("signup") || rawType === "signup bonus") {
+        displayType = "Signup Bonus";
+      } else if (rawType.includes("vendor")) {
+        displayType = "Vendor";
+      } else if (rawType.includes("franchise")) {
+        displayType = "Franchise";
+      } else if (rawType.includes("recurring") || rawType.includes("subscription")) {
+        displayType = "Recurring";
+      } else if (rawType.includes("product") || rawType === "product commission") {
         displayType = "Product Commission";
+      } else if (c.commissionType) {
+        displayType = c.commissionType;
       }
 
       let category = "Referral";
@@ -412,17 +440,49 @@ const Referrals = () => {
 
       list.push({
         date: c.date || c.createdAt,
-        referralName: c.userName || "System / Direct",
-        level: c.level && c.level > 0 ? `Level ${c.level}` : "Global",
+        referralName: c.userName || (c as any).referredUserName || "Direct Referral",
+        level: c.level && c.level > 0 ? `Level ${c.level}` : "Level 1",
         type: displayType,
         category,
-        orderId: c.orderNumber || "N/A",
-        amount: Math.round(c.commissionAmount || c.amount || 0),
+        orderId: c.orderNumber || (c as any).orderId || "N/A",
+        amount: amt,
         status: c.status || "credited"
       });
     });
 
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [commissionHistory]);
+
+  // Tab stats for Earnings Ledger tabs
+  const ledgerTabStats = useMemo(() => {
+    const countTotal = (type: string) => {
+      const items = transactionLedgerList.filter(r => r.type === type);
+      return {
+        count: items.length,
+        total: items.reduce((sum, r) => sum + r.amount, 0)
+      };
+    };
+
+    const firstPurchaseStats = countTotal("First Purchase");
+    const productCommStats = countTotal("Product Commission");
+    const signupBonusStats = countTotal("Signup Bonus");
+    const otherItems = transactionLedgerList.filter(r => !["First Purchase", "Product Commission", "Signup Bonus"].includes(r.type));
+
+    return {
+      all: { count: transactionLedgerList.length, total: transactionLedgerList.reduce((sum, r) => sum + r.amount, 0) },
+      firstPurchase: firstPurchaseStats,
+      productCommission: productCommStats,
+      signupBonus: signupBonusStats,
+      other: { count: otherItems.length, total: otherItems.reduce((sum, r) => sum + r.amount, 0) }
+    };
+  }, [transactionLedgerList]);
+
+  // Strict zero-amount filter for financial commission ledger
+  const validCommissions = useMemo(() => {
+    return commissionHistory.filter((c) => {
+      const amt = Number(c.commissionAmount || c.amount || 0);
+      return amt > 0;
+    });
   }, [commissionHistory]);
 
   useEffect(() => {
@@ -1033,20 +1093,30 @@ const Referrals = () => {
     };
   }, [allReferredUsers, stats]);
 
-  // Filters: Earnings filter application
+  // Filters: Earnings filter application (strictly excludes 0 amounts)
   const filteredLedger = useMemo(() => {
     return transactionLedgerList.filter(row => {
+      // STRICT REQUIREMENT: Never show 0 amount items
+      if (!row.amount || Number(row.amount) <= 0) return false;
+
       // Search
       if (dirSearchQuery.trim() !== "") {
         const query = dirSearchQuery.toLowerCase();
         const matchesName = row.referralName.toLowerCase().includes(query);
-        const matchesOrderId = row.orderId.toLowerCase().includes(query);
+        const matchesOrderId = (row.orderId || "").toLowerCase().includes(query);
         const matchesType = row.type.toLowerCase().includes(query);
         if (!matchesName && !matchesOrderId && !matchesType) return false;
       }
 
       // Type Filter
-      if (earningsTypeFilter !== "all" && row.type !== earningsTypeFilter) return false;
+      if (earningsTypeFilter !== "all") {
+        if (earningsTypeFilter === "other") {
+          const mainTypes = ["First Purchase", "Product Commission", "Signup Bonus"];
+          if (mainTypes.includes(row.type)) return false;
+        } else if (row.type !== earningsTypeFilter) {
+          return false;
+        }
+      }
 
       // Date Filter
       if (earningsDateFilter !== "all") {
@@ -1084,10 +1154,16 @@ const Referrals = () => {
       );
     }
 
-    // Level Filter
+    // Level & Qualification Filter
     if (referralLevelFilter !== "all") {
-      const lvl = parseInt(referralLevelFilter);
-      result = result.filter(u => u.levelNum === lvl);
+      if (referralLevelFilter === "qualified") {
+        result = result.filter(u => isUserQualified(u));
+      } else if (referralLevelFilter === "pending") {
+        result = result.filter(u => !isUserQualified(u));
+      } else {
+        const lvl = parseInt(referralLevelFilter);
+        result = result.filter(u => u.levelNum === lvl);
+      }
     }
 
     // Date timeline filter
@@ -1494,16 +1570,16 @@ const Referrals = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {leaderboardData.length === 0 ? (
+                    {filteredLeaderboardData.length === 0 ? (
                       <div className="p-6 text-center text-slate-400 text-xs">
                         No leaderboard data found.
                       </div>
                     ) : (
                       <div className="divide-y divide-slate-100 text-xs">
-                        {leaderboardData.map((row, idx) => (
+                        {filteredLeaderboardData.map((row, idx) => (
                           <div key={idx} className={`p-3 flex justify-between items-center ${row.isCurrentUser ? 'bg-purple-50/65 font-bold border-l-4 border-purple-500' : ''}`}>
                             <div className="flex items-center gap-2">
-                              <span className="w-5 text-center font-bold text-slate-500">{idx + 1}</span>
+                              <span className="w-5 text-center font-bold text-slate-500">{row.displayRank || (idx + 1)}</span>
                               <div>
                                 <p className="text-navy font-bold">{row.name} {row.isCurrentUser && "(You)"}</p>
                                 <p className="text-[10px] text-slate-400">Total: {row.count} invites</p>
@@ -1522,23 +1598,38 @@ const Referrals = () => {
 
           {/* Earnings Tab Content */}
           <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left">
-            {/* Top Stats Summary row */}
+            {/* Top Earnings Tab Boxes / Summary row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
               {[
-                { label: "Total Earnings", value: `₹${formatINR(stats.totalEarned || 0)}`, color: "text-navy" },
-                { label: "Active Referrals", value: allReferredUsers.filter(u => u.firstOrderQualified).length.toString(), color: "text-green-700" },
-                { label: "Orders Generated", value: allReferredUsers.reduce((sum, u) => sum + (u.totalPurchases || 0), 0).toString(), color: "text-indigo-700" },
-                { label: "Pending Splits", value: `₹${formatINR(stats.pendingBalance || 0)}`, color: "text-amber-600" },
-                { label: "Direct Comm", value: `₹${formatINR(stats.directEarnings || 0)}`, color: "text-purple-700" },
-                { label: "Indirect Comm", value: `₹${formatINR(stats.indirectEarnings || 0)}`, color: "text-blue-700" },
-              ].map(s => (
-                <Card key={s.label} className="border border-slate-200/80 shadow-sm rounded-2xl">
-                  <CardContent className="p-3 sm:p-4">
-                    <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
-                    <p className={`text-lg sm:text-xl font-black mt-0.5 sm:mt-1 ${s.color}`}>{s.value}</p>
-                  </CardContent>
-                </Card>
-              ))}
+                { label: "Total Earnings", value: `₹${formatINR(stats.totalEarned || 0)}`, color: "text-navy", filterKey: "all" },
+                { label: "First Purchase", value: `₹${formatINR(stats.firstPurchaseCommission || ledgerTabStats.firstPurchase.total || 0)}`, color: "text-emerald-700", filterKey: "First Purchase" },
+                { label: "Product Comm", value: `₹${formatINR(stats.productCommission || ledgerTabStats.productCommission.total || 0)}`, color: "text-indigo-700", filterKey: "Product Commission" },
+                { label: "Signup Bonus", value: `₹${formatINR(stats.signupBonus || stats.signupBonusTotal || ledgerTabStats.signupBonus.total || 0)}`, color: "text-amber-700", filterKey: "Signup Bonus" },
+                { label: "Direct Comm (L1)", value: `₹${formatINR(stats.directEarnings || 0)}`, color: "text-purple-700", filterKey: "all" },
+                { label: "Pending Splits", value: `₹${formatINR(stats.pendingBalance || 0)}`, color: "text-rose-600", filterKey: "all" },
+              ].map(s => {
+                const isActive = earningsTypeFilter === s.filterKey && s.filterKey !== "all";
+                return (
+                  <Card
+                    key={s.label}
+                    onClick={() => {
+                      if (s.filterKey) {
+                        setEarningsTypeFilter(s.filterKey);
+                      }
+                    }}
+                    className={`border border-slate-200/80 shadow-sm rounded-2xl cursor-pointer hover:shadow-md transition-all ${
+                      isActive
+                        ? "ring-2 ring-emerald-500 bg-emerald-50/30 border-emerald-300"
+                        : "hover:border-indigo-300 bg-white"
+                    }`}
+                  >
+                    <CardContent className="p-3 sm:p-4">
+                      <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
+                      <p className={`text-lg sm:text-xl font-black mt-0.5 sm:mt-1 ${s.color}`}>{s.value}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Visual graph and transaction list toggles */}
@@ -1587,6 +1678,100 @@ const Referrals = () => {
                   </div>
                 </div>
               </CardHeader>
+
+              {/* Tab Navigation for Ledger */}
+              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setEarningsTypeFilter("all")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    earningsTypeFilter === "all"
+                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>📋</span> All Ledger
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                    {ledgerTabStats.all.count}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEarningsTypeFilter("First Purchase")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    earningsTypeFilter === "First Purchase"
+                      ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
+                      : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
+                  }`}
+                >
+                  <span>🛍️</span> First Purchase
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "First Purchase" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                    {ledgerTabStats.firstPurchase.count}
+                  </span>
+                  {ledgerTabStats.firstPurchase.total > 0 && (
+                    <span className="text-[10.5px] font-extrabold">
+                      ₹{formatINR(ledgerTabStats.firstPurchase.total)}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEarningsTypeFilter("Product Commission")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    earningsTypeFilter === "Product Commission"
+                      ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>📦</span> Product Commission
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Product Commission" ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-700 border border-indigo-200"}`}>
+                    {ledgerTabStats.productCommission.count}
+                  </span>
+                  {ledgerTabStats.productCommission.total > 0 && (
+                    <span className="text-[10.5px] font-extrabold">
+                      ₹{formatINR(ledgerTabStats.productCommission.total)}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEarningsTypeFilter("Signup Bonus")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    earningsTypeFilter === "Signup Bonus"
+                      ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>🎁</span> Signup Bonus
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Signup Bonus" ? "bg-white/20 text-white" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                    {ledgerTabStats.signupBonus.count}
+                  </span>
+                  {ledgerTabStats.signupBonus.total > 0 && (
+                    <span className="text-[10.5px] font-extrabold">
+                      ₹{formatINR(ledgerTabStats.signupBonus.total)}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEarningsTypeFilter("other")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    earningsTypeFilter === "other"
+                      ? "bg-slate-800 text-white shadow-sm"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>🏢</span> Others
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "other" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                    {ledgerTabStats.other.count}
+                  </span>
+                </button>
+              </div>
+
               <CardContent className="p-0">
                 {filteredLedger.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
@@ -1636,21 +1821,63 @@ const Referrals = () => {
 
           {/* Roster Directory Tab Content */}
           <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left">
+            {/* Top KPI Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
+              <Card className="border border-slate-200/90 shadow-sm rounded-2xl bg-white">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Downlines</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-navy">{allReferredUsers.length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border border-emerald-150 shadow-sm rounded-2xl bg-emerald-50/30">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-wider">Level 1 Direct</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-emerald-700">{level1Users.length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border border-blue-150 shadow-sm rounded-2xl bg-blue-50/30">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-blue-600 uppercase tracking-wider">Level 2</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-blue-700">{level2Users.length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border border-purple-150 shadow-sm rounded-2xl bg-purple-50/30">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-purple-600 uppercase tracking-wider">Level 3</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-purple-700">{level3Users.length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border border-indigo-150 shadow-sm rounded-2xl bg-indigo-50/30">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-indigo-600 uppercase tracking-wider">Verified KYC</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-indigo-700">{allReferredUsers.filter(isUserQualified).length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border border-amber-150 shadow-sm rounded-2xl bg-amber-50/30">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[9.5px] sm:text-[10px] font-black text-amber-600 uppercase tracking-wider">Commissions Generated</p>
+                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-amber-700">₹{formatINR(allReferredUsers.reduce((s, u) => s + (u.totalCommissionGenerated || 0), 0))}</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
               <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <div>
                   <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
-                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">Manage direct downline relationships, verify KYC statuses, and send reminders.</CardDescription>
+                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">
+                    Manage direct and multi-tier downline relationships, contact members, and verify KYC statuses.
+                  </CardDescription>
                 </div>
 
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
                   <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <Input
-                      placeholder="Search name, phone, email..."
+                      placeholder="Search name, phone, email, code..."
                       value={networkSearchQuery}
                       onChange={(e) => setNetworkSearchQuery(e.target.value)}
-                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-56"
+                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-60"
                     />
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
@@ -1659,10 +1886,12 @@ const Referrals = () => {
                       onChange={(e) => setReferralLevelFilter(e.target.value)}
                       className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
                     >
-                      <option value="all">All Levels</option>
-                      <option value="1">Level 1 (Direct)</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
+                      <option value="all">All Levels ({allReferredUsers.length})</option>
+                      <option value="1">Level 1 Direct ({level1Users.length})</option>
+                      <option value="2">Level 2 ({level2Users.length})</option>
+                      <option value="3">Level 3 ({level3Users.length})</option>
+                      <option value="qualified">Qualified Only ({allReferredUsers.filter(isUserQualified).length})</option>
+                      <option value="pending">Pending KYC / Orders ({allReferredUsers.filter(u => !isUserQualified(u)).length})</option>
                     </select>
                     <select
                       value={dirSortOption}
@@ -1672,11 +1901,105 @@ const Referrals = () => {
                       <option value="newest">Sort: Newest</option>
                       <option value="commission">Sort: Earnings</option>
                       <option value="orders">Sort: Orders Count</option>
-                      <option value="inactive">Sort: Inactive</option>
+                      <option value="inactive">Sort: Inactive First</option>
                     </select>
                   </div>
                 </div>
               </CardHeader>
+
+              {/* Category Pills Navigation */}
+              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("all")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "all"
+                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>👥</span> All Downlines
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                    {allReferredUsers.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("1")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "1"
+                      ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
+                      : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
+                  }`}
+                >
+                  <span>🟢</span> Level 1 Direct
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "1" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                    {level1Users.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("2")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "2"
+                      ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-600"
+                      : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
+                  }`}
+                >
+                  <span>🔵</span> Level 2
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
+                    {level2Users.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("3")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "3"
+                      ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
+                      : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
+                  }`}
+                >
+                  <span>🟣</span> Level 3
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
+                    {level3Users.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("qualified")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "qualified"
+                      ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
+                      : "bg-white text-indigo-800 hover:bg-indigo-50/60 border border-indigo-200/80"
+                  }`}
+                >
+                  <span>✓</span> Qualified KYC
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "qualified" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
+                    {allReferredUsers.filter(isUserQualified).length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("pending")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    referralLevelFilter === "pending"
+                      ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
+                      : "bg-white text-amber-800 hover:bg-amber-50/60 border border-amber-200/80"
+                  }`}
+                >
+                  <span>⏳</span> Action Pending
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "pending" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
+                    {allReferredUsers.filter(u => !isUserQualified(u)).length}
+                  </span>
+                </button>
+              </div>
+
               <CardContent className="p-0">
                 {sortedRoster.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
@@ -1684,69 +2007,149 @@ const Referrals = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto scrollbar-none">
-                    <table className="w-full text-xs text-left min-w-[650px]">
+                    <table className="w-full text-xs text-left min-w-[720px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
-                          <th className="p-3">Member</th>
-                          <th className="p-3">Level</th>
+                          <th className="p-3">Member Details</th>
+                          <th className="p-3">Hierarchy Tier</th>
                           <th className="p-3">Joined Date</th>
                           <th className="p-3 text-center">Orders</th>
-                          <th className="p-3 text-right">Commission Earned</th>
-                          <th className="p-3 text-center">KYC Status</th>
+                          <th className="p-3 text-right">Commission Generated</th>
+                          <th className="p-3 text-center">KYC &amp; Activity</th>
                           <th className="p-3 text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {sortedRoster.map((u) => (
-                          <tr key={u._id} className="hover:bg-slate-50/55 transition-all">
-                            <td className="p-3 flex items-center gap-2">
-                              <span className="w-8 h-8 rounded-full bg-slate-100 border text-sm flex items-center justify-center font-bold text-navy shrink-0">
-                                {u.name.substring(0, 1).toUpperCase()}
-                              </span>
-                              <div className="min-w-0">
-                                <p className="font-bold text-navy text-xs truncate">{u.name}</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5 truncate">{u.email || "No email"}</p>
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <Badge variant="outline" className={`text-[9px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
-                                Level {u.levelNum}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-slate-400">{new Date(u.createdAt).toLocaleDateString("en-IN")}</td>
-                            <td className="p-3 text-center font-bold text-slate-700">{u.totalPurchases || 0}</td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
-                            <td className="p-3 text-center">
-                              {isUserQualified(u) ? (
-                                <div className="inline-flex flex-col items-center gap-0.5">
-                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                    ✓ Qualified
-                                  </span>
-                                  <span className="text-[9px] text-slate-400">KYC &amp; Order Done</span>
+                        {sortedRoster.map((u) => {
+                          const phone = u.phone || u.mobile || "";
+                          const cleanPhone = phone.replace(/[^0-9]/g, "");
+                          const qualified = isUserQualified(u);
+                          return (
+                            <tr key={u._id} className="hover:bg-slate-50/70 transition-all">
+                              <td className="p-3">
+                                <div className="flex items-start gap-2.5">
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
+                                    u.levelNum === 1
+                                      ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                      : u.levelNum === 2
+                                        ? "bg-blue-50 border-blue-300 text-blue-800"
+                                        : "bg-purple-50 border-purple-300 text-purple-800"
+                                  }`}>
+                                    {u.name.substring(0, 1).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0 space-y-0.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <p className="font-extrabold text-navy text-xs truncate">{u.name}</p>
+                                      {u.referralCode && (
+                                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-indigo-200 bg-indigo-50/60 text-indigo-700 font-mono">
+                                          {u.referralCode}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                                      {phone ? (
+                                        <div className="flex items-center gap-1">
+                                          <a
+                                            href={`tel:${phone}`}
+                                            className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9.5px] border border-slate-200/60"
+                                            title="Call phone"
+                                          >
+                                            <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                            {phone}
+                                          </a>
+                                          <a
+                                            href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}, welcome to ApexBee! Let us know if you need any assistance getting started.`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-green-200"
+                                            title="Chat on WhatsApp"
+                                          >
+                                            💬 WA
+                                          </a>
+                                        </div>
+                                      ) : (
+                                        <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                      )}
+                                      {u.email ? (
+                                        <a
+                                          href={`mailto:${u.email}`}
+                                          className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-700 font-medium bg-slate-100 hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9.5px] truncate max-w-[140px]"
+                                          title="Send Email"
+                                        >
+                                          <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                          <span className="truncate">{u.email}</span>
+                                        </a>
+                                      ) : null}
+                                    </div>
+                                  </div>
                                 </div>
-                              ) : (
-                                <div className="inline-flex flex-col items-center gap-0.5">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                                    Pending
-                                  </span>
-                                  <span className="text-[9px] text-slate-400">
-                                    {!u.phone && !u.mobile ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
-                                  </span>
+                              </td>
+                              <td className="p-3">
+                                <Badge variant="outline" className={`text-[9.5px] font-bold px-2 py-0.5 ${
+                                  u.levelNum === 1
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                    : u.levelNum === 2
+                                      ? "bg-blue-50 text-blue-800 border-blue-300"
+                                      : "bg-purple-50 text-purple-800 border-purple-300"
+                                }`}>
+                                  {u.levelNum === 1 ? "🟢 Level 1 Direct" : u.levelNum === 2 ? "🔵 Level 2" : "🟣 Level 3"}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-slate-500 font-medium text-[11px]">
+                                {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="font-extrabold text-navy text-xs">{u.totalPurchases || 0}</span>
+                                <span className="text-[9.5px] text-slate-400 block font-medium">orders</span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className="font-extrabold text-emerald-700 text-xs sm:text-sm">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                {qualified ? (
+                                  <div className="inline-flex flex-col items-center gap-0.5">
+                                    <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                      ✓ Qualified
+                                    </span>
+                                    <span className="text-[8.5px] text-slate-400 font-medium">KYC &amp; Orders Done</span>
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex flex-col items-center gap-0.5">
+                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                      ⏳ Pending
+                                    </span>
+                                    <span className="text-[8.5px] text-slate-400 font-medium">
+                                      {!phone ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
+                                    </span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3 text-center">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-[10px] h-7 px-2.5 border-slate-200 text-slate-700 hover:text-navy hover:bg-slate-100 font-bold rounded-lg cursor-pointer"
+                                    onClick={() => setSelectedProfileNode(u)}
+                                  >
+                                    Profile Details
+                                  </Button>
+                                  {!qualified && phone && (
+                                    <a
+                                      href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}! Reminder from ApexBee: complete your account verification and first purchase to activate full referral earnings.`)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-[10px] h-7 px-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all"
+                                      title="Send WhatsApp Reminder"
+                                    >
+                                      💬 Remind
+                                    </a>
+                                  )}
                                 </div>
-                              )}
-                            </td>
-                            <td className="p-3 text-center flex items-center justify-center gap-1.5">
-                              <Button size="sm" variant="outline" className="text-[10px] h-7 px-2 border-slate-200 text-slate-700 font-bold" onClick={() => setSelectedProfileNode(u)}>
-                                Profile Details
-                              </Button>
-                              {!u.firstOrderQualified && (
-                                <Button size="sm" className="text-[10px] h-7 px-2 bg-purple-600 hover:bg-purple-700 text-white font-bold" onClick={() => toast({ title: "Reminder Sent", description: `Notified ${u.name} via push notification to complete KYC / purchase.` })}>
-                                  Remind
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1763,7 +2166,7 @@ const Referrals = () => {
                 <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                {commissionHistory.length === 0 ? (
+                {validCommissions.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
                     No commission transactions found in ledger database.
                   </div>
@@ -1783,7 +2186,7 @@ const Referrals = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {commissionHistory.map((c) => (
+                        {validCommissions.map((c) => (
                           <tr key={c._id} className="hover:bg-slate-50/55 transition-all">
                             <td className="p-3 font-mono font-bold text-slate-500">TXN-AB-{c._id.substring(c._id.length - 6).toUpperCase()}</td>
                             <td className="p-3 text-slate-400">{new Date(c.date || c.createdAt).toLocaleDateString("en-IN")}</td>
@@ -1846,27 +2249,86 @@ const Referrals = () => {
                     {/* Level 1 Nodes */}
                     <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-indigo-200 pl-2 sm:pl-4 space-y-2.5 sm:space-y-3">
                       {level1Users.map((u1) => {
-                        const kids2 = level2Users.filter(u2 => String(u2.referredBy) === String(u1._id));
+                        const kids2 = level2Users.filter(u2 => String(u2.referredBy) === String(u1._id || (u1 as any).id));
+                        const kids3UnderU1 = level3Users.filter(u3 => kids2.some(u2 => String(u3.referredBy) === String(u2._id || (u2 as any).id)));
+                        const totalDownlinesU1 = kids2.length + kids3UnderU1.length;
                         const isL1Expanded = !!expandedRows[`l1_${u1._id}`];
+                        const u1Phone = u1.phone || (u1 as any).mobile || "";
+                        const u1CleanPhone = u1Phone.replace(/[^0-9]/g, "");
                         return (
                           <div key={u1._id} className="space-y-2">
                             <div
-                              className="bg-white border rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer"
+                              className="bg-white border rounded-xl p-3 sm:p-3.5 flex justify-between items-start sm:items-center hover:shadow-sm transition-all cursor-pointer gap-2"
                               onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1._id}`]: !isL1Expanded }))}
                             >
-                              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                                <span className="text-emerald-600 shrink-0 text-xs sm:text-sm">🟢</span>
-                                <div className="min-w-0">
-                                  <p className="font-extrabold text-navy text-xs truncate">{u1.name}</p>
-                                  <p className="text-[9.5px] sm:text-[10px] text-slate-400 mt-0.5">Joined: {new Date(u1.createdAt).toLocaleDateString()}</p>
+                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                <span className="text-emerald-600 shrink-0 text-sm mt-0.5">🟢</span>
+                                <div className="min-w-0 space-y-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="font-extrabold text-navy text-xs sm:text-sm truncate">{u1.name}</p>
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-800 font-bold">
+                                      Level 1 Direct
+                                    </Badge>
+                                    {u1.referralCode && (
+                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-indigo-200 bg-indigo-50/50 text-indigo-700 font-mono">
+                                        Ref: {u1.referralCode}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-500 font-medium">
+                                    <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-150">
+                                      👥 Total: {kids2.length} Direct downline ({totalDownlinesU1} total downline)
+                                    </span>
+                                    <span>•</span>
+                                    <span>Joined: {new Date(u1.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  {/* Contact Details */}
+                                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                    {u1Phone ? (
+                                      <div className="flex items-center gap-1">
+                                        <a
+                                          href={`tel:${u1Phone}`}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60"
+                                          title="Call phone"
+                                        >
+                                          <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                          {u1Phone}
+                                        </a>
+                                        <a
+                                          href={`https://wa.me/${u1CleanPhone.startsWith("91") ? u1CleanPhone : "91" + u1CleanPhone}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 py-0.5 rounded-md text-[9.5px] font-bold border border-green-200"
+                                          title="Chat on WhatsApp"
+                                        >
+                                          💬 WhatsApp
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                    )}
+                                    {u1.email ? (
+                                      <a
+                                        href={`mailto:${u1.email}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:underline font-semibold bg-slate-100 hover:bg-blue-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60 truncate max-w-[200px]"
+                                        title="Send Email"
+                                      >
+                                        <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                        <span className="truncate">{u1.email}</span>
+                                      </a>
+                                    ) : null}
+                                  </div>
                                 </div>
                               </div>
                               <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
-                                <div className="text-xs">
-                                  <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
-                                  <p className="text-[9px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
+                                <div>
+                                  <p className="font-extrabold text-navy text-xs sm:text-sm">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
+                                  <p className="text-[9.5px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
                                 </div>
-                                <span className="text-slate-400 text-[10px] sm:text-xs">{isL1Expanded ? "▲" : "▼"}</span>
+                                <span className="text-slate-400 text-xs">{isL1Expanded ? "▲" : "▼"}</span>
                               </div>
                             </div>
 
@@ -1874,41 +2336,140 @@ const Referrals = () => {
                             {isL1Expanded && kids2.length > 0 && (
                               <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-emerald-200 pl-2 sm:pl-4 space-y-2">
                                 {kids2.map((u2) => {
-                                  const kids3 = level3Users.filter(u3 => String(u3.referredBy) === String(u2._id));
+                                  const kids3 = level3Users.filter(u3 => String(u3.referredBy) === String(u2._id || (u2 as any).id));
                                   const isL2Expanded = !!expandedRows[`l2_${u2._id}`];
+                                  const u2Phone = u2.phone || (u2 as any).mobile || "";
+                                  const u2CleanPhone = u2Phone.replace(/[^0-9]/g, "");
                                   return (
                                     <div key={u2._id} className="space-y-2">
                                       <div
-                                        className="bg-slate-50 border border-slate-100 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-inner transition-all cursor-pointer"
+                                        className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex justify-between items-start sm:items-center hover:shadow-inner transition-all cursor-pointer gap-2"
                                         onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2._id}`]: !isL2Expanded }))}
                                       >
-                                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                                          <span className="text-blue-500 shrink-0 text-xs">🔵</span>
-                                          <div className="min-w-0">
-                                            <p className="font-bold text-navy text-[11px] sm:text-xs truncate">{u2.name}</p>
-                                            <p className="text-[8.5px] sm:text-[9px] text-slate-400">Total: {kids3.length} downline</p>
+                                        <div className="flex items-start gap-2 min-w-0">
+                                          <span className="text-blue-500 shrink-0 text-xs mt-0.5">🔵</span>
+                                          <div className="min-w-0 space-y-0.5">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <p className="font-bold text-navy text-[11px] sm:text-xs truncate">{u2.name}</p>
+                                              <Badge variant="outline" className="text-[8.5px] px-1 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
+                                                Level 2
+                                              </Badge>
+                                              {u2.referralCode && (
+                                                <Badge variant="outline" className="text-[8.5px] px-1 py-0 border-slate-200 bg-white text-slate-600 font-mono">
+                                                  Ref: {u2.referralCode}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <p className="text-[9.5px] text-blue-700 font-semibold bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-150 inline-block">
+                                              👥 Total: {kids3.length} downline (Level 3)
+                                            </p>
+                                            {/* Contact Details */}
+                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                              {u2Phone ? (
+                                                <div className="flex items-center gap-1">
+                                                  <a
+                                                    href={`tel:${u2Phone}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex items-center gap-0.5 text-slate-700 hover:text-emerald-700 font-medium bg-white hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9px] border border-slate-200/80"
+                                                    title="Call phone"
+                                                  >
+                                                    <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                                    {u2Phone}
+                                                  </a>
+                                                  <a
+                                                    href={`https://wa.me/${u2CleanPhone.startsWith("91") ? u2CleanPhone : "91" + u2CleanPhone}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[8.5px] font-bold border border-green-200"
+                                                    title="Chat on WhatsApp"
+                                                  >
+                                                    💬 WA
+                                                  </a>
+                                                </div>
+                                              ) : null}
+                                              {u2.email ? (
+                                                <a
+                                                  href={`mailto:${u2.email}`}
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  className="inline-flex items-center gap-0.5 text-slate-700 hover:text-blue-700 font-medium bg-white hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9px] border border-slate-200/80 truncate max-w-[160px]"
+                                                  title="Send Email"
+                                                >
+                                                  <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                                  <span className="truncate">{u2.email}</span>
+                                                </a>
+                                              ) : null}
+                                            </div>
                                           </div>
                                         </div>
                                         <div className="text-right flex items-center gap-2 sm:gap-3 shrink-0">
                                           <div className="text-xs">
                                             <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{formatINR(u2.totalCommissionGenerated || 0)}</p>
                                           </div>
-                                          <span className="text-slate-400 text-[9px] sm:text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
+                                          <span className="text-slate-400 text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
                                         </div>
                                       </div>
 
                                       {/* Level 3 Nodes under this L2 */}
                                       {isL2Expanded && kids3.length > 0 && (
                                         <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5">
-                                          {kids3.map((u3) => (
-                                            <div key={u3._id} className="bg-purple-50/40 border border-purple-100/50 rounded-xl p-2 flex justify-between items-center">
-                                              <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
-                                                <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
-                                                <p className="font-semibold text-slate-700 text-[10.5px] sm:text-xs truncate">{u3.name}</p>
+                                          {kids3.map((u3) => {
+                                            const u3Phone = u3.phone || (u3 as any).mobile || "";
+                                            const u3CleanPhone = u3Phone.replace(/[^0-9]/g, "");
+                                            return (
+                                              <div key={u3._id} className="bg-purple-50/40 border border-purple-100/60 rounded-xl p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                                <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 text-xs min-w-0">
+                                                  <span className="text-purple-600 shrink-0 text-[10px] mt-0.5 sm:mt-0">🟣</span>
+                                                  <div className="min-w-0 space-y-0.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                      <p className="font-semibold text-slate-800 text-[10.5px] sm:text-xs truncate">{u3.name}</p>
+                                                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold">
+                                                        Level 3
+                                                      </Badge>
+                                                      {u3.referralCode && (
+                                                        <Badge variant="outline" className="text-[8px] px-1 py-0 border-purple-200 bg-white text-purple-700 font-mono">
+                                                          Ref: {u3.referralCode}
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 flex-wrap text-[8.5px]">
+                                                      {u3Phone ? (
+                                                        <div className="flex items-center gap-1">
+                                                          <a
+                                                            href={`tel:${u3Phone}`}
+                                                            className="inline-flex items-center gap-0.5 text-slate-600 hover:text-emerald-700 font-medium bg-white px-1 py-0.5 rounded border border-purple-100 text-[8.5px]"
+                                                          >
+                                                            <Phone className="w-2 h-2 text-emerald-600 shrink-0" />
+                                                            {u3Phone}
+                                                          </a>
+                                                          <a
+                                                            href={`https://wa.me/${u3CleanPhone.startsWith("91") ? u3CleanPhone : "91" + u3CleanPhone}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-green-700 bg-green-50 px-1 py-0.5 rounded text-[8px] font-bold"
+                                                          >
+                                                            WA
+                                                          </a>
+                                                        </div>
+                                                      ) : null}
+                                                      {u3.email ? (
+                                                        <a
+                                                          href={`mailto:${u3.email}`}
+                                                          className="inline-flex items-center gap-0.5 text-slate-600 hover:text-blue-700 font-medium bg-white px-1 py-0.5 rounded border border-purple-100 text-[8.5px] truncate max-w-[130px]"
+                                                        >
+                                                          <Mail className="w-2 h-2 text-blue-600 shrink-0" />
+                                                          <span className="truncate">{u3.email}</span>
+                                                        </a>
+                                                      ) : null}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0 self-end sm:self-center">
+                                                  ₹{formatINR(u3.totalCommissionGenerated || 0)}
+                                                </span>
                                               </div>
-                                              <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0">₹{formatINR(u3.totalCommissionGenerated || 0)}</span>
-                                            </div>
-                                          ))}
+                                            );
+                                          })}
                                         </div>
                                       )}
                                     </div>
@@ -2291,65 +2852,177 @@ const Referrals = () => {
 
       {/* Dynamic Profile detail slide drawer */}
       {selectedProfileNode && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl p-4 sm:p-6 overflow-y-auto flex flex-col justify-between border-l border-slate-100">
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex justify-between items-center pb-3 sm:pb-4 border-b">
-                <h4 className="font-extrabold text-navy text-sm sm:text-base">👤 Downline Member Profile</h4>
-                <button onClick={() => setSelectedProfileNode(null)} className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 border-none cursor-pointer">
-                  <X className="w-4 h-4 text-slate-500" />
-                </button>
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1000] flex justify-end animate-in fade-in duration-200"
+          onClick={() => setSelectedProfileNode(null)}
+        >
+          <div 
+            className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer Header (Fixed) */}
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-black text-navy text-sm sm:text-base leading-none">Downline Member Profile</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Tier {selectedProfileNode.levelNum} Network Affiliate</p>
+                </div>
               </div>
+              <button 
+                onClick={() => setSelectedProfileNode(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors border border-slate-200/60 cursor-pointer"
+                aria-label="Close Drawer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div className="flex items-center gap-3 bg-slate-50 border rounded-2xl p-3.5 sm:p-4">
-                <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-lg sm:text-xl font-bold text-indigo-700 shrink-0">
-                  {selectedProfileNode.name.substring(0, 1).toUpperCase()}
-                </span>
-                <div className="text-left min-w-0">
-                  <h4 className="font-black text-navy text-xs sm:text-sm truncate">{selectedProfileNode.name}</h4>
-                  <p className="text-[11px] sm:text-xs text-slate-400 truncate">{selectedProfileNode.email}</p>
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">Code: {selectedProfileNode.referralCode || "—"}</p>
+            {/* Drawer Body (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
+              {/* Member Profile Hero Card */}
+              <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3.5">
+                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-navy to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-sm shrink-0 border-2 border-white ring-2 ring-indigo-100">
+                  {selectedProfileNode.name ? selectedProfileNode.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <h4 className="font-black text-navy text-sm sm:text-base leading-tight break-words">
+                    {selectedProfileNode.name}
+                  </h4>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">
+                    {selectedProfileNode.email}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200/60">
+                      Level {selectedProfileNode.levelNum}
+                    </span>
+                    {selectedProfileNode.referralCode && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-white text-slate-600 border border-slate-200 shadow-2xs">
+                        Code: <span className="font-bold text-navy">{selectedProfileNode.referralCode}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Network stats list */}
+              {/* Direct Contact Actions */}
+              {((selectedProfileNode.phone || selectedProfileNode.mobile) || selectedProfileNode.email) && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Direct Contact &amp; Actions</p>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      Quick Connect
+                    </span>
+                  </div>
+
+                  {/* Phone & WhatsApp Section */}
+                  {(selectedProfileNode.phone || selectedProfileNode.mobile) && (
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                          <Phone className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-bold text-navy text-xs sm:text-sm font-mono truncate">
+                          {selectedProfileNode.phone || selectedProfileNode.mobile}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <a
+                          href={`tel:${selectedProfileNode.phone || selectedProfileNode.mobile}`}
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs transition-colors shadow-2xs hover:bg-slate-50"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Direct Call</span>
+                        </a>
+                        <a
+                          href={`https://wa.me/${(selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '').startsWith('91') ? (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '') : '91' + (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${selectedProfileNode.name}, reaching out to you from ApexBee network.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-2xs"
+                        >
+                          <span>💬 WhatsApp</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Email Section */}
+                  {selectedProfileNode.email && (
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                          <Mail className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-semibold text-slate-700 text-xs truncate">
+                          {selectedProfileNode.email}
+                        </span>
+                      </div>
+                      <a
+                        href={`mailto:${selectedProfileNode.email}`}
+                        className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 font-bold text-xs shrink-0 shadow-2xs"
+                      >
+                        <span>Send Mail</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Network stats grid */}
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-left">
-                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
-                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Level Tier</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-navy mt-0.5 sm:mt-1 block">Level {selectedProfileNode.levelNum}</span>
+                <div className="border border-slate-200/80 rounded-xl p-3 bg-slate-50/60">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Level Tier</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-navy block">Level {selectedProfileNode.levelNum}</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
-                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Purchases</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-navy mt-0.5 sm:mt-1 block">{selectedProfileNode.totalPurchases || 0} orders</span>
+                <div className="border border-slate-200/80 rounded-xl p-3 bg-slate-50/60">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Purchases</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-navy block">{selectedProfileNode.totalPurchases || 0} orders</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
-                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Joined Date</span>
-                  <span className="text-[11px] sm:text-xs font-bold text-navy mt-0.5 sm:mt-1 block">{new Date(selectedProfileNode.createdAt).toLocaleDateString()}</span>
+                <div className="border border-slate-200/80 rounded-xl p-3 bg-slate-50/60">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Joined Date</span>
+                  <span className="text-xs font-bold text-navy block">{new Date(selectedProfileNode.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-2.5 sm:p-3 bg-white">
-                  <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">KYC Status</span>
-                  <span className="text-[11px] sm:text-xs font-bold text-navy mt-0.5 sm:mt-1 block">
-                    {selectedProfileNode.firstOrderQualified ? "🟢 Verified Member" : "🟡 Registered Only"}
-                  </span>
+                <div className="border border-slate-200/80 rounded-xl p-3 bg-slate-50/60">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">KYC Status</span>
+                  <div className="mt-0.5">
+                    {selectedProfileNode.firstOrderQualified ? (
+                      <span className="inline-flex items-center text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        🟢 Verified Member
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-[10px] sm:text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        🟡 Registered Only
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Order history section */}
               <div className="text-left space-y-2">
-                <h5 className="font-extrabold text-navy text-xs uppercase tracking-wider">Purchase History ({selectedProfileNode.orders?.length || 0})</h5>
+                <div className="flex justify-between items-center">
+                  <h5 className="font-extrabold text-navy text-xs uppercase tracking-wider">Purchase History</h5>
+                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    {selectedProfileNode.orders?.length || 0} orders
+                  </span>
+                </div>
                 {(!selectedProfileNode.orders || selectedProfileNode.orders.length === 0) ? (
-                  <p className="text-xs text-slate-400">No orders completed yet.</p>
+                  <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
+                    <p className="text-xs text-slate-400 font-medium">No orders completed yet.</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {selectedProfileNode.orders.map((o: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-slate-50 border rounded-xl">
+                      <div key={idx} className="flex justify-between items-center text-xs p-3 bg-slate-50 border border-slate-200/70 rounded-xl">
                         <div>
                           <p className="font-bold text-navy">Order #{o.orderNumber}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">{new Date(o.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-extrabold text-navy">₹{formatINR(o.totalAmount)}</p>
-                          <Badge variant="outline" className="text-[9px] bg-white text-slate-700">{o.status}</Badge>
+                          <Badge variant="outline" className="text-[9px] bg-white text-slate-700 mt-0.5">{o.status}</Badge>
                         </div>
                       </div>
                     ))}
@@ -2358,9 +3031,15 @@ const Referrals = () => {
               </div>
             </div>
 
-            <Button className="w-full bg-navy text-white hover:bg-navy/95 font-bold py-2.5 rounded-xl mt-4 sm:mt-6" onClick={() => setSelectedProfileNode(null)}>
-              Close Drawer Panel
-            </Button>
+            {/* Drawer Footer (Sticky Bottom) */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/80 shrink-0">
+              <Button 
+                className="w-full bg-navy text-white hover:bg-navy/95 font-bold py-2.5 rounded-xl shadow-xs" 
+                onClick={() => setSelectedProfileNode(null)}
+              >
+                Close Drawer Panel
+              </Button>
+            </div>
           </div>
         </div>
       )}

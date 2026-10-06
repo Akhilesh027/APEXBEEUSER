@@ -287,7 +287,7 @@ export const RestaurantDetail: React.FC = () => {
                       {Array.isArray(restaurant.cuisines) ? restaurant.cuisines.join(', ') : restaurant.cuisines || 'Multi-Cuisine'}
                     </span>
                     <span>•</span>
-                    <span>{restaurant.locality || restaurant.city || 'Hyderabad'}</span>
+                    <span>{restaurant.locality || restaurant.mandal || restaurant.district || restaurant.city || (restaurant.pincode ? `PIN ${restaurant.pincode}` : 'Local Kitchen')}</span>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MessageSquare, X, Send, Bot, Sparkles, Calendar, ShoppingBag, Truck, Wallet, BookOpen, Briefcase, ArrowRight, UserCheck, Languages } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 
@@ -17,6 +17,13 @@ type Message = {
 
 export const AbhiAssistant = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Hide assistant on checkout & payment to prevent UI obstruction
+  const isHidden =
+    location.pathname.startsWith("/checkout") ||
+    location.pathname.startsWith("/pay");
+
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"hub" | "chat">("hub");
   const [language, setLanguage] = useState<"en" | "te">("en");
@@ -253,6 +260,10 @@ export const AbhiAssistant = () => {
       toast({ title: "Added to Basket! 🛒", description: `Added "${product.name}" to your cart.` });
     }
   };
+
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <>

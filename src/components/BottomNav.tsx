@@ -6,7 +6,15 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Hide BottomNav on focused purchase/detail pages to eliminate dual bottom bars and screen clutter
+  const isHidden =
+    location.pathname.startsWith("/checkout") ||
+    location.pathname.startsWith("/cart") ||
+    location.pathname.startsWith("/product/") ||
+    location.pathname.startsWith("/pay/");
+
   const [cartCount, setCartCount] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isBeeMenuOpen, setIsBeeMenuOpen] = useState(false);
 
@@ -51,6 +59,15 @@ export const BottomNav = () => {
       } catch {
         setCartCount(0);
       }
+
+      try {
+        const storedOrders = localStorage.getItem("orders_count");
+        if (storedOrders) {
+          setOrdersCount(Number(storedOrders) || 0);
+        }
+      } catch {
+        setOrdersCount(0);
+      }
     };
 
     syncAuthStateAndCounts();
@@ -64,6 +81,7 @@ export const BottomNav = () => {
     window.addEventListener("user_logged_in", handleSync);
     window.addEventListener("user_logged_out", handleSync);
     window.addEventListener("cart_updated", handleSync);
+    window.addEventListener("orders_updated", handleSync);
 
     return () => {
       window.removeEventListener("storage", handleSync);
@@ -71,6 +89,7 @@ export const BottomNav = () => {
       window.removeEventListener("user_logged_in", handleSync);
       window.removeEventListener("user_logged_out", handleSync);
       window.removeEventListener("cart_updated", handleSync);
+      window.removeEventListener("orders_updated", handleSync);
     };
   }, [location.pathname]);
 
@@ -96,7 +115,7 @@ export const BottomNav = () => {
       label: "Orders",
       path: "/my-orders",
       icon: Package,
-      badge: cartCount > 0 ? cartCount : undefined,
+      badge: ordersCount > 0 ? ordersCount : undefined,
       isBee: false,
     },
     {
@@ -133,6 +152,10 @@ export const BottomNav = () => {
     setIsBeeMenuOpen(false);
     navigate("/earn-with-apexbee");
   };
+
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <>
