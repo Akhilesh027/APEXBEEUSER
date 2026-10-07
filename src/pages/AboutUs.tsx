@@ -34,24 +34,64 @@ export const AboutUs: React.FC = () => {
 
   const coreValues = [
     {
-      icon: Users,
-      title: "Community First",
-      desc: "Empowering local artisans, small shop owners, service specialists, and entrepreneurs to thrive in the digital economy.",
+      num: 1,
+      emoji: "🤝",
+      title: "Trust",
+      desc: "Every relationship starts with trust. We treat everyone — customers, merchants, employees, partners — with transparency & honesty.",
     },
     {
-      icon: ShieldCheck,
-      title: "Trust & Transparency",
-      desc: "Zero hidden costs, verified vendor badges, transparent commissions, and secure biometric-grade transactions.",
+      num: 2,
+      emoji: "👑",
+      title: "Customer First",
+      desc: "Our success is our success when our customers succeed. Customer convenience, value, quality, and reliable service are our top priorities.",
     },
     {
-      icon: Cpu,
-      title: "Deep Tech Innovation",
-      desc: "Harnessing AI-powered hyper-local dispatch, dynamic route optimization, and intelligent inventory predictive matching.",
+      num: 3,
+      emoji: "🚀",
+      title: "Innovation",
+      desc: "We constantly find better ways to solve real problems. We use technology not just for technology’s sake — we use it to solve real business problems.",
     },
     {
-      icon: HeartHandshake,
-      title: "Inclusive Growth",
-      desc: "Bridging the urban-rural divide by bringing state-of-the-art commerce infrastructure to Tier 2, Tier 3, and rural regions.",
+      num: 4,
+      emoji: "🌱",
+      title: "Empowerment",
+      desc: "We create opportunities, not dependency. Small business owners, women entrepreneurs, youth and local entrepreneurs develop their tools & opportunities and create empowerment.",
+    },
+    {
+      num: 5,
+      emoji: "🏪",
+      title: "Local First",
+      desc: "Local businesses are the foundation of the economy. When local businesses are strong, the local economy is strong.",
+    },
+    {
+      num: 6,
+      emoji: "⭐",
+      title: "Excellence",
+      desc: "Good is not enough; we strive to be better every day. Continuous improvement in every area of product, technology, operations, customer service.",
+    },
+    {
+      num: 7,
+      emoji: "🔐",
+      title: "Integrity",
+      desc: "Do the right thing, even when no one is looking. Ethical business practices, transparency, and accountability.",
+    },
+    {
+      num: 8,
+      emoji: "🌍",
+      title: "Inclusion",
+      desc: "Opportunity should be accessible to all. From village to city, from small trader to growing entrepreneur, everyone has a place in the ecosystem.",
+    },
+    {
+      num: 9,
+      emoji: "🤝",
+      title: "Collaboration",
+      desc: "We grow together, not alone. Customers + Merchants + Entrepreneurs + Employees + Partners = ApexBee Ecosystem.",
+    },
+    {
+      num: 10,
+      emoji: "🇮🇳",
+      title: "Nation Building",
+      desc: "Strong local businesses build a strong India. Local employment, entrepreneurship and digital consumption should be encouraged.",
     },
   ];
 
@@ -184,36 +224,88 @@ export const AboutUs: React.FC = () => {
 
         {/* Tab 2: Mission & Vision */}
         {activeTab === "mission" && (
-          <div className="space-y-10 animate-fadeIn">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-card border border-amber-500/30 rounded-3xl p-8 space-y-4 shadow-sm">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                  <Target className="w-6 h-6" />
+          <div className="space-y-10 animate-fadeIn text-left">
+            <div className="grid md:grid-cols-2 gap-8 items-stretch">
+              {/* Vision Card */}
+              <div className="bg-card border border-amber-500/30 rounded-3xl p-8 space-y-4 shadow-sm flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 text-2xl font-bold">
+                    🔭
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">Vision</h3>
+                  <p className="text-foreground font-semibold leading-relaxed text-sm sm:text-base italic bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20">
+                    “To build the most trusted local commerce ecosystem in India, empowering every local business and entrepreneur to grow through technology, opportunities and community.”
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold">Our Mission</h3>
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  To democratize technology and market access for every micro, small, and medium enterprise (MSME) in India. We aim to enable 500,000 local merchants and service professionals to generate sustainable digital income with 0% predatory take-rates and high-velocity local fulfillment.
-                </p>
+                <div className="pt-3 border-t border-border/60">
+                  <span className="text-xs font-bold text-amber-500 uppercase tracking-wider block mb-1">
+                    Simple Meaning:
+                  </span>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">
+                    To make digital technology, consumers, business tools and growth opportunities accessible to every local shop, service provider, wholesaler &amp; entrepreneur in India.
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-card border border-orange-500/30 rounded-3xl p-8 space-y-4 shadow-sm">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
-                  <Eye className="w-6 h-6" />
+              {/* Mission Card */}
+              <div className="bg-card border border-orange-500/30 rounded-3xl p-8 space-y-4 shadow-sm flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 text-2xl font-bold">
+                    🎯
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">Mission</h3>
+                  <p className="text-muted-foreground leading-relaxed text-xs sm:text-sm">
+                    Connecting local businesses with consumers through a vibrant, affordable and inclusive digital ecosystem that facilitates trade, fosters entrepreneurship, creates opportunities, and drives sustainable local economic growth.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold">Our Vision</h3>
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  To build the world's most comprehensive grassroots commerce network where commerce, education, livelihoods, and logistics work in harmony—fostering community wealth generation, youth skill development, and hyper-reliable consumer experiences across Bharat.
-                </p>
+                <div className="pt-3 border-t border-border/60">
+                  <span className="text-xs font-bold text-orange-500 uppercase tracking-wider block mb-2">
+                    Our Mission Has 5 Pillars:
+                  </span>
+                  <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-amber-500">1.</span>
+                      <span><strong>Connectivity</strong> — Local Merchants &harr; Consumers</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-amber-500">2.</span>
+                      <span><strong>Digitalization</strong> — Every local business uses technology</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-amber-500">3.</span>
+                      <span><strong>Empowerment</strong> — Opportunities for entrepreneurs &amp; small businesses</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-amber-500">4.</span>
+                      <span><strong>Simplification</strong> — Make shopping, sales, payments, inventory &amp; operations easier</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-amber-500">5.</span>
+                      <span><strong>Grow Together</strong> — Merchant, consumer, entrepreneur and Apexbee grow together</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
-            <div className="p-8 rounded-3xl bg-muted/40 border border-border">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" /> The ApexBee Core Promise
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Whether a customer is ordering groceries in 15 minutes, booking an electrician for a home rewiring, pursuing an AI certification, or reserving a pilgrimage tour to Tirupati, ApexBee ensures guaranteed service level agreements, zero payment friction, and direct economic support to the local provider.
-              </p>
+            {/* Quick Core Values Preview */}
+            <div className="p-8 rounded-3xl bg-muted/40 border border-border space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h4 className="text-base sm:text-lg font-bold flex items-center gap-2">
+                    <span>🐝</span> ApexBee Core Values
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Rooted in trust, local prosperity, transparency, and nation building.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveTab("leadership")}
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 underline self-start sm:self-auto cursor-pointer"
+                >
+                  View All 10 Core Values &rarr;
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -266,22 +358,30 @@ export const AboutUs: React.FC = () => {
         {activeTab === "leadership" && (
           <div className="space-y-10 animate-fadeIn">
             <div>
-              <h3 className="text-xl font-bold mb-6 text-center">Our Core Operating Values</h3>
-              <div className="grid sm:grid-cols-2 gap-6">
-                {coreValues.map((val, idx) => {
-                  const Icon = val.icon;
-                  return (
-                    <div key={idx} className="p-6 bg-card border border-border rounded-2xl flex gap-4 items-start">
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-base">{val.title}</h4>
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{val.desc}</p>
-                      </div>
+              <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
+                  🐝 APEXBEE CORE VALUES
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-foreground">Our 10 Core Operating Values</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  The principles that drive every relationship, feature, and transaction across the ApexBee ecosystem.
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {coreValues.map((val) => (
+                  <div key={val.num} className="p-5 sm:p-6 bg-card border border-border rounded-2xl flex gap-4 items-start hover:border-amber-500/40 transition-all shadow-xs">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl shrink-0">
+                      {val.emoji}
                     </div>
-                  );
-                })}
+                    <div className="space-y-1.5 text-left">
+                      <h4 className="font-bold text-base text-foreground flex items-center gap-2">
+                        <span className="text-amber-500 font-extrabold">{val.num}.</span> {val.title}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{val.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

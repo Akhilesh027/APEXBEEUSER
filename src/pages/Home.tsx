@@ -49,6 +49,7 @@ const logo = "/logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "https://server.apexbee.in";
@@ -207,7 +208,7 @@ const getDisplayPrices = (p: Product) => {
   return { price, mrp: mrp > price ? mrp : 0, percentOff };
 };
 
-const getProductTitle = (p: Product) => p.itemName || p.name || "Product";
+const getProductTitle = (p: any) => p?.title || p?.itemName || p?.name || "Product";
 
 const getProductImage = (p: Product) =>
   getImageUrl(p.thumbnail || p.images?.[0] || "");
@@ -993,32 +994,49 @@ const Home = () => {
   }, []);
 
   const handleBuyAgainAdd = async (p: any) => {
+    const title = getProductTitle(p);
+    const { price } = getDisplayPrices(p);
+    const img = getProductImage(p);
+    const productId = p._id || p.id;
+
     const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (!userStr || !token) {
-      alert("Please login first.");
-      navigate("/login");
+    const user = userStr ? JSON.parse(userStr) : null;
+    const userId = user?._id || user?.id;
+
+    if (!userId || !token) {
+      // Guest cart fallback
+      const local = localStorage.getItem("local_cart");
+      let list: any[] = [];
+      try { list = JSON.parse(local || "[]"); } catch { list = []; }
+      const idx = list.findIndex((x: any) => x.productId === productId);
+      if (idx > -1) {
+        list[idx].quantity = (list[idx].quantity || 1) + 1;
+      } else {
+        list.push({ productId, name: title, price, image: img, quantity: 1 });
+      }
+      localStorage.setItem("local_cart", JSON.stringify(list));
+      window.dispatchEvent(new Event("storage"));
+      toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` });
       return;
     }
-    const user = JSON.parse(userStr);
-    const userId = user._id || user.id;
 
     const item = {
       userId,
-      productId: p._id,
-      name: p.itemName,
-      price: p.baseSellingPrice,
-      image: p.thumbnail,
+      productId,
+      name: title,
+      price,
+      image: img,
       quantity: 1,
       selectedColor: "default",
       selectedSize: "default",
-      sku: "BUY-AGAIN-MOCK",
-      vendorId: "vendor-1",
+      sku: p.sku || "BUY-AGAIN-MOCK",
+      vendorId: p.sellerId?._id || p.sellerId || p.vendorId || "vendor-1",
       deliveryFee: 0,
     };
 
     try {
-      const res = await fetch(`https://server.apexbee.in/api/cart/add`, {
+      const res = await fetch(`${API_BASE}/cart/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1026,12 +1044,24 @@ const Home = () => {
         },
         body: JSON.stringify(item),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add to cart");
-      alert(`${p.itemName} added to cart!`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || data.error || "Failed to add to cart");
+      toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` });
       window.dispatchEvent(new Event("storage"));
     } catch (err: any) {
-      alert(err.message || "Failed to add to cart");
+      // Always ensure local cart has the item so user never experiences cart loss
+      const local = localStorage.getItem("local_cart");
+      let list: any[] = [];
+      try { list = JSON.parse(local || "[]"); } catch { list = []; }
+      const idx = list.findIndex((x: any) => x.productId === productId);
+      if (idx > -1) {
+        list[idx].quantity = (list[idx].quantity || 1) + 1;
+      } else {
+        list.push({ productId, name: title, price, image: img, quantity: 1 });
+      }
+      localStorage.setItem("local_cart", JSON.stringify(list));
+      window.dispatchEvent(new Event("storage"));
+      toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` });
     }
   };
 
@@ -1670,6 +1700,67 @@ const Home = () => {
             <DynamicHeroBanner placement="home_hero" />
           </section>
 
+          {/* 2. Explore Categories (Placed above Promotional Banners for both Mobile and Desktop) */}
+          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
+            <div className="flex items-center justify-between mb-2.5 sm:mb-5">
+              <h2 className="text-lg sm:text-xl font-extrabold text-navy text-left">Explore Categories</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs px-3 py-1"
+                onClick={handleViewAllCategories}
+              >
+                View All
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-4">
+              {loadingCategories ? (
+                Array.from({ length: 9 }).map((_, index) => (
+                  <div key={index} className="flex flex-col items-center gap-2">
+                    <Skeleton className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full" />
+                    <Skeleton className="w-16 h-3 rounded mt-1" />
+                  </div>
+                ))
+              ) : categories.length === 0 ? (
+                <div className="col-span-full rounded-2xl border bg-muted/20 p-8 text-center text-muted-foreground font-semibold text-sm">
+                  No categories available right now.
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => navigate(category.to)}
+                    className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
+                  >
+                    {/* CLEAN PURE IMAGE ONLY — NO BACKGROUND, NO BORDER, NO BOX */}
+                    <div className="w-20 h-20 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 overflow-hidden shrink-0 transition duration-300 flex items-center justify-center">
+                      <img
+                        src={category.image || "/placeholder.svg"}
+                        alt={category.label}
+                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="w-full text-center px-0.5 mt-1">
+                      <p className="text-xs sm:text-xs font-black text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
+                        {category.label.includes(" & ") ? (
+                          <>
+                            {category.label.split(" & ")[0]} &<br />
+                            {category.label.split(" & ")[1]}
+                          </>
+                        ) : (
+                          category.label
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+
           {/* 🍱 DUAL BANNER: FOOD DELIVERY & DINEOUT RESERVATION */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <div className="flex md:grid md:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scroll-smooth">
@@ -1888,66 +1979,7 @@ const Home = () => {
             );
           })()}
 
-          {/* 2. Explore Categories (Placed FIRST after Hero Banner) */}
-          <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-5">
-            <div className="flex items-center justify-between mb-2.5 sm:mb-5">
-              <h2 className="text-lg sm:text-xl font-extrabold text-navy text-left">Explore Categories</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-accent border-accent hover:bg-accent hover:text-white rounded-full font-bold text-xs px-3 py-1"
-                onClick={handleViewAllCategories}
-              >
-                View All
-              </Button>
-            </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-4">
-              {loadingCategories ? (
-                Array.from({ length: 9 }).map((_, index) => (
-                  <div key={index} className="flex flex-col items-center gap-2">
-                    <Skeleton className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full" />
-                    <Skeleton className="w-16 h-3 rounded mt-1" />
-                  </div>
-                ))
-              ) : categories.length === 0 ? (
-                <div className="col-span-full rounded-2xl border bg-muted/20 p-8 text-center text-muted-foreground font-semibold text-sm">
-                  No categories available right now.
-                </div>
-              ) : (
-                categories.map((category) => (
-                  <button
-                    type="button"
-                    key={category.id}
-                    onClick={() => navigate(category.to)}
-                    className="flex flex-col items-center justify-between gap-1.5 p-1 group cursor-pointer border-none bg-transparent w-full"
-                  >
-                    {/* CLEAN PURE IMAGE ONLY — NO BACKGROUND, NO BORDER, NO BOX */}
-                    <div className="w-20 h-20 sm:w-[100px] sm:h-[100px] md:w-28 md:h-28 overflow-hidden shrink-0 transition duration-300 flex items-center justify-center">
-                      <img
-                        src={category.image || "/placeholder.svg"}
-                        alt={category.label}
-                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="w-full text-center px-0.5 mt-1">
-                      <p className="text-xs sm:text-xs font-black text-[#0A1128] group-hover:text-amber-600 leading-tight text-center break-words line-clamp-2 transition-colors">
-                        {category.label.includes(" & ") ? (
-                          <>
-                            {category.label.split(" & ")[0]} &<br />
-                            {category.label.split(" & ")[1]}
-                          </>
-                        ) : (
-                          category.label
-                        )}
-                      </p>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </section>
 
           {/* 3. Quick Shortcuts Bar (WITH LEFT & RIGHT NAV ARROWS) */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
@@ -2927,7 +2959,31 @@ const Home = () => {
                             </div>
 
                             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold gap-2">
-                              <span className="truncate">📍 {shop.locality || (shop.mandal ? `${shop.mandal}, ${shop.district || ''}` : '') || shop.district || shop.city || shop.village || (shop.pincode ? `PIN ${shop.pincode}` : shop.state) || 'Local Store'}</span>
+                              <span className="truncate" title={(() => {
+                                const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
+                                if (addr) return addr;
+                                if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
+                                if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
+                                if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
+                                if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
+                                if (shop.district) return shop.district;
+                                const pin = (shop.pincode || shop.pinCode || "").toString().trim();
+                                if (pin === "524305") return "Buchireddypalem, Nellore";
+                                if (pin) return `Buchireddypalem (${pin})`;
+                                return shop.state || 'Local Store';
+                              })()}>📍 {(() => {
+                                const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
+                                if (addr) return addr;
+                                if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
+                                if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
+                                if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
+                                if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
+                                if (shop.district) return shop.district;
+                                const pin = (shop.pincode || shop.pinCode || "").toString().trim();
+                                if (pin === "524305") return "Buchireddypalem, Nellore";
+                                if (pin) return `Buchireddypalem (${pin})`;
+                                return shop.state || 'Local Store';
+                              })()}</span>
                               <span className="text-amber-600 font-bold shrink-0">Same-Day Express</span>
                             </div>
                           </div>
@@ -3237,7 +3293,8 @@ const Home = () => {
             </section>
           )}
 
-          {/* 13. Business Promotion Hub */}
+          {/* [Hidden per Task User-04: Scale Your Business & Earn with ApexBee banners temporarily hidden] */}
+          {/*
           <section className="container mx-auto px-4 py-4 text-left">
             <div className="bg-gradient-to-br from-navy to-navy-dark border rounded-3xl p-6 text-white relative overflow-hidden shadow-xl">
               <div className="absolute right-0 top-0 opacity-10 pointer-events-none text-9xl font-bold">💼</div>
@@ -3271,7 +3328,6 @@ const Home = () => {
             </div>
           </section>
 
-          {/* Earn with ApexBee */}
           <section className="container mx-auto px-4 py-8 bg-navy text-white rounded-3xl my-6 relative overflow-hidden text-left">
             <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
               <TrendingUp className="h-72 w-72 text-white" />
@@ -3309,6 +3365,7 @@ const Home = () => {
               </div>
             </div>
           </section>
+          */}
 
           {/* 14. Continue Shopping Banner */}
           <section className="container mx-auto px-4 py-6 text-left">

@@ -280,7 +280,7 @@ export const Footer: React.FC = () => {
 
                 {/* WhatsApp */}
                 <a
-                  href="https://wa.me/918008812345"
+                  href="https://wa.me/916281593755"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Connect on WhatsApp Channel"

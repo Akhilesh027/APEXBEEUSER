@@ -171,17 +171,17 @@ export const HelpCenter: React.FC = () => {
             </div>
           </Link>
 
-          <a href="tel:18001234567" className="p-4 bg-card border border-border rounded-2xl shadow-sm hover:border-amber-500/50 transition flex items-center gap-3">
+          <a href="tel:6281593755" className="p-4 bg-card border border-border rounded-2xl shadow-sm hover:border-amber-500/50 transition flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
               <Phone className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
               <h4 className="font-bold text-xs">Call Support Desk</h4>
-              <p className="text-[11px] text-muted-foreground">1800-123-4567 Toll Free</p>
+              <p className="text-[11px] text-muted-foreground">+91 6281593755</p>
             </div>
           </a>
 
-          <a href="https://wa.me/918008812345" target="_blank" rel="noopener noreferrer" className="p-4 bg-card border border-border rounded-2xl shadow-sm hover:border-amber-500/50 transition flex items-center gap-3">
+          <a href="https://wa.me/916281593755" target="_blank" rel="noopener noreferrer" className="p-4 bg-card border border-border rounded-2xl shadow-sm hover:border-amber-500/50 transition flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
               <MessageSquare className="w-5 h-5" />
             </div>

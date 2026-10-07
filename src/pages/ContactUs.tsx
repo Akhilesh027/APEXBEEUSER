@@ -77,23 +77,7 @@ export const ContactUs: React.FC = () => {
       type: "Registered Corporate Headquarters",
       address: "4-1-28, SR MASTHAN STREET, REVENUE WARD 2, Buchireddypalem, Buchireddipalem Mandalam, Nellore- 524305, Andhra Pradesh",
       email: "info@apexbee.in",
-      phone: "+91 80088 12345",
-    },
-    {
-      city: "Hyderabad Hub",
-      company: "ApexBee Regional Operations",
-      type: "Tech & Operations Hub",
-      address: "ApexBee Tower, HITEC City, Madhapur, Hyderabad, Telangana - 500081",
-      email: "hyderabad@apexbee.in",
-      phone: "+91 80088 12345",
-    },
-    {
-      city: "Vijayawada Hub",
-      company: "ApexBee Regional Operations",
-      type: "Regional Franchise Operations Hub",
-      address: "MG Road, Benz Circle, Vijayawada, Andhra Pradesh - 520010",
-      email: "ap.ops@apexbee.in",
-      phone: "+91 80088 12346",
+      phone: "+91 6281593755",
     },
   ];
 
@@ -125,8 +109,8 @@ export const ContactUs: React.FC = () => {
             </div>
             <h3 className="font-bold text-sm">Customer Helpline</h3>
             <p className="text-xs text-muted-foreground">Mon-Sun, 7:00 AM - 11:00 PM</p>
-            <a href="tel:18001234567" className="text-xs font-bold text-amber-500 hover:underline block pt-1">
-              1800-123-4567 (Toll Free)
+            <a href="tel:6281593755" className="text-xs font-bold text-amber-500 hover:underline block pt-1">
+              +91 6281593755
             </a>
           </div>
 
@@ -136,8 +120,8 @@ export const ContactUs: React.FC = () => {
             </div>
             <h3 className="font-bold text-sm">Vendor & Franchise Desk</h3>
             <p className="text-xs text-muted-foreground">Partner onboarding & settlements</p>
-            <a href="tel:+918008812345" className="text-xs font-bold text-orange-500 hover:underline block pt-1">
-              +91 80088 12345
+            <a href="tel:6281593755" className="text-xs font-bold text-orange-500 hover:underline block pt-1">
+              +91 6281593755
             </a>
           </div>
 
@@ -158,7 +142,7 @@ export const ContactUs: React.FC = () => {
             </div>
             <h3 className="font-bold text-sm">WhatsApp Support</h3>
             <p className="text-xs text-muted-foreground">Instant order updates</p>
-            <a href="https://wa.me/918008812345" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-500 hover:underline block pt-1">
+            <a href="https://wa.me/916281593755" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-500 hover:underline block pt-1">
               Chat on WhatsApp →
             </a>
           </div>
