@@ -2332,149 +2332,87 @@ const Referrals = () => {
                               </div>
                             </div>
 
-                            {/* Level 2 Nodes under this L1 */}
-                            {isL1Expanded && kids2.length > 0 && (
+                            {/* Level 2 & Level 3 Nodes under this L1 */}
+                            {isL1Expanded && (
                               <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-emerald-200 pl-2 sm:pl-4 space-y-2">
-                                {kids2.map((u2) => {
-                                  const kids3 = level3Users.filter(u3 => String(u3.referredBy) === String(u2._id || (u2 as any).id));
-                                  const isL2Expanded = !!expandedRows[`l2_${u2._id}`];
-                                  const u2Phone = u2.phone || (u2 as any).mobile || "";
-                                  const u2CleanPhone = u2Phone.replace(/[^0-9]/g, "");
-                                  return (
-                                    <div key={u2._id} className="space-y-2">
-                                      <div
-                                        className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex justify-between items-start sm:items-center hover:shadow-inner transition-all cursor-pointer gap-2"
-                                        onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2._id}`]: !isL2Expanded }))}
-                                      >
-                                        <div className="flex items-start gap-2 min-w-0">
-                                          <span className="text-blue-500 shrink-0 text-xs mt-0.5">🔵</span>
-                                          <div className="min-w-0 space-y-0.5">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                              <p className="font-bold text-navy text-[11px] sm:text-xs truncate">{u2.name}</p>
-                                              <Badge variant="outline" className="text-[8.5px] px-1 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
-                                                Level 2
-                                              </Badge>
-                                              {u2.referralCode && (
-                                                <Badge variant="outline" className="text-[8.5px] px-1 py-0 border-slate-200 bg-white text-slate-600 font-mono">
-                                                  Ref: {u2.referralCode}
-                                                </Badge>
+                                {totalDownlinesU1 === 0 ? (
+                                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center text-slate-400 text-xs">
+                                    No downline members under {u1.name} yet.
+                                  </div>
+                                ) : (
+                                  <>
+                                    {/* Branch Downline Summary */}
+                                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2">
+                                      <div className="space-y-0.5">
+                                        <p className="text-xs font-bold text-navy">
+                                          {u1.name}'s Downline Network
+                                        </p>
+                                        <p className="text-[10px] text-slate-500">
+                                          Level 2: <span className="font-bold text-blue-700">{kids2.length}</span> • Level 3: <span className="font-bold text-purple-700">{kids3UnderU1.length}</span>
+                                        </p>
+                                      </div>
+                                      <Badge className="bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1">
+                                        Total Downline: {totalDownlinesU1}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Level 2 Nodes - Details hidden, shows total downline */}
+                                    {kids2.map((u2) => {
+                                      const kids3 = level3Users.filter(u3 => String(u3.referredBy) === String(u2._id || (u2 as any).id));
+                                      const isL2Expanded = !!expandedRows[`l2_${u2._id}`];
+                                      return (
+                                        <div key={u2._id} className="space-y-1.5">
+                                          <div
+                                            className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-inner transition-all cursor-pointer gap-2"
+                                            onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2._id}`]: !isL2Expanded }))}
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <span className="text-blue-500 shrink-0 text-xs">🔵</span>
+                                              <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                  <p className="font-bold text-navy text-[11px] sm:text-xs truncate">{u2.name}</p>
+                                                  <Badge variant="outline" className="text-[8.5px] px-1 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
+                                                    Level 2
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                                                👥 Total Downline: {kids3.length}
+                                              </span>
+                                              {kids3.length > 0 && (
+                                                <span className="text-slate-400 text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
                                               )}
                                             </div>
-                                            <p className="text-[9.5px] text-blue-700 font-semibold bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-150 inline-block">
-                                              👥 Total: {kids3.length} downline (Level 3)
-                                            </p>
-                                            {/* Contact Details */}
-                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                              {u2Phone ? (
-                                                <div className="flex items-center gap-1">
-                                                  <a
-                                                    href={`tel:${u2Phone}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="inline-flex items-center gap-0.5 text-slate-700 hover:text-emerald-700 font-medium bg-white hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9px] border border-slate-200/80"
-                                                    title="Call phone"
-                                                  >
-                                                    <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                                    {u2Phone}
-                                                  </a>
-                                                  <a
-                                                    href={`https://wa.me/${u2CleanPhone.startsWith("91") ? u2CleanPhone : "91" + u2CleanPhone}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[8.5px] font-bold border border-green-200"
-                                                    title="Chat on WhatsApp"
-                                                  >
-                                                    💬 WA
-                                                  </a>
-                                                </div>
-                                              ) : null}
-                                              {u2.email ? (
-                                                <a
-                                                  href={`mailto:${u2.email}`}
-                                                  onClick={(e) => e.stopPropagation()}
-                                                  className="inline-flex items-center gap-0.5 text-slate-700 hover:text-blue-700 font-medium bg-white hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9px] border border-slate-200/80 truncate max-w-[160px]"
-                                                  title="Send Email"
-                                                >
-                                                  <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                                                  <span className="truncate">{u2.email}</span>
-                                                </a>
-                                              ) : null}
-                                            </div>
                                           </div>
-                                        </div>
-                                        <div className="text-right flex items-center gap-2 sm:gap-3 shrink-0">
-                                          <div className="text-xs">
-                                            <p className="font-extrabold text-navy text-[11px] sm:text-xs">₹{formatINR(u2.totalCommissionGenerated || 0)}</p>
-                                          </div>
-                                          <span className="text-slate-400 text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
-                                        </div>
-                                      </div>
 
-                                      {/* Level 3 Nodes under this L2 */}
-                                      {isL2Expanded && kids3.length > 0 && (
-                                        <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5">
-                                          {kids3.map((u3) => {
-                                            const u3Phone = u3.phone || (u3 as any).mobile || "";
-                                            const u3CleanPhone = u3Phone.replace(/[^0-9]/g, "");
-                                            return (
-                                              <div key={u3._id} className="bg-purple-50/40 border border-purple-100/60 rounded-xl p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                                                <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 text-xs min-w-0">
-                                                  <span className="text-purple-600 shrink-0 text-[10px] mt-0.5 sm:mt-0">🟣</span>
-                                                  <div className="min-w-0 space-y-0.5">
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                          {/* Level 3 Nodes under this L2 - Details hidden, shows total downline */}
+                                          {isL2Expanded && kids3.length > 0 && (
+                                            <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5">
+                                              {kids3.map((u3) => (
+                                                <div key={u3._id} className="bg-purple-50/40 border border-purple-150 rounded-xl p-2 sm:p-2.5 flex items-center justify-between gap-2">
+                                                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
+                                                    <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                                       <p className="font-semibold text-slate-800 text-[10.5px] sm:text-xs truncate">{u3.name}</p>
                                                       <Badge variant="outline" className="text-[8px] px-1 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold">
                                                         Level 3
                                                       </Badge>
-                                                      {u3.referralCode && (
-                                                        <Badge variant="outline" className="text-[8px] px-1 py-0 border-purple-200 bg-white text-purple-700 font-mono">
-                                                          Ref: {u3.referralCode}
-                                                        </Badge>
-                                                      )}
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 flex-wrap text-[8.5px]">
-                                                      {u3Phone ? (
-                                                        <div className="flex items-center gap-1">
-                                                          <a
-                                                            href={`tel:${u3Phone}`}
-                                                            className="inline-flex items-center gap-0.5 text-slate-600 hover:text-emerald-700 font-medium bg-white px-1 py-0.5 rounded border border-purple-100 text-[8.5px]"
-                                                          >
-                                                            <Phone className="w-2 h-2 text-emerald-600 shrink-0" />
-                                                            {u3Phone}
-                                                          </a>
-                                                          <a
-                                                            href={`https://wa.me/${u3CleanPhone.startsWith("91") ? u3CleanPhone : "91" + u3CleanPhone}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-green-700 bg-green-50 px-1 py-0.5 rounded text-[8px] font-bold"
-                                                          >
-                                                            WA
-                                                          </a>
-                                                        </div>
-                                                      ) : null}
-                                                      {u3.email ? (
-                                                        <a
-                                                          href={`mailto:${u3.email}`}
-                                                          className="inline-flex items-center gap-0.5 text-slate-600 hover:text-blue-700 font-medium bg-white px-1 py-0.5 rounded border border-purple-100 text-[8.5px] truncate max-w-[130px]"
-                                                        >
-                                                          <Mail className="w-2 h-2 text-blue-600 shrink-0" />
-                                                          <span className="truncate">{u3.email}</span>
-                                                        </a>
-                                                      ) : null}
                                                     </div>
                                                   </div>
+                                                  <span className="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[9.5px] shrink-0">
+                                                    Total Downline: 0
+                                                  </span>
                                                 </div>
-                                                <span className="text-[10.5px] sm:text-xs font-bold text-purple-900 shrink-0 self-end sm:self-center">
-                                                  ₹{formatINR(u3.totalCommissionGenerated || 0)}
-                                                </span>
-                                              </div>
-                                            );
-                                          })}
+                                              ))}
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                                      );
+                                    })}
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
