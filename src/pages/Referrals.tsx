@@ -337,6 +337,24 @@ const Referrals = () => {
   // Profile Drawer Modal
   const [selectedProfileNode, setSelectedProfileNode] = useState<any | null>(null);
 
+  // Privacy Protection Masking for Top Level Downlines (Level 2 & 3)
+  const maskPhone = (ph: string) => {
+    if (!ph) return "";
+    const clean = ph.replace(/[^0-9]/g, "");
+    if (clean.length <= 4) return "••••••";
+    return clean.slice(0, 4) + "••••••";
+  };
+
+  const maskEmail = (em: string) => {
+    if (!em) return "";
+    const parts = em.split("@");
+    if (parts.length !== 2) return "••••••";
+    const user = parts[0];
+    const domain = parts[1];
+    const maskedUser = user.length > 2 ? user.slice(0, 2) + "•••" : user.slice(0, 1) + "•••";
+    return `${maskedUser}@${domain}`;
+  };
+
   // Calculator Estimates
   const [calculatorFriends, setCalculatorFriends] = useState<number>(10);
 
@@ -1886,12 +1904,12 @@ const Referrals = () => {
                       onChange={(e) => setReferralLevelFilter(e.target.value)}
                       className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
                     >
-                      <option value="all">All Levels ({allReferredUsers.length})</option>
-                      <option value="1">Level 1 Direct ({level1Users.length})</option>
-                      <option value="2">Level 2 ({level2Users.length})</option>
-                      <option value="3">Level 3 ({level3Users.length})</option>
-                      <option value="qualified">Qualified Only ({allReferredUsers.filter(isUserQualified).length})</option>
-                      <option value="pending">Pending KYC / Orders ({allReferredUsers.filter(u => !isUserQualified(u)).length})</option>
+                      <option value="1">1) Level 1 Direct ({level1Users.length})</option>
+                      <option value="2">2) Level 2 ({level2Users.length})</option>
+                      <option value="3">3) Level 3 ({level3Users.length})</option>
+                      <option value="all">4) All Downlines ({allReferredUsers.length})</option>
+                      <option value="qualified">5) Qualified KYC ({allReferredUsers.filter(isUserQualified).length})</option>
+                      <option value="pending">6) Action Pending ({allReferredUsers.filter(u => !isUserQualified(u)).length})</option>
                     </select>
                     <select
                       value={dirSortOption}
@@ -1907,93 +1925,99 @@ const Referrals = () => {
                 </div>
               </CardHeader>
 
-              {/* Category Pills Navigation */}
+              {/* Category Pills Navigation in User-Requested Order: 1) Level 1 - 2) Level 2 - 3) Level 3 - 4) All Downlines - 5) Qualified KYC - 6) Action Pending */}
               <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setReferralLevelFilter("all")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                    referralLevelFilter === "all"
-                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
-                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                  }`}
-                >
-                  <span>👥</span> All Downlines
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                    {allReferredUsers.length}
-                  </span>
-                </button>
-
+                {/* 1) Level 1 */}
                 <button
                   type="button"
                   onClick={() => setReferralLevelFilter("1")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     referralLevelFilter === "1"
                       ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
                       : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
                   }`}
                 >
-                  <span>🟢</span> Level 1 Direct
+                  <span>🟢</span> 1) Level 1 Direct
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "1" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
                     {level1Users.length}
                   </span>
                 </button>
 
+                {/* 2) Level 2 */}
                 <button
                   type="button"
                   onClick={() => setReferralLevelFilter("2")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     referralLevelFilter === "2"
                       ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-600"
                       : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
                   }`}
                 >
-                  <span>🔵</span> Level 2
+                  <span>🔵</span> 2) Level 2
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
                     {level2Users.length}
                   </span>
                 </button>
 
+                {/* 3) Level 3 */}
                 <button
                   type="button"
                   onClick={() => setReferralLevelFilter("3")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     referralLevelFilter === "3"
                       ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
                       : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
                   }`}
                 >
-                  <span>🟣</span> Level 3
+                  <span>🟣</span> 3) Level 3
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
                     {level3Users.length}
                   </span>
                 </button>
 
+                {/* 4) All Downlines */}
+                <button
+                  type="button"
+                  onClick={() => setReferralLevelFilter("all")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    referralLevelFilter === "all"
+                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                  }`}
+                >
+                  <span>👥</span> 4) All Downlines
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                    {allReferredUsers.length}
+                  </span>
+                </button>
+
+                {/* 5) Qualified KYC */}
                 <button
                   type="button"
                   onClick={() => setReferralLevelFilter("qualified")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     referralLevelFilter === "qualified"
                       ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
                       : "bg-white text-indigo-800 hover:bg-indigo-50/60 border border-indigo-200/80"
                   }`}
                 >
-                  <span>✓</span> Qualified KYC
+                  <span>✓</span> 5) Qualified KYC
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "qualified" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
                     {allReferredUsers.filter(isUserQualified).length}
                   </span>
                 </button>
 
+                {/* 6) Action Pending */}
                 <button
                   type="button"
                   onClick={() => setReferralLevelFilter("pending")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     referralLevelFilter === "pending"
                       ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
                       : "bg-white text-amber-800 hover:bg-amber-50/60 border border-amber-200/80"
                   }`}
                 >
-                  <span>⏳</span> Action Pending
+                  <span>⏳</span> 6) Action Pending
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "pending" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
                     {allReferredUsers.filter(u => !isUserQualified(u)).length}
                   </span>
@@ -2024,6 +2048,7 @@ const Referrals = () => {
                           const phone = u.phone || u.mobile || "";
                           const cleanPhone = phone.replace(/[^0-9]/g, "");
                           const qualified = isUserQualified(u);
+                          const isDirectLevel = u.levelNum === 1;
                           return (
                             <tr key={u._id} className="hover:bg-slate-50/70 transition-all">
                               <td className="p-3">
@@ -2047,39 +2072,54 @@ const Referrals = () => {
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                                      {phone ? (
-                                        <div className="flex items-center gap-1">
-                                          <a
-                                            href={`tel:${phone}`}
-                                            className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9.5px] border border-slate-200/60"
-                                            title="Call phone"
-                                          >
-                                            <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                            {phone}
-                                          </a>
-                                          <a
-                                            href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}, welcome to ApexBee! Let us know if you need any assistance getting started.`)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-green-200"
-                                            title="Chat on WhatsApp"
-                                          >
-                                            💬 WA
-                                          </a>
-                                        </div>
+                                      {isDirectLevel ? (
+                                        <>
+                                          {phone ? (
+                                            <div className="flex items-center gap-1">
+                                              <a
+                                                href={`tel:${phone}`}
+                                                className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9.5px] border border-slate-200/60"
+                                                title="Call phone"
+                                              >
+                                                <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                                {phone}
+                                              </a>
+                                              <a
+                                                href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}, welcome to ApexBee! Let us know if you need any assistance getting started.`)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-green-200"
+                                                title="Chat on WhatsApp"
+                                              >
+                                                💬 WA
+                                              </a>
+                                            </div>
+                                          ) : (
+                                            <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                          )}
+                                          {u.email ? (
+                                            <a
+                                              href={`mailto:${u.email}`}
+                                              className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-700 font-medium bg-slate-100 hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9.5px] truncate max-w-[140px]"
+                                              title="Send Email"
+                                            >
+                                              <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                              <span className="truncate">{u.email}</span>
+                                            </a>
+                                          ) : null}
+                                        </>
                                       ) : (
-                                        <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                        <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-mono">
+                                          <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold" title="Phone masked for Level 2 & 3">
+                                            🔒 {phone ? maskPhone(phone) : "Hidden"}
+                                          </span>
+                                          {u.email && (
+                                            <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold truncate max-w-[130px]" title="Email masked for Level 2 & 3">
+                                              🔒 {maskEmail(u.email)}
+                                            </span>
+                                          )}
+                                        </div>
                                       )}
-                                      {u.email ? (
-                                        <a
-                                          href={`mailto:${u.email}`}
-                                          className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-700 font-medium bg-slate-100 hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9.5px] truncate max-w-[140px]"
-                                          title="Send Email"
-                                        >
-                                          <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                                          <span className="truncate">{u.email}</span>
-                                        </a>
-                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -2106,23 +2146,25 @@ const Referrals = () => {
                                 <span className="font-extrabold text-emerald-700 text-xs sm:text-sm">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
                               </td>
                               <td className="p-3 text-center">
-                                {qualified ? (
-                                  <div className="inline-flex flex-col items-center gap-0.5">
-                                    <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                      ✓ Qualified
-                                    </span>
-                                    <span className="text-[8.5px] text-slate-400 font-medium">KYC &amp; Orders Done</span>
-                                  </div>
-                                ) : (
-                                  <div className="inline-flex flex-col items-center gap-0.5">
-                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                                      ⏳ Pending
-                                    </span>
-                                    <span className="text-[8.5px] text-slate-400 font-medium">
-                                      {!phone ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
-                                    </span>
-                                  </div>
-                                )}
+                                <span className="p-3 text-center">
+                                  {qualified ? (
+                                    <div className="inline-flex flex-col items-center gap-0.5">
+                                      <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                        ✓ Qualified
+                                      </span>
+                                      <span className="text-[8.5px] text-slate-400 font-medium">KYC &amp; Orders Done</span>
+                                    </div>
+                                  ) : (
+                                    <div className="inline-flex flex-col items-center gap-0.5">
+                                      <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                        ⏳ Pending
+                                      </span>
+                                      <span className="text-[8.5px] text-slate-400 font-medium">
+                                        {!phone ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
+                                      </span>
+                                    </div>
+                                  )}
+                                </span>
                               </td>
                               <td className="p-3 text-center">
                                 <div className="flex items-center justify-center gap-1.5">
@@ -2134,7 +2176,7 @@ const Referrals = () => {
                                   >
                                     Profile Details
                                   </Button>
-                                  {!qualified && phone && (
+                                  {isDirectLevel && !qualified && phone && (
                                     <a
                                       href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}! Reminder from ApexBee: complete your account verification and first purchase to activate full referral earnings.`)}`}
                                       target="_blank"
@@ -2144,6 +2186,11 @@ const Referrals = () => {
                                     >
                                       💬 Remind
                                     </a>
+                                  )}
+                                  {!isDirectLevel && (
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 text-slate-400 bg-slate-50 border-slate-200 font-bold">
+                                      Tier {u.levelNum} Protected
+                                    </Badge>
                                   )}
                                 </div>
                               </td>
@@ -2830,7 +2877,7 @@ const Referrals = () => {
                     {selectedProfileNode.name}
                   </h4>
                   <p className="text-xs text-slate-500 truncate mt-0.5">
-                    {selectedProfileNode.email}
+                    {selectedProfileNode.levelNum === 1 ? selectedProfileNode.email : maskEmail(selectedProfileNode.email)}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200/60">
@@ -2845,66 +2892,90 @@ const Referrals = () => {
                 </div>
               </div>
 
-              {/* Direct Contact Actions */}
-              {((selectedProfileNode.phone || selectedProfileNode.mobile) || selectedProfileNode.email) && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 text-left">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Direct Contact &amp; Actions</p>
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                      Quick Connect
-                    </span>
+              {/* Direct Contact Actions - Full details only for Level 1, Hidden/Masked for Tier 2 & Tier 3 */}
+              {selectedProfileNode.levelNum === 1 ? (
+                ((selectedProfileNode.phone || selectedProfileNode.mobile) || selectedProfileNode.email) && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 text-left">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Direct Contact &amp; Actions</p>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                        Level 1 Direct Access
+                      </span>
+                    </div>
+
+                    {/* Phone & WhatsApp Section */}
+                    {(selectedProfileNode.phone || selectedProfileNode.mobile) && (
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                            <Phone className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="font-bold text-navy text-xs sm:text-sm font-mono truncate">
+                            {selectedProfileNode.phone || selectedProfileNode.mobile}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <a
+                            href={`tel:${selectedProfileNode.phone || selectedProfileNode.mobile}`}
+                            className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs transition-colors shadow-2xs hover:bg-slate-50"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Direct Call</span>
+                          </a>
+                          <a
+                            href={`https://wa.me/${(selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '').startsWith('91') ? (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '') : '91' + (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${selectedProfileNode.name}, reaching out to you from ApexBee network.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-2xs"
+                          >
+                            <span>💬 WhatsApp</span>
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Email Section */}
+                    {selectedProfileNode.email && (
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                            <Mail className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="font-semibold text-slate-700 text-xs truncate">
+                            {selectedProfileNode.email}
+                          </span>
+                        </div>
+                        <a
+                          href={`mailto:${selectedProfileNode.email}`}
+                          className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 font-bold text-xs shrink-0 shadow-2xs"
+                        >
+                          <span>Send Mail</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Phone & WhatsApp Section */}
-                  {(selectedProfileNode.phone || selectedProfileNode.mobile) && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                          <Phone className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="font-bold text-navy text-xs sm:text-sm font-mono truncate">
-                          {selectedProfileNode.phone || selectedProfileNode.mobile}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <a
-                          href={`tel:${selectedProfileNode.phone || selectedProfileNode.mobile}`}
-                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs transition-colors shadow-2xs hover:bg-slate-50"
-                        >
-                          <Phone className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Direct Call</span>
-                        </a>
-                        <a
-                          href={`https://wa.me/${(selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '').startsWith('91') ? (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '') : '91' + (selectedProfileNode.phone || selectedProfileNode.mobile).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${selectedProfileNode.name}, reaching out to you from ApexBee network.`)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-2xs"
-                        >
-                          <span>💬 WhatsApp</span>
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Email Section */}
-                  {selectedProfileNode.email && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                          <Mail className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="font-semibold text-slate-700 text-xs truncate">
-                          {selectedProfileNode.email}
-                        </span>
-                      </div>
-                      <a
-                        href={`mailto:${selectedProfileNode.email}`}
-                        className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 font-bold text-xs shrink-0 shadow-2xs"
-                      >
-                        <span>Send Mail</span>
-                      </a>
-                    </div>
-                  )}
+                )
+              ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
+                  <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
+                    <span>🔒</span>
+                    <span>Tier {selectedProfileNode.levelNum} Privacy Protected</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Direct phone and messaging contact are restricted to direct Level 1 referrals in accordance with affiliate network privacy policies.
+                  </p>
+                  <div className="pt-1 flex flex-wrap gap-2 text-[10px] text-slate-500 font-mono">
+                    {(selectedProfileNode.phone || selectedProfileNode.mobile) && (
+                      <span className="bg-white border rounded px-2 py-0.5">
+                        Phone: {maskPhone(selectedProfileNode.phone || selectedProfileNode.mobile)}
+                      </span>
+                    )}
+                    {selectedProfileNode.email && (
+                      <span className="bg-white border rounded px-2 py-0.5">
+                        Email: {maskEmail(selectedProfileNode.email)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

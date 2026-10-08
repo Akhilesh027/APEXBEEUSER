@@ -216,7 +216,7 @@ export const Footer: React.FC = () => {
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-3">
                 {/* Facebook */}
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/profile.php?id=61583835268142"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow ApexBee on Facebook"
@@ -232,7 +232,7 @@ export const Footer: React.FC = () => {
 
                 {/* Instagram */}
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/apexbee.in/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow ApexBee on Instagram"
@@ -248,7 +248,7 @@ export const Footer: React.FC = () => {
 
                 {/* LinkedIn */}
                 <a
-                  href="https://linkedin.com"
+                  href="https://www.linkedin.com/company/apexbee/?viewAsMember=true"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Connect on LinkedIn"
@@ -264,7 +264,7 @@ export const Footer: React.FC = () => {
 
                 {/* YouTube */}
                 <a
-                  href="https://youtube.com"
+                  href="https://youtube.com/@apexbeeindia?si=xpBjXUs8a8fl5AEz"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Subscribe to ApexBee on YouTube"
@@ -296,7 +296,7 @@ export const Footer: React.FC = () => {
 
                 {/* X (formerly Twitter) */}
                 <a
-                  href="https://x.com"
+                  href="https://x.com/ApexBeeIndia"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow ApexBee on X"

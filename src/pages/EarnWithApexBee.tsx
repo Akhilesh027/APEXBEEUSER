@@ -637,6 +637,7 @@ const EarnWithApexBee = () => {
 
   // Role-specific form states
   const [primaryCategory, setPrimaryCategory] = useState("Devotional & Puja");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Devotional & Puja"]);
   const [subCategory, setSubCategory] = useState("");
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState("");
@@ -668,6 +669,12 @@ const EarnWithApexBee = () => {
   const [bookingSuccessModal, setBookingSuccessModal] = useState<any>(null);
   const [appSearchInput, setAppSearchInput] = useState("");
   const [searchingApps, setSearchingApps] = useState(false);
+  const [rawTerritories, setRawTerritories] = useState<any[]>([]);
+  const [pincodeAutoFillStatus, setPincodeAutoFillStatus] = useState<{
+    loading: boolean;
+    autoFilled: boolean;
+    message: string;
+  } | null>(null);
 
   const stateOptions = useMemo(() => {
     return Object.keys(locationData || {});
@@ -742,6 +749,7 @@ const EarnWithApexBee = () => {
         const data = await res.json();
 
         if (data?.success && Array.isArray(data.territories)) {
+          setRawTerritories(data.territories);
           const formatted: Record<string, Record<string, Set<string>>> = {};
 
           data.territories.forEach((t: any) => {
@@ -817,25 +825,121 @@ const EarnWithApexBee = () => {
     ];
   }, [dbCategories]);
 
-  const selectedParentCategory = useMemo(() => {
-    if (!primaryCategory) return null;
-    return parentCategoryList.find((c: any) =>
-      c._id === primaryCategory ||
-      c.name.toLowerCase() === primaryCategory.toLowerCase() ||
-      c.name.toLowerCase().includes(primaryCategory.toLowerCase()) ||
-      primaryCategory.toLowerCase().includes(c.name.toLowerCase())
-    ) || null;
-  }, [primaryCategory, parentCategoryList]);
+  const selectedParentCategories = useMemo(() => {
+    const list = selectedCategories.length > 0 ? selectedCategories : (primaryCategory ? [primaryCategory] : []);
+    if (list.length === 0) return [];
+    return parentCategoryList.filter((c: any) =>
+      list.some((sc) =>
+        c._id === sc ||
+        c.name.toLowerCase() === sc.toLowerCase() ||
+        c.name.toLowerCase().includes(sc.toLowerCase()) ||
+        sc.toLowerCase().includes(c.name.toLowerCase())
+      )
+    );
+  }, [selectedCategories, primaryCategory, parentCategoryList]);
 
   const currentSubCategoriesList = useMemo(() => {
-    if (!selectedParentCategory) return [];
-    const parentIdStr = String(selectedParentCategory._id);
+    if (selectedParentCategories.length === 0) return [];
+    const parentIdStrs = selectedParentCategories.map((p: any) => String(p._id));
     return dbCategories.filter((c: any) => {
       if (c.level !== 2) return false;
       const pId = typeof c.parentId === 'object' ? c.parentId?._id : c.parentId;
-      return String(pId) === parentIdStr;
+      return parentIdStrs.includes(String(pId));
     });
-  }, [selectedParentCategory, dbCategories]);
+  }, [selectedParentCategories, dbCategories]);
+
+  // Auto-fill State, District & Mandal when vendor enters 6-digit PIN code
+  useEffect(() => {
+    const cleanPin = formPincode?.trim() || "";
+    if (cleanPin.length !== 6) {
+      setPincodeAutoFillStatus(null);
+      return;
+    }
+
+    let isMounted = true;
+    const lookupPincode = async () => {
+      setPincodeAutoFillStatus({
+        loading: true,
+        autoFilled: false,
+        message: `Looking up territory for PIN Code ${cleanPin}...`
+      });
+
+      // 1. In-memory check against rawTerritories from backend
+      const match = rawTerritories.find((t: any) =>
+        (t.pincode && String(t.pincode).trim() === cleanPin) ||
+        (t.level === "Pincode" && String(t.name).trim() === cleanPin) ||
+        (t.codeNumber && String(t.codeNumber).trim() === cleanPin)
+      );
+
+      if (match && match.state && isMounted) {
+        setLocationData((prev: any) => {
+          const updated = { ...(prev || {}) };
+          if (!updated[match.state]) updated[match.state] = {};
+          if (match.district && !updated[match.state][match.district]) updated[match.state][match.district] = [];
+          if (match.district && match.mandal && !updated[match.state][match.district].includes(match.mandal)) {
+            updated[match.state][match.district] = [...updated[match.state][match.district], match.mandal];
+          }
+          return updated;
+        });
+
+        setSelectedState(match.state);
+        if (match.district) setSelectedDistrict(match.district);
+        if (match.mandal) setSelectedMandal(match.mandal);
+
+        setPincodeAutoFillStatus({
+          loading: false,
+          autoFilled: true,
+          message: `✓ Auto-filled: ${match.state} > ${match.district || "District"} > ${match.mandal || "Mandal"}`
+        });
+        return;
+      }
+
+      // 2. Fetch from backend dedicated pincode route
+      try {
+        const res = await fetch(`${API_BASE}/territories/pincode/${cleanPin}`);
+        const result = await res.json();
+        if (result.success && result.territory && result.territory.state && isMounted) {
+          const t = result.territory;
+          setLocationData((prev: any) => {
+            const updated = { ...(prev || {}) };
+            if (!updated[t.state]) updated[t.state] = {};
+            if (t.district && !updated[t.state][t.district]) updated[t.state][t.district] = [];
+            if (t.district && t.mandal && !updated[t.state][t.district].includes(t.mandal)) {
+              updated[t.state][t.district] = [...updated[t.state][t.district], t.mandal];
+            }
+            return updated;
+          });
+
+          setSelectedState(t.state);
+          if (t.district) setSelectedDistrict(t.district);
+          if (t.mandal) setSelectedMandal(t.mandal);
+
+          setPincodeAutoFillStatus({
+            loading: false,
+            autoFilled: true,
+            message: `✓ Auto-filled: ${t.state} > ${t.district || "District"} > ${t.mandal || "Mandal"}`
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn("Pincode lookup error:", err);
+      }
+
+      if (isMounted) {
+        setPincodeAutoFillStatus({
+          loading: false,
+          autoFilled: false,
+          message: `PIN code ${cleanPin} not configured in Admin territories. Please select State/District manually.`
+        });
+      }
+    };
+
+    const timer = setTimeout(lookupPincode, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [formPincode, rawTerritories]);
 
   useEffect(() => {
     if (!locationData || !selectedState) return;
@@ -923,6 +1027,7 @@ const EarnWithApexBee = () => {
     setFormRemarks("");
     const defaultCat = parentCategoryList[0]?.name || "Devotional & Puja";
     setPrimaryCategory(defaultCat);
+    setSelectedCategories([defaultCat]);
     setSubCategory("");
     setSelectedSubcategories([]);
     setBusinessName("");
@@ -996,8 +1101,8 @@ const EarnWithApexBee = () => {
     }
 
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
-      if (!businessName.trim() || !primaryCategory.trim() || !panNumber.trim()) {
-        alert("Please fill in Business Name, Primary Category, and PAN Number.");
+      if (!businessName.trim() || (selectedCategories.length === 0 && !primaryCategory.trim()) || !panNumber.trim()) {
+        alert("Please fill in Business Name, select at least one Business Category, and PAN Number.");
         return;
       }
     } else if (type === "franchise") {
@@ -1236,7 +1341,7 @@ const EarnWithApexBee = () => {
       const assignedCategory = isFood
         ? "Food & Dining"
         : isVendorGroup
-          ? (primaryCategory || "General Retail")
+          ? (selectedCategories.length > 0 ? selectedCategories.join(", ") : (primaryCategory || "General Retail"))
           : (serviceType || primaryCategory || selectedOpp?.role || "General");
 
       const assignedSubCategory = isFood
@@ -1272,6 +1377,7 @@ const EarnWithApexBee = () => {
         mandal: selectedMandal,
         primaryCategory: assignedCategory,
         category: assignedCategory,
+        categories: selectedCategories.length > 0 ? selectedCategories : [assignedCategory],
         subCategory: assignedSubCategory,
         subCategories: assignedApprovedSubcategories,
         approvedSubcategories: assignedApprovedSubcategories,
@@ -1739,34 +1845,70 @@ const EarnWithApexBee = () => {
 
       {/* Local Expansion Map and Timeline checklist */}
       <div className="grid md:grid-cols-2 gap-6 text-left">
-        {/* Available Areas Map Roadmap */}
+        {/* Available Areas Map Roadmap & Regional Coverage Counts */}
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 pb-3 bg-slate-50/50">
-            <CardTitle className="text-base font-extrabold text-navy">📍 Territory Roadmap & Pincodes</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-extrabold text-navy flex items-center gap-2">
+                <span>📍 Territory Network & Coverage</span>
+              </CardTitle>
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
+                ● Live Network
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
-            <p className="text-xs text-slate-500">Territories actively onboarding vendors and franchise operations:</p>
-            {activeLocationsList.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {activeLocationsList.map((loc) => (
-                  <div key={loc} className="bg-white border rounded-xl p-3 shadow-inner flex items-center gap-2">
-                    <span className="text-indigo-600 text-lg">📍</span>
-                    <div>
-                      <h5 className="font-extrabold text-navy text-xs leading-none">{loc}</h5>
-                      <span className="text-[9px] text-emerald-600 font-bold">Active Onboarding</span>
-                    </div>
-                  </div>
-                ))}
+            <p className="text-xs text-slate-500">
+              Regional operational footprint and territory counts across active zones:
+            </p>
+
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
+              <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">States</span>
+                <span className="text-lg sm:text-xl font-black text-navy block mt-0.5">
+                  {Object.keys(locationData || {}).length}
+                </span>
+                <span className="text-[9px] text-indigo-600 font-semibold">Active</span>
+              </div>
+              <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Districts</span>
+                <span className="text-lg sm:text-xl font-black text-navy block mt-0.5">
+                  {Object.values(locationData || {}).reduce((acc: number, d: any) => acc + Object.keys(d || {}).length, 0)}
+                </span>
+                <span className="text-[9px] text-emerald-600 font-semibold">Configured</span>
+              </div>
+              <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Territories</span>
+                <span className="text-lg sm:text-xl font-black text-navy block mt-0.5">
+                  {activeLocationsList.length}
+                </span>
+                <span className="text-[9px] text-amber-600 font-semibold">Onboarding</span>
+              </div>
+            </div>
+
+            {Object.keys(locationData || {}).length > 0 ? (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Operational Regions</span>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {Object.keys(locationData || {}).map((st) => (
+                    <span key={st} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      {st} ({Object.keys(locationData[st] || {}).length} Districts)
+                    </span>
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-5 text-center space-y-1">
-                <MapPin className="w-6 h-6 text-slate-300 mx-auto" />
-                <h5 className="font-bold text-slate-600 text-xs">No Active Territories Added Yet</h5>
-                <p className="text-[11px] text-slate-400">Territories will appear here once configured in the admin panel.</p>
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center space-y-1">
+                <MapPin className="w-5 h-5 text-slate-300 mx-auto" />
+                <h5 className="font-bold text-slate-600 text-xs">Territories Active</h5>
+                <p className="text-[11px] text-slate-400">Territory slots are synced in real-time from the backend.</p>
               </div>
             )}
-            <div className="rounded-xl border bg-yellow-50/30 border-yellow-100 p-3 text-xs text-yellow-800 font-semibold">
-              ⚠️ Slots are locked mandal-wise. Apply early to ensure territory exclusivity.
+
+            <div className="rounded-xl border bg-yellow-50/40 border-yellow-200/80 p-3 text-xs text-yellow-900 font-semibold flex items-start gap-2">
+              <span className="text-yellow-700 text-sm shrink-0">⚠️</span>
+              <span>Slots are locked mandal-wise. Early applicants receive exclusive territorial operating rights.</span>
             </div>
           </CardContent>
         </Card>
@@ -2039,6 +2181,22 @@ const EarnWithApexBee = () => {
                   maxLength={(field as any).maxLength}
                   className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-medium"
                 />
+                {field.label === "PIN Code *" && pincodeAutoFillStatus && (
+                  <div className={`mt-1.5 p-2 rounded-lg text-[11px] font-semibold flex items-center justify-between ${
+                    pincodeAutoFillStatus.autoFilled
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : pincodeAutoFillStatus.loading
+                        ? "bg-blue-50 text-blue-700 border border-blue-200 animate-pulse"
+                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                  }`}>
+                    <span>{pincodeAutoFillStatus.message}</span>
+                    {pincodeAutoFillStatus.autoFilled && (
+                      <span className="text-[9px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
+                        AUTO-FILLED
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -2047,18 +2205,30 @@ const EarnWithApexBee = () => {
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Business Information</h4>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-2">Primary Business Category *</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-slate-600 block">
+                      Business Categories * (Select Multiple)
+                    </label>
+                    <span className="text-[10px] text-emerald-600 font-bold">
+                      {selectedCategories.length} Selected
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {parentCategoryList.map((cat: any) => {
-                      const isSelected = primaryCategory === cat.name;
+                      const isSelected = selectedCategories.includes(cat.name);
                       return (
                         <button
                           key={cat._id}
                           type="button"
                           onClick={() => {
-                            setPrimaryCategory(cat.name);
-                            setSubCategory("");
-                            setSelectedSubcategories([]);
+                            let updated: string[];
+                            if (isSelected) {
+                              updated = selectedCategories.filter((c) => c !== cat.name);
+                            } else {
+                              updated = [...selectedCategories, cat.name];
+                            }
+                            setSelectedCategories(updated);
+                            setPrimaryCategory(updated.join(", "));
                           }}
                           className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isSelected
                             ? "bg-navy text-white border-navy shadow-md ring-2 ring-navy/20"
@@ -2071,9 +2241,30 @@ const EarnWithApexBee = () => {
                       );
                     })}
                   </div>
+                  {selectedCategories.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 mr-1">Selected Categories:</span>
+                      {selectedCategories.map((catName) => (
+                        <span key={catName} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white border border-indigo-200 text-navy font-bold text-[10px] rounded-lg shadow-2xs">
+                          <span>{catName}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = selectedCategories.filter((c) => c !== catName);
+                              setSelectedCategories(updated);
+                              setPrimaryCategory(updated.join(", "));
+                            }}
+                            className="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {primaryCategory && (
+                {selectedCategories.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories (Optional)</label>
@@ -2114,7 +2305,7 @@ const EarnWithApexBee = () => {
                       </div>
                     ) : (
                       <div className="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                        No DB subcategories found for {primaryCategory}. You can proceed or contact admin.
+                        No DB subcategories found for {selectedCategories.join(", ")}. You can proceed or contact admin.
                       </div>
                     )}
 
@@ -2467,8 +2658,13 @@ const EarnWithApexBee = () => {
             {/* Cascading Location Selection - Purely from Backend Database */}
             <div className="space-y-3 pt-4 border-t text-left">
               <div className="flex justify-between items-center">
-                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  Territory Location Selection *
+                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+                  <span>Territory Location Selection *</span>
+                  {pincodeAutoFillStatus?.autoFilled && (
+                    <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                      ✓ Auto-Filled via PIN {formPincode}
+                    </span>
+                  )}
                 </h4>
                 <span className="text-[10px] font-bold text-slate-400">
                   {stateOptions.length} State{stateOptions.length === 1 ? "" : "s"} Configured in Backend
