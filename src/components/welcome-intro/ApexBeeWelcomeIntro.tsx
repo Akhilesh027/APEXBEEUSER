@@ -51,13 +51,6 @@ export const ApexBeeWelcomeIntro: React.FC<ApexBeeWelcomeIntroProps> = ({
     return () => {
       document.body.style.overflow = previousOverflow;
       document.body.style.touchAction = previousTouchAction;
-      
-      // Accessibility focus shift to main-content
-      setTimeout(() => {
-        document.querySelector<HTMLElement>("#main-content")?.focus({
-          preventScroll: true,
-        });
-      }, 50);
     };
   }, []);
 

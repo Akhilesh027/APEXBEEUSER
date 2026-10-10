@@ -1041,7 +1041,7 @@ const Navbar = () => {
   }, [loggedInUser, rolesList, hasBusinessPartnerRole]);
 
   return (
-    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full max-w-full overflow-x-hidden font-sans">
+    <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full max-w-full font-sans pt-[env(safe-area-inset-top,0px)]">
       {/* ========================================================
           📱 MOBILE TOP BAR (Row 1 on Mobile: Logo + Location + Icons)
           ======================================================== */}

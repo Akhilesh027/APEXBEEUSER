@@ -7,10 +7,9 @@ All colors MUST be HSL.
 */
 
 html {
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
 }
 
 .gpu-scroll {
@@ -121,16 +120,26 @@ html {
     @apply border-border;
   }
 
-  html,
-  body {
+  html {
     max-width: 100%;
-    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground pb-20 lg:pb-0;
+    max-width: 100%;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: clip;
+    overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @supports not (overflow-x: clip) {
+    body {
+      overflow-x: hidden;
+    }
   }
 }
 
