@@ -531,11 +531,10 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
                       key={hub.pincode}
                       type="button"
                       onClick={() => handleSelectHub(hub)}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 ${
-                        geo.pincode === hub.pincode
-                          ? "bg-amber-500 text-slate-950 border-amber-600 shadow-xs"
-                          : "bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-700 border-slate-200"
-                      }`}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 ${geo.pincode === hub.pincode
+                        ? "bg-amber-500 text-slate-950 border-amber-600 shadow-xs"
+                        : "bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-700 border-slate-200"
+                        }`}
                     >
                       <span>📍</span>
                       <span>{hub.colony}</span>

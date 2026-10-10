@@ -199,8 +199,8 @@ const ProductsPage = () => {
 
         const fetchCatsPromise = !memoryCategoryCache
           ? fetch(`${API_BASE}/categories`)
-              .then((r) => (r.ok ? r.json() : null))
-              .catch(() => null)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
           : Promise.resolve(null);
 
         const [catJson, prodRes] = await Promise.all([

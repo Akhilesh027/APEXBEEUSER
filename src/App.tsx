@@ -42,6 +42,7 @@ import Legal from "./pages/Legal";
 import TrackOrder from "./pages/TrackOrder";
 import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
+import AdminTransactions from "./pages/AdminTransactions";
 import AbhiAssistant from "./components/AbhiAssistant";
 import LocalStores from "./pages/LocalStores";
 import { FoodDining } from "./pages/FoodDining";
@@ -167,6 +168,7 @@ const App = () => (
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
           <Route path="/admin/reviews" element={<ProtectedRoute><AdminReviews /></ProtectedRoute>} />
           <Route path="/admin/personalization" element={<ProtectedRoute><AdminPersonalization /></ProtectedRoute>} />
+          <Route path="/admin/transactions" element={<ProtectedRoute><AdminTransactions /></ProtectedRoute>} />
 
           {/* ===== Catch-all ===== */}
           <Route path="*" element={<NotFound />} />

@@ -2090,20 +2090,20 @@ const Checkout = () => {
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 1
-                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
-                    : mobileStep > 1
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                  : mobileStep > 1
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
               >
                 {mobileStep > 1 ? <Check className="w-4 h-4 stroke-[3]" /> : "1"}
               </div>
               <span
                 className={`text-[11px] font-extrabold tracking-tight ${mobileStep === 1
-                    ? "text-navy"
-                    : mobileStep > 1
-                      ? "text-emerald-700"
-                      : "text-slate-400"
+                  ? "text-navy"
+                  : mobileStep > 1
+                    ? "text-emerald-700"
+                    : "text-slate-400"
                   }`}
               >
                 Address
@@ -2131,20 +2131,20 @@ const Checkout = () => {
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 2
-                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
-                    : mobileStep > 2
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                  : mobileStep > 2
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
               >
                 {mobileStep > 2 ? <Check className="w-4 h-4 stroke-[3]" /> : "2"}
               </div>
               <span
                 className={`text-[11px] font-extrabold tracking-tight ${mobileStep === 2
-                    ? "text-navy"
-                    : mobileStep > 2
-                      ? "text-emerald-700"
-                      : "text-slate-400"
+                  ? "text-navy"
+                  : mobileStep > 2
+                    ? "text-emerald-700"
+                    : "text-slate-400"
                   }`}
               >
                 Delivery
@@ -2172,8 +2172,8 @@ const Checkout = () => {
             >
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all ${mobileStep === 3
-                    ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
-                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                  ? "bg-navy text-amber-400 ring-4 ring-navy/10 shadow-sm"
+                  : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
               >
                 3
@@ -2730,8 +2730,8 @@ const Checkout = () => {
                     type="button"
                     onClick={() => handlePaymentSelection("razorpay")}
                     className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition cursor-pointer text-left ${selectedPayment === "razorpay"
-                        ? "border-amber-500 bg-amber-50/70 text-slate-900 shadow-xs ring-1 ring-amber-400/20"
-                        : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
+                      ? "border-amber-500 bg-amber-50/70 text-slate-900 shadow-xs ring-1 ring-amber-400/20"
+                      : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
                       }`}
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPayment === "razorpay" ? "bg-amber-500 text-slate-950 shadow-xs" : "bg-slate-100 text-slate-600"
@@ -3285,11 +3285,10 @@ const Checkout = () => {
                 if (selectedPayment === "upi") setShowUPIDialog(true);
                 else handlePlaceOrder();
               }}
-              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${
-                undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
+              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+                }`}
             >
               {isLoading ? (
                 <>

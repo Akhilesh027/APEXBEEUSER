@@ -2183,10 +2183,10 @@ const EarnWithApexBee = () => {
                 />
                 {field.label === "PIN Code *" && pincodeAutoFillStatus && (
                   <div className={`mt-1.5 p-2 rounded-lg text-[11px] font-semibold flex items-center justify-between ${pincodeAutoFillStatus.autoFilled
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                      : pincodeAutoFillStatus.loading
-                        ? "bg-blue-50 text-blue-700 border border-blue-200 animate-pulse"
-                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    : pincodeAutoFillStatus.loading
+                      ? "bg-blue-50 text-blue-700 border border-blue-200 animate-pulse"
+                      : "bg-amber-50 text-amber-800 border border-amber-200"
                     }`}>
                     <span>{pincodeAutoFillStatus.message}</span>
                     {pincodeAutoFillStatus.autoFilled && (
