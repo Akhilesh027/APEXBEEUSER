@@ -531,24 +531,27 @@ const Referrals = () => {
         (r as any).category
       ].filter(Boolean).join(" ").toLowerCase();
 
-      let displayType = "First Purchase";
-      let category = "Direct Referral";
+      const isProductFirstPurchase = rawType.includes("first_purchase") || 
+                                     (rawType.includes("first") && (rawType.includes("product") || rawType.includes("item")));
+      const isSignupOrWelcome = rawType.includes("signup") || 
+                                rawType.includes("welcome") || 
+                                rawType.includes("onboarding") || 
+                                rawType.includes("kyc") || 
+                                rawType.includes("first_order") ||
+                                (rawType.includes("first") && rawType.includes("bonus"));
 
-      if (rawType.includes("signup") || rawType.includes("welcome") || rawType.includes("onboarding") || rawType.includes("kyc")) {
+      let displayType = "Product Commission";
+      let category = "Retail Store";
+
+      if (isSignupOrWelcome) {
         displayType = "Signup Bonus";
         category = "KYC Onboarding";
-      } else if (rawType.includes("first")) {
+      } else if (isProductFirstPurchase) {
         displayType = "First Purchase";
         category = "Direct Referral";
-      } else if (rawType.includes("bonus")) {
-        displayType = "Signup Bonus";
-        category = "KYC Onboarding";
       } else if (rawType.includes("product") || rawType.includes("commission") || rawType.includes("order")) {
         displayType = "Product Commission";
         category = "Retail Store";
-      } else {
-        displayType = "First Purchase";
-        category = "Direct Referral";
       }
 
       const cleanTxnId = (r as any).transactionId || (orderNum ? `APX-${orderNum}` : `APX-REF-${idx + 100}`);
@@ -614,22 +617,18 @@ const Referrals = () => {
         displayType = "Franchise Incentive";
         channel = "franchise";
         category = "Territory Hub";
-      } else if (rawType.includes("first") || rawType.includes("first_order") || rawType.includes("first_purchase")) {
+      } else if (rawType.includes("first_purchase") || (rawType.includes("first") && (rawType.includes("product") || rawType.includes("item")))) {
         displayType = "First Purchase";
         category = "Direct Referral";
-      } else if (rawType.includes("signup") || rawType.includes("onboarding") || rawType.includes("welcome") || rawType.includes("kyc")) {
+      } else if (rawType.includes("signup") || rawType.includes("onboarding") || rawType.includes("welcome") || rawType.includes("kyc") || rawType.includes("first_order")) {
         displayType = "Signup Bonus";
         category = "KYC Onboarding";
       } else if (rawType.includes("bonus")) {
         displayType = "Signup Bonus";
         category = "KYC Onboarding";
-      } else if (isCustomerFirstOrder && commissionHistory.length > 3) {
-        // First order placed by each referred member is classified as First Purchase
-        displayType = "First Purchase";
-        category = "Direct Referral";
-      } else if (rawType.includes("recurring")) {
+      } else if (rawType.includes("recurring") || rawType.includes("product") || rawType.includes("commission")) {
         displayType = "Product Commission";
-        category = "Recurring Royalty";
+        category = "Retail Store";
       }
 
       const cleanTxnId = (c as any).transactionId || (orderNum ? `APX-${orderNum}` : `APX-COMM-${idx + 500}`);
@@ -832,8 +831,8 @@ const Referrals = () => {
           entryType: "credit",
           remarks: "Commission generated from team members' qualified first purchases"
         });
-      } else if (level1Users.some(u => (u.totalPurchases || 0) > 0 || (u.totalCommissionGenerated || 0) > 0)) {
-        level1Users.filter(u => (u.totalPurchases || 0) > 0 || (u.totalCommissionGenerated || 0) > 0).forEach((u1, uIdx) => {
+      } else if (level1Users.some(u => (u.totalPurchases || 0) > 0 && (u.totalCommissionGenerated || 0) > 0)) {
+        level1Users.filter(u => (u.totalPurchases || 0) > 0 && (u.totalCommissionGenerated || 0) > 0).forEach((u1, uIdx) => {
           list.push({
             id: `l1-fp-${u1._id || uIdx}`,
             transactionId: `APX-FP-${String(u1._id || uIdx).slice(-4)}`,
@@ -843,11 +842,11 @@ const Referrals = () => {
             type: "First Purchase",
             category: "Direct Referral",
             orderId: `FP-${String(u1._id || uIdx).slice(-6).toUpperCase()}`,
-            amount: Math.round(Number(u1.totalCommissionGenerated) || 50),
+            amount: Math.round(Number(u1.totalCommissionGenerated)),
             status: "credited",
             channel: "referral",
             entryType: "credit",
-            remarks: `Direct referral qualified first order purchase by ${u1.name}`
+            remarks: `Direct referral qualified product purchase by ${u1.name}`
           });
         });
       }
@@ -1009,13 +1008,56 @@ const Referrals = () => {
     };
   }, [transactionLedgerList]);
 
-  // Strict zero-amount filter for financial commission ledger
+  // Financial commission splits audit records for Audit Splits tab
   const validCommissions = useMemo(() => {
+    // 1. Gather all credited commission splits from transactionLedgerList
+    const commRows = transactionLedgerList.filter((r) => {
+      if (r.entryType === "debit") return false;
+      if (r.type === "Wallet Deposit" || r.type === "Withdrawal") return false;
+      return (Number(r.amount) || 0) > 0;
+    });
+
+    if (commRows.length > 0) {
+      return commRows.map((r, idx) => {
+        const matched = commissionHistory.find(c => {
+          const cOrd = String((c as any).orderNumber || (c as any).orderId?.orderNumber || c._id);
+          return cOrd === r.orderId || c._id === r.id;
+        });
+
+        const ordVal = (matched as any)?.orderId?.totalAmount || 
+                       (matched as any)?.orderValue || 
+                       (r.orderId && r.orderId.startsWith("ORD-") ? Math.round(r.amount * 10) : null);
+
+        const commPct = (matched as any)?.commissionPercentage !== undefined
+          ? (matched as any).commissionPercentage
+          : (r.level?.includes("Level 1") ? 10 : r.level?.includes("Level 2") ? 5 : r.level?.includes("Level 3") ? 2 : (r.channel === "vendor" ? 85 : 5));
+
+        return {
+          _id: r.id || `aud-${idx}`,
+          transactionId: r.transactionId || `APX-COMM-${idx + 100}`,
+          date: r.date,
+          createdAt: r.date,
+          userName: r.referralName || "Downline Member",
+          level: r.level || "Level 1",
+          commissionType: r.type,
+          category: r.category,
+          orderId: r.orderId || "N/A",
+          orderValue: ordVal,
+          commissionPercentage: commPct,
+          commissionAmount: r.amount,
+          amount: r.amount,
+          status: r.status,
+          remarks: r.remarks,
+        };
+      });
+    }
+
+    // Fallback directly to commissionHistory if transactionLedgerList is empty
     return commissionHistory.filter((c) => {
       const amt = Number(c.commissionAmount || c.amount || 0);
       return amt > 0;
     });
-  }, [commissionHistory]);
+  }, [transactionLedgerList, commissionHistory]);
 
   useEffect(() => {
     fetchReferralData();
@@ -1254,9 +1296,14 @@ const Referrals = () => {
                 return pId === String(u1._id || (u1 as any).id) || (lvl1.length === 1 && lvl2.length > 0);
               }).map((u2: any) => {
                 const grandchildren = lvl3.filter((u3: any) => {
-                  const pId = String(u3.referralHierarchy?.level1UserId || u3.referredBy?._id || u3.referredBy || "");
-                  const u1L2 = String(u3.referralHierarchy?.level2UserId || "");
-                  return pId === String(u2._id || (u2 as any).id) || u1L2 === String(u1._id || (u1 as any).id) || (lvl2.length === 1 && lvl3.length > 0);
+                  const pId = String(
+                    (u3.referralHierarchy?.level1UserId as any)?._id ||
+                    u3.referralHierarchy?.level1UserId ||
+                    (u3.referredBy as any)?._id ||
+                    u3.referredBy ||
+                    ""
+                  );
+                  return pId === String(u2._id || (u2 as any).id) || (lvl2.length === 1 && lvl3.length > 0);
                 }).map((u3: any) => ({
                   _id: u3._id,
                   name: u3.name,
@@ -3214,30 +3261,50 @@ const Referrals = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {validCommissions.map((c) => (
-                          <tr key={c._id} className="hover:bg-slate-50/55 transition-all">
-                            <td className="p-3 font-mono font-bold text-slate-500">TXN-AB-{c._id.substring(c._id.length - 6).toUpperCase()}</td>
-                            <td className="p-3 text-slate-400">{new Date(c.date || c.createdAt).toLocaleDateString("en-IN")}</td>
-                            <td className="p-3 font-bold text-navy">{c.userName || "System"}</td>
-                            <td className="p-3">
-                              <Badge variant="outline" className="bg-slate-100 text-slate-700 text-[9px] border-slate-200">
-                                {c.commissionType || "Product Commission"}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-right text-slate-600 font-medium">
-                              {c.orderValue && c.orderValue > 0 ? `₹${formatINR(c.orderValue)}` : "—"}
-                            </td>
-                            <td className="p-3 text-right text-slate-500">
-                              {c.commissionPercentage !== undefined && c.commissionPercentage !== null ? `${c.commissionPercentage}%` : "—"}
-                            </td>
-                            <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(c.commissionAmount || c.amount || 0)}</td>
-                            <td className="p-3 text-center">
-                              <Badge className="bg-green-150 border border-green-250 text-green-700 hover:bg-green-150 text-[9px] font-bold">
-                                Added to Wallet
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
+                        {validCommissions.map((c) => {
+                          const isHold = c.status === "hold";
+                          const isPending = c.status === "pending";
+                          const txnDisplay = (c as any).transactionId || `TXN-AB-${String(c._id).slice(-6).toUpperCase()}`;
+                          return (
+                            <tr key={c._id} className="hover:bg-slate-50/55 transition-all">
+                              <td className="p-3 font-mono font-bold text-slate-600 text-[11px]">{txnDisplay}</td>
+                              <td className="p-3 text-slate-400 whitespace-nowrap text-[11px]">{new Date(c.date || c.createdAt).toLocaleDateString("en-IN")}</td>
+                              <td className="p-3 font-bold text-navy">
+                                <div>{c.userName || "System"}</div>
+                                {(c as any).level && (
+                                  <span className="text-[9.5px] text-slate-400 font-normal">{(c as any).level}</span>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                <Badge variant="outline" className="bg-slate-100 text-slate-700 text-[9px] border-slate-200">
+                                  {c.commissionType || "Product Commission"}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-right text-slate-600 font-medium">
+                                {c.orderValue && c.orderValue > 0 ? `₹${formatINR(c.orderValue)}` : "—"}
+                              </td>
+                              <td className="p-3 text-right text-slate-500">
+                                {c.commissionPercentage !== undefined && c.commissionPercentage !== null ? `${c.commissionPercentage}%` : "—"}
+                              </td>
+                              <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(c.commissionAmount || c.amount || 0)}</td>
+                              <td className="p-3 text-center">
+                                {isHold ? (
+                                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] font-bold">
+                                    In Hold Escrow
+                                  </Badge>
+                                ) : isPending ? (
+                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[9px] font-bold">
+                                    Pending Clearance
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-green-150 border border-green-250 text-green-700 hover:bg-green-150 text-[9px] font-bold">
+                                    Added to Wallet
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -3407,9 +3474,14 @@ const Referrals = () => {
                                     {kids2.map((u2) => {
                                       const u2Id = String(u2._id || (u2 as any).id || "");
                                       const kids3 = level3Users.filter(u3 => {
-                                        const pId = String(u3.referralHierarchy?.level1UserId || (u3.referredBy as any)?._id || u3.referredBy || "");
-                                        const p2Id = String(u3.referralHierarchy?.level2UserId || "");
-                                        return pId === u2Id || p2Id === u1Id || (kids2.length === 1 && level3Users.length > 0);
+                                        const pId = String(
+                                          (u3.referralHierarchy?.level1UserId as any)?._id ||
+                                          u3.referralHierarchy?.level1UserId ||
+                                          (u3.referredBy as any)?._id ||
+                                          u3.referredBy ||
+                                          ""
+                                        );
+                                        return pId === u2Id || (kids2.length === 1 && level3Users.length > 0);
                                       });
                                       const isL2Expanded = expandedRows[`l2_${u2._id}`] !== undefined ? !!expandedRows[`l2_${u2._id}`] : true;
                                       return (
