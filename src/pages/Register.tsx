@@ -42,8 +42,9 @@ const Register = () => {
   });
 
   useEffect(() => {
-    if (urlReferralCode) {
-      setFormData((prev) => ({ ...prev, referralCode: urlReferralCode }));
+    const code = urlReferralCode || localStorage.getItem("apexbee_ref") || localStorage.getItem("referral_code");
+    if (code && code !== "partner" && code !== "business") {
+      setFormData((prev) => ({ ...prev, referralCode: code }));
     }
   }, [urlReferralCode]);
 

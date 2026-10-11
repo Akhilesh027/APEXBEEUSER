@@ -1771,6 +1771,7 @@ const Checkout = () => {
 
         shippingAddress: fulfillmentType === "delivery" ? selectedAddress : null,
         fulfillment,
+        referralCode: localStorage.getItem("apexbee_ref") || localStorage.getItem("referral_code") || undefined,
 
         preOrder: {
           isPreOrder: preOrderInfo.hasPreOrder,

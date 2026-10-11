@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import ScrollToTop from "./components/ScrollToTop";
@@ -77,6 +78,27 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/**
+ * Global referral link parameter tracker (Task USER - 13)
+ * Preserves ?ref= parameter across navigation so new signups or purchases attribute to the sharer.
+ */
+const ReferralParamTracker = () => {
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref") || params.get("referral");
+      if (ref && ref.trim()) {
+        const cleanRef = ref.trim();
+        localStorage.setItem("apexbee_ref", cleanRef);
+        localStorage.setItem("referral_code", cleanRef);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -86,6 +108,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         {/* Automatically scrolls to top on every route change */}
         <ScrollToTop />
+        <ReferralParamTracker />
 
         <Routes>
           {/* ===== Public Routes — accessible without login ===== */}
@@ -110,6 +133,7 @@ const App = () => (
           <Route path="/category/:categoryName/subcategories" element={<CategoryPage />} />
           <Route path="/subcategories/:categoryName" element={<CategoryPage />} />
           <Route path="/earn-with-apexbee" element={<EarnWithApexBee />} />
+          <Route path="/referrals" element={<Referrals />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/academy/become-an-entrepreneur" element={<Academy />} />
           <Route path="/academy/skill-development" element={<Academy />} />
@@ -164,7 +188,6 @@ const App = () => (
           <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
           <Route path="/track-order/:orderId" element={<ProtectedRoute><TrackOrder /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
           <Route path="/admin/reviews" element={<ProtectedRoute><AdminReviews /></ProtectedRoute>} />
           <Route path="/admin/personalization" element={<ProtectedRoute><AdminPersonalization /></ProtectedRoute>} />

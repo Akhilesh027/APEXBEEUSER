@@ -430,6 +430,46 @@ const ProductDetail = () => {
     }
   };
 
+  // Helper to dynamically update Open Graph & Twitter meta tags in DOM (Task USER - 12)
+  const updateMetaTags = (prod: any) => {
+    try {
+      const prodTitle = prod?.name || prod?.itemName || "ApexBee Product";
+      const priceVal = prod?.baseSellingPrice ?? prod?.afterDiscount ?? prod?.adminPricing?.customerSellingAmount ?? 0;
+      const formattedP = priceVal > 0 ? `₹${priceVal.toLocaleString("en-IN")}` : "";
+      document.title = `${prodTitle}${formattedP ? ` (${formattedP})` : ""} | ApexBee`;
+
+      const desc = (prod?.description || "")
+        .replace(/<[^>]*>?/gm, "")
+        .trim()
+        .substring(0, 160) || "Explore genuine quality products with fast delivery on ApexBee.";
+      const img = normalizeImageUrl((Array.isArray(prod?.images) && prod.images[0]) || prod?.thumbnail || prod?.image) || "https://server.apexbee.in/uploads/logo.png";
+      const fullImgUrl = img.startsWith("http") ? img : `https://server.apexbee.in${img.startsWith("/") ? "" : "/"}${img}`;
+      const url = window.location.href;
+
+      const setMeta = (attr: string, key: string, content: string) => {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute(attr, key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute("content", content);
+      };
+
+      setMeta("property", "og:title", `${prodTitle} | ApexBee`);
+      setMeta("property", "og:description", desc);
+      setMeta("property", "og:image", fullImgUrl);
+      setMeta("property", "og:image:secure_url", fullImgUrl);
+      setMeta("property", "og:url", url);
+      setMeta("property", "og:type", "product");
+      setMeta("name", "twitter:title", `${prodTitle} | ApexBee`);
+      setMeta("name", "twitter:description", desc);
+      setMeta("name", "twitter:image", fullImgUrl);
+    } catch (e) {
+      console.warn("Failed to update dynamic meta tags:", e);
+    }
+  };
+
   // 🔑 Get referral code
   const user = useMemo(() => {
     try {
@@ -441,12 +481,12 @@ const ProductDetail = () => {
 
   const referralCode = user?.referralCode || "";
 
-  const baseUrl = window.location.href.split("?")[0];
+  const baseUrl = window.location.origin + window.location.pathname;
   const shareUrl = referralCode ? `${baseUrl}?ref=${referralCode}` : baseUrl;
 
   const shareText = referralCode
-    ? `Check this product on ApexBee!\nUse my referral code ${referralCode} and get ₹50 on signup!`
-    : `Check this product on ApexBee!`;
+    ? `Check out "${title}" on ApexBee for ₹${afterDiscount || baseSellingPrice}!\nUse my referral code *${referralCode}* to get ₹50 signup bonus! 🎁`
+    : `Check out "${title}" on ApexBee for ₹${afterDiscount || baseSellingPrice}! 🛍️`;
 
   useEffect(() => {
     if (!id) return;
@@ -461,6 +501,7 @@ const ProductDetail = () => {
           const prodData = data.product || data;
           setProduct(prodData);
           setMainImageIndex(0);
+          updateMetaTags(prodData);
 
           // Track recently viewed
           try {
@@ -1344,40 +1385,97 @@ const ProductDetail = () => {
         </section>
       )}
 
-      {/* SHARE POPUP */}
+      {/* SHARE MODAL WITH LIVE WHATSAPP PREVIEW CARD (Task USER - 12) */}
       {showShare && (
-        <div className="fixed inset-0 bg-black/30 flex items-end justify-center">
-          <div className="bg-white w-full p-6 rounded-t-2xl shadow-lg">
-            <h2 className="font-bold text-lg mb-3 text-center">Share Product</h2>
-
-            {referralCode ? (
-              <p className="text-center font-semibold text-primary mb-3">
-                Referral Code: {referralCode} — Get ₹50 on signup!
-              </p>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground mb-3">
-                Share this product
-              </p>
-            )}
-
-            <div className="flex flex-col gap-3">
-              <Button onClick={copyLink} className="bg-gray-100 text-navy">
-                Copy Link
-              </Button>
-              <Button onClick={whatsappShare} className="bg-green-500 text-white">
-                WhatsApp
-              </Button>
-              <Button onClick={facebookShare} className="bg-blue-600 text-white">
-                Facebook
-              </Button>
-              <Button onClick={twitterShare} className="bg-black text-white">
-                Twitter
-              </Button>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowShare(false)}>
+          <div className="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl text-left border border-slate-150 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🚀</span>
+                <h2 className="font-extrabold text-base text-navy">Share Product &amp; Earn</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowShare(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
-            <Button onClick={() => setShowShare(false)} className="w-full mt-4 bg-red-500 text-white">
-              Close
-            </Button>
+            {/* Live WhatsApp / Social Card Preview */}
+            <div className="mt-4 bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-2">
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">
+                Social Link Preview Preview
+              </span>
+              <div className="bg-white rounded-xl overflow-hidden border border-slate-200/80 shadow-xs flex gap-3 p-2.5 items-center">
+                <img
+                  src={images[0] || "/placeholder.svg"}
+                  alt={title}
+                  className="w-16 h-16 rounded-lg object-cover shrink-0 bg-slate-100"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold text-xs text-navy truncate">{title}</p>
+                  <p className="text-[11px] font-bold text-emerald-700 mt-0.5">
+                    {formatCurrency(afterDiscount)}
+                    {Number(userPrice) > Number(afterDiscount) && (
+                      <span className="line-through text-slate-400 text-[10px] ml-1.5">{formatCurrency(userPrice)}</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">apexbee.in • Verified Merchant</p>
+                </div>
+              </div>
+            </div>
+
+            {referralCode ? (
+              <div className="mt-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-amber-800 uppercase block">Referral Tag Attached</span>
+                  <span className="font-mono font-black text-amber-900">{referralCode}</span>
+                </div>
+                <span className="text-[10px] font-bold bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded-full">
+                  ₹50 Signup Bonus
+                </span>
+              </div>
+            ) : null}
+
+            {/* Share Action Buttons */}
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <Button
+                onClick={whatsappShare}
+                className="col-span-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-xs h-11 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>💬</span> Share on WhatsApp
+              </Button>
+              <Button
+                onClick={copyLink}
+                variant="outline"
+                className="bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 font-bold text-xs h-10 rounded-xl cursor-pointer"
+              >
+                <span>🔗</span> Copy Link
+              </Button>
+              <Button
+                onClick={facebookShare}
+                className="bg-[#1877F2] hover:bg-[#1567d3] text-white font-bold text-xs h-10 rounded-xl cursor-pointer"
+              >
+                <span>📘</span> Facebook
+              </Button>
+              <Button
+                onClick={twitterShare}
+                className="bg-slate-900 hover:bg-black text-white font-bold text-xs h-10 rounded-xl cursor-pointer"
+              >
+                <span>✖</span> X / Twitter
+              </Button>
+              {navigator.share && (
+                <Button
+                  onClick={handleShare}
+                  variant="outline"
+                  className="bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 font-bold text-xs h-10 rounded-xl cursor-pointer"
+                >
+                  <span>📱</span> More Apps...
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

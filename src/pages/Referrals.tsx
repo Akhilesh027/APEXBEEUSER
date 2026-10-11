@@ -381,6 +381,54 @@ const Referrals = () => {
 
   const getToken = () => localStorage.getItem("token") || localStorage.getItem("adminToken");
 
+  // User profile and roles detection (Task User-11)
+  const loggedInUserObj = useMemo(() => {
+    try {
+      const u = localStorage.getItem("user");
+      return u ? JSON.parse(u) : {};
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const loggedInRoles = useMemo(() => {
+    const raw = Array.isArray(loggedInUserObj?.roles) ? loggedInUserObj.roles : loggedInUserObj?.role ? [loggedInUserObj.role] : [];
+    return raw.map((r: any) => String(r).toLowerCase().trim());
+  }, [loggedInUserObj]);
+
+  const [localRoles, setLocalRoles] = useState<string[]>([]);
+
+  useEffect(() => {
+    setLocalRoles(loggedInRoles);
+  }, [loggedInRoles]);
+
+  // Role detection: Guest vs Customer vs Business Partner
+  const isGuest = useMemo(() => {
+    const token = getToken();
+    const uid = loggedInUserObj?.id || loggedInUserObj?._id;
+    return !token || !uid;
+  }, [loggedInUserObj]);
+
+  const isBusinessPartner = useMemo(() => {
+    return localRoles.some((r: string) =>
+      r === "business_partner" ||
+      r === "admin" ||
+      r.includes("franchise") ||
+      r === "entrepreneur" ||
+      r === "vendor" ||
+      r === "wholesaler" ||
+      r === "manufacturer"
+    );
+  }, [localRoles]);
+
+  const isCustomer = useMemo(() => {
+    return !isGuest && !isBusinessPartner;
+  }, [isGuest, isBusinessPartner]);
+
+  // Free Upgrade state
+  const [upgrading, setUpgrading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const apiFetch = async (path: string, options: RequestInit = {}) => {
     const token = getToken();
     if (!token) throw new Error("No token found in localStorage");
@@ -420,16 +468,19 @@ const Referrals = () => {
   };
 
   const allReferredUsers = useMemo(() => {
+    if (isGuest) return [];
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
     const currentUserId = String(userObj.id || userObj._id || "");
     const isNotSelf = (u: any) => !currentUserId || String(u._id || u.id) !== currentUserId;
 
     const list: any[] = [];
     level1Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 1 }));
-    level2Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 2 }));
-    level3Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 3 }));
+    if (isBusinessPartner) {
+      level2Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 2 }));
+      level3Users.filter(isNotSelf).forEach(u => list.push({ ...u, levelNum: 3 }));
+    }
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [level1Users, level2Users, level3Users]);
+  }, [level1Users, level2Users, level3Users, isGuest, isBusinessPartner]);
 
   // Filter out system accounts (like ApexBee System) from the Weekly Top Referrers leaderboard
   const filteredLeaderboardData = useMemo(() => {
@@ -450,20 +501,56 @@ const Referrals = () => {
       .map((row, idx) => ({ ...row, displayRank: idx + 1 }));
   }, [leaderboardData]);
 
-  // User profile and roles detection
-  const loggedInUserObj = useMemo(() => {
-    try {
-      const u = localStorage.getItem("user");
-      return u ? JSON.parse(u) : {};
-    } catch {
-      return {};
-    }
-  }, []);
 
-  const loggedInRoles = useMemo(() => {
-    const raw = Array.isArray(loggedInUserObj?.roles) ? loggedInUserObj.roles : loggedInUserObj?.role ? [loggedInUserObj.role] : [];
-    return raw.map((r: any) => String(r).toLowerCase().trim());
-  }, [loggedInUserObj]);
+
+  const handleFreeUpgrade = async () => {
+    if (isGuest) {
+      toast({
+        title: "Sign in Required",
+        description: "Please sign in or create an account to upgrade to Business Partner.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setUpgrading(true);
+    try {
+      const res = await apiFetch("/referrals/upgrade-partner", {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          setLocalRoles(data.user.roles || ["business_partner"]);
+        } else {
+          setLocalRoles((prev) => [...prev, "business_partner"]);
+        }
+        setShowUpgradeModal(false);
+        toast({
+          title: "🎉 Upgraded to Business Partner!",
+          description: "Full Level 1–3 network access, multi-level splits, and audit ledger are now active.",
+        });
+        fetchReferralData();
+      } else {
+        toast({
+          title: "Upgrade Failed",
+          description: data.message || "Failed to upgrade. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong during upgrade.",
+        variant: "destructive"
+      });
+    } finally {
+      setUpgrading(false);
+    }
+  };
 
   // Strict check: Only identify as Guru Swamy if the logged-in user's profile matches Guru Swamy explicitly
   const isGuruSwamy = useMemo(() => {
@@ -1574,11 +1661,19 @@ const Referrals = () => {
   const requestWithdrawWithGate = () => {
     const amt = Number(withdrawAmount);
     if (!amt || amt < 500 || amt > 50000) {
-      toast({ title: "Limits Violated", description: "Enter amount between ₹500 and ₹50,000.", variant: "destructive" });
+      toast({ title: "Eligibility Limits", description: "Withdrawals require minimum eligible balance of ₹500 (up to ₹50,000 / day).", variant: "destructive" });
+      return;
+    }
+    if (isCustomer && !isUserKycVerified) {
+      toast({
+        title: "Verification Required",
+        description: "Please verify your account and KYC details before requesting a withdrawal.",
+        variant: "destructive"
+      });
       return;
     }
     if (amt > walletAvailable) {
-      toast({ title: "Insufficient Funds", description: "Amount exceeds withdrawable wallet balance.", variant: "destructive" });
+      toast({ title: "Insufficient Balance", description: "Amount exceeds eligible withdrawable wallet balance.", variant: "destructive" });
       return;
     }
     triggerOTPGate("withdraw", amt);
@@ -1754,12 +1849,17 @@ const Referrals = () => {
   }, [stats]);
 
   const levelGrowthData = useMemo(() => {
+    if (isCustomer) {
+      return [
+        { name: "Level 1 (Direct)", members: level1Users.length, earnings: stats.directEarnings || stats.level1?.totalEarned || 0 },
+      ];
+    }
     return [
       { name: "Level 1 (Direct)", members: level1Users.length, earnings: stats.directEarnings || 0 },
       { name: "Level 2 (Indirect)", members: level2Users.length, earnings: stats.indirectEarnings || 0 },
       { name: "Level 3 (Extended)", members: level3Users.length, earnings: stats.level3Earnings || 0 },
     ];
-  }, [level1Users, level2Users, level3Users, stats]);
+  }, [level1Users, level2Users, level3Users, stats, isCustomer]);
 
   // Daily Trend calculation based on real commissions ledger
   const dailyEarningsTrend = useMemo(() => {
@@ -1950,20 +2050,56 @@ const Referrals = () => {
       <Navbar />
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
-        {/* Top Rank Achievement Banner */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-sm">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="text-2xl sm:text-3xl shrink-0">🎯</span>
-            <div className="text-left">
-              <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm">Your Goal: {currentRank.targetGoal} Milestone</h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Need {currentRank.targetRemaining} more to unlock {currentRank.targetGoal} ({currentRank.targetCondition}).</p>
+        {/* Top Rank Achievement / Guest Welcome Banner */}
+        {isGuest ? (
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl sm:text-3xl shrink-0">👋</span>
+              <div className="text-left">
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm">Welcome to ApexBee Refer &amp; Earn!</h4>
+                <p className="text-[11px] sm:text-xs text-slate-600 mt-0.5">
+                  Sign in or create an account to activate your personal referral link, track rewards, and earn lifetime commissions.
+                </p>
+              </div>
             </div>
+            <a
+              href="/login"
+              className="inline-flex items-center gap-2 bg-navy hover:bg-slate-900 text-amber-400 font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-sm shrink-0"
+            >
+              Sign In to Join <ArrowRight className="h-3.5 w-3.5" />
+            </a>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-purple-50 border border-purple-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shrink-0 self-start sm:self-auto">
-            <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
-            <span className="text-[11px] sm:text-xs font-extrabold text-purple-700">Next: {currentRank.targetGoal}</span>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-sm">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <span className="text-2xl sm:text-3xl shrink-0">{isBusinessPartner ? "👑" : "🎯"}</span>
+              <div className="text-left">
+                <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm">
+                  {isBusinessPartner ? `Business Partner: ${currentRank.rank}` : `Customer Milestone: Level 1 Starter`}
+                </h4>
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                  {isBusinessPartner
+                    ? `Need ${currentRank.targetRemaining} more to unlock ${currentRank.targetGoal} (${currentRank.targetCondition}).`
+                    : "Track your direct Level 1 referrals. Upgrade to Business Partner anytime for free to unlock 3-tier overrides."}
+                </p>
+              </div>
+            </div>
+            {isCustomer ? (
+              <Button
+                onClick={() => setShowUpgradeModal(true)}
+                className="bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+                Upgrade Partner (Free)
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-purple-50 border border-purple-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shrink-0 self-start sm:self-auto">
+                <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
+                <span className="text-[11px] sm:text-xs font-extrabold text-purple-700">Next: {currentRank.targetGoal}</span>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-navy rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-xl border border-indigo-900">
@@ -1974,73 +2110,208 @@ const Referrals = () => {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 relative z-10">
             <div className="text-left max-w-xl">
               <span className="bg-amber-500/20 text-amber-400 text-[9px] sm:text-[10px] font-black tracking-widest uppercase px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-400/30">
-                Live Earnings Portal
+                {isGuest ? "Referral Introduction" : isCustomer ? "Customer Referrals Portal" : "Live Earnings Portal"}
               </span>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-2.5 sm:mt-3 leading-tight tracking-tight">
                 Refer &amp; Grow Lifetime Network Income.
               </h2>
               <p className="text-slate-300 mt-1.5 sm:mt-2 text-xs sm:text-sm md:text-base leading-relaxed">
-                Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses &amp; recurring purchase splits.
+                {isGuest
+                  ? "ApexBee connects vendors, customers, wholesalers, and partners. Sign in to start referring and earning rewards today."
+                  : isCustomer
+                  ? "Share your personal referral link with friends. Earn direct Level 1 signup bonuses and eligible product rewards."
+                  : "Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses & recurring purchase splits."}
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-4 sm:mt-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
-                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Network Size</p>
-                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-white">{allReferredUsers.length}</p>
+              {/* 4-Box Stats Grid: Only displayed for Customer (Level 1) and Business Partner (Level 1-3). Hidden for Guest */}
+              {!isGuest && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-4 sm:mt-6">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                    <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">
+                      {isCustomer ? "Direct Referrals" : "Network Size"}
+                    </p>
+                    <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-white">
+                      {isCustomer ? level1Users.length : allReferredUsers.length}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                    <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">
+                      {isCustomer ? "Eligible Earned" : "Lifetime Earned"}
+                    </p>
+                    <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-amber-400">
+                      ₹{formatINR(isCustomer ? (stats.level1?.totalEarned || stats.totalEarnings || 0) : (stats.totalEarnings || stats.totalEarned || memberTotalGross || 0))}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                    <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Pending Settlement</p>
+                    <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-yellow-400">
+                      ₹{formatINR(stats.walletHold || stats.pendingBalance || memberHold || 0)}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
+                    <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Current Rank</p>
+                    <p className="text-xs font-black mt-1 sm:mt-2 text-indigo-300 truncate">
+                      {isCustomer ? "Level 1 Starter" : currentRank.rank}
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
-                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Lifetime Earned</p>
-                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-amber-400">₹{formatINR(stats.totalEarnings || stats.totalEarned || memberTotalGross || 0)}</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
-                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Pending Settlement</p>
-                  <p className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-yellow-400">₹{formatINR(stats.walletHold || stats.pendingBalance || memberHold || 0)}</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-white/5">
-                  <p className="text-[9.5px] sm:text-[10px] text-slate-300 font-semibold">Current Rank</p>
-                  <p className="text-xs font-black mt-1 sm:mt-2 text-indigo-300 truncate">{currentRank.rank}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10 text-center w-full lg:w-80 shadow-inner flex flex-col gap-3 sm:gap-4">
               <div>
-                <p className="text-[11px] sm:text-xs text-indigo-200 font-semibold uppercase tracking-wider">Available Wallet Balance</p>
-                <p className="text-2xl sm:text-3xl font-black mt-0.5 sm:mt-1 text-emerald-400 font-sans">₹{formatINR(stats.walletAvailable || stats.availableBalance || memberAvailable || 0)}</p>
+                <p className="text-[11px] sm:text-xs text-indigo-200 font-semibold uppercase tracking-wider">
+                  {isGuest ? "Normal Shopping Wallet" : "Available Wallet Balance"}
+                </p>
+                <p className="text-2xl sm:text-3xl font-black mt-0.5 sm:mt-1 text-emerald-400 font-sans">
+                  ₹{formatINR(isGuest ? 0 : (stats.walletAvailable || stats.availableBalance || memberAvailable || 0))}
+                </p>
                 <p className="text-[9.5px] sm:text-[10px] text-slate-300 mt-1 sm:mt-2 opacity-95">
-                  Withdrawable Limit: ₹500 - ₹50,000 / day
+                  {isGuest ? "Sign in to activate referral earnings" : "Withdrawable Limit: ₹500 - ₹50,000 / day"}
                 </p>
               </div>
 
               <div className="border-t border-white/10 pt-3 sm:pt-4 flex flex-col sm:flex-row gap-2">
-                <Button className="w-full sm:flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 sm:py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1.5" onClick={() => setActiveTab("withdraw")}>
-                  <IndianRupee className="h-3.5 w-3.5 text-slate-950 font-black" />
-                  Request Withdraw
-                </Button>
-                <Button className="w-full sm:w-auto bg-[#0A1128] hover:bg-slate-900 text-amber-400 font-black text-xs py-2.5 sm:py-3 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95" onClick={() => copyToClipboard(referralCode, "code")}>
-                  Copy Code
-                </Button>
+                {isGuest ? (
+                  <a
+                    href="/login"
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs py-2.5 sm:py-3 rounded-xl shadow-lg border border-amber-300/40 text-center inline-block"
+                  >
+                    Sign In / Register
+                  </a>
+                ) : (
+                  <>
+                    <Button
+                      className="w-full sm:flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-2.5 sm:py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1.5"
+                      onClick={() => setActiveTab("withdraw")}
+                    >
+                      <IndianRupee className="h-3.5 w-3.5 text-slate-950 font-black" />
+                      Request Withdraw
+                    </Button>
+                    <Button
+                      className="w-full sm:w-auto bg-[#0A1128] hover:bg-slate-900 text-amber-400 font-black text-xs py-2.5 sm:py-3 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-95"
+                      onClick={() => copyToClipboard(referralCode, "code")}
+                    >
+                      Copy Code
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs Navigation - Responsive Pill Scroll bar on mobile, 7-col grid on desktop */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full">
-          <div className="w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
-            <TabsList className="bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid lg:grid-cols-7 w-max lg:w-full gap-1">
-              <TabsTrigger value="overview" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Overview</TabsTrigger>
-              <TabsTrigger value="earnings" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Earnings Ledger</TabsTrigger>
-              <TabsTrigger value="referrals" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Roster Directory</TabsTrigger>
-              <TabsTrigger value="commissions" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Audit Splits</TabsTrigger>
-              <TabsTrigger value="network" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Network Tree</TabsTrigger>
-              <TabsTrigger value="analytics" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Analytics</TabsTrigger>
-              <TabsTrigger value="withdraw" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">Withdraw</TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Guest View Teaser OR Tabs Navigation */}
+        {isGuest ? (
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-sm">
+            <div className="max-w-md mx-auto space-y-2">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 flex items-center justify-center text-3xl">
+                🎁
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Unlock Full Referral Dashboard</h3>
+              <p className="text-xs text-slate-500">
+                Guest users have preview access. Sign in or create an account to get your referral QR code, monitor Level 1 invitations, and withdraw earnings.
+              </p>
+            </div>
 
-          {/* Overview Tab Content */}
-          <TabsContent value="overview" className="space-y-4 sm:space-y-6 text-left">
+            <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <p className="font-extrabold text-xs text-navy flex items-center gap-1.5"><span>👥</span> Customer Referrals</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Earn instant signup credits &amp; first purchase commissions for every direct friend you introduce.
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <p className="font-extrabold text-xs text-navy flex items-center gap-1.5"><span>👑</span> Business Partner</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Free 1-click upgrade to unlock lifetime 3-Tier downline overrides, financial audit splits, and team trees.
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <p className="font-extrabold text-xs text-navy flex items-center gap-1.5"><span>🏦</span> Instant Withdrawals</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Seamlessly withdraw earned rewards directly to your bank account or UPI once eligible.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row justify-center items-center gap-3">
+              <a
+                href="/login"
+                className="w-full sm:w-auto bg-navy hover:bg-slate-900 text-amber-400 font-extrabold text-xs px-6 py-3 rounded-xl transition shadow-md"
+              >
+                Sign In Now
+              </a>
+              <a
+                href="/register"
+                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs px-6 py-3 rounded-xl transition shadow-md"
+              >
+                Create Free Account
+              </a>
+            </div>
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full">
+            <div className="w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+              <TabsList
+                className={`bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid ${
+                  isBusinessPartner ? "lg:grid-cols-7" : "lg:grid-cols-6"
+                } w-max lg:w-full gap-1`}
+              >
+                <TabsTrigger value="overview" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="earnings" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Earnings Ledger
+                </TabsTrigger>
+                <TabsTrigger value="referrals" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Roster Directory
+                </TabsTrigger>
+                {/* 🔒 Audit Splits Tab is completely HIDDEN for Customer role */}
+                {isBusinessPartner && (
+                  <TabsTrigger value="commissions" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                    Audit Splits
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="network" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Network Tree
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger value="withdraw" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
+                  Withdraw
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Overview Tab Content */}
+            <TabsContent value="overview" className="space-y-4 sm:space-y-6 text-left">
+              {/* Free Upgrade Banner for Customer */}
+              {isCustomer && (
+                <div className="bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 border border-indigo-700/60 rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-2xl shrink-0">
+                      👑
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-black text-amber-300">Upgrade to Business Partner (100% Free)</h3>
+                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[9px] font-black uppercase">Instant</Badge>
+                      </div>
+                      <p className="text-slate-300 text-xs mt-0.5">
+                        Unlock Level 1–3 Multi-Level overrides, financial audit splits, and team commissions with zero fees.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-md border border-amber-300 cursor-pointer shrink-0 w-full md:w-auto"
+                  >
+                    Upgrade Now Free
+                  </Button>
+                </div>
+              )}
             {/* Gamified Milestone Progress Indicator */}
             <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-4 sm:p-6">
@@ -2981,30 +3252,48 @@ const Referrals = () => {
                 {/* 2) Level 2 */}
                 <button
                   type="button"
-                  onClick={() => setReferralLevelFilter("2")}
+                  onClick={() => {
+                    if (isCustomer) {
+                      setShowUpgradeModal(true);
+                    } else {
+                      setReferralLevelFilter("2");
+                    }
+                  }}
                   className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "2"
                     ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-600"
-                    : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
+                    : isCustomer 
+                      ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
+                      : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
                     }`}
+                  title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
                 >
-                  <span>🔵</span> 2) Level 2
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
-                    {level2Users.length}
+                  <span>{isCustomer ? "🔒" : "🔵"}</span> 2) Level 2 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-800"}`}>
+                    {isCustomer ? "🔒" : level2Users.length}
                   </span>
                 </button>
 
                 {/* 3) Level 3 */}
                 <button
                   type="button"
-                  onClick={() => setReferralLevelFilter("3")}
+                  onClick={() => {
+                    if (isCustomer) {
+                      setShowUpgradeModal(true);
+                    } else {
+                      setReferralLevelFilter("3");
+                    }
+                  }}
                   className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "3"
                     ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
-                    : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
+                    : isCustomer
+                      ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
+                      : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
                     }`}
+                  title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
                 >
-                  <span>🟣</span> 3) Level 3
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
-                    {level3Users.length}
+                  <span>{isCustomer ? "🔒" : "🟣"}</span> 3) Level 3 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-purple-100 text-purple-800"}`}>
+                    {isCustomer ? "🔒" : level3Users.length}
                   </span>
                 </button>
 
@@ -3233,8 +3522,9 @@ const Referrals = () => {
             </Card>
           </TabsContent>
 
-          {/* Commissions Tab Content */}
-          <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left">
+          {/* Commissions Tab Content (Audit Splits - Business Partner Only) */}
+          {isBusinessPartner && (
+            <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left">
             <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
               <CardHeader className="border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
@@ -3312,6 +3602,7 @@ const Referrals = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Network Tree Tab Content */}
           <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left">
@@ -3321,6 +3612,28 @@ const Referrals = () => {
                 <CardDescription className="text-[11px] sm:text-xs text-slate-500">Navigate downline nodes to inspect network volume, user performance and earnings splits.</CardDescription>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
+                {isCustomer && (
+                  <div className="mb-4 bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-500/10 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-base shrink-0 shadow-xs border border-amber-200">
+                        🔒
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-navy">Level 2 &amp; Level 3 Downline Multi-Tier Hierarchy Locked</p>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          As a Customer tier member, your direct network is restricted to Level 1. Upgrade to <strong className="text-navy">Business Partner (100% Free)</strong> to view full 3-level team lineage and earn multi-tier incentives.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setShowUpgradeModal(true)}
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-sm rounded-xl py-2 px-4"
+                    >
+                      🚀 Upgrade Partner (Free)
+                    </Button>
+                  </div>
+                )}
                 {level1Users.length === 0 ? (
                   <div className="text-center py-10 text-slate-400 text-xs">
                     No downlines found in network hierarchy database.
@@ -3645,6 +3958,31 @@ const Referrals = () => {
 
           {/* Withdraw Tab Content */}
           <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left">
+            {/* Payout Policy & Eligibility Rules Banner */}
+            <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 text-base shrink-0 shadow-xs border border-blue-200">
+                  🏦
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-navy flex items-center gap-2">
+                    Referral Payout Criteria &amp; Direct Bank Settlement
+                    <Badge className="bg-navy text-white text-[9px] px-2 py-0.5">
+                      {isBusinessPartner ? "Business Partner Tier" : "Customer Tier"}
+                    </Badge>
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                    Minimum withdrawal threshold is <strong>₹500</strong>. Payouts require verified bank credentials and completed <strong>PAN / KYC verification</strong> in accordance with statutory compliance.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge className={`text-[10px] px-2.5 py-1 font-bold ${isUserKycVerified ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-amber-100 text-amber-800 border-amber-300"}`}>
+                  {isUserKycVerified ? "✓ KYC Verified" : "⏳ KYC Action Required"}
+                </Badge>
+              </div>
+            </div>
+
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Left Column: Bank account details form */}
               <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl">
@@ -3883,6 +4221,7 @@ const Referrals = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
 
       {/* OTP Verification Gate dialog */}
@@ -4207,6 +4546,65 @@ const Referrals = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Free Upgrade to Business Partner Dialog */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="w-[92vw] sm:max-w-md rounded-2xl sm:rounded-3xl bg-white border border-slate-200 p-5 sm:p-6 shadow-2xl">
+          <DialogHeader className="text-center">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-amber-400 to-indigo-600 flex items-center justify-center text-2xl shadow-md mb-2">
+              👑
+            </div>
+            <DialogTitle className="font-black text-slate-900 text-lg sm:text-xl">
+              Upgrade to Business Partner (Free)
+            </DialogTitle>
+            <DialogDescription className="text-[11px] sm:text-xs text-slate-500 mt-1">
+              Unlock lifetime 3-Tier Multi-Level overrides, financial audit splits, and team commissions with zero fees.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-3 space-y-2.5 text-xs text-slate-700">
+            <div className="flex items-start gap-2.5 p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-emerald-950">100% Free Upgrade</p>
+                <p className="text-[11px] text-emerald-800">Zero charges, zero hidden fees, and no recurring renewal costs.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5 p-3 bg-indigo-50 border border-indigo-200/80 rounded-xl">
+              <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-indigo-950">Preserves All Data</p>
+                <p className="text-[11px] text-indigo-800">Your User ID, referral code, existing referrals, order history, and wallet rewards stay completely intact.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5 p-3 bg-purple-50 border border-purple-200/80 rounded-xl">
+              <CheckCircle2 className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-purple-950">Immediate Access</p>
+                <p className="text-[11px] text-purple-800">Instantly view Level 2 &amp; 3 downline members, full tree branches, and financial Audit Splits.</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto rounded-xl font-bold text-xs"
+              onClick={() => setShowUpgradeModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={upgrading}
+              className="w-full sm:flex-1 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              onClick={handleFreeUpgrade}
+            >
+              {upgrading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-amber-200" />}
+              Confirm Free Upgrade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
