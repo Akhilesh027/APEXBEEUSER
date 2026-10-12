@@ -167,7 +167,7 @@ const Register = () => {
         await handleGoogleSuccess(token);
       } else {
         setError(
-          "Native Google Sign-In plugin is not registered on this Android build. Run 'npm i @capawesome/capacitor-google-sign-in && npx cap sync android' and rebuild the APK."
+          "Native Google Sign-In is not configured on this Android build. Please register with email or mobile number, or use the web portal."
         );
       }
     } catch (err: any) {

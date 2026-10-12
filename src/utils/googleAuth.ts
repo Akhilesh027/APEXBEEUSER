@@ -1,47 +1,89 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+// Safe Capacitor bridge for Google Authentication
+// Works seamlessly in Web browsers and Native Android/iOS WebViews without requiring
+// @capacitor/core at build time on web servers.
 
-interface GoogleSignInPlugin {
-  initialize(options: { clientId: string }): Promise<void>;
-  signIn(): Promise<{ idToken?: string; user?: any }>;
+interface GoogleAuthPlugin {
+  initialize?(options: any): Promise<void>;
+  signIn?(): Promise<{ idToken?: string; authentication?: { idToken?: string }; user?: any }>;
 }
 
-interface CodetrixGoogleAuthPlugin {
-  initialize(options?: any): Promise<void>;
-  signIn(): Promise<{ authentication?: { idToken?: string }; idToken?: string }>;
-}
-
-const NativeGoogleSignIn = registerPlugin<GoogleSignInPlugin>('GoogleSignIn');
-const CodetrixGoogleAuth = registerPlugin<CodetrixGoogleAuthPlugin>('GoogleAuth');
-
-export const isNativePlatform = (): boolean => {
-  return Capacitor.isNativePlatform();
-};
-
-export const isNativeGoogleAvailable = (): boolean => {
-  return (
-    Capacitor.isNativePlatform() &&
-    (Capacitor.isPluginAvailable('GoogleSignIn') || Capacitor.isPluginAvailable('GoogleAuth'))
-  );
+const getCapacitor = () => {
+  if (typeof window !== 'undefined' && (window as any).Capacitor) {
+    return (window as any).Capacitor;
+  }
+  return null;
 };
 
 /**
- * Triggers native Android/iOS Google Sign-In dialog via Capacitor plugins.
+ * Returns true if running inside a native mobile container (Capacitor Android/iOS).
+ */
+export const isNativePlatform = (): boolean => {
+  const cap = getCapacitor();
+  return Boolean(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+};
+
+/**
+ * Checks if a native Google Sign-In plugin is available in the current environment.
+ */
+export const isNativeGoogleAvailable = (): boolean => {
+  const cap = getCapacitor();
+  if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) {
+    return false;
+  }
+
+  const hasPluginMethod = typeof cap.isPluginAvailable === 'function';
+  const isSignInAvailable = hasPluginMethod && cap.isPluginAvailable('GoogleSignIn');
+  const isAuthAvailable = hasPluginMethod && cap.isPluginAvailable('GoogleAuth');
+  const plugins = cap.Plugins || {};
+
+  return Boolean(isSignInAvailable || isAuthAvailable || plugins.GoogleSignIn || plugins.GoogleAuth);
+};
+
+/**
+ * Triggers native Android/iOS Google Sign-In dialog via available Capacitor plugins.
  * Returns the Google ID token (JWT) to pass to /auth/google endpoint,
  * or null if native plugins are not registered on this device build.
  */
 export const signInWithNativeGoogle = async (): Promise<string | null> => {
+  const cap = getCapacitor();
+  if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) {
+    return null;
+  }
+
   const clientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
     '185984914727-6aif53v76n329lp8a1dbu15nu0hcrf6k.apps.googleusercontent.com';
 
-  // 1. Try Capawesome Google Sign-In plugin
-  if (Capacitor.isPluginAvailable('GoogleSignIn')) {
+  const plugins = cap.Plugins || {};
+  let googleSignInPlugin: GoogleAuthPlugin | null = plugins.GoogleSignIn || null;
+  let googleAuthPlugin: GoogleAuthPlugin | null = plugins.GoogleAuth || null;
+
+  if (!googleSignInPlugin && typeof cap.registerPlugin === 'function') {
     try {
-      await NativeGoogleSignIn.initialize({ clientId });
-      const res = await NativeGoogleSignIn.signIn();
+      googleSignInPlugin = cap.registerPlugin('GoogleSignIn');
+    } catch {
+      // plugin not found
+    }
+  }
+
+  if (!googleAuthPlugin && typeof cap.registerPlugin === 'function') {
+    try {
+      googleAuthPlugin = cap.registerPlugin('GoogleAuth');
+    } catch {
+      // plugin not found
+    }
+  }
+
+  // 1. Try GoogleSignIn plugin
+  if (googleSignInPlugin && typeof googleSignInPlugin.signIn === 'function') {
+    try {
+      if (typeof googleSignInPlugin.initialize === 'function') {
+        await googleSignInPlugin.initialize({ clientId });
+      }
+      const res = await googleSignInPlugin.signIn();
       if (res?.idToken) return res.idToken;
     } catch (err: any) {
-      console.warn('Native GoogleSignIn attempt error:', err);
+      console.warn('Native GoogleSignIn error:', err);
       if (
         err?.message?.toLowerCase().includes('cancel') ||
         err?.code === '12501' ||
@@ -53,19 +95,21 @@ export const signInWithNativeGoogle = async (): Promise<string | null> => {
     }
   }
 
-  // 2. Try Codetrix Google Auth plugin
-  if (Capacitor.isPluginAvailable('GoogleAuth')) {
+  // 2. Try GoogleAuth plugin
+  if (googleAuthPlugin && typeof googleAuthPlugin.signIn === 'function') {
     try {
-      await CodetrixGoogleAuth.initialize({
-        clientId,
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: false,
-      });
-      const res = await CodetrixGoogleAuth.signIn();
+      if (typeof googleAuthPlugin.initialize === 'function') {
+        await googleAuthPlugin.initialize({
+          clientId,
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: false,
+        });
+      }
+      const res = await googleAuthPlugin.signIn();
       const token = res?.authentication?.idToken || res?.idToken;
       if (token) return token;
     } catch (err: any) {
-      console.warn('Codetrix GoogleAuth attempt error:', err);
+      console.warn('Native GoogleAuth error:', err);
       if (
         err?.message?.toLowerCase().includes('cancel') ||
         err?.code === '12501' ||
