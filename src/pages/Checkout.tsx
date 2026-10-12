@@ -3215,8 +3215,8 @@ const Checkout = () => {
             )}
 
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
-                {mobileStep === 1 ? "Step 1: Address" : mobileStep === 2 ? "Step 2: Delivery" : "Total Payable"}
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {mobileStep === 1 ? "Step 1 of 3" : mobileStep === 2 ? "Step 2 of 3" : "Total Payable"}
               </span>
               <div className="flex items-baseline gap-1.5 truncate">
                 <span className="text-base font-black text-slate-900 font-mono">
@@ -3242,7 +3242,7 @@ const Checkout = () => {
                 }
               }}
               disabled={undeliverableInfo.hasUndeliverable}
-              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>Proceed to Delivery</span>
               <ArrowRight className="w-4 h-4" />
@@ -3258,7 +3258,7 @@ const Checkout = () => {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0"
             >
               <span>Proceed to Payment</span>
               <ArrowRight className="w-4 h-4" />
@@ -3286,7 +3286,7 @@ const Checkout = () => {
                 if (selectedPayment === "upi") setShowUPIDialog(true);
                 else handlePlaceOrder();
               }}
-              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
+              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
                 ? "opacity-50 cursor-not-allowed"
                 : ""
                 }`}

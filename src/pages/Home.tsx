@@ -49,6 +49,7 @@ const logo = "/logo.png";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import { isLocationConfigured, getActiveLocation } from "@/utils/locationHelper";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "https://server.apexbee.in";
@@ -244,20 +245,30 @@ const Home = () => {
   const [showIntro, setShowIntro] = useState(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("showIntro") === "true") {
-      return true;
-    }
-    // If it's a page refresh, do not show the welcome animation
-    if (isPageRefresh()) {
-      sessionStorage.setItem(INTRO_STORAGE_KEY, "true");
-      return false;
-    }
-    return sessionStorage.getItem(INTRO_STORAGE_KEY) !== "true";
+    return params.get("showIntro") === "true";
   });
 
   const handleIntroComplete = useCallback(() => {
     sessionStorage.setItem(INTRO_STORAGE_KEY, "true");
     setShowIntro(false);
+  }, []);
+
+  // Ensure home screen is immediately scrollable on mount & prompt location modal if unselected
+  useEffect(() => {
+    document.documentElement.style.overflow = "unset";
+    document.documentElement.style.overflowY = "auto";
+    document.body.style.overflow = "unset";
+    document.body.style.overflowY = "auto";
+    document.body.style.touchAction = "auto";
+
+    const activeLoc = getActiveLocation();
+    if (!activeLoc) {
+      // Prompt location modal to let user select location
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("open_location_modal"));
+      }, 300);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -405,19 +416,21 @@ const Home = () => {
 
   const fetchBuyAgainProducts = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    if (!token || !isLocationConfigured(userLocation)) {
       setBuyAgainProducts([]);
       return;
     }
     try {
       setBuyAgainLoading(true);
       let url = `${API_BASE}/products/buy-again`;
-      const queryParams = [];
+      const queryParams: string[] = [];
       if (userLocation?.lat && userLocation?.lng) {
         queryParams.push(`lat=${userLocation.lat}`);
         queryParams.push(`lng=${userLocation.lng}`);
-      } else if (userLocation?.pincode) {
-        queryParams.push(`pincode=${userLocation.pincode}`);
+      }
+      const effectivePincode = (userLocation?.pincode || localStorage.getItem("userPincode") || localStorage.getItem("pincode") || "").toString().trim();
+      if (effectivePincode) {
+        queryParams.push(`pincode=${encodeURIComponent(effectivePincode)}`);
       }
       if (queryParams.length > 0) {
         url += `?${queryParams.join("&")}`;
@@ -428,11 +441,24 @@ const Home = () => {
         }
       });
       const data = await res.json();
-      if (data.success) {
-        setBuyAgainProducts(data.products || []);
+      if (data.success && Array.isArray(data.products)) {
+        // Enforce strict local/pincode filtering:
+        // Local products from other pincodes must NOT be displayed
+        const valid = data.products.filter((p: any) => {
+          const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both' || p.isGlobalDelivery;
+          if (isPan) return true;
+          const vendorPin = (p.vendorPincode || p.sellerId?.pincode || p.sellerId?.pinCode || "").toString().trim();
+          if (effectivePincode && vendorPin && effectivePincode === vendorPin) return true;
+          if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined && p.calculatedDistanceKm <= 20) return true;
+          return false;
+        });
+        setBuyAgainProducts(valid);
+      } else {
+        setBuyAgainProducts([]);
       }
     } catch (err) {
       console.error("fetchBuyAgainProducts error:", err);
+      setBuyAgainProducts([]);
     } finally {
       setBuyAgainLoading(false);
     }
@@ -566,6 +592,10 @@ const Home = () => {
 
   useEffect(() => {
     const fetchDbProducts = async () => {
+      if (!isLocationConfigured(userLocation)) {
+        setDbProducts([]);
+        return;
+      }
       try {
         const locParams = buildLocationParams();
         const url = `${API_BASE}/products?limit=20${locParams ? `&${locParams}` : ''}`;
@@ -579,7 +609,6 @@ const Home = () => {
             if (!isLive) return false;
             const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both';
             if (isPan) return true;
-            if (!userLocation?.pincode && !userLocation?.lat) return true;
             const vendorPin = p.vendorPincode || p.sellerId?.pincode;
             if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) return true;
             if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
@@ -596,11 +625,20 @@ const Home = () => {
   }, [userLocation, buildLocationParams]);
 
   const continueShoppingProducts = useMemo(() => {
+    if (!isLocationConfigured(userLocation)) return [];
     if (personalization?.continueShopping && personalization.continueShopping.length > 0) {
-      return personalization.continueShopping;
+      const effectivePincode = (userLocation?.pincode || localStorage.getItem("userPincode") || localStorage.getItem("pincode") || "").toString().trim();
+      return personalization.continueShopping.filter((p: any) => {
+        const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both' || p.isGlobalDelivery;
+        if (isPan) return true;
+        const vendorPin = (p.vendorPincode || p.sellerId?.pincode || p.sellerId?.pinCode || "").toString().trim();
+        if (effectivePincode && vendorPin && effectivePincode === vendorPin) return true;
+        if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined && p.calculatedDistanceKm <= 20) return true;
+        return false;
+      });
     }
     return [];
-  }, [personalization]);
+  }, [personalization, userLocation]);
 
   const homeServices = useMemo(() => {
     return personalization?.featuredServices || [];
@@ -641,6 +679,11 @@ const Home = () => {
   };
 
   const fetchPetAndKidsProducts = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setPetProducts([]);
+      setKidsProducts([]);
+      return;
+    }
     try {
       const locParams = buildLocationParams();
       const url = `${API_BASE}/products?limit=50${locParams ? `&${locParams}` : ''}`;
@@ -678,6 +721,13 @@ const Home = () => {
   const [shoppingProducts, setShoppingProducts] = useState<Product[]>([]);
 
   const fetchCategoryProducts = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setDailyNeedsProducts([]);
+      setDevotionalProducts([]);
+      setFoodProducts([]);
+      setShoppingProducts([]);
+      return;
+    }
     try {
       const locParams = buildLocationParams();
       const url = `${API_BASE}/products?limit=100${locParams ? `&${locParams}` : ''}`;
@@ -690,7 +740,6 @@ const Home = () => {
           if (!isLive) return false;
           const isPan = p.isPanIndia || p.deliveryScope === 'pan_india' || p.deliveryScope === 'both';
           if (isPan) return true;
-          if (!userLocation?.pincode && !userLocation?.lat) return true;
           const vendorPin = p.vendorPincode || p.sellerId?.pincode;
           if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) return true;
           if (p.calculatedDistanceKm !== null && p.calculatedDistanceKm !== undefined) return p.calculatedDistanceKm <= 20;
@@ -1067,20 +1116,11 @@ const Home = () => {
    * -------------------------- */
   useEffect(() => {
     const loadLocation = () => {
-      const saved =
-        localStorage.getItem(LOCATION_KEY) ||
-        localStorage.getItem("user_location") ||
-        localStorage.getItem("userLocation") ||
-        localStorage.getItem("apexbee_user_location");
-      if (saved) {
-        try {
-          const loc = JSON.parse(saved);
-          setUserLocation(loc);
-          const pin = normPincode(loc?.pincode);
-          if (pin) fetchNearbyShops(pin, loc);
-        } catch {
-          localStorage.removeItem(LOCATION_KEY);
-        }
+      const loc = getActiveLocation();
+      setUserLocation(loc);
+      if (loc) {
+        const pin = normPincode(loc?.pincode);
+        if (pin) fetchNearbyShops(pin, loc);
       }
     };
     loadLocation();
@@ -1120,6 +1160,10 @@ const Home = () => {
    * Fetch products (reuse)
    * -------------------------- */
   const fetchProducts = async (limit: number) => {
+    if (!isLocationConfigured(userLocation)) {
+      return [];
+    }
+
     let url = `${API_BASE}/products?limit=${limit}`;
     let locationUrl = url;
     if (userLocation?.lat && userLocation?.lng) {
@@ -1149,9 +1193,6 @@ const Home = () => {
             const isPan = product.isPanIndia || scope === 'pan_india' || scope === 'both';
             if (isPan) return true;
 
-            // If user location is not set, allow
-            if (!userLocation?.pincode && !userLocation?.lat && !userLocation?.mandal && !userLocation?.district) return true;
-
             // Strict local check
             const vendorPin = (product as any).vendorPincode || (product as any).sellerId?.pincode;
             if (userLocation?.pincode && vendorPin && String(userLocation.pincode).trim() === String(vendorPin).trim()) {
@@ -1174,6 +1215,11 @@ const Home = () => {
   };
 
   const fetchFeaturedProducts = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setFeaturedProducts([]);
+      setFeaturedLoading(false);
+      return;
+    }
     try {
       setFeaturedLoading(true);
       const list = await fetchProducts(12);
@@ -1187,9 +1233,15 @@ const Home = () => {
   };
 
   const fetchDealsProducts = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setDealProducts([]);
+      setDealsLoading(false);
+      return;
+    }
     try {
       setDealsLoading(true);
       const list = await fetchProducts(12);
+      setDealProducts([]);
       setDealProducts(list);
     } catch (e) {
       console.error("fetchDealsProducts:", e);
@@ -1211,6 +1263,11 @@ const Home = () => {
    * Fetch nearby shops by GPS / Location
    * -------------------------- */
   const fetchNearbyShops = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setNearbyShops([]);
+      setShopsLoading(false);
+      return;
+    }
     try {
       setShopsLoading(true);
       setShopsError(null);
@@ -1252,6 +1309,11 @@ const Home = () => {
   };
 
   const fetchNearbyRestaurants = async () => {
+    if (!isLocationConfigured(userLocation)) {
+      setNearbyRestaurantsList([]);
+      setRestaurantsLoading(false);
+      return;
+    }
     try {
       setRestaurantsLoading(true);
       const userLocRaw = localStorage.getItem("userLocation") || localStorage.getItem("user_location") || localStorage.getItem("apexbee_user_location");
@@ -2056,7 +2118,7 @@ const Home = () => {
           </section>
 
           {/* REAL BACKEND FEATURED PRODUCTS SHOWCASE (300x400 Cards) */}
-          {dbProducts.length > 0 && (
+          {isLocationConfigured(userLocation) && dbProducts.length > 0 && (
             <section className="container mx-auto px-3 sm:px-4 py-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -2290,68 +2352,96 @@ const Home = () => {
             </div>
           </section>
 
-          {/* 6. Deals & Featured Products */}
-          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 border border-amber-200/80 rounded-[32px] shadow-sm font-sans">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div>
-                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-[#0A1128] px-2.5 py-0.5 rounded-full shadow-xs mb-1">
-                  <span>✨ HANDPICKED SELECTION</span>
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
-                  <span>🔥</span>
-                  <span>Featured Products &amp; Top Bestsellers</span>
-                </h2>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">Top-rated items handpicked for quality with fast local delivery</p>
+          {/* 6. Deals & Featured Products / Location Prompt */}
+          {!isLocationConfigured(userLocation) ? (
+            <section className="container mx-auto px-3 sm:px-4 my-6 text-center">
+              <div className="bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-300 rounded-[32px] p-8 sm:p-12 shadow-sm flex flex-col items-center justify-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-3xl shadow-inner animate-bounce">
+                  📍
+                </div>
+                <div className="max-w-md space-y-1">
+                  <h3 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading">
+                    Select Delivery Location
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                    Please choose your delivery location to explore available products, fresh essentials, and verified local stores near you.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open_location_modal"))}
+                  className="px-6 py-3 bg-[#0A1128] hover:bg-amber-500 hover:text-[#0A1128] text-white font-extrabold text-sm rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer flex items-center space-x-2 border-none"
+                >
+                  <span>📍 Set Your Delivery Location</span>
+                </button>
               </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-[#0A1128] font-extrabold text-xs hover:bg-[#0A1128] hover:text-amber-400 cursor-pointer shadow-xs transition" onClick={() => navigate("/products")}>
-                View All →
-              </Button>
-            </div>
+            </section>
+          ) : (
+            (featuredLoading || featuredProducts.length > 0) && (
+              <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 border border-amber-200/80 rounded-[32px] shadow-sm font-sans">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <div>
+                    <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-[#0A1128] px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                      <span>✨ HANDPICKED SELECTION</span>
+                    </span>
+                    <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                      <span>🔥</span>
+                      <span>Featured Products &amp; Top Bestsellers</span>
+                    </h2>
+                    <p className="text-xs text-slate-600 font-medium mt-0.5">Top-rated items handpicked for quality with fast local delivery</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-[#0A1128] font-extrabold text-xs hover:bg-[#0A1128] hover:text-amber-400 cursor-pointer shadow-xs transition" onClick={() => navigate("/products")}>
+                    View All →
+                  </Button>
+                </div>
 
-            <div className="relative group px-1">
-              <button
-                onClick={() => scrollHorizontally("featured-products-scroll", "left")}
-                className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
-                aria-label="Scroll Left"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+                <div className="relative group px-1">
+                  <button
+                    onClick={() => scrollHorizontally("featured-products-scroll", "left")}
+                    className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                    aria-label="Scroll Left"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
 
-              {featuredLoading ? (
-                <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
-                      <Skeleton className="h-44 w-full" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                      </div>
+                  {featuredLoading ? (
+                    <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
+                          <Skeleton className="h-44 w-full" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : featuredProducts.length === 0 ? (
-                <div className="rounded-2xl border border-amber-200 bg-white/60 p-10 text-center text-muted-foreground text-sm">
-                  No featured products available right now.
-                </div>
-              ) : (
-                <div id="featured-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth transform-gpu">
-                  {featuredProducts.map((p) => (
-                    <ProductCard key={p._id || (p as any).id} product={p} />
-                  ))}
-                </div>
-              )}
+                  ) : featuredProducts.length === 0 ? (
+                    <div className="rounded-2xl border border-amber-200 bg-white/60 p-10 text-center text-muted-foreground text-sm">
+                      No featured products available right now.
+                    </div>
+                  ) : (
+                    <div id="featured-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth transform-gpu">
+                      {featuredProducts.map((p) => (
+                        <ProductCard key={p._id || (p as any).id} product={p} />
+                      ))}
+                    </div>
+                  )}
 
-              <button
-                onClick={() => scrollHorizontally("featured-products-scroll", "right")}
-                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
-                aria-label="Scroll Right"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-          </section>
+                  <button
+                    onClick={() => scrollHorizontally("featured-products-scroll", "right")}
+                    className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-[#0A1128] hover:bg-[#0A1128] hover:text-amber-400 transition-all cursor-pointer border-none"
+                    aria-label="Scroll Right"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </section>
+            )
+          )}
 
           {/* 🛒 1. DAILY NEEDS CATEGORY PRODUCTS */}
+          {isLocationConfigured(userLocation) && dailyNeedsProducts.length > 0 && (
           <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-200/60 rounded-[32px] shadow-sm">
             <div className="flex items-center justify-between mb-4 px-2">
               <div>
@@ -2391,6 +2481,7 @@ const Home = () => {
               </button>
             </div>
           </section>
+          )}
 
           {/* 📦 DUAL BANNER: GROCERY & MORNING ESSENTIALS */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
@@ -2450,6 +2541,7 @@ const Home = () => {
           </section>
 
           {/* 🏛️ 2. DEVOTIONAL & PUJA PRODUCTS */}
+          {isLocationConfigured(userLocation) && devotionalProducts.length > 0 && (
           <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/10 border border-amber-300/60 rounded-[32px] shadow-sm">
             <div className="flex items-center justify-between mb-4 px-2">
               <div>
@@ -2489,6 +2581,7 @@ const Home = () => {
               </button>
             </div>
           </section>
+          )}
 
           {/* Dynamic Mid-Page Strip (Managed via Admin Panel) */}
           <section className="container mx-auto px-3 sm:px-4 my-6 text-left">
@@ -2496,6 +2589,7 @@ const Home = () => {
           </section>
 
           {/* 🍔 3. FOOD & DINING SPECIALS */}
+          {isLocationConfigured(userLocation) && foodProducts.length > 0 && (
           <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-orange-500/15 via-red-500/10 to-amber-500/10 border border-orange-300/60 rounded-[32px] shadow-sm">
             <div className="flex items-center justify-between mb-4 px-2">
               <div>
@@ -2535,6 +2629,7 @@ const Home = () => {
               </button>
             </div>
           </section>
+          )}
 
           {/* 🎁 RAKSHA BANDHAN FESTIVAL OFFERS BANNER */}
           <section className="container mx-auto px-3 sm:px-4 my-4 sm:my-6 text-left">
@@ -2577,6 +2672,7 @@ const Home = () => {
           </section>
 
           {/* 👗 4. SHOPPING & FASHION PRODUCTS */}
+          {isLocationConfigured(userLocation) && shoppingProducts.length > 0 && (
           <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 border border-purple-200/60 rounded-[32px] shadow-sm">
             <div className="flex items-center justify-between mb-4 px-2">
               <div>
@@ -2616,6 +2712,7 @@ const Home = () => {
               </button>
             </div>
           </section>
+          )}
 
           {/* 👕 DUAL BANNER: FASHION & LIFESTYLE */}
           <section className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
@@ -2732,6 +2829,7 @@ const Home = () => {
           </section>
 
           {/* Daily Deals Block */}
+          {isLocationConfigured(userLocation) && (dealsLoading || dealProducts.length > 0) && (
           <section className="container mx-auto px-4 py-6">
             <div className="rounded-3xl border bg-gradient-to-r from-yellow-50 to-orange-50 p-6 md:p-8">
               <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
@@ -2792,9 +2890,10 @@ const Home = () => {
               </div>
             </div>
           </section>
+          )}
 
           {/* Buy Again (Recently Purchased) */}
-          {loggedInUser && buyAgainProducts.length > 0 && (
+          {loggedInUser && isLocationConfigured(userLocation) && buyAgainProducts.length > 0 && (
             <section className="container mx-auto px-4 py-4 text-left">
               <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
                 🔄 Buy Again (Recently Purchased)
@@ -2806,9 +2905,9 @@ const Home = () => {
                   const { price } = getDisplayPrices(p);
                   return (
                     <div key={p._id} className="border border-slate-100 bg-white rounded-3xl p-4 flex flex-col justify-between hover:shadow-premium-hover shadow-sm transition">
-                      <div>
+                      <div className="cursor-pointer" onClick={() => navigate(`/product/${p._id || (p as any).id}`)}>
                         <div className="h-28 bg-slate-50 rounded-2xl overflow-hidden mb-3">
-                          <img src={img} alt={title} className="w-full h-full object-cover" />
+                          <img src={img} alt={title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                         </div>
                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{p.brand || "ApexBee Seller"}</p>
                         <h4 className="font-extrabold text-navy text-xs mt-1 leading-tight line-clamp-2 min-h-[32px]">{title}</h4>
@@ -2829,6 +2928,7 @@ const Home = () => {
           )}
 
           {/* 7. Nearby Stores (Premium Cards Layout) */}
+          {isLocationConfigured(userLocation) && (shopsLoading || nearbyShops.length > 0) && (
           <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
               <div className="text-left">
@@ -3005,8 +3105,10 @@ const Home = () => {
               );
             })()}
           </section>
+          )}
 
           {/* 8. Nearby Restaurants & Food Outlets (Dynamic Time-of-Day Specials) */}
+          {isLocationConfigured(userLocation) && (restaurantsLoading || nearbyRestaurantsList.length > 0 || nearbyShops.length > 0) && (
           <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
               <div className="text-left">
@@ -3186,6 +3288,7 @@ const Home = () => {
               );
             })()}
           </section>
+          )}
 
           {/* 9. Nearby Services (Featured Services) */}
           {homeServices && homeServices.length > 0 && (
@@ -3370,16 +3473,18 @@ const Home = () => {
           */}
 
           {/* 14. Continue Shopping Banner */}
-          <section className="container mx-auto px-4 py-6 text-left">
-            <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
-              📦 Continue Shopping
-            </h2>
-            <div className="flex gap-4 overflow-x-auto scrollbar-none pb-4 pt-1 scroll-smooth">
-              {continueShoppingProducts.map((p: any) => (
-                <ProductCard key={p._id || p.id} product={p} />
-              ))}
-            </div>
-          </section>
+          {isLocationConfigured(userLocation) && continueShoppingProducts.length > 0 && (
+            <section className="container mx-auto px-4 py-6 text-left">
+              <h2 className="text-lg font-black text-navy mb-4 flex items-center gap-2">
+                📦 Continue Shopping
+              </h2>
+              <div className="flex gap-4 overflow-x-auto scrollbar-none pb-4 pt-1 scroll-smooth">
+                {continueShoppingProducts.map((p: any) => (
+                  <ProductCard key={p._id || p.id} product={p} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* 15. Recently Viewed & Activity tabs */}
           <section className="container mx-auto px-4 py-8 border-t border-slate-100 mt-6 text-left">
@@ -3412,7 +3517,7 @@ const Home = () => {
               ))}
             </div>
 
-            {recentlyViewed.length > 0 ? (
+            {isLocationConfigured(userLocation) && recentlyViewed.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {recentlyViewed.slice(0, 6).map((item) => (
                   <div

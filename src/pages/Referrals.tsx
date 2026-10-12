@@ -3816,9 +3816,46 @@ const Referrals = () => {
           {/* Network Tree Tab Content */}
           <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
             <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
-              <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50">
-                <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
-                <CardDescription className="text-[11px] sm:text-xs text-slate-500">Navigate downline nodes to inspect network volume, user performance and earnings splits.</CardDescription>
+              <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
+                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">
+                    Click any Level 1 node to view Level 2 downlines, and click Level 2 to reveal Level 3 downlines.
+                  </CardDescription>
+                </div>
+                {level1Users.length > 0 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-[11px] h-7 px-2.5 rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-bold"
+                      onClick={() => {
+                        const next: Record<string, boolean> = {};
+                        level1Users.forEach(u1 => {
+                          const k1 = String(u1._id || (u1 as any).id || "");
+                          if (k1) next[`l1_${k1}`] = true;
+                        });
+                        level2Users.forEach(u2 => {
+                          const k2 = String(u2._id || (u2 as any).id || "");
+                          if (k2) next[`l2_${k2}`] = true;
+                        });
+                        setExpandedRows(next);
+                      }}
+                    >
+                      Expand All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-[11px] h-7 px-2.5 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                      onClick={() => setExpandedRows({})}
+                    >
+                      Collapse All
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
                 {isCustomer && (
@@ -3887,15 +3924,23 @@ const Referrals = () => {
                           return p2Id === u1Id || kids2.some(u2 => String(u2._id || (u2 as any).id) === p1Id) || (level1Users.length === 1 && level3Users.length > 0);
                         });
                         const totalDownlinesU1 = kids2.length + kids3UnderU1.length;
-                        // Auto-expanded by default so Level 2 and Level 3 are immediately visible
-                        const isL1Expanded = expandedRows[`l1_${u1._id}`] !== undefined ? !!expandedRows[`l1_${u1._id}`] : true;
+                        // Collapsed by default - opens Level 2 only when clicked
+                        const isL1Expanded = !!expandedRows[`l1_${u1Id}`];
                         const u1Phone = u1.phone || (u1 as any).mobile || "";
                         const u1CleanPhone = u1Phone.replace(/[^0-9]/g, "");
                         return (
-                          <div key={u1._id} className="space-y-2">
+                          <div key={u1._id || u1Id} className="space-y-2">
                             <div
-                              className="bg-white border rounded-xl p-3 sm:p-3.5 flex justify-between items-start sm:items-center hover:shadow-sm transition-all cursor-pointer gap-2"
-                              onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1._id}`]: !isL1Expanded }))}
+                              className="bg-white border rounded-xl p-3 sm:p-3.5 flex justify-between items-start sm:items-center hover:shadow-sm hover:border-indigo-300 transition-all cursor-pointer gap-2 select-none"
+                              onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }))}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }));
+                                }
+                              }}
                             >
                               <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
                                 <span className="text-emerald-600 shrink-0 text-sm mt-0.5">🟢</span>
@@ -3964,7 +4009,16 @@ const Referrals = () => {
                                   <p className="font-extrabold text-navy text-xs sm:text-sm">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
                                   <p className="text-[9.5px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
                                 </div>
-                                <span className="text-slate-400 text-xs">{isL1Expanded ? "▲" : "▼"}</span>
+                                <div className="flex items-center gap-1 text-slate-500 font-semibold text-xs">
+                                  <span className="hidden sm:inline text-[11px] text-slate-400">
+                                    {isL1Expanded ? "Collapse" : "Click to view Level 2"}
+                                  </span>
+                                  {isL1Expanded ? (
+                                    <ChevronUp className="w-4 h-4 text-indigo-600 transition-transform" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-slate-400 transition-transform" />
+                                  )}
+                                </div>
                               </div>
                             </div>
 
@@ -3992,7 +4046,7 @@ const Referrals = () => {
                                       </Badge>
                                     </div>
 
-                                    {/* Level 2 Nodes - Just Name */}
+                                    {/* Level 2 Nodes - Collapsed by default, opens Level 3 only on click */}
                                     {kids2.map((u2) => {
                                       const u2Id = String(u2._id || (u2 as any).id || "");
                                       const kids3 = level3Users.filter(u3 => {
@@ -4005,12 +4059,21 @@ const Referrals = () => {
                                         );
                                         return pId === u2Id || (kids2.length === 1 && level3Users.length > 0);
                                       });
-                                      const isL2Expanded = expandedRows[`l2_${u2._id}`] !== undefined ? !!expandedRows[`l2_${u2._id}`] : true;
+                                      // Collapsed by default - opens Level 3 only when clicked
+                                      const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
                                       return (
-                                        <div key={u2._id} className="space-y-1.5">
+                                        <div key={u2._id || u2Id} className="space-y-1.5">
                                           <div
-                                            className="bg-slate-50 border border-blue-100 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2"
-                                            onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2._id}`]: !isL2Expanded }))}
+                                            className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
+                                            onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
+                                                setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }));
+                                              }
+                                            }}
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span className="text-blue-500 shrink-0 text-xs">🔵</span>
@@ -4018,30 +4081,60 @@ const Referrals = () => {
                                               <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold shrink-0">
                                                 Level 2
                                               </Badge>
+                                              {u2.referralCode && (
+                                                <span className="text-[9.5px] text-slate-400 font-mono hidden sm:inline">
+                                                  ({u2.referralCode})
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                               <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
                                                 👥 Level 3: {kids3.length}
                                               </span>
-                                              <span className="text-slate-400 text-[10px]">{isL2Expanded ? "▲" : "▼"}</span>
+                                              <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                                                <span className="hidden sm:inline text-[10px] text-slate-400">
+                                                  {isL2Expanded ? "Collapse" : "Click to view Level 3"}
+                                                </span>
+                                                {isL2Expanded ? (
+                                                  <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
+                                                ) : (
+                                                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
 
-                                          {/* Level 3 Nodes under this L2 - Just Name */}
-                                          {isL2Expanded && kids3.length > 0 && (
-                                            <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5">
-                                              {kids3.map((u3) => (
-                                                <div key={u3._id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
-                                                  <div className="flex items-center gap-2 text-xs min-w-0">
-                                                    <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
-                                                    <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
-                                                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
-                                                      Level 3
-                                                    </Badge>
+                                          {/* Level 3 Nodes under this L2 */}
+                                          {isL2Expanded && (
+                                            kids3.length > 0 ? (
+                                              <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
+                                                {kids3.map((u3) => (
+                                                  <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
+                                                    <div className="flex items-center gap-2 text-xs min-w-0">
+                                                      <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                                      <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
+                                                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
+                                                        Level 3
+                                                      </Badge>
+                                                      {u3.referralCode && (
+                                                        <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">
+                                                          ({u3.referralCode})
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                    {u3.createdAt && (
+                                                      <span className="text-[9px] text-slate-400">
+                                                        {new Date(u3.createdAt).toLocaleDateString()}
+                                                      </span>
+                                                    )}
                                                   </div>
-                                                </div>
-                                              ))}
-                                            </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 py-1.5 text-[10.5px] text-slate-400 italic">
+                                                No Level 3 downline members under {u2.name} yet.
+                                              </div>
+                                            )
                                           )}
                                         </div>
                                       );
@@ -4065,15 +4158,61 @@ const Referrals = () => {
                             {level2Users.filter(u2 => !level1Users.some(u1 => {
                               const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
                               return pId === String(u1._id || (u1 as any).id);
-                            })).map(u2 => (
-                              <div key={u2._id} className="bg-slate-50 border border-blue-200 rounded-xl p-2.5 sm:p-3 flex items-center gap-2">
-                                <span className="text-blue-500">🔵</span>
-                                <p className="font-bold text-navy text-xs truncate">{u2.name}</p>
-                                <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
-                                  Level 2
-                                </Badge>
-                              </div>
-                            ))}
+                            })).map(u2 => {
+                              const u2Id = String(u2._id || (u2 as any).id || "");
+                              const kids3 = level3Users.filter(u3 => {
+                                const pId = String(
+                                  (u3.referralHierarchy?.level1UserId as any)?._id ||
+                                  u3.referralHierarchy?.level1UserId ||
+                                  (u3.referredBy as any)?._id ||
+                                  u3.referredBy ||
+                                  ""
+                                );
+                                return pId === u2Id;
+                              });
+                              const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
+                              return (
+                                <div key={u2._id || u2Id} className="space-y-1.5">
+                                  <div
+                                    className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
+                                    onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="text-blue-500 shrink-0 text-xs">🔵</span>
+                                      <p className="font-bold text-navy text-xs truncate">{u2.name}</p>
+                                      <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
+                                        Level 2
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                                        👥 Level 3: {kids3.length}
+                                      </span>
+                                      {isL2Expanded ? (
+                                        <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
+                                      ) : (
+                                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isL2Expanded && kids3.length > 0 && (
+                                    <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
+                                      {kids3.map((u3) => (
+                                        <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
+                                          <div className="flex items-center gap-2 text-xs min-w-0">
+                                            <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                            <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
+                                            <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
+                                              Level 3
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

@@ -916,13 +916,13 @@ const Cart = () => {
               <button
                 onClick={handleCheckout}
                 disabled={cartItems.length === 0 || loading}
-                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black text-sm rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="hidden lg:flex w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black text-sm rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer items-center justify-center space-x-2 disabled:opacity-50"
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <div className="text-[11px] text-slate-400 text-center font-medium pt-1">
+              <div className="hidden lg:block text-[11px] text-slate-400 text-center font-medium pt-1">
                 🔒 Encrypted Payments & Instant Refund Assurance
               </div>
             </div>

@@ -30,6 +30,7 @@ import {
   lookupPincode,
   saveActiveLocation,
   extractPincode,
+  isLocationConfigured,
   LocationPayload,
   PlaceSuggestion
 } from "@/utils/locationHelper";
@@ -408,9 +409,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
   const hasExistingLocation = useMemo(() => {
     try {
       const loc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
-      if (!loc) return false;
-      const parsed = JSON.parse(loc);
-      return Boolean(parsed && (parsed.colony || parsed.district || parsed.pincode));
+      return isLocationConfigured(loc);
     } catch {
       return false;
     }
@@ -422,6 +421,8 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
         description: "Please select your location to view stores, products & 15–30 min delivery in your area.",
       });
     }
+    document.body.style.overflow = "unset";
+    document.documentElement.style.overflow = "unset";
     onOpenChange(false);
   };
 

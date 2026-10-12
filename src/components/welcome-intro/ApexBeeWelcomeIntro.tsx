@@ -40,17 +40,11 @@ export const ApexBeeWelcomeIntro: React.FC<ApexBeeWelcomeIntroProps> = ({
   // Audio state
   const [soundEnabled, setSoundEnabled] = useState(enableSound);
 
-  // Focus and Scroll Lock Restoration
+  // Scroll Restoration
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const previousTouchAction = document.body.style.touchAction;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-
     return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.touchAction = previousTouchAction;
+      document.body.style.overflow = "unset";
+      document.body.style.touchAction = "auto";
     };
   }, []);
 

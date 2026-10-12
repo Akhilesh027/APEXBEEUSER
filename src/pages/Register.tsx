@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle, ShoppingBag, Users, Briefcase, Sparkles, AlertCircle } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { isNativePlatform, signInWithNativeGoogle } from "@/utils/googleAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
@@ -122,6 +122,22 @@ const Register = () => {
     navigate("/");
   };
 
+  const loginWithWebGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      if (tokenResponse?.access_token) {
+        await handleGoogleSuccess(tokenResponse.access_token);
+      } else {
+        setError("Google did not return credentials.");
+        setGoogleLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.warn("Google web login error:", err);
+      setError("Google sign-in cancelled or failed.");
+      setGoogleLoading(false);
+    },
+  });
+
   // Google signup (supports customer & business partner)
   const handleGoogleSuccess = async (credential: string | undefined) => {
     if (!credential || !accountType || accountType === "guest") return;
@@ -141,7 +157,7 @@ const Register = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error || "Google signup failed. Please try again.");
+        setError(data?.message || data?.error || "Google signup failed. Please try again.");
         return;
       }
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -165,16 +181,18 @@ const Register = () => {
       const token = await signInWithNativeGoogle();
       if (token) {
         await handleGoogleSuccess(token);
-      } else {
-        setError(
-          "Native Google Sign-In is not configured on this Android build. Please register with email or mobile number, or use the web portal."
-        );
+        return;
       }
+      // If native plugin is not registered on this APK build, seamlessly launch Google OAuth!
+      loginWithWebGoogle();
     } catch (err: any) {
-      console.error("Native Google register error:", err);
-      setError(err?.message || "Google sign-in cancelled or failed.");
-    } finally {
-      setGoogleLoading(false);
+      console.warn("Native Google login attempt failed, falling back to web OAuth:", err);
+      try {
+        loginWithWebGoogle();
+      } catch (fallbackErr: any) {
+        setError(fallbackErr?.message || err?.message || "Google sign-in cancelled or failed.");
+        setGoogleLoading(false);
+      }
     }
   };
 

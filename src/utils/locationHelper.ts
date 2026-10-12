@@ -350,3 +350,50 @@ export function saveActiveLocation(payload: LocationPayload) {
   window.dispatchEvent(new Event("storage"));
   window.dispatchEvent(new Event("user_location_updated"));
 }
+
+/**
+ * Checks if a stored location payload has meaningful location details.
+ */
+export function isLocationConfigured(locObj?: any): boolean {
+  if (!locObj) return false;
+  let parsed = locObj;
+  if (typeof locObj === "string") {
+    try {
+      parsed = JSON.parse(locObj);
+    } catch {
+      return false;
+    }
+  }
+  if (!parsed || typeof parsed !== "object") return false;
+  const colony = (parsed.colony || "").trim();
+  const pincode = (parsed.pincode || "").trim();
+  const district = (parsed.district || "").trim();
+  const mandal = (parsed.mandal || "").trim();
+  const lat = parsed.lat;
+  const lng = parsed.lng;
+
+  if (colony && colony !== "Your Area" && colony !== "Unknown area" && colony !== "Current Area") return true;
+  if (pincode && /^[1-9][0-9]{5}$/.test(pincode)) return true;
+  if (district || mandal) return true;
+  if (lat && lng && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) return true;
+
+  return false;
+}
+
+/**
+ * Retrieves the currently active saved location object, or returns null if unselected.
+ */
+export function getActiveLocation(): LocationPayload | null {
+  if (typeof window === "undefined") return null;
+  const raw =
+    localStorage.getItem("user_location") ||
+    localStorage.getItem("userLocation") ||
+    localStorage.getItem("apexbee_user_location");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return isLocationConfigured(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}

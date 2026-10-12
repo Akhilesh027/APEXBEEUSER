@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ShieldCheck, Mail, Store, Users, BookOpen, Gift, TrendingUp, Award, Lock, CreditCard, CheckCircle } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { isNativePlatform, signInWithNativeGoogle } from "@/utils/googleAuth";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -148,6 +148,22 @@ const Login = () => {
     }
   };
 
+  const loginWithWebGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      if (tokenResponse?.access_token) {
+        await handleGoogleSuccess(tokenResponse.access_token);
+      } else {
+        setError("Google login did not return a valid token.");
+        setGoogleLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.warn("Google web login error:", err);
+      setError("Google sign-in cancelled or failed.");
+      setGoogleLoading(false);
+    },
+  });
+
   const handleGoogleSuccess = async (credential: string) => {
     setError("");
     setGoogleLoading(true);
@@ -159,7 +175,7 @@ const Login = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error || "Google login failed.");
+        setError(data?.message || data?.error || "Google login failed.");
         return;
       }
       saveSession(data);
@@ -181,16 +197,18 @@ const Login = () => {
       const token = await signInWithNativeGoogle();
       if (token) {
         await handleGoogleSuccess(token);
-      } else {
-        setError(
-          "Native Google Sign-In is not configured on this Android build. Please sign in with email and password, or use the web portal."
-        );
+        return;
       }
+      // If native plugin is not registered on this APK build, seamlessly launch Google OAuth!
+      loginWithWebGoogle();
     } catch (err: any) {
-      console.error("Native Google login error:", err);
-      setError(err?.message || "Google sign-in cancelled or failed.");
-    } finally {
-      setGoogleLoading(false);
+      console.warn("Native Google login attempt failed, falling back to web OAuth:", err);
+      try {
+        loginWithWebGoogle();
+      } catch (fallbackErr: any) {
+        setError(fallbackErr?.message || err?.message || "Google sign-in cancelled or failed.");
+        setGoogleLoading(false);
+      }
     }
   };
 

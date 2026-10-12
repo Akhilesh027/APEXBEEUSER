@@ -42,6 +42,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 const logo = "/logo.png";
 import FormModal from "./FormModal.tsx";
 import LocationModal from "./LocationModal";
+import { isLocationConfigured, getActiveLocation } from "@/utils/locationHelper";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 const TOKEN_KEY = "token";
@@ -151,15 +152,11 @@ const Navbar = () => {
   useEffect(() => {
     const loadSavedLoc = () => {
       try {
-        const stored =
-          localStorage.getItem("user_location") ||
-          localStorage.getItem("userLocation") ||
-          localStorage.getItem("apexbee_user_location");
-        if (stored) {
-          setUserLocation(JSON.parse(stored));
-        }
+        const active = getActiveLocation();
+        setUserLocation(active);
       } catch (e) {
         console.warn("Error parsing stored location", e);
+        setUserLocation(null);
       }
     };
     loadSavedLoc();
@@ -168,6 +165,17 @@ const Navbar = () => {
     return () => {
       window.removeEventListener("storage", loadSavedLoc);
       window.removeEventListener("user_location_updated", loadSavedLoc);
+    };
+  }, []);
+
+  // 🔔 Dedicated persistent listener for open_location_modal event
+  useEffect(() => {
+    const handleOpenLocModal = () => {
+      setOpenLocationModal(true);
+    };
+    window.addEventListener("open_location_modal", handleOpenLocModal);
+    return () => {
+      window.removeEventListener("open_location_modal", handleOpenLocModal);
     };
   }, []);
 
@@ -490,22 +498,16 @@ const Navbar = () => {
     fetchCategories();
 
     // Load initial location
-    const savedLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
-    if (savedLoc) {
-      try {
-        setUserLocation(JSON.parse(savedLoc));
-      } catch {
-        localStorage.removeItem("user_location");
-        localStorage.removeItem("userLocation");
-        localStorage.removeItem("apexbee_user_location");
-        setUserLocation(null);
-      }
+    const activeLoc = getActiveLocation();
+    let initialLocTimer: any = null;
+    if (activeLoc) {
+      setUserLocation(activeLoc);
     } else {
-      // Auto-prompt user if no location is saved in user portal
-      const timer = setTimeout(() => {
+      setUserLocation(null);
+      // Auto-prompt user to select delivery location when opening app without saved location
+      initialLocTimer = setTimeout(() => {
         setOpenLocationModal(true);
-      }, 700);
-      return () => clearTimeout(timer);
+      }, 300);
     }
 
     // Load wishlist count from real API
@@ -545,8 +547,7 @@ const Navbar = () => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === USER_KEY || e.key === TOKEN_KEY) fetchUserData();
       if (e.key === "user_location" || e.key === "userLocation" || e.key === "apexbee_user_location") {
-        const nextLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
-        setUserLocation(nextLoc ? JSON.parse(nextLoc) : null);
+        setUserLocation(getActiveLocation());
       }
       if (e.key === "wishlist_updated" || e.key === "local_wishlist" || e.key === "local_cart" || e.key === "cart_updated") {
         fetchWishlistCount();
@@ -554,31 +555,20 @@ const Navbar = () => {
       }
     };
 
-    const handleOpenLocModal = () => setOpenLocationModal(true);
     const handleNotificationEvent = () => {
       fetchUserData();
     };
     const handleUserLocationUpdated = () => {
-      const nextLoc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
-      if (nextLoc) {
-        try {
-          setUserLocation(JSON.parse(nextLoc));
-        } catch {
-          setUserLocation(null);
-        }
-      } else {
-        setUserLocation(null);
-      }
+      setUserLocation(getActiveLocation());
     };
 
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("open_location_modal", handleOpenLocModal);
     window.addEventListener("user_location_updated", handleUserLocationUpdated);
     window.addEventListener("refresh_notifications", handleNotificationEvent);
     window.addEventListener("notification_received", handleNotificationEvent);
     return () => {
+      if (initialLocTimer) clearTimeout(initialLocTimer);
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("open_location_modal", handleOpenLocModal);
       window.removeEventListener("user_location_updated", handleUserLocationUpdated);
       window.removeEventListener("refresh_notifications", handleNotificationEvent);
       window.removeEventListener("notification_received", handleNotificationEvent);
