@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Package, Lock, Gift, Home, Briefcase, CreditCard, User, Star } from "lucide-react";
+import { Package, Lock, Gift, Home, Briefcase, CreditCard, User, Star, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -195,6 +195,18 @@ const Account = () => {
               <div>
                 <h3 className="font-extrabold text-navy text-base">Payment options</h3>
                 <p className="text-xs text-gray-500 mt-0.5 leading-normal">Contact our customer service via phone or chat</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-150 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left" onClick={() => navigate("/delete-account")}>
+            <div className="flex items-center gap-4">
+              <div className="bg-red-50 p-3.5 rounded-xl shrink-0">
+                <UserX className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-navy text-base">Account Deletion & Data Privacy</h3>
+                <p className="text-xs text-gray-500 mt-0.5 leading-normal">Request account deactivation or permanent deletion</p>
               </div>
             </div>
           </div>

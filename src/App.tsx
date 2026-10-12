@@ -40,6 +40,7 @@ import PressMedia from "./pages/PressMedia";
 import Blog from "./pages/Blog";
 import HelpCenter from "./pages/HelpCenter";
 import Legal from "./pages/Legal";
+import DeleteAccount from "./pages/DeleteAccount";
 import TrackOrder from "./pages/TrackOrder";
 import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
@@ -175,6 +176,8 @@ const App = () => (
           <Route path="/cancellation-policy" element={<Legal />} />
           <Route path="/franchise-policy" element={<Legal />} />
           <Route path="/vendor-policy" element={<Legal />} />
+          <Route path="/delete-account" element={<DeleteAccount />} />
+          <Route path="/account-deletion" element={<DeleteAccount />} />
 
           {/* ===== Public Payment Link Route ===== */}
           <Route path="/pay/:token" element={<PublicPayInvoice />} />

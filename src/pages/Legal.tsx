@@ -25,7 +25,9 @@ import {
   Scale,
   Percent,
   Layers,
-  AlertTriangle
+  AlertTriangle,
+  Trash2,
+  ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -134,6 +136,23 @@ export const Legal: React.FC = () => {
               <p className="text-muted-foreground text-[11px] leading-relaxed">
                 ApexBee strictly operates as a product sales platform. No fees for registration. Zero payouts for recruitment. Full compliance with Indian Direct Selling and Consumer Protection Laws.
               </p>
+            </div>
+
+            {/* Account & Data Deletion Link */}
+            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 space-y-2 text-xs">
+              <div className="flex items-center gap-2 font-bold text-red-600 dark:text-red-400">
+                <Trash2 className="w-4 h-4" /> Account & Data Deletion
+              </div>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                Want to delete your account or exercise your right to erasure? Submit an online request or email our support desk.
+              </p>
+              <Link
+                to="/delete-account"
+                className="inline-flex items-center gap-1 font-bold text-red-600 dark:text-red-400 hover:underline pt-0.5 text-[11px]"
+              >
+                <span>Request Account Deletion</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
           </div>
 

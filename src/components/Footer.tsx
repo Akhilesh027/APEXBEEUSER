@@ -202,6 +202,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/cancellation-policy" className="hover:text-amber-400 transition">Cancellation Policy</Link></li>
               <li><Link to="/franchise-policy" className="hover:text-amber-400 transition">Franchise Partner Policy</Link></li>
               <li><Link to="/vendor-policy" className="hover:text-amber-400 transition">Vendor Code of Conduct</Link></li>
+              <li><Link to="/delete-account" className="hover:text-amber-400 transition text-stone-300 font-medium">Request Account Deletion</Link></li>
             </ul>
           </div>
 
