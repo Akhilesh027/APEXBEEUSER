@@ -15,10 +15,22 @@ const config: CapacitorConfig = {
       '*.apexbee.in',
       'api.bigdatacloud.net',
       'nominatim.openstreetmap.org',
-      'api.postalpincode.in'
+      'api.postalpincode.in',
+      'accounts.google.com',
+      '*.google.com',
+      '*.googleapis.com'
     ]
   },
   plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '185984914727-6aif53v76n329lp8a1dbu15nu0hcrf6k.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
+    },
+    GoogleSignIn: {
+      clientId: '185984914727-6aif53v76n329lp8a1dbu15nu0hcrf6k.apps.googleusercontent.com',
+      serverClientId: '185984914727-6aif53v76n329lp8a1dbu15nu0hcrf6k.apps.googleusercontent.com',
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#0A1128',

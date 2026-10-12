@@ -338,22 +338,6 @@ const Community = () => {
                 Connect with verified local buyers & merchants, share product reviews, discover community deals, or get instant customer support.
               </p>
             </div>
-
-            {/* Quick Community Stats */}
-            <div className="grid grid-cols-3 gap-3 shrink-0">
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Members</p>
-                <p className="text-xl sm:text-2xl font-black text-amber-400">12.4K+</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Posts</p>
-                <p className="text-xl sm:text-2xl font-black text-emerald-400">3.8K+</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 text-center min-w-[95px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Merchants</p>
-                <p className="text-xl sm:text-2xl font-black text-sky-400">950+</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

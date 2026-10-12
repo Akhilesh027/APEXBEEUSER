@@ -49,6 +49,14 @@ public class MainActivity extends BridgeActivity {
                 settings.setDatabaseEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setSupportMultipleWindows(true);
+
+                // Strip '; wv' to allow Google OAuth within Android WebView
+                String currentUserAgent = settings.getUserAgentString();
+                if (currentUserAgent != null) {
+                    settings.setUserAgentString(
+                        currentUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
+                    );
+                }
             }
         } catch (Exception ignored) {
         }

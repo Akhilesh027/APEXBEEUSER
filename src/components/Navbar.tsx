@@ -1042,6 +1042,27 @@ const Navbar = () => {
 
   return (
     <nav className="bg-[#0A1128] text-white sticky top-0 z-[60] shadow-md shrink-0 w-full max-w-full font-sans pt-[env(safe-area-inset-top,0px)]">
+      {/* ⚠️ Top Alert Banner if Delivery Location is NOT Selected */}
+      {!userLocation && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 text-slate-950 px-3 sm:px-4 py-1.5 text-xs font-bold flex items-center justify-between shadow-md border-b border-amber-600/30">
+          <div className="flex items-center gap-2 min-w-0 truncate">
+            <span className="p-1 rounded-full bg-slate-950 text-amber-400 text-[10px] shrink-0 font-black">
+              📍
+            </span>
+            <span className="truncate text-[11px] sm:text-xs">
+              <strong className="font-black text-slate-950">Location Required:</strong> Set your location for 15–30 min delivery, nearby stores & live prices.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpenLocationModal(true)}
+            className="ml-2 shrink-0 bg-slate-950 text-amber-400 hover:bg-slate-900 text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-lg transition-transform active:scale-95 shadow-sm border border-amber-400/40 cursor-pointer whitespace-nowrap"
+          >
+            Set Location
+          </button>
+        </div>
+      )}
+
       {/* ========================================================
           📱 MOBILE TOP BAR (Row 1 on Mobile: Logo + Location + Icons)
           ======================================================== */}
@@ -1049,8 +1070,31 @@ const Navbar = () => {
         <div className="px-3 sm:px-4 flex items-center justify-between h-14 gap-2">
           {/* Brand Logo */}
           <Link to="/" className="shrink-0 flex items-center" onClick={closeAllPopovers}>
-            <img src={logo} alt="ApexBee" className="w-28 sm:w-32 h-auto object-contain" />
+            <img src={logo} alt="ApexBee" className="w-24 sm:w-28 h-auto object-contain" />
           </Link>
+
+          {/* Location Trigger Pill (Mobile) */}
+          <button
+            type="button"
+            onClick={() => setOpenLocationModal(true)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-left transition-all border cursor-pointer max-w-[155px] sm:max-w-[200px] truncate ${
+              userLocation
+                ? "bg-white/10 hover:bg-white/15 border-white/20 text-white"
+                : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/90 text-amber-300 animate-pulse shadow-xs"
+            }`}
+            title="Delivery Location"
+          >
+            <MapPin className={`h-3.5 w-3.5 shrink-0 ${userLocation ? "text-amber-400" : "text-amber-300"}`} />
+            <div className="min-w-0 flex-1 leading-none text-left">
+              <span className="block text-[8px] uppercase tracking-wider font-extrabold text-slate-300">
+                {userLocation ? "Deliver to" : "Location"}
+              </span>
+              <span className="block text-[10.5px] font-black truncate text-amber-200">
+                {userLocation ? locationLabel : "Select Area *"}
+              </span>
+            </div>
+            <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />
+          </button>
 
           {/* Right Action Cluster */}
           <div className="flex items-center space-x-1.5 sm:space-x-2">
@@ -1097,7 +1141,8 @@ const Navbar = () => {
       {/* ========================================================
           📱 MOBILE SEARCH BAR & HORIZONTAL CATEGORY ACTION STRIP (Row 2)
           ======================================================== */}
-      <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full overflow-hidden">
+      {location.pathname !== "/checkout" && (
+        <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full overflow-hidden">
         {/* Mobile Search Input */}
         <div className="relative" ref={searchRef}>
           <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
@@ -1292,6 +1337,7 @@ const Navbar = () => {
           </Link>
         </div>
       </div>
+      )}
 
       {/* ========================================================
           💻 DESKTOP TOP HEADER (Row 1 for Desktop >= lg)
@@ -1412,6 +1458,29 @@ const Navbar = () => {
           </Button>
           {categoryDropdown}
         </div>
+
+        {/* Desktop Location Selector */}
+        <button
+          type="button"
+          onClick={() => setOpenLocationModal(true)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all border shrink-0 cursor-pointer ${
+            userLocation
+              ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+              : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400 text-amber-300 shadow-sm animate-pulse"
+          }`}
+          title="Select Delivery Location"
+        >
+          <MapPin className={`h-4 w-4 shrink-0 ${userLocation ? "text-amber-400" : "text-amber-300"}`} />
+          <div className="leading-tight text-left">
+            <span className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-300">
+              Deliver to
+            </span>
+            <span className="block text-xs font-black truncate max-w-[170px] text-amber-200">
+              {userLocation ? locationLabel : "Select Location (Required)"}
+            </span>
+          </div>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-75" />
+        </button>
 
         {/* Desktop Search Bar */}
         <div className="flex-1 relative max-w-2xl" ref={searchRef}>

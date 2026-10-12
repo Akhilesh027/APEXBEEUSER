@@ -13,8 +13,13 @@ import {
   ChevronRight,
   Sparkles,
   Building2,
-  Map
+  Map,
+  AlertTriangle,
+  Zap,
+  Store,
+  Clock
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Input } from "./ui/input";
@@ -400,11 +405,29 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
     setSavedLocations(updated);
   };
 
-  const close = () => onOpenChange(false);
+  const hasExistingLocation = useMemo(() => {
+    try {
+      const loc = localStorage.getItem("user_location") || localStorage.getItem("userLocation") || localStorage.getItem("apexbee_user_location");
+      if (!loc) return false;
+      const parsed = JSON.parse(loc);
+      return Boolean(parsed && (parsed.colony || parsed.district || parsed.pincode));
+    } catch {
+      return false;
+    }
+  }, [open]);
+
+  const close = () => {
+    if (!hasExistingLocation) {
+      toast.warning("📍 Delivery Location Required", {
+        description: "Please select your location to view stores, products & 15–30 min delivery in your area.",
+      });
+    }
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] bg-white dark:bg-stone-900 border border-slate-100 dark:border-stone-800 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[85vh] sm:max-h-[90vh] bg-white dark:bg-stone-900 border border-slate-100 dark:border-stone-800 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col z-[100] [&>button]:hidden">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-navy via-slate-900 to-navy text-white px-4 sm:px-6 py-4 sm:py-5 relative shrink-0">
           <button
@@ -419,7 +442,14 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
               <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black tracking-tight">Select Delivery Location</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black tracking-tight">Select Delivery Location</h3>
+                {!hasExistingLocation && (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                    Required
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] sm:text-xs text-slate-300">Fast & precise 15–30 min hyperlocal delivery</p>
             </div>
           </div>
@@ -446,6 +476,46 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
         <div className="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto flex-1">
           {activeTab === "detect" ? (
             <div className="space-y-3.5 sm:space-y-4">
+              {/* Importance Explanation Banner */}
+              <div className="rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-500/5 border-2 border-amber-400/50 p-3 sm:p-3.5 text-left space-y-2 shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-1.5 rounded-xl bg-amber-500 text-slate-950 shrink-0 mt-0.5 shadow-sm">
+                    <AlertTriangle className="h-4 w-4 text-slate-950" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs sm:text-[13px] font-black text-navy dark:text-amber-300 flex items-center gap-1.5">
+                        <span>Why Setting Location is Important</span>
+                      </h4>
+                      <span className="text-[9px] bg-amber-500/20 text-amber-900 dark:text-amber-200 font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                        Essential
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                      ApexBee delivers directly from nearby stores to your doorstep. Setting your location is required to unlock:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+                  <div className="bg-white/90 dark:bg-stone-800/90 p-2 rounded-xl border border-amber-200/70 dark:border-amber-500/20 text-center shadow-xs">
+                    <p className="text-sm mb-0.5">⚡</p>
+                    <p className="text-[10px] font-black text-navy dark:text-white leading-tight">15–30 Min</p>
+                    <p className="text-[8.5px] text-muted-foreground">Doorstep Delivery</p>
+                  </div>
+                  <div className="bg-white/90 dark:bg-stone-800/90 p-2 rounded-xl border border-amber-200/70 dark:border-amber-500/20 text-center shadow-xs">
+                    <p className="text-sm mb-0.5">🏪</p>
+                    <p className="text-[10px] font-black text-navy dark:text-white leading-tight">Nearby Stores</p>
+                    <p className="text-[8.5px] text-muted-foreground">Live Inventory</p>
+                  </div>
+                  <div className="bg-white/90 dark:bg-stone-800/90 p-2 rounded-xl border border-amber-200/70 dark:border-amber-500/20 text-center shadow-xs">
+                    <p className="text-sm mb-0.5">🏷️</p>
+                    <p className="text-[10px] font-black text-navy dark:text-white leading-tight">Local Pricing</p>
+                    <p className="text-[8.5px] text-muted-foreground">Accurate Rates</p>
+                  </div>
+                </div>
+              </div>
+
               {/* 1. Live GPS Detection Quick Banner */}
               <button
                 type="button"

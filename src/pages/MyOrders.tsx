@@ -1023,77 +1023,79 @@ const MyOrders = () => {
 
   // ── Main Render ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full max-w-full overflow-x-hidden">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-32 sm:pb-36 max-w-full">
         {/* ── Top Header & Summary Stats Strip ── */}
-        <div className="bg-gradient-to-r from-[#0A1128] via-[#101F42] to-[#0A1128] text-white rounded-3xl p-6 sm:p-8 mb-6 shadow-xl relative overflow-hidden font-sans">
+        <div className="bg-gradient-to-r from-[#0A1128] via-[#101F42] to-[#0A1128] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 mb-5 sm:mb-6 shadow-xl relative overflow-hidden font-sans">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-amber-400/5 blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-amber-400 mb-3 border border-white/10">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-amber-400 mb-2.5 sm:mb-3 border border-white/10">
                 <Package className="w-3.5 h-3.5" /> Order History & Live Tracking
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">My Orders & Subscriptions</h1>
+              <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white">My Orders & Subscriptions</h1>
               <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
                 Track your active shipments, download invoices, request returns, or manage recurring schedules.
               </p>
             </div>
 
             {/* Quick Stat Counter Cards */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 shrink-0">
-              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center min-w-[90px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Total</p>
-                <p className="text-xl sm:text-2xl font-black text-amber-400">{orders.length}</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto shrink-0">
+              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-wider">Total</p>
+                <p className="text-lg sm:text-2xl font-black text-amber-400">{orders.length}</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center min-w-[90px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Active</p>
-                <p className="text-xl sm:text-2xl font-black text-emerald-400">{tabCounts.active}</p>
+              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-wider">Active</p>
+                <p className="text-lg sm:text-2xl font-black text-emerald-400">{tabCounts.active}</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center min-w-[90px]">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Delivered</p>
-                <p className="text-xl sm:text-2xl font-black text-sky-400">{tabCounts.delivered}</p>
+              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-wider">Delivered</p>
+                <p className="text-lg sm:text-2xl font-black text-sky-400">{tabCounts.delivered}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* ── View Mode Selector (Orders vs Subscriptions) ── */}
-        <div className="flex gap-2 sm:gap-3 mb-6 p-1.5 bg-slate-100/90 rounded-2xl w-fit">
-          <button
-            onClick={() => setViewMode("orders")}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "orders"
-              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-              : "bg-transparent text-slate-600 hover:text-slate-900"
-              }`}
-          >
-            <Package className="w-4 h-4" /> Standard Orders ({orders.length})
-          </button>
-          <button
-            onClick={() => setViewMode("schedules")}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "schedules"
-              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-              : "bg-transparent text-slate-600 hover:text-slate-900"
-              }`}
-          >
-            <Calendar className="w-4 h-4" /> Subscription Schedules ({subscriptions.length})
-          </button>
-          <button
-            onClick={() => setViewMode("tables")}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === "tables"
-              ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
-              : "bg-transparent text-slate-600 hover:text-slate-900"
-              }`}
-          >
-            <Utensils className="w-4 h-4" /> Reserved Tables ({tableBookings.length})
-          </button>
+        <div className="w-full max-w-full overflow-x-auto scrollbar-none mb-5 -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div className="inline-flex gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 bg-slate-100/90 rounded-2xl min-w-max">
+            <button
+              onClick={() => setViewMode("orders")}
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "orders"
+                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
+                }`}
+            >
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Standard Orders ({orders.length})
+            </button>
+            <button
+              onClick={() => setViewMode("schedules")}
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "schedules"
+                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
+                }`}
+            >
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Subscription Schedules ({subscriptions.length})
+            </button>
+            <button
+              onClick={() => setViewMode("tables")}
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "tables"
+                ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
+                }`}
+            >
+              <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Reserved Tables ({tableBookings.length})
+            </button>
+          </div>
         </div>
 
         {viewMode === "orders" && (
           <>
             {/* ── Status Filter Tabs ── */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none border-b border-slate-200">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-5 sm:mb-6 scrollbar-none border-b border-slate-200 w-full max-w-full">
               {STATUS_TABS.map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (

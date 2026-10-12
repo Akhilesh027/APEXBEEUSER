@@ -40,7 +40,9 @@ import {
   Store,
   ShieldCheck,
   CheckCircle2,
-  Lock
+  Lock,
+  ArrowDownLeft,
+  ArrowUpRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2046,13 +2048,13 @@ const Referrals = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] w-full max-w-full overflow-x-hidden">
       <Navbar />
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-32 sm:pb-36 max-w-7xl w-full min-w-0">
         {/* Top Rank Achievement / Guest Welcome Banner */}
         {isGuest ? (
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-xs">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-xs w-full min-w-0">
             <div className="flex items-center gap-3">
               <span className="text-2xl sm:text-3xl shrink-0">👋</span>
               <div className="text-left">
@@ -2070,11 +2072,11 @@ const Referrals = () => {
             </a>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-sm">
-            <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-sm w-full min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
               <span className="text-2xl sm:text-3xl shrink-0">{isBusinessPartner ? "👑" : "🎯"}</span>
-              <div className="text-left">
-                <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm">
+              <div className="text-left min-w-0">
+                <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm truncate">
                   {isBusinessPartner ? `Business Partner: ${currentRank.rank}` : `Customer Milestone: Level 1 Starter`}
                 </h4>
                 <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
@@ -2087,7 +2089,7 @@ const Referrals = () => {
             {isCustomer ? (
               <Button
                 onClick={() => setShowUpgradeModal(true)}
-                className="bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer w-full sm:w-auto justify-center"
               >
                 <Sparkles className="h-3.5 w-3.5 text-amber-200" />
                 Upgrade Partner (Free)
@@ -2102,7 +2104,7 @@ const Referrals = () => {
         )}
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-navy rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-xl border border-indigo-900">
+        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-navy rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-xl border border-indigo-900 w-full max-w-full min-w-0">
           <div className="absolute right-0 top-0 opacity-10 pointer-events-none translate-x-12 -translate-y-12">
             <Network className="h-72 sm:h-96 w-72 sm:w-96" />
           </div>
@@ -2251,8 +2253,8 @@ const Referrals = () => {
             </div>
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full">
-            <div className="w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full max-w-full min-w-0">
+            <div className="w-full max-w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
               <TabsList
                 className={`bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid ${
                   isBusinessPartner ? "lg:grid-cols-7" : "lg:grid-cols-6"
@@ -2286,15 +2288,15 @@ const Referrals = () => {
             </div>
 
             {/* Overview Tab Content */}
-            <TabsContent value="overview" className="space-y-4 sm:space-y-6 text-left">
+            <TabsContent value="overview" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
               {/* Free Upgrade Banner for Customer */}
               {isCustomer && (
-                <div className="bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 border border-indigo-700/60 rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
-                  <div className="flex items-center gap-3.5">
+                <div className="bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 border border-indigo-700/60 rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg w-full min-w-0">
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <div className="w-12 h-12 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-2xl shrink-0">
                       👑
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm sm:text-base font-black text-amber-300">Upgrade to Business Partner (100% Free)</h3>
                         <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[9px] font-black uppercase">Instant</Badge>
@@ -2313,12 +2315,12 @@ const Referrals = () => {
                 </div>
               )}
             {/* Gamified Milestone Progress Indicator */}
-            <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
+            <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
+              <CardContent className="p-4 sm:p-6 w-full max-w-full min-w-0">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     <span className="text-xl sm:text-2xl p-2 sm:p-2.5 bg-purple-50 rounded-xl shrink-0">🏅</span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <p className="font-extrabold text-navy text-xs sm:text-sm">Rank Milestone Status: {currentRank.rank}</p>
                         <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] sm:text-[10px] font-black">
@@ -2328,7 +2330,7 @@ const Referrals = () => {
                       <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 w-full md:w-auto">
                     {[
                       { name: "🌱 Starter", level: 1 },
                       { name: "🥉 Bronze", level: 2 },
@@ -2373,9 +2375,9 @@ const Referrals = () => {
 
                 {/* How to reach next step guide */}
                 <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 sm:p-3.5 text-xs text-indigo-950">
-                  <div className="flex items-start sm:items-center gap-2 sm:gap-2.5">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                     <span className="text-lg sm:text-xl shrink-0 mt-0.5 sm:mt-0">🚀</span>
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-extrabold text-xs text-indigo-950">
                         How to Unlock {currentRank.targetGoal}:
                       </p>
@@ -2396,7 +2398,7 @@ const Referrals = () => {
             </Card>
 
             {/* Quick Actions Panel */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-4 w-full max-w-full min-w-0">
               <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm border-none active:scale-95 transition" onClick={shareReferral}>
                 <span className="text-base sm:text-lg">💬</span> Share WhatsApp
               </Button>
@@ -2415,11 +2417,11 @@ const Referrals = () => {
             </div>
 
             {/* Double Column Overview Widgets */}
-            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full min-w-0">
               {/* Left Column: Funnel & Comps */}
-              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
                 {/* Referral Health Funnel Card */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl">
+                <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
                   <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
                     <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Conversion Funnel</CardTitle>
                     <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and identify drop points in your referred downline network.</CardDescription>
@@ -2455,57 +2457,186 @@ const Referrals = () => {
                 </Card>
 
                 {/* Detailed Roster Table (Real Data) */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
                   <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100">
                     <CardTitle className="text-sm sm:text-base font-extrabold text-navy">📋 Recent Invites Status</CardTitle>
                     <CardDescription className="text-[11px] sm:text-xs text-slate-500">List of downlines registered in your network.</CardDescription>
                   </CardHeader>
-                  <CardContent className="p-0">
+                  <CardContent className="p-0 w-full max-w-full min-w-0">
                     {allReferredUsers.length === 0 ? (
                       <div className="p-8 text-center text-slate-400 text-xs">
                         No invites placed yet. Share your code to get started.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto scrollbar-none">
-                        <table className="w-full text-xs text-left min-w-[500px]">
-                          <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                            <tr>
-                              <th className="p-3">User</th>
-                              <th className="p-3">Network Level</th>
-                              <th className="p-3 text-center">Status</th>
-                              <th className="p-3 text-right">Commissions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {allReferredUsers.slice(0, 5).map((u) => (
-                              <tr key={u._id} className="hover:bg-slate-50/50 transition-all">
-                                <td className="p-3">
-                                  <p className="font-bold text-navy text-xs">{u.name}</p>
-                                  <p className="text-[10px] text-slate-400 mt-0.5">{u.email}</p>
-                                </td>
-                                <td className="p-3">
-                                  <Badge variant="outline" className={`text-[9px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                      <>
+                        {/* 📱 MOBILE VIEW: Roster Invites as Cards (No horizontal scroll) */}
+                        <div className="md:hidden p-3 space-y-2.5">
+                          {allReferredUsers.slice(0, 5).map((u) => (
+                            <div key={u._id} className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center gap-2">
+                              <div className="min-w-0">
+                                <p className="font-bold text-navy text-xs truncate">{u.name}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <Badge variant="outline" className={`text-[8.5px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
                                     Level {u.levelNum}
                                   </Badge>
-                                </td>
-                                <td className="p-3 text-center">
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
-                                    {isUserQualified(u) ? "Active member" : "KYC pending"}
+                                  <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
+                                    {isUserQualified(u) ? "Active" : "KYC pending"}
                                   </span>
-                                </td>
-                                <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-xs font-black text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* 💻 DESKTOP VIEW: Table (Untouched) */}
+                        <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
+                          <table className="w-full text-xs text-left min-w-[500px]">
+                            <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                              <tr>
+                                <th className="p-3">User</th>
+                                <th className="p-3">Network Level</th>
+                                <th className="p-3 text-center">Status</th>
+                                <th className="p-3 text-right">Commissions</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {allReferredUsers.slice(0, 5).map((u) => (
+                                <tr key={u._id} className="hover:bg-slate-50/50 transition-all">
+                                  <td className="p-3">
+                                    <p className="font-bold text-navy text-xs">{u.name}</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{u.email}</p>
+                                  </td>
+                                  <td className="p-3">
+                                    <Badge variant="outline" className={`text-[9px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                                      Level {u.levelNum}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
+                                      {isUserQualified(u) ? "Active member" : "KYC pending"}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* 📱 MOBILE VIEW ONLY: Recent Transactions (Like /wallet) */}
+                <Card className="md:hidden border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0 bg-white">
+                  <CardHeader className="p-4 pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-extrabold text-navy flex items-center gap-1.5">
+                        <Wallet className="h-4 w-4 text-amber-500" /> Recent Transactions
+                      </CardTitle>
+                      <CardDescription className="text-[10px] text-slate-500">Latest earnings & commission credits</CardDescription>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("earnings")}
+                      className="text-[11px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl transition border border-amber-200/60"
+                    >
+                      View All →
+                    </button>
+                  </CardHeader>
+                  <CardContent className="p-3 space-y-2.5">
+                    {filteredLedger.length === 0 ? (
+                      <div className="p-6 text-center text-slate-400 text-xs">
+                        No transactions recorded yet.
                       </div>
+                    ) : (
+                      filteredLedger.slice(0, 4).map((row, idx) => {
+                        const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                        const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                        const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+                        const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
+
+                        return (
+                          <div
+                            key={row.id || row.transactionId || idx}
+                            className={`bg-white border rounded-2xl p-3.5 flex flex-col gap-2.5 transition shadow-2xs text-left ${
+                              isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`p-2.5 rounded-2xl shrink-0 ${
+                                  isHold
+                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
+                                }`}
+                              >
+                                {isHold ? (
+                                  <Lock className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDownLeft className="h-4 w-4" />
+                                )}
+                              </div>
+
+                              <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <h4 className="font-black text-slate-900 text-xs leading-snug truncate max-w-[200px]">
+                                    {row.referralName || row.remarks || row.type || "Referral Bonus"}
+                                  </h4>
+                                  {isVendor ? (
+                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                      Vendor
+                                    </Badge>
+                                  ) : isFranchise ? (
+                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                      Franchise
+                                    </Badge>
+                                  ) : isHold ? (
+                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                      Escrow Hold
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                      {row.level || "Referral"}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-mono">
+                                  ID: {row.transactionId || `TXN-${idx + 1}`}
+                                  {orderRef && ` • Ref: ${orderRef}`}
+                                  {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center border-t border-slate-100 pt-2">
+                              <span className={`text-sm font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
+                                +₹{formatINR(row.amount)}
+                              </span>
+                              {isHold ? (
+                                <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                                  HOLD (7-DAY)
+                                </span>
+                              ) : (
+                                <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  {row.status ? row.status.toUpperCase() : "COMPLETED"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
                   </CardContent>
                 </Card>
               </div>
 
               {/* Right Column: AI Suggests, Badges, Timeline */}
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
                 {/* AI suggestion widget */}
                 <Card className="border border-purple-200 bg-purple-50/20 shadow-sm rounded-2xl relative overflow-hidden">
                   <div className="absolute right-0 top-0 translate-x-2 -translate-y-2 opacity-10 pointer-events-none">
@@ -2597,9 +2728,9 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Earnings Tab Content */}
-          <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left">
+          <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
             {/* Executive Account Ledger & Multi-Stream Reconciliation Card */}
-            <Card className="border border-slate-200/90 shadow-md rounded-2xl sm:rounded-3xl bg-white overflow-hidden">
+            <Card className="border border-slate-200/90 shadow-md rounded-2xl sm:rounded-3xl bg-white overflow-hidden w-full max-w-full min-w-0">
               <div className="bg-gradient-to-r from-[#07132B] via-[#0B1E48] to-[#122A63] text-white p-4 sm:p-6 border-b border-white/10">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-3">
@@ -2902,7 +3033,7 @@ const Referrals = () => {
               </CardHeader>
 
               {/* Fast Filter Navigation Tabs */}
-              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
                 <button
                   type="button"
                   onClick={() => setEarningsTypeFilter("all")}
@@ -3032,122 +3163,200 @@ const Referrals = () => {
               </div>
 
               {/* Ledger Table */}
-              <CardContent className="p-0">
+              <CardContent className="p-0 w-full max-w-full min-w-0">
                 {filteredLedger.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
                     No matching transactions found for the selected filter.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto scrollbar-none">
-                    <table className="w-full text-xs text-left min-w-[760px]">
-                      <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                        <tr>
-                          <th className="p-3">Txn & Order ID</th>
-                          <th className="p-3">Date</th>
-                          <th className="p-3">Stream / Role</th>
-                          <th className="p-3">Source & Description</th>
-                          <th className="p-3">Type & Category</th>
-                          <th className="p-3 text-right">Amount (₹)</th>
-                          {/* <th className="p-3 text-right">Running Balance</th> */}
-                          <th className="p-3 text-center">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredLedger.map((row, idx) => {
-                          const isHold = row.status === "hold" || row.type === "Hold Reserve";
-                          const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
-                          const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+                  <>
+                    {/* 📱 MOBILE VIEW: Wallet-style Transaction Cards (Like /wallet) */}
+                    <div className="md:hidden p-3 space-y-3">
+                      {filteredLedger.map((row, idx) => {
+                        const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                        const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                        const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+                        const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
 
-                          return (
-                            <tr key={row.id || idx} className={`transition-all ${isHold ? "bg-amber-50/30 hover:bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
-                              {/* Txn ID */}
-                              <td className="p-3">
-                                <div className="font-mono text-[10px] font-bold text-slate-700">
-                                  {row.transactionId || `TXN-${idx + 1}`}
-                                </div>
-                                <div className="text-[9.5px] text-slate-400 font-mono">
-                                  Ref: {typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "N/A") : (row.orderId || "N/A")}
-                                </div>
-                              </td>
-
-                              {/* Date */}
-                              <td className="p-3 text-slate-500 whitespace-nowrap text-[11px]">
-                                {new Date(row.date).toLocaleDateString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
-                              </td>
-
-                              {/* Stream / Role Channel */}
-                              <td className="p-3">
-                                {isVendor ? (
-                                  <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                    <Store className="h-2.5 w-2.5" /> Vendor Sales
-                                  </Badge>
-                                ) : isFranchise ? (
-                                  <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                    <Building2 className="h-2.5 w-2.5" /> Franchise Hub
-                                  </Badge>
-                                ) : isHold ? (
-                                  <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                    <Lock className="h-2.5 w-2.5" /> Return Escrow
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                    <Users className="h-2.5 w-2.5" /> {row.level || "Referral"}
-                                  </Badge>
-                                )}
-                              </td>
-
-                              {/* Source & Description */}
-                              <td className="p-3">
-                                <div className="font-bold text-navy text-xs">{row.referralName}</div>
-                                {row.remarks && (
-                                  <div className="text-[10px] text-slate-400 truncate max-w-xs">{row.remarks}</div>
-                                )}
-                              </td>
-
-                              {/* Type & Category */}
-                              <td className="p-3">
-                                <span className="font-semibold text-slate-700 text-[11px] block">{row.type}</span>
-                                <span className="text-[9.5px] text-slate-400 block">{row.category}</span>
-                              </td>
-
-                              {/* Amount */}
-                              <td className="p-3 text-right">
-                                <span className={`font-black text-xs sm:text-sm font-sans ${isHold ? "text-amber-600" : "text-emerald-700"}`}>
-                                  +{formatINR(row.amount)}
-                                </span>
-                              </td>
-
-                              {/* Status */}
-                              <td className="p-3 text-center whitespace-nowrap">
+                        return (
+                          <div
+                            key={row.id || row.transactionId || idx}
+                            className={`bg-white border rounded-2xl p-4 flex flex-col gap-3 transition shadow-xs text-left ${
+                              isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200 hover:border-amber-400/40"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Wallet-style Icon */}
+                              <div
+                                className={`p-2.5 rounded-2xl shrink-0 ${
+                                  isHold
+                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
+                                }`}
+                              >
                                 {isHold ? (
-                                  <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
-                                    <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
-                                  </span>
+                                  <Lock className="h-5 w-5" />
                                 ) : (
-                                  <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200">
-                                    {row.status ? row.status.toUpperCase() : "CREDITED"}
-                                  </span>
+                                  <ArrowDownLeft className="h-5 w-5" />
                                 )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                              </div>
+
+                              {/* Title, Badge, Ref */}
+                              <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug">
+                                    {row.referralName || row.remarks || row.type || "Referral Bonus"}
+                                  </h4>
+                                  {isVendor ? (
+                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9px] font-extrabold px-1.5 py-0">
+                                      Vendor Sales
+                                    </Badge>
+                                  ) : isFranchise ? (
+                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9px] font-extrabold px-1.5 py-0">
+                                      Franchise
+                                    </Badge>
+                                  ) : isHold ? (
+                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9px] font-extrabold px-1.5 py-0">
+                                      Escrow Hold
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9px] font-extrabold px-1.5 py-0">
+                                      {row.level || "Referral"}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {row.remarks && row.remarks !== row.referralName && (
+                                  <p className="text-[10.5px] text-slate-500 line-clamp-1">{row.remarks}</p>
+                                )}
+
+                                <p className="text-[10px] text-slate-400 font-mono">
+                                  ID: {row.transactionId || `TXN-${idx + 1}`}
+                                  {orderRef && ` • Ref: ${orderRef}`}
+                                  {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Bottom Row: Amount & Status (Wallet Style) */}
+                            <div className="flex justify-between items-center border-t border-slate-100 pt-2.5">
+                              <span className={`text-base font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
+                                +₹{formatINR(row.amount)}
+                              </span>
+
+                              {isHold ? (
+                                <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
+                                  <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  {row.status ? row.status.toUpperCase() : "COMPLETED"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* 💻 DESKTOP VIEW: Full Horizontal Table (Untouched) */}
+                    <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
+                      <table className="w-full text-xs text-left min-w-[760px]">
+                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                          <tr>
+                            <th className="p-3">Txn & Order ID</th>
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Stream / Role</th>
+                            <th className="p-3">Source & Description</th>
+                            <th className="p-3">Type & Category</th>
+                            <th className="p-3 text-right">Amount (₹)</th>
+                            <th className="p-3 text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredLedger.map((row, idx) => {
+                            const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                            const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                            const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+
+                            return (
+                              <tr key={row.id || idx} className={`transition-all ${isHold ? "bg-amber-50/30 hover:bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
+                                <td className="p-3">
+                                  <div className="font-mono text-[10px] font-bold text-slate-700">
+                                    {row.transactionId || `TXN-${idx + 1}`}
+                                  </div>
+                                  <div className="text-[9.5px] text-slate-400 font-mono">
+                                    Ref: {typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "N/A") : (row.orderId || "N/A")}
+                                  </div>
+                                </td>
+                                <td className="p-3 text-slate-500 whitespace-nowrap text-[11px]">
+                                  {new Date(row.date).toLocaleDateString("en-IN", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </td>
+                                <td className="p-3">
+                                  {isVendor ? (
+                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                      <Store className="h-2.5 w-2.5" /> Vendor Sales
+                                    </Badge>
+                                  ) : isFranchise ? (
+                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                      <Building2 className="h-2.5 w-2.5" /> Franchise Hub
+                                    </Badge>
+                                  ) : isHold ? (
+                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                      <Lock className="h-2.5 w-2.5" /> Return Escrow
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                      <Users className="h-2.5 w-2.5" /> {row.level || "Referral"}
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="p-3">
+                                  <div className="font-bold text-navy text-xs">{row.referralName}</div>
+                                  {row.remarks && (
+                                    <div className="text-[10px] text-slate-400 truncate max-w-xs">{row.remarks}</div>
+                                  )}
+                                </td>
+                                <td className="p-3">
+                                  <span className="font-semibold text-slate-700 text-[11px] block">{row.type}</span>
+                                  <span className="text-[9.5px] text-slate-400 block">{row.category}</span>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <span className={`font-black text-xs sm:text-sm font-sans ${isHold ? "text-amber-600" : "text-emerald-700"}`}>
+                                    +{formatINR(row.amount)}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center whitespace-nowrap">
+                                  {isHold ? (
+                                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
+                                      <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200">
+                                      {row.status ? row.status.toUpperCase() : "CREDITED"}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Roster Directory Tab Content */}
-          <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left">
+          <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
             {/* Top KPI Metric Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4 w-full min-w-0">
               <Card className="border border-slate-200/90 shadow-sm rounded-2xl bg-white">
                 <CardContent className="p-3 sm:p-4">
                   <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Downlines</p>
@@ -3186,7 +3395,7 @@ const Referrals = () => {
               </Card>
             </div>
 
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
               <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <div>
                   <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
@@ -3233,7 +3442,7 @@ const Referrals = () => {
               </CardHeader>
 
               {/* Category Pills Navigation in User-Requested Order: 1) Level 1 - 2) Level 2 - 3) Level 3 - 4) All Downlines - 5) Qualified KYC - 6) Action Pending */}
-              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
                 {/* 1) Level 1 */}
                 <button
                   type="button"
@@ -3343,13 +3552,13 @@ const Referrals = () => {
                 </button>
               </div>
 
-              <CardContent className="p-0">
+              <CardContent className="p-0 w-full max-w-full min-w-0">
                 {sortedRoster.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
                     No downline members found matching current query parameters.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto scrollbar-none">
+                  <div className="overflow-x-auto scrollbar-none w-full max-w-full">
                     <table className="w-full text-xs text-left min-w-[720px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
@@ -3524,19 +3733,19 @@ const Referrals = () => {
 
           {/* Commissions Tab Content (Audit Splits - Business Partner Only) */}
           {isBusinessPartner && (
-            <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
               <CardHeader className="border-b border-slate-100 p-4 sm:p-6 pb-4">
                 <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
                 <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 w-full max-w-full min-w-0">
                 {validCommissions.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs">
                     No commission transactions found in ledger database.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto scrollbar-none">
+                  <div className="overflow-x-auto scrollbar-none w-full max-w-full">
                     <table className="w-full text-xs text-left min-w-[650px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>
@@ -3605,8 +3814,8 @@ const Referrals = () => {
           )}
 
           {/* Network Tree Tab Content */}
-          <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl">
+          <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
               <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50">
                 <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
                 <CardDescription className="text-[11px] sm:text-xs text-slate-500">Navigate downline nodes to inspect network volume, user performance and earnings splits.</CardDescription>
@@ -3876,8 +4085,8 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Analytics Tab Content */}
-          <TabsContent value="analytics" className="space-y-4 sm:space-y-6 text-left">
-            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+          <TabsContent value="analytics" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full min-w-0">
               {/* Earnings Composition Pie */}
               <Card className="border border-slate-200 shadow-sm rounded-2xl">
                 <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
@@ -3957,9 +4166,9 @@ const Referrals = () => {
           </TabsContent>
 
           {/* Withdraw Tab Content */}
-          <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left">
+          <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
             {/* Payout Policy & Eligibility Rules Banner */}
-            <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs w-full min-w-0">
               <div className="flex items-start sm:items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 text-base shrink-0 shadow-xs border border-blue-200">
                   🏦
@@ -4136,17 +4345,17 @@ const Referrals = () => {
             </div>
 
             {/* Withdrawals list */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-4 sm:mt-6">
+            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-4 sm:mt-6 w-full max-w-full min-w-0">
               <CardHeader className="border-b border-slate-100 p-4 pb-3 bg-slate-50/50">
                 <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Withdrawal Audit History</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 w-full max-w-full min-w-0">
                 {withdrawals.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 text-xs">
                     No withdrawals found in database ledger.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto scrollbar-none text-xs">
+                  <div className="overflow-x-auto scrollbar-none text-xs w-full max-w-full">
                     <table className="w-full text-left min-w-[700px]">
                       <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                         <tr>

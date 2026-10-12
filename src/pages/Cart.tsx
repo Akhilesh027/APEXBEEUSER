@@ -956,7 +956,10 @@ const Cart = () => {
         </div>
       )}
 
-      <Footer />
+      {/* Hide footer in mobile view for cart and checkout experience */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
 
       {/* GUEST CHECKOUT / QUICK LOGIN MODAL */}
       <Dialog open={showGuestModal} onOpenChange={setShowGuestModal}>

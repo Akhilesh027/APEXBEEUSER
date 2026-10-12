@@ -1037,18 +1037,38 @@ const Checkout = () => {
   const loadWalletBalance = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
       if (!user || !token) return;
-      const userId = user.id || user._id;
-      if (!userId) return;
+      const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`${API_BASE}/user/wallet/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
+      let bal = 0;
+      // 1. Fetch from /wallet/my-wallet
+      try {
+        const res = await fetch(`${API_BASE}/wallet/my-wallet`, { headers });
+        if (res.ok) {
+          const wData = await res.json();
+          const wObj = wData.wallet || wData.data || wData;
+          bal = Number(wObj.availableBalance ?? wObj.balance ?? wObj.withdrawableBalance ?? 0);
+        }
+      } catch (e) {
+        console.warn("Wallet fetch /wallet/my-wallet err:", e);
+      }
 
-      const data = await res.json();
-      setWalletBalance(data.walletBalance || 0);
+      // 2. Fallback to /referrals/stats if bal is 0
+      if (bal <= 0) {
+        try {
+          const refRes = await fetch(`${API_BASE}/referrals/stats`, { headers });
+          if (refRes.ok) {
+            const refData = await refRes.json();
+            const rObj = refData.stats || refData.data || refData;
+            bal = Number(rObj.availableBalance ?? rObj.walletAvailable ?? rObj.walletBalance ?? 0);
+          }
+        } catch (e) {
+          console.warn("Wallet fetch /referrals/stats err:", e);
+        }
+      }
+
+      setWalletBalance(bal);
     } catch (err) {
       console.error("Wallet fetch error:", err);
     }
@@ -2055,14 +2075,22 @@ const Checkout = () => {
       <Navbar />
 
       {/* BRAND HEADER BANNER */}
-      <div className="bg-[#0A1128] text-white py-8 px-4 sm:px-8 border-b border-amber-500/20 mb-6 w-full max-w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#0A1128] text-white py-3.5 sm:py-8 px-3.5 sm:px-8 border-b border-amber-500/20 mb-3 sm:mb-6 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-extrabold border border-amber-500/30">
-              <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center space-x-1.5 sm:space-x-2 bg-amber-500/20 text-amber-400 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10.5px] sm:text-xs font-extrabold border border-amber-500/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
               <span>APEXBEE SECURE CHECKOUT</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-white font-heading">Complete Your Order</h1>
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              <h1 className="text-xl sm:text-4xl font-black text-white font-heading">Complete Your Order</h1>
+              <span className="sm:hidden text-[11px] font-bold text-amber-300/90 bg-white/10 px-2 py-0.5 rounded-full">
+                Step {mobileStep}/3
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 sm:hidden">
+              {mobileStep === 1 ? "Select delivery address & fulfillment" : mobileStep === 2 ? "Choose delivery speed & driver notes" : "Review total & select payment"}
+            </p>
           </div>
 
           <div className="hidden sm:flex items-center space-x-3 text-xs text-amber-300 font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur">
@@ -2377,48 +2405,67 @@ const Checkout = () => {
                   {addresses.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">No addresses saved yet</p>
                   ) : (
-                    addresses.map((addr) => (
-                      <div
-                        key={addr._id}
-                        className={`border p-3 sm:p-4 rounded-lg cursor-pointer transition-colors ${selectedAddress?._id === addr._id
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                    addresses.map((addr) => {
+                      const isSelected = selectedAddress?._id === addr._id;
+                      return (
+                        <div
+                          key={addr._id}
+                          className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all border-2 text-left relative ${
+                            isSelected
+                              ? "border-amber-500 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
+                              : "border-slate-200 hover:border-slate-300 bg-white"
                           }`}
-                        onClick={() => setSelectedAddress(addr)}
-                      >
-                        <div className="flex justify-between items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm sm:text-base truncate flex items-center flex-wrap gap-2">
-                              <span>{addr.name}</span>
-                              {addr.type && (
-                                <span className="text-[10px] bg-navy/10 text-navy font-bold uppercase tracking-wider px-2 py-0.5 rounded">
-                                  {addr.type}
-                                </span>
-                              )}
-                              {addr.isDefault && (
-                                <span className="text-[10px] bg-accent text-white px-2 py-0.5 rounded">Default</span>
-                              )}
-                            </p>
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {formatAddress(addr)}
-                            </p>
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">{addr.phone}</p>
-                          </div>
+                          onClick={() => setSelectedAddress(addr)}
+                        >
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
+                                  isSelected
+                                    ? "bg-amber-500 border-amber-500 text-slate-950"
+                                    : "border-slate-300 bg-white"
+                                }`}
+                              >
+                                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onOpenEditAddress(addr);
-                            }}
-                            className="flex-shrink-0"
-                          >
-                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </Button>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-extrabold text-sm sm:text-base text-slate-900 truncate flex items-center flex-wrap gap-2">
+                                  <span>{addr.name}</span>
+                                  {addr.type && (
+                                    <span className="text-[9.5px] bg-slate-100 text-slate-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-slate-200">
+                                      {addr.type}
+                                    </span>
+                                  )}
+                                  {addr.isDefault && (
+                                    <span className="text-[9.5px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                                      Default
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                                  {formatAddress(addr)}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1 font-medium">📞 {addr.phone}</p>
+                              </div>
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenEditAddress(addr);
+                              }}
+                              className="h-8 w-8 p-0 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 shrink-0"
+                              title="Edit Address"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -2499,19 +2546,9 @@ const Checkout = () => {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={() => {
-                  if (canProceedToStep2()) {
-                    setMobileStep(2);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
-                }}
-                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-sm flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Continue to Delivery Preferences</span>
-                <span>→</span>
-              </Button>
+              <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3 text-center text-xs text-amber-900 font-medium">
+                <span>📍 Please verify your delivery address above before continuing.</span>
+              </div>
             </div>
 
             {/* Mobile Step 2: Selected Address Summary Pill */}
@@ -2797,32 +2834,9 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Mobile Step 2: Navigation Buttons */}
-            <div className={`${mobileStep === 2 ? "block lg:hidden" : "hidden"} pt-2 flex items-center gap-3`}>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setMobileStep(1);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="flex-1 border-slate-300 text-slate-700 font-bold py-3.5 rounded-2xl text-xs cursor-pointer"
-              >
-                ← Back to Address
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  if (canProceedToStep3()) {
-                    setMobileStep(3);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
-                }}
-                className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-md text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Continue to Payment</span>
-                <span>→</span>
-              </Button>
+            {/* Mobile Step 2: Informational Note */}
+            <div className={`${mobileStep === 2 ? "block lg:hidden" : "hidden"} bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3 text-center text-xs text-amber-900 font-medium`}>
+              <span>🚚 Delivery preferences saved. Tap 'Proceed to Payment' below to finalize.</span>
             </div>
 
             {/* Mobile Step 3: Summary Badges */}
@@ -3114,7 +3128,7 @@ const Checkout = () => {
               </div>
 
               <Button
-                className={`w-full mt-4 sm:mt-6 text-sm sm:text-base py-3 sm:py-3.5 font-black rounded-2xl shadow-lg transition cursor-pointer ${undeliverableInfo.hasUndeliverable
+                className={`hidden lg:flex w-full mt-4 sm:mt-6 text-sm sm:text-base py-3 sm:py-3.5 font-black rounded-2xl shadow-lg transition cursor-pointer ${undeliverableInfo.hasUndeliverable
                   ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none hover:bg-slate-300"
                   : "bg-amber-500 hover:bg-amber-400 text-[#0A1128] shadow-amber-500/20"
                   }`}
@@ -3175,20 +3189,6 @@ const Checkout = () => {
                       : "Please select pickup location + slot"}
                   </p>
                 )}
-
-              {/* Mobile Back Button to Step 2 */}
-              <div className="block lg:hidden mt-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileStep(2);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="text-xs font-bold text-slate-500 hover:text-navy underline cursor-pointer py-1"
-                >
-                  ← Back to Delivery Preferences
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -3242,10 +3242,10 @@ const Checkout = () => {
                 }
               }}
               disabled={undeliverableInfo.hasUndeliverable}
-              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>Proceed to Delivery</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </button>
           )}
 
@@ -3258,10 +3258,10 @@ const Checkout = () => {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0"
             >
               <span>Proceed to Payment</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </button>
           )}
 
@@ -3286,14 +3286,14 @@ const Checkout = () => {
                 if (selectedPayment === "upi") setShowUPIDialog(true);
                 else handlePlaceOrder();
               }}
-              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
+              className={`bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-2xl shadow-md flex items-center gap-1.5 cursor-pointer border-none transition shrink-0 ${undeliverableInfo.hasUndeliverable || (fulfillmentType === "delivery" && !selectedAddress)
                 ? "opacity-50 cursor-not-allowed"
                 : ""
                 }`}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Processing...</span>
                 </>
               ) : undeliverableInfo.hasUndeliverable ? (
@@ -3301,7 +3301,7 @@ const Checkout = () => {
               ) : selectedPayment === "razorpay" ? (
                 <>
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Pay ₹{orderDetails.total.toFixed(0)}</span>
+                  <span>Pay ₹{orderDetails.total.toFixed(2)}</span>
                 </>
               ) : selectedPayment === "upi" ? (
                 <>

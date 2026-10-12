@@ -39,7 +39,6 @@ import { trackCategoryClick } from "../utils/categoryAnalytics";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import LocationModal from "@/components/LocationModal";
 import SupportDrawer from "@/components/SupportDrawer";
 import ProductCard from "@/components/ProductCard";
 import { ApexBeeWelcomeIntro } from "../components/welcome-intro/ApexBeeWelcomeIntro";
@@ -265,8 +264,6 @@ const Home = () => {
   const [loadingCategories, setLoadingCategories] = useState(true);
 
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
-
-  const [openLocationModal, setOpenLocationModal] = useState(false);
   const [userLocation, setUserLocation] = useState<any | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -1070,15 +1067,20 @@ const Home = () => {
    * -------------------------- */
   useEffect(() => {
     const loadLocation = () => {
-      const saved = localStorage.getItem(LOCATION_KEY);
+      const saved =
+        localStorage.getItem(LOCATION_KEY) ||
+        localStorage.getItem("user_location") ||
+        localStorage.getItem("userLocation") ||
+        localStorage.getItem("apexbee_user_location");
       if (saved) {
         try {
-          setUserLocation(JSON.parse(saved));
+          const loc = JSON.parse(saved);
+          setUserLocation(loc);
+          const pin = normPincode(loc?.pincode);
+          if (pin) fetchNearbyShops(pin, loc);
         } catch {
           localStorage.removeItem(LOCATION_KEY);
         }
-      } else {
-        setOpenLocationModal(true);
       }
     };
     loadLocation();
@@ -3521,18 +3523,6 @@ const Home = () => {
               </div>
             </section>
           )}
-
-          {/* Location Modal */}
-          <LocationModal
-            open={openLocationModal}
-            onOpenChange={setOpenLocationModal}
-            onConfirm={(loc) => {
-              setUserLocation(loc);
-              localStorage.setItem(LOCATION_KEY, JSON.stringify(loc));
-              const pin = normPincode(loc?.pincode);
-              if (pin) fetchNearbyShops(pin);
-            }}
-          />
 
           <Footer />
 

@@ -291,8 +291,6 @@ export const BottomNav = () => {
 
             {/* 3. CENTER HEXAGON BEE BUTTON (PROTRUDING) */}
             <div className="relative flex-none flex items-center justify-center px-1">
-              {/* Downward notch / contour in the navy bar hugging the bottom vertex */}
-              <div className="absolute -bottom-1.5 w-7 h-3 bg-[#0A1629] rotate-45 rounded-sm -z-10" />
 
               <button
                 type="button"
