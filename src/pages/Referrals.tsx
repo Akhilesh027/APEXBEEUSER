@@ -572,20 +572,14 @@ const Referrals = () => {
   const isUserFranchise = loggedInRoles.some((r: string) => r.includes("franchise") || r.includes("franchiser")) || Boolean(stats.franchiseIncentives && stats.franchiseIncentives > 0);
   const isUserKycVerified = Boolean(loggedInUserObj?.isVerified || loggedInUserObj?.kycStatus === "approved" || loggedInUserObj?.phoneVerified);
 
-  // Dynamic balances that never force Guru Swamy's 19,606 or 2,927 on other members
+  // Dynamic balances from database
   const memberAvailable = useMemo(() => {
-    if (isGuruSwamy) {
-      return Number(stats.walletAvailable || stats.availableBalance || 19606);
-    }
-    return Number(stats.walletAvailable || stats.availableBalance || stats.walletBalance || 0);
-  }, [stats, isGuruSwamy]);
+    return Number(stats.walletAvailable ?? stats.availableBalance ?? stats.walletBalance ?? 0);
+  }, [stats]);
 
   const memberHold = useMemo(() => {
-    if (isGuruSwamy) {
-      return Number(stats.walletHold || stats.pendingBalance || 2927);
-    }
-    return Number(stats.walletHold || stats.pendingBalance || 0);
-  }, [stats, isGuruSwamy]);
+    return Number(stats.walletHold ?? stats.pendingBalance ?? 0);
+  }, [stats]);
 
   const memberTotalGross = useMemo(() => {
     const fromStats = Number(stats.walletTotal || stats.totalEarnings || stats.totalEarned || 0);
@@ -947,94 +941,6 @@ const Referrals = () => {
     const targetAvailable = memberAvailable;
     const targetHold = memberHold;
     const currentCreditsSum = list.filter(r => r.entryType !== "debit" && r.status !== "hold").reduce((s, r) => s + r.amount, 0);
-
-    // If current listed credits don't fully cover the available balance (only reconciled for Guru Swamy)
-    const missingAvailable = isGuruSwamy ? Math.max(0, targetAvailable - currentCreditsSum) : 0;
-    if (missingAvailable > 0 && isGuruSwamy) {
-      // Intelligently itemize across Guru Swamy's streams: Vendor, Franchise, Referral L1, L2, L3
-      const isVendorMerchant = isUserVendor || (stats.vendorIncentives && stats.vendorIncentives > 0);
-      const isFranchisePartner = isUserFranchise || (stats.franchiseIncentives && stats.franchiseIncentives > 0);
-
-      const streamSlices: Array<{ name: string; level: string; type: string; category: string; channel: "vendor" | "franchise" | "referral" | "wallet"; orderId: string; pct: number; note: string }> = [];
-
-      if (isVendorMerchant && isFranchisePartner) {
-        streamSlices.push(
-          { name: "Vendor Store Orders - Settlement Cycle", level: "Vendor Merchant", type: "Vendor Sales", category: "B2B Vendor Sales", channel: "vendor", orderId: "ORD-9421-VND", pct: 0.40, note: "Store orders delivered & customer payments cleared" },
-          { name: "Mandal Territory Network Revenue Share", level: "Franchise Partner", type: "Franchise Incentive", category: "Territory Hub", channel: "franchise", orderId: "MND-8192-FRN", pct: 0.30, note: "Territory partner distribution pool share" },
-          { name: "First Purchase Referral - Maniteja Goud", level: "Level 1", type: "First Purchase", category: "Direct Referral", channel: "referral", orderId: "ORD-6819-REF", pct: 0.15, note: "Direct invitee qualified first grocery purchase" },
-          { name: "Downline Team Multi-Cart Commission", level: "Level 2", type: "Product Commission", category: "Retail Store", channel: "referral", orderId: "ORD-5192-ROY", pct: 0.10, note: "Level 2 downline retail cart purchase royalty" },
-          { name: "KYC Verification & Account Welcome Bonus", level: "Level 1", type: "Signup Bonus", category: "KYC Onboarding", channel: "referral", orderId: "KYC-BONUS-01", pct: 0.05, note: "Account phone & Gmail KYC completion reward" }
-        );
-      } else if (isVendorMerchant) {
-        streamSlices.push(
-          { name: "Vendor Store Orders - Settlement Cycle", level: "Vendor Merchant", type: "Vendor Sales", category: "B2B Vendor Sales", channel: "vendor", orderId: "ORD-9421-VND", pct: 0.60, note: "Store orders delivered & customer payments cleared" },
-          { name: "First Purchase Referral - Maniteja Goud", level: "Level 1", type: "First Purchase", category: "Direct Referral", channel: "referral", orderId: "ORD-6819-REF", pct: 0.20, note: "Direct invitee qualified first purchase bonus" },
-          { name: "Downline Team Multi-Cart Commission", level: "Level 2", type: "Product Commission", category: "Retail Store", channel: "referral", orderId: "ORD-5192-ROY", pct: 0.15, note: "Level 2 downline retail cart purchase royalty" },
-          { name: "KYC Verification & Account Welcome Bonus", level: "Level 1", type: "Signup Bonus", category: "KYC Onboarding", channel: "referral", orderId: "KYC-BONUS-01", pct: 0.05, note: "Account phone & Gmail KYC completion reward" }
-        );
-      } else if (isFranchisePartner) {
-        streamSlices.push(
-          { name: "Mandal Territory Network Revenue Share", level: "Franchise Partner", type: "Franchise Incentive", category: "Territory Hub", channel: "franchise", orderId: "MND-8192-FRN", pct: 0.55, note: "Territory partner distribution pool share" },
-          { name: "First Purchase Referral - Maniteja Goud", level: "Level 1", type: "First Purchase", category: "Direct Referral", channel: "referral", orderId: "ORD-6819-REF", pct: 0.25, note: "Direct invitee qualified first purchase bonus" },
-          { name: "Downline Team Multi-Cart Commission", level: "Level 2", type: "Product Commission", category: "Retail Store", channel: "referral", orderId: "ORD-5192-ROY", pct: 0.15, note: "Level 2 downline retail cart purchase royalty" },
-          { name: "KYC Verification & Account Welcome Bonus", level: "Level 1", type: "Signup Bonus", category: "KYC Onboarding", channel: "referral", orderId: "KYC-BONUS-01", pct: 0.05, note: "Account phone & Gmail KYC completion reward" }
-        );
-      } else {
-        streamSlices.push(
-          { name: "Vendor Store Orders - Settlement Cycle", level: "Vendor Merchant", type: "Vendor Sales", category: "B2B Vendor Sales", channel: "vendor", orderId: "ORD-9421-VND", pct: 0.35, note: "Store orders delivered & customer payments cleared" },
-          { name: "Mandal Territory Network Revenue Share", level: "Franchise Partner", type: "Franchise Incentive", category: "Territory Hub", channel: "franchise", orderId: "MND-8192-FRN", pct: 0.30, note: "Territory partner distribution pool share" },
-          { name: "First Purchase Referral - Maniteja Goud", level: "Level 1", type: "First Purchase", category: "Direct Referral", channel: "referral", orderId: "ORD-6819-REF", pct: 0.20, note: "Direct invitee qualified first purchase bonus" },
-          { name: "Downline Team Multi-Cart Commission", level: "Level 2", type: "Product Commission", category: "Retail Store", channel: "referral", orderId: "ORD-5192-ROY", pct: 0.10, note: "Level 2 downline retail cart purchase royalty" },
-          { name: "KYC Verification & Account Welcome Bonus", level: "Level 1", type: "Signup Bonus", category: "KYC Onboarding", channel: "referral", orderId: "KYC-BONUS-01", pct: 0.05, note: "Account phone & Gmail KYC completion reward" }
-        );
-      }
-
-      let runningAllocated = 0;
-      streamSlices.forEach((slice, sIdx) => {
-        const isLast = sIdx === streamSlices.length - 1;
-        const sliceAmt = isLast ? (missingAvailable - runningAllocated) : Math.round(missingAvailable * slice.pct);
-        runningAllocated += sliceAmt;
-
-        if (sliceAmt > 0) {
-          const recDate = new Date(Date.now() - (sIdx + 1) * 86400000 * 2.5).toISOString();
-          list.push({
-            id: `rec-audit-${sIdx}`,
-            transactionId: `APX-TXN-2026-${8400 + sIdx}`,
-            date: recDate,
-            referralName: slice.name,
-            level: slice.level,
-            type: slice.type,
-            category: slice.category,
-            orderId: slice.orderId,
-            amount: sliceAmt,
-            status: "credited",
-            channel: slice.channel,
-            entryType: "credit",
-            remarks: slice.note,
-          });
-        }
-      });
-    }
-
-    // 7. Ensure the active Security Hold Reserve is itemized ONLY if targetHold > 0
-    const existingHoldItem = list.find(r => r.status === "hold" || r.type === "Hold Reserve");
-    if (!existingHoldItem && targetHold > 0) {
-      list.push({
-        id: "hold-security-reserve",
-        transactionId: isGuruSwamy ? "APX-HOLD-2927" : `APX-HOLD-${Math.round(targetHold)}`,
-        date: new Date().toISOString(),
-        referralName: "Active Security Hold Reserve",
-        level: "Escrow Reserve",
-        type: "Hold Reserve",
-        category: "Pending Clearance",
-        orderId: "ESCROW-7DAY",
-        amount: targetHold,
-        status: "hold",
-        channel: "wallet",
-        entryType: "credit",
-        remarks: "7-Day customer return & order clearance window hold; auto-releases to Available Balance.",
-      });
-    }
 
     // Sort newest first
     list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
