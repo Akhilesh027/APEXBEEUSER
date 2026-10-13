@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.apexbee.app',
+  appId: 'in.apexbee.app',
   appName: 'ApexBee',
   webDir: 'dist',
   server: {

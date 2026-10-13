@@ -4,7 +4,7 @@ android {
     namespace = "com.apexbee.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.apexbee.app"
+        applicationId "in.apexbee.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,8 +16,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (file("release.keystore").exists()) {
+                storeFile file("release.keystore")
+                storePassword System.getenv("APEXBEE_KEYSTORE_PASSWORD") ?: "apexbee123"
+                keyAlias System.getenv("APEXBEE_KEY_ALIAS") ?: "apexbee"
+                keyPassword System.getenv("APEXBEE_KEY_PASSWORD") ?: "apexbee123"
+            }
+        }
+    }
     buildTypes {
         release {
+            if (file("release.keystore").exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
