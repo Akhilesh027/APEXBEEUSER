@@ -1067,11 +1067,10 @@ const Navbar = () => {
           <button
             type="button"
             onClick={() => setOpenLocationModal(true)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-left transition-all border cursor-pointer max-w-[155px] sm:max-w-[200px] truncate ${
-              userLocation
-                ? "bg-white/10 hover:bg-white/15 border-white/20 text-white"
-                : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/90 text-amber-300 animate-pulse shadow-xs"
-            }`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-left transition-all border cursor-pointer max-w-[155px] sm:max-w-[200px] truncate ${userLocation
+              ? "bg-white/10 hover:bg-white/15 border-white/20 text-white"
+              : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/90 text-amber-300 animate-pulse shadow-xs"
+              }`}
             title="Delivery Location"
           >
             <MapPin className={`h-3.5 w-3.5 shrink-0 ${userLocation ? "text-amber-400" : "text-amber-300"}`} />
@@ -1133,83 +1132,107 @@ const Navbar = () => {
           ======================================================== */}
       {location.pathname !== "/checkout" && (
         <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full overflow-hidden">
-        {/* Mobile Search Input */}
-        <div className="relative" ref={searchRef}>
-          <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
-            <Search className="h-4 w-4 text-slate-400 mr-2 shrink-0" />
-            <Input
-              type="text"
-              placeholder="Search 15-min groceries, food, stores..."
-              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-xs font-semibold text-slate-800 placeholder:text-slate-400 h-auto bg-transparent flex-1 shadow-none"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const q = searchQuery.trim();
-                  if (q) {
-                    const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-                    setRecentSearches(updated);
-                    localStorage.setItem("recent_searches", JSON.stringify(updated));
-                    setSearchFocused(false);
-                    navigate(`/products?q=${encodeURIComponent(q)}`);
+          {/* Mobile Search Input */}
+          <div className="relative" ref={searchRef}>
+            <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
+              <Search className="h-4 w-4 text-slate-400 mr-2 shrink-0" />
+              <Input
+                type="text"
+                placeholder="Search 15-min groceries, food, stores..."
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-xs font-semibold text-slate-800 placeholder:text-slate-400 h-auto bg-transparent flex-1 shadow-none"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const q = searchQuery.trim();
+                    if (q) {
+                      const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
+                      setRecentSearches(updated);
+                      localStorage.setItem("recent_searches", JSON.stringify(updated));
+                      setSearchFocused(false);
+                      navigate(`/products?q=${encodeURIComponent(q)}`);
+                    }
                   }
-                }
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="text-slate-400 hover:text-slate-600 mr-1.5 p-0.5 rounded-full border-none bg-transparent cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-              <button
-                type="button"
-                onClick={() => setShowVoiceModal(true)}
-                className="p-1 rounded-lg text-amber-600 hover:bg-amber-50 cursor-pointer bg-transparent border-none transition-colors"
-                title="Voice Search"
-                aria-label="Voice Search"
-              >
-                <Mic className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowBarcodeModal(true)}
-                className="p-1 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer bg-transparent border-none transition-colors"
-                title="Barcode / Visual Scan"
-                aria-label="Barcode / Visual Scan"
-              >
-                <Camera className="h-3.5 w-3.5" />
-              </button>
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-slate-400 hover:text-slate-600 mr-1.5 p-0.5 rounded-full border-none bg-transparent cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowVoiceModal(true)}
+                  className="p-1 rounded-lg text-amber-600 hover:bg-amber-50 cursor-pointer bg-transparent border-none transition-colors"
+                  title="Voice Search"
+                  aria-label="Voice Search"
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBarcodeModal(true)}
+                  className="p-1 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer bg-transparent border-none transition-colors"
+                  title="Barcode / Visual Scan"
+                  aria-label="Barcode / Visual Scan"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Autocomplete / Suggestions Popover on Mobile */}
-          {searchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-3.5 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
-              {recentSearches.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-slate-400" />
-                      Recent Searches
-                    </p>
-                    <button
-                      className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
-                      onClick={() => {
-                        setRecentSearches([]);
-                        localStorage.removeItem("recent_searches");
-                      }}
-                    >
-                      Clear
-                    </button>
+            {/* Autocomplete / Suggestions Popover on Mobile */}
+            {searchFocused && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-3.5 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+                {recentSearches.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-slate-400" />
+                        Recent Searches
+                      </p>
+                      <button
+                        className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
+                        onClick={() => {
+                          setRecentSearches([]);
+                          localStorage.removeItem("recent_searches");
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {recentSearches.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setSearchQuery(s);
+                            setSearchFocused(false);
+                            navigate(`/products?q=${encodeURIComponent(s)}`);
+                          }}
+                          className="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Clock className="h-2.5 w-2.5 text-slate-400" />
+                          <span>{s}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                )}
+
+                <div className="mb-3">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+                    <Flame className="h-3 w-3 text-amber-500" />
+                    Trending Searches
+                  </p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {recentSearches.map((s) => (
+                    {trendingSearches.map((s) => (
                       <button
                         key={s}
                         onClick={() => {
@@ -1217,116 +1240,92 @@ const Navbar = () => {
                           setSearchFocused(false);
                           navigate(`/products?q=${encodeURIComponent(s)}`);
                         }}
-                        className="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] bg-amber-50/70 hover:bg-amber-100/70 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
                       >
-                        <Clock className="h-2.5 w-2.5 text-slate-400" />
+                        <Sparkles className="h-2.5 w-2.5 text-amber-500" />
                         <span>{s}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              <div className="mb-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
-                  <Flame className="h-3 w-3 text-amber-500" />
-                  Trending Searches
-                </p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {trendingSearches.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        setSearchQuery(s);
-                        setSearchFocused(false);
-                        navigate(`/products?q=${encodeURIComponent(s)}`);
-                      }}
-                      className="text-[11px] bg-amber-50/70 hover:bg-amber-100/70 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Sparkles className="h-2.5 w-2.5 text-amber-500" />
-                      <span>{s}</span>
-                    </button>
-                  ))}
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                    <Store className="h-3 w-3 text-slate-400" />
+                    Nearby Stores
+                  </p>
+                  <div className="space-y-1">
+                    {nearbyStoresMock.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setSearchFocused(false);
+                          navigate("/local-stores");
+                        }}
+                        className="w-full text-left text-[11px] text-navy font-semibold hover:bg-slate-50 p-1.5 rounded-lg transition-colors flex items-center gap-2 border-none bg-transparent cursor-pointer"
+                      >
+                        <Store className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>{s}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
 
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                  <Store className="h-3 w-3 text-slate-400" />
-                  Nearby Stores
-                </p>
-                <div className="space-y-1">
-                  {nearbyStoresMock.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        setSearchFocused(false);
-                        navigate("/local-stores");
-                      }}
-                      className="w-full text-left text-[11px] text-navy font-semibold hover:bg-slate-50 p-1.5 rounded-lg transition-colors flex items-center gap-2 border-none bg-transparent cursor-pointer"
-                    >
-                      <Store className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>{s}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Horizontal Quick-Action Category Action Strip */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 w-full max-w-full">
+            <Link
+              to="/products"
+              className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              ⚡ Deals
+            </Link>
+            <Link
+              to="/grocery"
+              className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              🥦 Grocery
+            </Link>
+            <Link
+              to="/food"
+              className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 shadow-sm transition-all"
+            >
+              🍔 Food & Dining <span className="text-[8px] bg-slate-950 text-amber-400 px-1 rounded">HOT</span>
+            </Link>
+            <Link
+              to="/fashion"
+              className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              👗 Fashion
+            </Link>
+            <Link
+              to="/local-stores"
+              className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              🏪 Stores
+            </Link>
+            <Link
+              to="/services"
+              className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              🛠️ Services
+            </Link>
+            <Link
+              to="/academy"
+              className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              🎓 Academy
+            </Link>
+            <Link
+              to="/earn-with-apexbee"
+              className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
+            >
+              💰 Earn Money
+            </Link>
+          </div>
         </div>
-
-        {/* Horizontal Quick-Action Category Action Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 w-full max-w-full">
-          <Link
-            to="/products"
-            className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            ⚡ Deals
-          </Link>
-          <Link
-            to="/grocery"
-            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            🥦 Grocery
-          </Link>
-          <Link
-            to="/food"
-            className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 shadow-sm transition-all"
-          >
-            🍔 Food & Dining <span className="text-[8px] bg-slate-950 text-amber-400 px-1 rounded">HOT</span>
-          </Link>
-          <Link
-            to="/fashion"
-            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            👗 Fashion
-          </Link>
-          <Link
-            to="/local-stores"
-            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            🏪 Stores
-          </Link>
-          <Link
-            to="/services"
-            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            🛠️ Services
-          </Link>
-          <Link
-            to="/academy"
-            className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            🎓 Academy
-          </Link>
-          <Link
-            to="/earn-with-apexbee"
-            className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap flex items-center gap-1 shrink-0 transition-all"
-          >
-            💰 Earn Money
-          </Link>
-        </div>
-      </div>
       )}
 
       {/* ========================================================
@@ -1453,11 +1452,10 @@ const Navbar = () => {
         <button
           type="button"
           onClick={() => setOpenLocationModal(true)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all border shrink-0 cursor-pointer ${
-            userLocation
-              ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-              : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400 text-amber-300 shadow-sm animate-pulse"
-          }`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all border shrink-0 cursor-pointer ${userLocation
+            ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+            : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400 text-amber-300 shadow-sm animate-pulse"
+            }`}
           title="Select Delivery Location"
         >
           <MapPin className={`h-4 w-4 shrink-0 ${userLocation ? "text-amber-400" : "text-amber-300"}`} />

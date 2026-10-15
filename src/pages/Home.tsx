@@ -2442,45 +2442,45 @@ const Home = () => {
 
           {/* 🛒 1. DAILY NEEDS CATEGORY PRODUCTS */}
           {isLocationConfigured(userLocation) && dailyNeedsProducts.length > 0 && (
-          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-200/60 rounded-[32px] shadow-sm">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div>
-                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
-                  <span>🥦 FRESH &amp; FAST</span>
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
-                  <span>🛒</span>
-                  <span>Daily Needs &amp; Essentials</span>
-                </h2>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh milk, water cans, vegetables &amp; groceries in 15 mins</p>
-              </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-emerald-300 bg-white text-emerald-800 font-extrabold text-xs hover:bg-emerald-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/🛒 Daily Needs")}>
-                View All →
-              </Button>
-            </div>
-
-            <div className="relative group px-1">
-              <button
-                onClick={() => scrollHorizontally("daily-needs-scroll", "left")}
-                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              <div id="daily-needs-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
-                {dailyNeedsProducts.map((p) => (
-                  <ProductCard key={p._id || (p as any).id} product={p} />
-                ))}
+            <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-200/60 rounded-[32px] shadow-sm">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div>
+                  <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                    <span>🥦 FRESH &amp; FAST</span>
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                    <span>🛒</span>
+                    <span>Daily Needs &amp; Essentials</span>
+                  </h2>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh milk, water cans, vegetables &amp; groceries in 15 mins</p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-emerald-300 bg-white text-emerald-800 font-extrabold text-xs hover:bg-emerald-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/🛒 Daily Needs")}>
+                  View All →
+                </Button>
               </div>
 
-              <button
-                onClick={() => scrollHorizontally("daily-needs-scroll", "right")}
-                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </section>
+              <div className="relative group px-1">
+                <button
+                  onClick={() => scrollHorizontally("daily-needs-scroll", "left")}
+                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <div id="daily-needs-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                  {dailyNeedsProducts.map((p) => (
+                    <ProductCard key={p._id || (p as any).id} product={p} />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => scrollHorizontally("daily-needs-scroll", "right")}
+                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-emerald-200 items-center justify-center text-emerald-800 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </section>
           )}
 
           {/* 📦 DUAL BANNER: GROCERY & MORNING ESSENTIALS */}
@@ -2542,45 +2542,45 @@ const Home = () => {
 
           {/* 🏛️ 2. DEVOTIONAL & PUJA PRODUCTS */}
           {isLocationConfigured(userLocation) && devotionalProducts.length > 0 && (
-          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/10 border border-amber-300/60 rounded-[32px] shadow-sm">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div>
-                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
-                  <span>🌸 VEDIC &amp; SACRED</span>
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
-                  <span>🏛️</span>
-                  <span>Devotional &amp; Puja Samagri</span>
-                </h2>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh flowers, agarbatti, brass diyas &amp; complete pooja kits</p>
-              </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-amber-900 font-extrabold text-xs hover:bg-amber-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/Devotional")}>
-                View All →
-              </Button>
-            </div>
-
-            <div className="relative group px-1">
-              <button
-                onClick={() => scrollHorizontally("devotional-scroll", "left")}
-                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              <div id="devotional-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
-                {devotionalProducts.map((p) => (
-                  <ProductCard key={p._id || (p as any).id} product={p} />
-                ))}
+            <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/10 border border-amber-300/60 rounded-[32px] shadow-sm">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div>
+                  <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                    <span>🌸 VEDIC &amp; SACRED</span>
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                    <span>🏛️</span>
+                    <span>Devotional &amp; Puja Samagri</span>
+                  </h2>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">Fresh flowers, agarbatti, brass diyas &amp; complete pooja kits</p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-amber-300 bg-white text-amber-900 font-extrabold text-xs hover:bg-amber-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/category/Devotional")}>
+                  View All →
+                </Button>
               </div>
 
-              <button
-                onClick={() => scrollHorizontally("devotional-scroll", "right")}
-                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </section>
+              <div className="relative group px-1">
+                <button
+                  onClick={() => scrollHorizontally("devotional-scroll", "left")}
+                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <div id="devotional-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                  {devotionalProducts.map((p) => (
+                    <ProductCard key={p._id || (p as any).id} product={p} />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => scrollHorizontally("devotional-scroll", "right")}
+                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-amber-200 items-center justify-center text-amber-900 hover:bg-amber-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </section>
           )}
 
           {/* Dynamic Mid-Page Strip (Managed via Admin Panel) */}
@@ -2590,45 +2590,45 @@ const Home = () => {
 
           {/* 🍔 3. FOOD & DINING SPECIALS */}
           {isLocationConfigured(userLocation) && foodProducts.length > 0 && (
-          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-orange-500/15 via-red-500/10 to-amber-500/10 border border-orange-300/60 rounded-[32px] shadow-sm">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div>
-                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
-                  <span>🔥 SIZZLING HOT</span>
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
-                  <span>🍔</span>
-                  <span>Food &amp; Dining Specials</span>
-                </h2>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">Authentic biryani, dosas, thalis &amp; gourmet tiffins</p>
-              </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-orange-300 bg-white text-orange-900 font-extrabold text-xs hover:bg-orange-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/food")}>
-                View All →
-              </Button>
-            </div>
-
-            <div className="relative group px-1">
-              <button
-                onClick={() => scrollHorizontally("food-products-scroll", "left")}
-                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              <div id="food-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
-                {foodProducts.map((p) => (
-                  <ProductCard key={p._id || (p as any).id} product={p} />
-                ))}
+            <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-orange-500/15 via-red-500/10 to-amber-500/10 border border-orange-300/60 rounded-[32px] shadow-sm">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div>
+                  <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                    <span>🔥 SIZZLING HOT</span>
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                    <span>🍔</span>
+                    <span>Food &amp; Dining Specials</span>
+                  </h2>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">Authentic biryani, dosas, thalis &amp; gourmet tiffins</p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-orange-300 bg-white text-orange-900 font-extrabold text-xs hover:bg-orange-600 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/food")}>
+                  View All →
+                </Button>
               </div>
 
-              <button
-                onClick={() => scrollHorizontally("food-products-scroll", "right")}
-                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </section>
+              <div className="relative group px-1">
+                <button
+                  onClick={() => scrollHorizontally("food-products-scroll", "left")}
+                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <div id="food-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                  {foodProducts.map((p) => (
+                    <ProductCard key={p._id || (p as any).id} product={p} />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => scrollHorizontally("food-products-scroll", "right")}
+                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-orange-200 items-center justify-center text-orange-900 hover:bg-orange-600 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </section>
           )}
 
           {/* 🎁 RAKSHA BANDHAN FESTIVAL OFFERS BANNER */}
@@ -2673,45 +2673,45 @@ const Home = () => {
 
           {/* 👗 4. SHOPPING & FASHION PRODUCTS */}
           {isLocationConfigured(userLocation) && shoppingProducts.length > 0 && (
-          <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 border border-purple-200/60 rounded-[32px] shadow-sm">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div>
-                <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-purple-700 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
-                  <span>✨ BOUTIQUE &amp; TRENDS</span>
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
-                  <span>👗</span>
-                  <span>Shopping &amp; Fashion Trends</span>
-                </h2>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">Silk sarees, oxford shirts, electronics &amp; boutique apparel</p>
-              </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-purple-300 bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-700 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/categories")}>
-                View All →
-              </Button>
-            </div>
-
-            <div className="relative group px-1">
-              <button
-                onClick={() => scrollHorizontally("shopping-products-scroll", "left")}
-                className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              <div id="shopping-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
-                {shoppingProducts.map((p) => (
-                  <ProductCard key={p._id || (p as any).id} product={p} />
-                ))}
+            <section className="container mx-auto px-3 sm:px-4 my-6 py-6 text-left bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 border border-purple-200/60 rounded-[32px] shadow-sm">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div>
+                  <span className="inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider bg-purple-700 text-white px-2.5 py-0.5 rounded-full shadow-xs mb-1">
+                    <span>✨ BOUTIQUE &amp; TRENDS</span>
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2">
+                    <span>👗</span>
+                    <span>Shopping &amp; Fashion Trends</span>
+                  </h2>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">Silk sarees, oxford shirts, electronics &amp; boutique apparel</p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-purple-300 bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-700 hover:text-white cursor-pointer shadow-xs transition" onClick={() => navigate("/categories")}>
+                  View All →
+                </Button>
               </div>
 
-              <button
-                onClick={() => scrollHorizontally("shopping-products-scroll", "right")}
-                className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </section>
+              <div className="relative group px-1">
+                <button
+                  onClick={() => scrollHorizontally("shopping-products-scroll", "left")}
+                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <div id="shopping-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none pb-2 pt-1 scroll-smooth">
+                  {shoppingProducts.map((p) => (
+                    <ProductCard key={p._id || (p as any).id} product={p} />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => scrollHorizontally("shopping-products-scroll", "right")}
+                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-lg border border-purple-200 items-center justify-center text-purple-900 hover:bg-purple-700 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </section>
           )}
 
           {/* 👕 DUAL BANNER: FASHION & LIFESTYLE */}
@@ -2830,66 +2830,66 @@ const Home = () => {
 
           {/* Daily Deals Block */}
           {isLocationConfigured(userLocation) && (dealsLoading || dealProducts.length > 0) && (
-          <section className="container mx-auto px-4 py-6">
-            <div className="rounded-3xl border bg-gradient-to-r from-yellow-50 to-orange-50 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
-                <div className="text-left">
-                  <div className="inline-flex items-center gap-2 text-[10px] font-bold bg-white/70 px-3 py-1 rounded-full text-yellow-800">
-                    <Flame className="h-3.5 w-3.5" /> DAILY DEALS
+            <section className="container mx-auto px-4 py-6">
+              <div className="rounded-3xl border bg-gradient-to-r from-yellow-50 to-orange-50 p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
+                  <div className="text-left">
+                    <div className="inline-flex items-center gap-2 text-[10px] font-bold bg-white/70 px-3 py-1 rounded-full text-yellow-800">
+                      <Flame className="h-3.5 w-3.5" /> DAILY DEALS
+                    </div>
+                    <h2 className="text-xl font-extrabold text-navy mt-3">Daily Deals</h2>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">
+                      Limited time offers. Grab them before they end!
+                    </p>
                   </div>
-                  <h2 className="text-xl font-extrabold text-navy mt-3">Daily Deals</h2>
-                  <p className="text-xs text-muted-foreground mt-1 font-medium">
-                    Limited time offers. Grab them before they end!
-                  </p>
+                  <Button className="bg-yellow-500 hover:bg-yellow-600 text-navy font-bold text-xs border-none cursor-pointer" onClick={() => navigate("/products")}>
+                    See All Deals
+                  </Button>
                 </div>
-                <Button className="bg-yellow-500 hover:bg-yellow-600 text-navy font-bold text-xs border-none cursor-pointer" onClick={() => navigate("/products")}>
-                  See All Deals
-                </Button>
-              </div>
 
-              <div className="relative group">
-                <button
-                  onClick={() => scrollHorizontally("deals-products-scroll", "left")}
-                  className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
-                  aria-label="Scroll Left"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
+                <div className="relative group">
+                  <button
+                    onClick={() => scrollHorizontally("deals-products-scroll", "left")}
+                    className="hidden sm:flex absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                    aria-label="Scroll Left"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
 
-                {dealsLoading ? (
-                  <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
-                        <Skeleton className="h-44 w-full" />
-                        <div className="p-4 space-y-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-4 w-1/2" />
+                  {dealsLoading ? (
+                    <div className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="min-w-[190px] xs:min-w-[210px] sm:min-w-[240px] max-w-[240px] flex-shrink-0 rounded-2xl border bg-white overflow-hidden">
+                          <Skeleton className="h-44 w-full" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : dealProducts.length === 0 ? (
-                  <div className="rounded-2xl border bg-white/60 p-10 text-center text-muted-foreground text-sm">
-                    No deals available right now.
-                  </div>
-                ) : (
-                  <div id="deals-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
-                    {dealProducts.map((p) => (
-                      <ProductCard key={p._id || (p as any).id} product={p} />
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : dealProducts.length === 0 ? (
+                    <div className="rounded-2xl border bg-white/60 p-10 text-center text-muted-foreground text-sm">
+                      No deals available right now.
+                    </div>
+                  ) : (
+                    <div id="deals-products-scroll" className="flex gap-4 overflow-x-auto scrollbar-none scrollbar-hide no-scrollbar pb-4 pt-1 scroll-smooth">
+                      {dealProducts.map((p) => (
+                        <ProductCard key={p._id || (p as any).id} product={p} />
+                      ))}
+                    </div>
+                  )}
 
-                <button
-                  onClick={() => scrollHorizontally("deals-products-scroll", "right")}
-                  className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
-                  aria-label="Scroll Right"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
+                  <button
+                    onClick={() => scrollHorizontally("deals-products-scroll", "right")}
+                    className="hidden sm:flex absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-xl border border-amber-200 items-center justify-center text-navy hover:bg-navy hover:text-white transition-all cursor-pointer"
+                    aria-label="Scroll Right"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
           )}
 
           {/* Buy Again (Recently Purchased) */}
@@ -2929,365 +2929,365 @@ const Home = () => {
 
           {/* 7. Nearby Stores (Premium Cards Layout) */}
           {isLocationConfigured(userLocation) && (shopsLoading || nearbyShops.length > 0) && (
-          <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-              <div className="text-left">
-                <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
-                    <Store className="w-4 h-4" />
-                  </div>
-                  <span>Nearby Local Stores &amp; Essentials</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-1 font-medium">
-                  Verified neighborhood merchants delivering same-day to{" "}
-                  <strong className="text-[#0A1128] font-black">
-                    {userLocation?.colony ? `${userLocation.colony} - ` : ""}
-                    {userLocation?.pincode || "your area"}
-                  </strong>
-                </p>
+            <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                <div className="text-left">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
+                      <Store className="w-4 h-4" />
+                    </div>
+                    <span>Nearby Local Stores &amp; Essentials</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    Verified neighborhood merchants delivering same-day to{" "}
+                    <strong className="text-[#0A1128] font-black">
+                      {userLocation?.colony ? `${userLocation.colony} - ` : ""}
+                      {userLocation?.pincode || "your area"}
+                    </strong>
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/local-stores")}>
+                  Explore Local Market →
+                </Button>
               </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/local-stores")}>
-                Explore Local Market →
-              </Button>
-            </div>
 
-            {shopsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
-                ))}
-              </div>
-            ) : (() => {
-              const userLocRaw = localStorage.getItem("userLocation");
-              const userLocationObj = userLocRaw ? JSON.parse(userLocRaw) : userLocation;
-              const activePin = (localStorage.getItem("userPincode") || userLocationObj?.pincode || localStorage.getItem("pincode") || "").toString().trim();
+              {shopsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
+                  ))}
+                </div>
+              ) : (() => {
+                const userLocRaw = localStorage.getItem("userLocation");
+                const userLocationObj = userLocRaw ? JSON.parse(userLocRaw) : userLocation;
+                const activePin = (localStorage.getItem("userPincode") || userLocationObj?.pincode || localStorage.getItem("pincode") || "").toString().trim();
 
-              const filteredShops = (nearbyShops || []).filter((shop: any) => {
-                if (activePin) {
-                  const shopPin = (shop.pincode || shop.pinCode || shop.address?.pincode || "").toString().trim();
-                  if (shopPin && shopPin !== activePin) return false;
+                const filteredShops = (nearbyShops || []).filter((shop: any) => {
+                  if (activePin) {
+                    const shopPin = (shop.pincode || shop.pinCode || shop.address?.pincode || "").toString().trim();
+                    if (shopPin && shopPin !== activePin) return false;
+                  }
+                  return true;
+                });
+
+                if (filteredShops.length === 0) {
+                  return (
+                    <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-2">
+                      <Store className="w-10 h-10 text-slate-300 mx-auto" />
+                      <h4 className="font-extrabold text-slate-800 text-sm">No Local Stores Found Near Location</h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">Try setting your location via GPS or search in nearby pincodes.</p>
+                    </div>
+                  );
                 }
-                return true;
-              });
 
-              if (filteredShops.length === 0) {
                 return (
-                  <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-2">
-                    <Store className="w-10 h-10 text-slate-300 mx-auto" />
-                    <h4 className="font-extrabold text-slate-800 text-sm">No Local Stores Found Near Location</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">Try setting your location via GPS or search in nearby pincodes.</p>
-                  </div>
-                );
-              }
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
+                    {filteredShops.slice(0, 6).map((shop: any) => {
+                      const defaultImage = "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop";
+                      const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
+                      const ratingAvg = shop.rating?.average || 4.8;
+                      const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
+                      const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
+                      const firstOffer = shop.offers?.[0];
+                      const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
 
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
-                  {filteredShops.slice(0, 6).map((shop: any) => {
-                    const defaultImage = "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop";
-                    const displayImage = shop.storeDesign?.bannerUrl || shop.bannerImage || shop.logo || defaultImage;
-                    const ratingAvg = shop.rating?.average || 4.8;
-                    const distance = shop.distanceInKm ? `${Number(shop.distanceInKm).toFixed(1)} km` : `${shop.distance || "1.2"} km`;
-                    const deliveryTime = `${shop.estimatedDeliveryMinutes || 25} mins`;
-                    const firstOffer = shop.offers?.[0];
-                    const isOpen = shop.computedAvailability === 'open' || shop.isOpen !== false;
+                      return (
+                        <div
+                          key={shop._id}
+                          onClick={() => navigate(`/business/${shop._id}`)}
+                          className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
+                        >
+                          <div>
+                            {/* COVER IMAGE WITH GRADIENT OVERLAY */}
+                            <div className="h-48 bg-slate-100 relative overflow-hidden">
+                              <img
+                                src={displayImage}
+                                alt={shop.businessName}
+                                className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
 
-                    return (
-                      <div
-                        key={shop._id}
-                        onClick={() => navigate(`/business/${shop._id}`)}
-                        className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
-                      >
-                        <div>
-                          {/* COVER IMAGE WITH GRADIENT OVERLAY */}
-                          <div className="h-48 bg-slate-100 relative overflow-hidden">
-                            <img
-                              src={displayImage}
-                              alt={shop.businessName}
-                              className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
-
-                            {/* STATUS & OFFER BADGES */}
-                            <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
-                                <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
-                              </span>
-
-                              {firstOffer && (
-                                <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
-                                  <Tag className="w-3 h-3 text-slate-950" />
-                                  <span>{firstOffer.title}</span>
+                              {/* STATUS & OFFER BADGES */}
+                              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                                  <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
                                 </span>
-                              )}
-                            </div>
 
-                            {/* RATING BADGE */}
-                            <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
-                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              <span>{ratingAvg}</span>
-                            </div>
-
-                            {/* DISTANCE & TIME FLOATING STRIP */}
-                            <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
-                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
-                                <Clock className="w-3 h-3 text-amber-400" />
-                                <span>{deliveryTime}</span>
-                              </span>
-                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
-                                <MapPin className="w-3 h-3 text-amber-400" />
-                                <span>{distance}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* STORE DETAILS */}
-                          <div className="p-5 space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-0.5 min-w-0">
-                                <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
-                                  {shop.businessName}
-                                </h3>
-                                <p className="text-xs text-slate-500 line-clamp-1 font-medium">
-                                  {shop.industryType || shop.businessTypes?.join(', ') || 'Local Store & Daily Essentials'}
-                                </p>
+                                {firstOffer && (
+                                  <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                    <Tag className="w-3 h-3 text-slate-950" />
+                                    <span>{firstOffer.title}</span>
+                                  </span>
+                                )}
                               </div>
 
-                              {(shop.verifiedBadge || shop.isVerified !== false) && (
-                                <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="Verified Store">
-                                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                              {/* RATING BADGE */}
+                              <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                <span>{ratingAvg}</span>
+                              </div>
+
+                              {/* DISTANCE & TIME FLOATING STRIP */}
+                              <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
+                                <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                  <Clock className="w-3 h-3 text-amber-400" />
+                                  <span>{deliveryTime}</span>
                                 </span>
-                              )}
+                                <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                  <MapPin className="w-3 h-3 text-amber-400" />
+                                  <span>{distance}</span>
+                                </span>
+                              </div>
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold gap-2">
-                              <span className="truncate" title={(() => {
-                                const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
-                                if (addr) return addr;
-                                if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
-                                if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
-                                if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
-                                if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
-                                if (shop.district) return shop.district;
-                                const pin = (shop.pincode || shop.pinCode || "").toString().trim();
-                                if (pin === "524305") return "Buchireddypalem, Nellore";
-                                if (pin) return `Buchireddypalem (${pin})`;
-                                return shop.state || 'Local Store';
-                              })()}>📍 {(() => {
-                                const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
-                                if (addr) return addr;
-                                if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
-                                if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
-                                if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
-                                if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
-                                if (shop.district) return shop.district;
-                                const pin = (shop.pincode || shop.pinCode || "").toString().trim();
-                                if (pin === "524305") return "Buchireddypalem, Nellore";
-                                if (pin) return `Buchireddypalem (${pin})`;
-                                return shop.state || 'Local Store';
-                              })()}</span>
-                              <span className="text-amber-600 font-bold shrink-0">Same-Day Express</span>
+                            {/* STORE DETAILS */}
+                            <div className="p-5 space-y-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-0.5 min-w-0">
+                                  <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
+                                    {shop.businessName}
+                                  </h3>
+                                  <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                                    {shop.industryType || shop.businessTypes?.join(', ') || 'Local Store & Daily Essentials'}
+                                  </p>
+                                </div>
+
+                                {(shop.verifiedBadge || shop.isVerified !== false) && (
+                                  <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="Verified Store">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold gap-2">
+                                <span className="truncate" title={(() => {
+                                  const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
+                                  if (addr) return addr;
+                                  if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
+                                  if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
+                                  if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
+                                  if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
+                                  if (shop.district) return shop.district;
+                                  const pin = (shop.pincode || shop.pinCode || "").toString().trim();
+                                  if (pin === "524305") return "Buchireddypalem, Nellore";
+                                  if (pin) return `Buchireddypalem (${pin})`;
+                                  return shop.state || 'Local Store';
+                                })()}>📍 {(() => {
+                                  const addr = (typeof shop.address === 'string' ? shop.address : shop.address?.street || shop.address?.fullAddress || shop.addressText || '').trim();
+                                  if (addr) return addr;
+                                  if (shop.locality) return shop.district ? `${shop.locality}, ${shop.district}` : shop.locality;
+                                  if (shop.mandal) return shop.district ? `${shop.mandal}, ${shop.district}` : shop.mandal;
+                                  if (shop.village) return shop.district ? `${shop.village}, ${shop.district}` : shop.village;
+                                  if (shop.city) return shop.district && shop.district !== shop.city ? `${shop.city}, ${shop.district}` : shop.city;
+                                  if (shop.district) return shop.district;
+                                  const pin = (shop.pincode || shop.pinCode || "").toString().trim();
+                                  if (pin === "524305") return "Buchireddypalem, Nellore";
+                                  if (pin) return `Buchireddypalem (${pin})`;
+                                  return shop.state || 'Local Store';
+                                })()}</span>
+                                <span className="text-amber-600 font-bold shrink-0">Same-Day Express</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ACTION BUTTON */}
+                          <div className="px-5 pb-5 pt-1">
+                            <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
+                              <span>Visit Store &amp; Shop</span>
+                              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                             </div>
                           </div>
                         </div>
-
-                        {/* ACTION BUTTON */}
-                        <div className="px-5 pb-5 pt-1">
-                          <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
-                            <span>Visit Store &amp; Shop</span>
-                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </section>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </section>
           )}
 
           {/* 8. Nearby Restaurants & Food Outlets (Dynamic Time-of-Day Specials) */}
           {isLocationConfigured(userLocation) && (restaurantsLoading || nearbyRestaurantsList.length > 0 || nearbyShops.length > 0) && (
-          <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-              <div className="text-left">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase tracking-wider mb-1.5">
-                  {foodMealDetails.badge}
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
-                    <Utensils className="w-4 h-4" />
+            <section className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                <div className="text-left">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase tracking-wider mb-1.5">
+                    {foodMealDetails.badge}
                   </div>
-                  <span>{foodMealDetails.title}</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-1 font-medium">{foodMealDetails.subtitle}</p>
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0A1128] font-heading flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center font-bold shrink-0">
+                      <Utensils className="w-4 h-4" />
+                    </div>
+                    <span>{foodMealDetails.title}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">{foodMealDetails.subtitle}</p>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/food")}>
+                  Explore All Food &amp; Dining →
+                </Button>
               </div>
-              <Button variant="outline" size="sm" className="rounded-2xl border-slate-200 text-[#0A1128] font-black text-xs hover:bg-slate-100 cursor-pointer shrink-0 shadow-xs" onClick={() => navigate("/food")}>
-                Explore All Food &amp; Dining →
-              </Button>
-            </div>
 
-            {(() => {
-              const displayList = nearbyRestaurantsList.length > 0
-                ? nearbyRestaurantsList
-                : (nearbyShops || []).filter(s => {
-                  const cat = (s.category || (s.categories && s.categories[0]) || "").toLowerCase();
-                  const name = (s.businessName || "").toLowerCase();
-                  return cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") || name.includes("cafe") || name.includes("diner");
-                });
+              {(() => {
+                const displayList = nearbyRestaurantsList.length > 0
+                  ? nearbyRestaurantsList
+                  : (nearbyShops || []).filter(s => {
+                    const cat = (s.category || (s.categories && s.categories[0]) || "").toLowerCase();
+                    const name = (s.businessName || "").toLowerCase();
+                    return cat.includes("food") || cat.includes("restaurant") || name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") || name.includes("cafe") || name.includes("diner");
+                  });
 
-              if (restaurantsLoading) {
+                if (restaurantsLoading) {
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
+                      ))}
+                    </div>
+                  );
+                }
+
+                if (displayList.length === 0) {
+                  return (
+                    <div className="rounded-3xl border border-amber-200/60 bg-amber-50/40 p-8 text-center text-muted-foreground space-y-2">
+                      <Utensils className="w-10 h-10 text-amber-500 mx-auto" />
+                      <h4 className="font-extrabold text-slate-800 text-sm">No Nearby Food Outlets Registered Yet</h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">Food partner outlets will appear live as soon as they are approved by Admin.</p>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-72 bg-white rounded-3xl border border-slate-200 shadow-sm animate-pulse" />
-                    ))}
-                  </div>
-                );
-              }
-
-              if (displayList.length === 0) {
-                return (
-                  <div className="rounded-3xl border border-amber-200/60 bg-amber-50/40 p-8 text-center text-muted-foreground space-y-2">
-                    <Utensils className="w-10 h-10 text-amber-500 mx-auto" />
-                    <h4 className="font-extrabold text-slate-800 text-sm">No Nearby Food Outlets Registered Yet</h4>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto">Food partner outlets will appear live as soon as they are approved by Admin.</p>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
-                  {displayList.slice(0, 6).map((rest: any, idx: number) => {
-                    const defaultImage = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop";
-                    const displayImage = rest.bannerImage || rest.coverImage || rest.logo || rest.image || defaultImage;
-                    const ratingAvg = rest.rating?.average ? rest.rating.average : (typeof rest.rating === 'string' ? rest.rating : '4.8');
-                    const name = rest.name || rest.businessName || "Restaurant Partner";
-                    const cuisines = Array.isArray(rest.cuisines) ? rest.cuisines.join(', ') : (rest.cuisines || rest.food || 'Multi-Cuisine');
-                    const eta = `${rest.averagePreparationMinutes || rest.estimatedDeliveryMinutes || 20} mins`;
-                    // Accurate outlet location calculation (avoids hardcoded 'Hyderabad' fallback)
-                    const locality = (() => {
-                      const loc = (rest.locality || rest.colony || rest.mandal || rest.village || "").trim();
-                      const dist = (rest.district || rest.city || "").trim();
-                      if (loc) {
-                        return dist && dist.toLowerCase() !== loc.toLowerCase() ? `${loc}, ${dist}` : loc;
-                      }
-                      if (dist) {
-                        return dist;
-                      }
-                      if (rest.address && typeof rest.address === "string") {
-                        const parts = rest.address.split(",").map((s: string) => s.trim()).filter(Boolean);
-                        if (parts.length > 0) {
-                          return parts.slice(-2).join(", ");
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transform-gpu">
+                    {displayList.slice(0, 6).map((rest: any, idx: number) => {
+                      const defaultImage = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop";
+                      const displayImage = rest.bannerImage || rest.coverImage || rest.logo || rest.image || defaultImage;
+                      const ratingAvg = rest.rating?.average ? rest.rating.average : (typeof rest.rating === 'string' ? rest.rating : '4.8');
+                      const name = rest.name || rest.businessName || "Restaurant Partner";
+                      const cuisines = Array.isArray(rest.cuisines) ? rest.cuisines.join(', ') : (rest.cuisines || rest.food || 'Multi-Cuisine');
+                      const eta = `${rest.averagePreparationMinutes || rest.estimatedDeliveryMinutes || 20} mins`;
+                      // Accurate outlet location calculation (avoids hardcoded 'Hyderabad' fallback)
+                      const locality = (() => {
+                        const loc = (rest.locality || rest.colony || rest.mandal || rest.village || "").trim();
+                        const dist = (rest.district || rest.city || "").trim();
+                        if (loc) {
+                          return dist && dist.toLowerCase() !== loc.toLowerCase() ? `${loc}, ${dist}` : loc;
                         }
-                      }
-                      if (rest.pincode || rest.pinCode) {
-                        return `PIN ${rest.pincode || rest.pinCode}`;
-                      }
-                      const uLoc = userLocation || (() => {
-                        try {
-                          return JSON.parse(localStorage.getItem("user_location") || localStorage.getItem("userLocation") || "null");
-                        } catch {
-                          return null;
+                        if (dist) {
+                          return dist;
                         }
+                        if (rest.address && typeof rest.address === "string") {
+                          const parts = rest.address.split(",").map((s: string) => s.trim()).filter(Boolean);
+                          if (parts.length > 0) {
+                            return parts.slice(-2).join(", ");
+                          }
+                        }
+                        if (rest.pincode || rest.pinCode) {
+                          return `PIN ${rest.pincode || rest.pinCode}`;
+                        }
+                        const uLoc = userLocation || (() => {
+                          try {
+                            return JSON.parse(localStorage.getItem("user_location") || localStorage.getItem("userLocation") || "null");
+                          } catch {
+                            return null;
+                          }
+                        })();
+                        if (uLoc) {
+                          const uArea = (uLoc.colony || uLoc.mandal || uLoc.village || "").trim();
+                          const uDist = (uLoc.district || uLoc.city || "").trim();
+                          if (uArea && uDist && uArea.toLowerCase() !== uDist.toLowerCase()) return `${uArea}, ${uDist}`;
+                          if (uArea) return uArea;
+                          if (uDist) return uDist;
+                          if (uLoc.pincode) return `PIN ${uLoc.pincode}`;
+                        }
+                        return rest.state || "Local Kitchen";
                       })();
-                      if (uLoc) {
-                        const uArea = (uLoc.colony || uLoc.mandal || uLoc.village || "").trim();
-                        const uDist = (uLoc.district || uLoc.city || "").trim();
-                        if (uArea && uDist && uArea.toLowerCase() !== uDist.toLowerCase()) return `${uArea}, ${uDist}`;
-                        if (uArea) return uArea;
-                        if (uDist) return uDist;
-                        if (uLoc.pincode) return `PIN ${uLoc.pincode}`;
-                      }
-                      return rest.state || "Local Kitchen";
-                    })();
-                    const isOpen = rest.isOpen !== false;
-                    const id = rest.id || rest._id;
+                      const isOpen = rest.isOpen !== false;
+                      const id = rest.id || rest._id;
 
-                    return (
-                      <div
-                        key={id || idx}
-                        onClick={() => navigate(`/food/restaurant/${id}`)}
-                        className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
-                      >
-                        <div>
-                          {/* BANNER COVER */}
-                          <div className="h-48 bg-slate-100 relative overflow-hidden">
-                            <img
-                              src={displayImage}
-                              alt={name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
+                      return (
+                        <div
+                          key={id || idx}
+                          onClick={() => navigate(`/food/restaurant/${id}`)}
+                          className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-md hover:shadow-2xl hover:border-amber-400 transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
+                        >
+                          <div>
+                            {/* BANNER COVER */}
+                            <div className="h-48 bg-slate-100 relative overflow-hidden">
+                              <img
+                                src={displayImage}
+                                alt={name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30" />
 
-                            {/* STATUS & ACTIVE OFFER BADGES */}
-                            <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
-                                <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
-                              </span>
-
-                              {rest.activeOfferSummary && (
-                                <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
-                                  <Tag className="w-3 h-3 text-slate-950" />
-                                  <span>{rest.activeOfferSummary}</span>
+                              {/* STATUS & ACTIVE OFFER BADGES */}
+                              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md flex items-center space-x-1 ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                                  <span>{isOpen ? 'OPEN NOW' : 'CLOSED'}</span>
                                 </span>
-                              )}
-                            </div>
 
-                            {/* RATING BADGE */}
-                            <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
-                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              <span>{ratingAvg}</span>
-                            </div>
-
-                            {/* FLOATING PREP TIME STRIP */}
-                            <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
-                              <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
-                                <Clock className="w-3 h-3 text-amber-400" />
-                                <span>{eta}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* BODY DETAILS */}
-                          <div className="p-5 space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-0.5 min-w-0">
-                                <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
-                                  {name}
-                                </h3>
-                                <p className="text-xs text-amber-600 font-bold line-clamp-1">
-                                  {cuisines}
-                                </p>
+                                {rest.activeOfferSummary && (
+                                  <span className="px-2.5 py-1 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                    <Tag className="w-3 h-3 text-slate-950" />
+                                    <span>{rest.activeOfferSummary}</span>
+                                  </span>
+                                )}
                               </div>
-                              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="FSSAI Verified">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                              </span>
+
+                              {/* RATING BADGE */}
+                              <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-black text-amber-600 flex items-center space-x-1 shadow-md border border-amber-200/80 z-10">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                <span>{ratingAvg}</span>
+                              </div>
+
+                              {/* FLOATING PREP TIME STRIP */}
+                              <div className="absolute bottom-3 left-3 flex items-center space-x-2 text-white text-[11px] font-bold z-10">
+                                <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl flex items-center space-x-1 border border-white/10">
+                                  <Clock className="w-3 h-3 text-amber-400" />
+                                  <span>{eta}</span>
+                                </span>
+                              </div>
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
-                              <span>📍 {locality}</span>
-                              <span className="text-emerald-600 font-bold">Express Delivery</span>
+                            {/* BODY DETAILS */}
+                            <div className="p-5 space-y-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-0.5 min-w-0">
+                                  <h3 className="font-black text-lg text-[#0A1128] group-hover:text-amber-600 transition font-heading truncate">
+                                    {name}
+                                  </h3>
+                                  <p className="text-xs text-amber-600 font-bold line-clamp-1">
+                                    {cuisines}
+                                  </p>
+                                </div>
+                                <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 shrink-0" title="FSSAI Verified">
+                                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                </span>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                                <span>📍 {locality}</span>
+                                <span className="text-emerald-600 font-bold">Express Delivery</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ACTION BUTTON */}
+                          <div className="px-5 pb-5 pt-1">
+                            <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
+                              <span>Explore Menu &amp; Order</span>
+                              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                             </div>
                           </div>
                         </div>
-
-                        {/* ACTION BUTTON */}
-                        <div className="px-5 pb-5 pt-1">
-                          <div className="w-full py-2.5 bg-slate-100 group-hover:bg-[#0A1128] text-slate-800 group-hover:text-amber-400 font-black text-xs rounded-2xl transition duration-300 text-center flex items-center justify-center space-x-1 shadow-xs">
-                            <span>Explore Menu &amp; Order</span>
-                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </section>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </section>
           )}
 
           {/* 9. Nearby Services (Featured Services) */}

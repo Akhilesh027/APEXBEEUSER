@@ -2410,21 +2410,19 @@ const Checkout = () => {
                       return (
                         <div
                           key={addr._id}
-                          className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all border-2 text-left relative ${
-                            isSelected
-                              ? "border-amber-500 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
-                              : "border-slate-200 hover:border-slate-300 bg-white"
-                          }`}
+                          className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all border-2 text-left relative ${isSelected
+                            ? "border-amber-500 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
+                            : "border-slate-200 hover:border-slate-300 bg-white"
+                            }`}
                           onClick={() => setSelectedAddress(addr)}
                         >
                           <div className="flex justify-between items-start gap-3">
                             <div className="flex items-start gap-2.5 flex-1 min-w-0">
                               <div
-                                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
-                                  isSelected
-                                    ? "bg-amber-500 border-amber-500 text-slate-950"
-                                    : "border-slate-300 bg-white"
-                                }`}
+                                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${isSelected
+                                  ? "bg-amber-500 border-amber-500 text-slate-950"
+                                  : "border-slate-300 bg-white"
+                                  }`}
                               >
                                 {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                               </div>

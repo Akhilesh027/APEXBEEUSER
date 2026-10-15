@@ -11,9 +11,9 @@ import {
   RefreshCw,
   QrCode,
   Lock,
-  ArrowRight,
   Download
 } from "lucide-react";
+import { openRazorpayModal } from "../utils/razorpay";
 
 interface InvoiceData {
   _id: string;
@@ -80,6 +80,40 @@ export const PublicPayInvoice: React.FC = () => {
 
     try {
       setIsProcessing(true);
+
+      // 1. Create Razorpay order
+      const orderRes = await fetch(`${API_BASE}/fee-pricing/create-razorpay-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderData.success) {
+        throw new Error(orderData.message || "Failed to initialize payment gateway.");
+      }
+
+      // 2. Open Razorpay Checkout modal
+      const rzpResponse = await openRazorpayModal({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        order_id: orderData.orderId,
+        name: "ApexBee Market",
+        description: invoice.title || "Invoice Payment",
+        prefill: {
+          name: invoice.recipientName || undefined,
+          email: invoice.recipientEmail || undefined,
+          contact: invoice.recipientPhone || undefined,
+        },
+        theme: {
+          color: "#F5B800",
+        },
+      });
+
+      // 3. Confirm and verify payment
       const res = await fetch(`${API_BASE}/fee-pricing/public/pay`, {
         method: "POST",
         headers: {
@@ -87,7 +121,10 @@ export const PublicPayInvoice: React.FC = () => {
         },
         body: JSON.stringify({
           token,
-          paymentMethod: selectedMethod,
+          paymentMethod: "Razorpay Online",
+          paymentGatewayOrderId: rzpResponse.razorpay_order_id,
+          paymentId: rzpResponse.razorpay_payment_id,
+          signature: rzpResponse.razorpay_signature,
         }),
       });
 
@@ -96,10 +133,11 @@ export const PublicPayInvoice: React.FC = () => {
         setPaymentSuccess(true);
         setInvoice((prev) => (prev ? { ...prev, status: "paid", paidAt: new Date().toISOString() } : null));
       } else {
-        alert(data.message || "Payment processing failed. Please retry.");
+        alert(data.message || "Payment verification failed. Please contact support.");
       }
-    } catch (err) {
-      alert("Network error while completing payment.");
+    } catch (err: any) {
+      console.error("Payment error:", err);
+      alert(err.message || "Payment cancelled or failed.");
     } finally {
       setIsProcessing(false);
     }

@@ -614,14 +614,14 @@ const Referrals = () => {
         (r as any).category
       ].filter(Boolean).join(" ").toLowerCase();
 
-      const isProductFirstPurchase = rawType.includes("first_purchase") || 
-                                     (rawType.includes("first") && (rawType.includes("product") || rawType.includes("item")));
-      const isSignupOrWelcome = rawType.includes("signup") || 
-                                rawType.includes("welcome") || 
-                                rawType.includes("onboarding") || 
-                                rawType.includes("kyc") || 
-                                rawType.includes("first_order") ||
-                                (rawType.includes("first") && rawType.includes("bonus"));
+      const isProductFirstPurchase = rawType.includes("first_purchase") ||
+        (rawType.includes("first") && (rawType.includes("product") || rawType.includes("item")));
+      const isSignupOrWelcome = rawType.includes("signup") ||
+        rawType.includes("welcome") ||
+        rawType.includes("onboarding") ||
+        rawType.includes("kyc") ||
+        rawType.includes("first_order") ||
+        (rawType.includes("first") && rawType.includes("bonus"));
 
       let displayType = "Product Commission";
       let category = "Retail Store";
@@ -941,9 +941,9 @@ const Referrals = () => {
           return cOrd === r.orderId || c._id === r.id;
         });
 
-        const ordVal = (matched as any)?.orderId?.totalAmount || 
-                       (matched as any)?.orderValue || 
-                       (r.orderId && r.orderId.startsWith("ORD-") ? Math.round(r.amount * 10) : null);
+        const ordVal = (matched as any)?.orderId?.totalAmount ||
+          (matched as any)?.orderValue ||
+          (r.orderId && r.orderId.startsWith("ORD-") ? Math.round(r.amount * 10) : null);
 
         const commPct = (matched as any)?.commissionPercentage !== undefined
           ? (matched as any).commissionPercentage
@@ -1949,8 +1949,8 @@ const Referrals = () => {
                 {isGuest
                   ? "ApexBee connects vendors, customers, wholesalers, and partners. Sign in to start referring and earning rewards today."
                   : isCustomer
-                  ? "Share your personal referral link with friends. Earn direct Level 1 signup bonuses and eligible product rewards."
-                  : "Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses & recurring purchase splits."}
+                    ? "Share your personal referral link with friends. Earn direct Level 1 signup bonuses and eligible product rewards."
+                    : "Introduce vendors, wholesalers, customers or delivery partners. Earn upfront signup bonuses & recurring purchase splits."}
               </p>
 
               {/* 4-Box Stats Grid: Only displayed for Customer (Level 1) and Business Partner (Level 1-3). Hidden for Guest */}
@@ -2084,9 +2084,8 @@ const Referrals = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 sm:mb-8 w-full max-w-full min-w-0">
             <div className="w-full max-w-full overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
               <TabsList
-                className={`bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid ${
-                  isBusinessPartner ? "lg:grid-cols-7" : "lg:grid-cols-6"
-                } w-max lg:w-full gap-1`}
+                className={`bg-slate-200/70 p-1 rounded-2xl border border-slate-200/80 flex lg:grid ${isBusinessPartner ? "lg:grid-cols-7" : "lg:grid-cols-6"
+                  } w-max lg:w-full gap-1`}
               >
                 <TabsTrigger value="overview" className="rounded-xl text-[11px] sm:text-xs font-bold shrink-0 whitespace-nowrap px-3 py-1.5 sm:py-2">
                   Overview
@@ -2142,1032 +2141,1407 @@ const Referrals = () => {
                   </Button>
                 </div>
               )}
-            {/* Gamified Milestone Progress Indicator */}
-            <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
-              <CardContent className="p-4 sm:p-6 w-full max-w-full min-w-0">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
-                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                    <span className="text-xl sm:text-2xl p-2 sm:p-2.5 bg-purple-50 rounded-xl shrink-0">🏅</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        <p className="font-extrabold text-navy text-xs sm:text-sm">Rank Milestone Status: {currentRank.rank}</p>
-                        <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] sm:text-[10px] font-black">
-                          {currentRank.badge}
-                        </Badge>
+              {/* Gamified Milestone Progress Indicator */}
+              <Card className="border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
+                <CardContent className="p-4 sm:p-6 w-full max-w-full min-w-0">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <span className="text-xl sm:text-2xl p-2 sm:p-2.5 bg-purple-50 rounded-xl shrink-0">🏅</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <p className="font-extrabold text-navy text-xs sm:text-sm">Rank Milestone Status: {currentRank.rank}</p>
+                          <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] sm:text-[10px] font-black">
+                            {currentRank.badge}
+                          </Badge>
+                        </div>
+                        <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
                       </div>
-                      <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">Invite counts determine your system badge level and commission unlocks.</p>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 w-full md:w-auto">
-                    {[
-                      { name: "🌱 Starter", level: 1 },
-                      { name: "🥉 Bronze", level: 2 },
-                      { name: "🥈 Silver", level: 3 },
-                      { name: "🥇 Gold", level: 4 },
-                      { name: "💎 Diamond", level: 5 },
-                    ].map((b) => {
-                      const active = currentRank.level >= b.level;
-                      const isCurrent = currentRank.level === b.level;
-                      return (
-                        <Badge
-                          key={b.name}
-                          className={`text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 transition-all ${isCurrent
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
-                            : active
-                              ? 'bg-indigo-600 text-white font-bold'
-                              : 'bg-slate-100 text-slate-400 border border-slate-200 font-medium'
-                            }`}
-                        >
-                          {b.name} {active && !isCurrent ? "✓" : ""}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-4 sm:mt-5">
-                  <div className="flex flex-col sm:flex-row justify-between text-[11px] sm:text-xs font-bold text-slate-600 mb-1.5 gap-0.5">
-                    <span>Rank Level Progress ({currentRank.currentCount} / {currentRank.targetMax} Qualified Referrals)</span>
-                    <span className="text-indigo-600 font-black">{currentRank.targetRemaining} more to {currentRank.targetGoal}</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3 sm:h-3.5 border overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 via-indigo-600 to-amber-500 h-3 sm:h-3.5 rounded-full transition-all duration-500"
-                      style={{ width: `${currentRank.progressPercent}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5 italic">
-                    *Qualification Criteria: Member must be Phone &amp; Gmail verified (KYC) and completed their 1st Purchase.
-                  </p>
-                </div>
-
-                {/* How to reach next step guide */}
-                <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 sm:p-3.5 text-xs text-indigo-950">
-                  <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-                    <span className="text-lg sm:text-xl shrink-0 mt-0.5 sm:mt-0">🚀</span>
-                    <div className="min-w-0">
-                      <p className="font-extrabold text-xs text-indigo-950">
-                        How to Unlock {currentRank.targetGoal}:
-                      </p>
-                      <p className="text-[10.5px] sm:text-[11px] text-indigo-700 mt-0.5">
-                        Invite members who verify their Phone &amp; Gmail, and complete their 1st purchase. You need <span className="font-black text-indigo-900">{currentRank.targetRemaining} more qualified member{currentRank.targetRemaining === 1 ? '' : 's'}</span> to unlock your {currentRank.targetGoal} badge.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer w-full sm:w-auto"
-                    onClick={shareReferral}
-                  >
-                    Invite Now
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions Panel */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-4 w-full max-w-full min-w-0">
-              <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm border-none active:scale-95 transition" onClick={shareReferral}>
-                <span className="text-base sm:text-lg">💬</span> Share WhatsApp
-              </Button>
-              <Button className="h-auto bg-navy text-white hover:bg-navy/95 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm active:scale-95 transition" onClick={() => setShowInviteQR(true)}>
-                <span className="text-base sm:text-lg">📷</span> Invite QR Code
-              </Button>
-              <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => copyToClipboard(referralLink, "link")}>
-                <span className="text-base sm:text-lg">🔗</span> Copy Link
-              </Button>
-              <Button variant="outline" className="h-auto border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setShowVideoDialog(true)}>
-                <span className="text-base sm:text-lg">🎥</span> Training
-              </Button>
-              <Button variant="outline" className="h-auto col-span-2 md:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setActiveTab("withdraw")}>
-                <span className="text-base sm:text-lg">🏦</span> Withdraw Wallet
-              </Button>
-            </div>
-
-            {/* Double Column Overview Widgets */}
-            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full min-w-0">
-              {/* Left Column: Funnel & Comps */}
-              <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
-                {/* Referral Health Funnel Card */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
-                  <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Conversion Funnel</CardTitle>
-                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and identify drop points in your referred downline network.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-2">
-                    <div className="space-y-3 sm:space-y-3.5">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 w-full md:w-auto">
                       {[
-                        { label: "Referral Link Clicked", value: funnelStats.clicks, color: "bg-slate-400" },
-                        { label: "Registered / Signed up", value: funnelStats.registered, color: "bg-indigo-400" },
-                        { label: "KYC Completed", value: funnelStats.kycCompleted, color: "bg-amber-400" },
-                        { label: "First Purchase Complete", value: funnelStats.firstPurchase, color: "bg-emerald-500" },
-                        { label: "Active Network Members", value: funnelStats.active, color: "bg-purple-600" }
-                      ].map((step, idx, arr) => {
-                        const prevVal = idx === 0 ? step.value : arr[idx - 1].value;
-                        const drop = prevVal > 0 ? ((step.value / prevVal) * 100).toFixed(0) : "0";
+                        { name: "🌱 Starter", level: 1 },
+                        { name: "🥉 Bronze", level: 2 },
+                        { name: "🥈 Silver", level: 3 },
+                        { name: "🥇 Gold", level: 4 },
+                        { name: "💎 Diamond", level: 5 },
+                      ].map((b) => {
+                        const active = currentRank.level >= b.level;
+                        const isCurrent = currentRank.level === b.level;
                         return (
-                          <div key={step.label} className="space-y-1">
-                            <div className="flex justify-between items-center text-[11px] sm:text-xs font-bold">
-                              <span className="text-slate-700 flex items-center gap-1.5 truncate">
-                                <span className={`w-2.5 h-2.5 rounded-full ${step.color} shrink-0`} />
-                                <span className="truncate">{step.label}</span>
-                              </span>
-                              <span className="text-navy shrink-0 ml-2">{step.value} users {idx > 0 && <span className="text-slate-400 font-semibold ml-1">({drop}%)</span>}</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                              <div className={`${step.color} h-2 rounded-full transition-all duration-500`} style={{ width: `${arr[0].value > 0 ? (step.value / arr[0].value) * 100 : 0}%` }} />
-                            </div>
-                          </div>
+                          <Badge
+                            key={b.name}
+                            className={`text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 transition-all ${isCurrent
+                              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black shadow ring-2 ring-purple-300'
+                              : active
+                                ? 'bg-indigo-600 text-white font-bold'
+                                : 'bg-slate-100 text-slate-400 border border-slate-200 font-medium'
+                              }`}
+                          >
+                            {b.name} {active && !isCurrent ? "✓" : ""}
+                          </Badge>
                         );
                       })}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Detailed Roster Table (Real Data) */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
-                  <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100">
-                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">📋 Recent Invites Status</CardTitle>
-                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">List of downlines registered in your network.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0 w-full max-w-full min-w-0">
-                    {allReferredUsers.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400 text-xs">
-                        No invites placed yet. Share your code to get started.
+                  <div className="mt-4 sm:mt-5">
+                    <div className="flex flex-col sm:flex-row justify-between text-[11px] sm:text-xs font-bold text-slate-600 mb-1.5 gap-0.5">
+                      <span>Rank Level Progress ({currentRank.currentCount} / {currentRank.targetMax} Qualified Referrals)</span>
+                      <span className="text-indigo-600 font-black">{currentRank.targetRemaining} more to {currentRank.targetGoal}</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-3 sm:h-3.5 border overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 via-indigo-600 to-amber-500 h-3 sm:h-3.5 rounded-full transition-all duration-500"
+                        style={{ width: `${currentRank.progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5 italic">
+                      *Qualification Criteria: Member must be Phone &amp; Gmail verified (KYC) and completed their 1st Purchase.
+                    </p>
+                  </div>
+
+                  {/* How to reach next step guide */}
+                  <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 sm:p-3.5 text-xs text-indigo-950">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+                      <span className="text-lg sm:text-xl shrink-0 mt-0.5 sm:mt-0">🚀</span>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-xs text-indigo-950">
+                          How to Unlock {currentRank.targetGoal}:
+                        </p>
+                        <p className="text-[10.5px] sm:text-[11px] text-indigo-700 mt-0.5">
+                          Invite members who verify their Phone &amp; Gmail, and complete their 1st purchase. You need <span className="font-black text-indigo-900">{currentRank.targetRemaining} more qualified member{currentRank.targetRemaining === 1 ? '' : 's'}</span> to unlock your {currentRank.targetGoal} badge.
+                        </p>
                       </div>
-                    ) : (
-                      <>
-                        {/* 📱 MOBILE VIEW: Roster Invites as Cards (No horizontal scroll) */}
-                        <div className="md:hidden p-3 space-y-2.5">
-                          {allReferredUsers.slice(0, 5).map((u) => (
-                            <div key={u._id} className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center gap-2">
-                              <div className="min-w-0">
-                                <p className="font-bold text-navy text-xs truncate">{u.name}</p>
-                                <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <Badge variant="outline" className={`text-[8.5px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
-                                    Level {u.levelNum}
-                                  </Badge>
-                                  <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
-                                    {isUserQualified(u) ? "Active" : "KYC pending"}
-                                  </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer w-full sm:w-auto"
+                      onClick={shareReferral}
+                    >
+                      Invite Now
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions Panel */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-4 w-full max-w-full min-w-0">
+                <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm border-none active:scale-95 transition" onClick={shareReferral}>
+                  <span className="text-base sm:text-lg">💬</span> Share WhatsApp
+                </Button>
+                <Button className="h-auto bg-navy text-white hover:bg-navy/95 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm active:scale-95 transition" onClick={() => setShowInviteQR(true)}>
+                  <span className="text-base sm:text-lg">📷</span> Invite QR Code
+                </Button>
+                <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => copyToClipboard(referralLink, "link")}>
+                  <span className="text-base sm:text-lg">🔗</span> Copy Link
+                </Button>
+                <Button variant="outline" className="h-auto border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setShowVideoDialog(true)}>
+                  <span className="text-base sm:text-lg">🎥</span> Training
+                </Button>
+                <Button variant="outline" className="h-auto col-span-2 md:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setActiveTab("withdraw")}>
+                  <span className="text-base sm:text-lg">🏦</span> Withdraw Wallet
+                </Button>
+              </div>
+
+              {/* Double Column Overview Widgets */}
+              <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full min-w-0">
+                {/* Left Column: Funnel & Comps */}
+                <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
+                  {/* Referral Health Funnel Card */}
+                  <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
+                    <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                      <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Conversion Funnel</CardTitle>
+                      <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and identify drop points in your referred downline network.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6 pt-2">
+                      <div className="space-y-3 sm:space-y-3.5">
+                        {[
+                          { label: "Referral Link Clicked", value: funnelStats.clicks, color: "bg-slate-400" },
+                          { label: "Registered / Signed up", value: funnelStats.registered, color: "bg-indigo-400" },
+                          { label: "KYC Completed", value: funnelStats.kycCompleted, color: "bg-amber-400" },
+                          { label: "First Purchase Complete", value: funnelStats.firstPurchase, color: "bg-emerald-500" },
+                          { label: "Active Network Members", value: funnelStats.active, color: "bg-purple-600" }
+                        ].map((step, idx, arr) => {
+                          const prevVal = idx === 0 ? step.value : arr[idx - 1].value;
+                          const drop = prevVal > 0 ? ((step.value / prevVal) * 100).toFixed(0) : "0";
+                          return (
+                            <div key={step.label} className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px] sm:text-xs font-bold">
+                                <span className="text-slate-700 flex items-center gap-1.5 truncate">
+                                  <span className={`w-2.5 h-2.5 rounded-full ${step.color} shrink-0`} />
+                                  <span className="truncate">{step.label}</span>
+                                </span>
+                                <span className="text-navy shrink-0 ml-2">{step.value} users {idx > 0 && <span className="text-slate-400 font-semibold ml-1">({drop}%)</span>}</span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-2">
+                                <div className={`${step.color} h-2 rounded-full transition-all duration-500`} style={{ width: `${arr[0].value > 0 ? (step.value / arr[0].value) * 100 : 0}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Detailed Roster Table (Real Data) */}
+                  <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
+                    <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100">
+                      <CardTitle className="text-sm sm:text-base font-extrabold text-navy">📋 Recent Invites Status</CardTitle>
+                      <CardDescription className="text-[11px] sm:text-xs text-slate-500">List of downlines registered in your network.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0 w-full max-w-full min-w-0">
+                      {allReferredUsers.length === 0 ? (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                          No invites placed yet. Share your code to get started.
+                        </div>
+                      ) : (
+                        <>
+                          {/* 📱 MOBILE VIEW: Roster Invites as Cards (No horizontal scroll) */}
+                          <div className="md:hidden p-3 space-y-2.5">
+                            {allReferredUsers.slice(0, 5).map((u) => (
+                              <div key={u._id} className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-bold text-navy text-xs truncate">{u.name}</p>
+                                  <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <Badge variant="outline" className={`text-[8.5px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                                      Level {u.levelNum}
+                                    </Badge>
+                                    <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
+                                      {isUserQualified(u) ? "Active" : "KYC pending"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-xs font-black text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
                                 </div>
                               </div>
-                              <div className="text-right shrink-0">
-                                <span className="text-xs font-black text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
+                            ))}
+                          </div>
+
+                          {/* 💻 DESKTOP VIEW: Table (Untouched) */}
+                          <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
+                            <table className="w-full text-xs text-left min-w-[500px]">
+                              <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                                <tr>
+                                  <th className="p-3">User</th>
+                                  <th className="p-3">Network Level</th>
+                                  <th className="p-3 text-center">Status</th>
+                                  <th className="p-3 text-right">Commissions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {allReferredUsers.slice(0, 5).map((u) => (
+                                  <tr key={u._id} className="hover:bg-slate-50/50 transition-all">
+                                    <td className="p-3">
+                                      <p className="font-bold text-navy text-xs">{u.name}</p>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">{u.email}</p>
+                                    </td>
+                                    <td className="p-3">
+                                      <Badge variant="outline" className={`text-[9px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                                        Level {u.levelNum}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
+                                        {isUserQualified(u) ? "Active member" : "KYC pending"}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* 📱 MOBILE VIEW ONLY: Recent Transactions (Like /wallet) */}
+                  <Card className="md:hidden border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0 bg-white">
+                    <CardHeader className="p-4 pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="text-sm font-extrabold text-navy flex items-center gap-1.5">
+                          <Wallet className="h-4 w-4 text-amber-500" /> Recent Transactions
+                        </CardTitle>
+                        <CardDescription className="text-[10px] text-slate-500">Latest earnings & commission credits</CardDescription>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("earnings")}
+                        className="text-[11px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl transition border border-amber-200/60"
+                      >
+                        View All →
+                      </button>
+                    </CardHeader>
+                    <CardContent className="p-3 space-y-2.5">
+                      {filteredLedger.length === 0 ? (
+                        <div className="p-6 text-center text-slate-400 text-xs">
+                          No transactions recorded yet.
+                        </div>
+                      ) : (
+                        filteredLedger.slice(0, 4).map((row, idx) => {
+                          const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                          const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                          const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+                          const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
+
+                          return (
+                            <div
+                              key={row.id || row.transactionId || idx}
+                              className={`bg-white border rounded-2xl p-3.5 flex flex-col gap-2.5 transition shadow-2xs text-left ${isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200"
+                                }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className={`p-2.5 rounded-2xl shrink-0 ${isHold
+                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
+                                    }`}
+                                >
+                                  {isHold ? (
+                                    <Lock className="h-4 w-4" />
+                                  ) : (
+                                    <ArrowDownLeft className="h-4 w-4" />
+                                  )}
+                                </div>
+
+                                <div className="space-y-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <h4 className="font-black text-slate-900 text-xs leading-snug truncate max-w-[200px]">
+                                      {row.referralName || row.remarks || row.type || "Referral Bonus"}
+                                    </h4>
+                                    {isVendor ? (
+                                      <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                        Vendor
+                                      </Badge>
+                                    ) : isFranchise ? (
+                                      <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                        Franchise
+                                      </Badge>
+                                    ) : isHold ? (
+                                      <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                        Escrow Hold
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[8.5px] font-extrabold px-1.5 py-0">
+                                        {row.level || "Referral"}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 font-mono">
+                                    ID: {row.transactionId || `TXN-${idx + 1}`}
+                                    {orderRef && ` • Ref: ${orderRef}`}
+                                    {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
+                                  </p>
+                                </div>
                               </div>
+
+                              <div className="flex justify-between items-center border-t border-slate-100 pt-2">
+                                <span className={`text-sm font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
+                                  +₹{formatINR(row.amount)}
+                                </span>
+                                {isHold ? (
+                                  <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                                    HOLD (7-DAY)
+                                  </span>
+                                ) : (
+                                  <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    {row.status ? row.status.toUpperCase() : "COMPLETED"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Right Column: AI Suggests, Badges, Timeline */}
+                <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
+                  {/* AI suggestion widget */}
+                  <Card className="border border-purple-200 bg-purple-50/20 shadow-sm rounded-2xl relative overflow-hidden">
+                    <div className="absolute right-0 top-0 translate-x-2 -translate-y-2 opacity-10 pointer-events-none">
+                      <Sparkles className="h-24 w-24 text-purple-600" />
+                    </div>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-xs sm:text-sm font-extrabold text-purple-900 flex items-center gap-1.5">
+                        <span>🤖</span> Abhi Suggests
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 text-xs text-purple-950 space-y-2">
+                      <p className="leading-relaxed text-[11px] sm:text-xs">
+                        "You have {allReferredUsers.filter(u => !u.firstOrderQualified).length} pending signups. Remind them to make their first purchase to unlock ₹250 bonus commissions!"
+                      </p>
+                      <ul className="space-y-1 text-[10.5px] sm:text-[11px] text-purple-800 font-semibold list-disc list-inside">
+                        <li>Complete bank verification details.</li>
+                        <li>Invite 3 more friends today to unlock Bronze rank.</li>
+                        <li>Share referral link on WhatsApp status.</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Estimate Estimator */}
+                  <Card className="border border-slate-200 shadow-sm rounded-2xl">
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">Calculator Estimator</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3 sm:space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-bold text-slate-600">
+                          <span>Invite Friends</span>
+                          <span className="text-indigo-600 font-black">{calculatorFriends} members</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="50"
+                          value={calculatorFriends}
+                          onChange={(e) => setCalculatorFriends(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                        />
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2 text-xs">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Direct Signup Bonus:</span>
+                          <span className="font-bold text-navy">₹{formatINR(calculatedEstimations.directInviteIncome)}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>If all make purchases:</span>
+                          <span className="font-bold text-emerald-600">₹{formatINR(calculatedEstimations.purchaseIncomeIfAllBuy)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* MLM Leaderboard Card */}
+                  <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                    <CardHeader className="p-4 pb-3 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="text-xs sm:text-sm font-extrabold text-navy flex items-center gap-1.5">
+                        <span>🏆</span> Weekly Top Referrers
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {filteredLeaderboardData.length === 0 ? (
+                        <div className="p-6 text-center text-slate-400 text-xs">
+                          No leaderboard data found.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 text-xs">
+                          {filteredLeaderboardData.map((row, idx) => (
+                            <div key={idx} className={`p-3 flex justify-between items-center ${row.isCurrentUser ? 'bg-purple-50/65 font-bold border-l-4 border-purple-500' : ''}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 text-center font-bold text-slate-500">{row.displayRank || (idx + 1)}</span>
+                                <div>
+                                  <p className="text-navy font-bold">{row.name} {row.isCurrentUser && "(You)"}</p>
+                                  <p className="text-[10px] text-slate-400">Total: {row.count} invites</p>
+                                </div>
+                              </div>
+                              <span className="font-extrabold text-emerald-700">₹{formatINR(row.earnings)}</span>
                             </div>
                           ))}
                         </div>
-
-                        {/* 💻 DESKTOP VIEW: Table (Untouched) */}
-                        <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
-                          <table className="w-full text-xs text-left min-w-[500px]">
-                            <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                              <tr>
-                                <th className="p-3">User</th>
-                                <th className="p-3">Network Level</th>
-                                <th className="p-3 text-center">Status</th>
-                                <th className="p-3 text-right">Commissions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {allReferredUsers.slice(0, 5).map((u) => (
-                                <tr key={u._id} className="hover:bg-slate-50/50 transition-all">
-                                  <td className="p-3">
-                                    <p className="font-bold text-navy text-xs">{u.name}</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">{u.email}</p>
-                                  </td>
-                                  <td className="p-3">
-                                    <Badge variant="outline" className={`text-[9px] ${u.levelNum === 1 ? 'bg-green-50 text-green-700' : u.levelNum === 2 ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
-                                      Level {u.levelNum}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-3 text-center">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isUserQualified(u) ? 'bg-green-50 text-green-700 border-green-150' : 'bg-amber-50 text-amber-700 border-amber-150'}`}>
-                                      {isUserQualified(u) ? "Active member" : "KYC pending"}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(u.totalCommissionGenerated || 0)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* 📱 MOBILE VIEW ONLY: Recent Transactions (Like /wallet) */}
-                <Card className="md:hidden border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0 bg-white">
-                  <CardHeader className="p-4 pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="text-sm font-extrabold text-navy flex items-center gap-1.5">
-                        <Wallet className="h-4 w-4 text-amber-500" /> Recent Transactions
-                      </CardTitle>
-                      <CardDescription className="text-[10px] text-slate-500">Latest earnings & commission credits</CardDescription>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("earnings")}
-                      className="text-[11px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl transition border border-amber-200/60"
-                    >
-                      View All →
-                    </button>
-                  </CardHeader>
-                  <CardContent className="p-3 space-y-2.5">
-                    {filteredLedger.length === 0 ? (
-                      <div className="p-6 text-center text-slate-400 text-xs">
-                        No transactions recorded yet.
-                      </div>
-                    ) : (
-                      filteredLedger.slice(0, 4).map((row, idx) => {
-                        const isHold = row.status === "hold" || row.type === "Hold Reserve";
-                        const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
-                        const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
-                        const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
-
-                        return (
-                          <div
-                            key={row.id || row.transactionId || idx}
-                            className={`bg-white border rounded-2xl p-3.5 flex flex-col gap-2.5 transition shadow-2xs text-left ${
-                              isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div
-                                className={`p-2.5 rounded-2xl shrink-0 ${
-                                  isHold
-                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
-                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
-                                }`}
-                              >
-                                {isHold ? (
-                                  <Lock className="h-4 w-4" />
-                                ) : (
-                                  <ArrowDownLeft className="h-4 w-4" />
-                                )}
-                              </div>
-
-                              <div className="space-y-0.5 min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <h4 className="font-black text-slate-900 text-xs leading-snug truncate max-w-[200px]">
-                                    {row.referralName || row.remarks || row.type || "Referral Bonus"}
-                                  </h4>
-                                  {isVendor ? (
-                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[8.5px] font-extrabold px-1.5 py-0">
-                                      Vendor
-                                    </Badge>
-                                  ) : isFranchise ? (
-                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[8.5px] font-extrabold px-1.5 py-0">
-                                      Franchise
-                                    </Badge>
-                                  ) : isHold ? (
-                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[8.5px] font-extrabold px-1.5 py-0">
-                                      Escrow Hold
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[8.5px] font-extrabold px-1.5 py-0">
-                                      {row.level || "Referral"}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-mono">
-                                  ID: {row.transactionId || `TXN-${idx + 1}`}
-                                  {orderRef && ` • Ref: ${orderRef}`}
-                                  {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex justify-between items-center border-t border-slate-100 pt-2">
-                              <span className={`text-sm font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
-                                +₹{formatINR(row.amount)}
-                              </span>
-                              {isHold ? (
-                                <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
-                                  HOLD (7-DAY)
-                                </span>
-                              ) : (
-                                <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
-                                  {row.status ? row.status.toUpperCase() : "COMPLETED"}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </CardContent>
-                </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
+            </TabsContent>
 
-              {/* Right Column: AI Suggests, Badges, Timeline */}
-              <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
-                {/* AI suggestion widget */}
-                <Card className="border border-purple-200 bg-purple-50/20 shadow-sm rounded-2xl relative overflow-hidden">
-                  <div className="absolute right-0 top-0 translate-x-2 -translate-y-2 opacity-10 pointer-events-none">
-                    <Sparkles className="h-24 w-24 text-purple-600" />
-                  </div>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-xs sm:text-sm font-extrabold text-purple-900 flex items-center gap-1.5">
-                      <span>🤖</span> Abhi Suggests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 text-xs text-purple-950 space-y-2">
-                    <p className="leading-relaxed text-[11px] sm:text-xs">
-                      "You have {allReferredUsers.filter(u => !u.firstOrderQualified).length} pending signups. Remind them to make their first purchase to unlock ₹250 bonus commissions!"
-                    </p>
-                    <ul className="space-y-1 text-[10.5px] sm:text-[11px] text-purple-800 font-semibold list-disc list-inside">
-                      <li>Complete bank verification details.</li>
-                      <li>Invite 3 more friends today to unlock Bronze rank.</li>
-                      <li>Share referral link on WhatsApp status.</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                {/* Estimate Estimator */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">Calculator Estimator</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 space-y-3 sm:space-y-4">
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-slate-600">
-                        <span>Invite Friends</span>
-                        <span className="text-indigo-600 font-black">{calculatorFriends} members</span>
+            {/* Earnings Tab Content */}
+            <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+              {/* Executive Account Ledger & Multi-Stream Reconciliation Card */}
+              <Card className="border border-slate-200/90 shadow-md rounded-2xl sm:rounded-3xl bg-white overflow-hidden w-full max-w-full min-w-0">
+                <div className="bg-gradient-to-r from-[#07132B] via-[#0B1E48] to-[#122A63] text-white p-4 sm:p-6 border-b border-white/10">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+                        <Landmark className="h-6 w-6 text-amber-300" />
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        value={calculatorFriends}
-                        onChange={(e) => setCalculatorFriends(Number(e.target.value))}
-                        className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
+                            {loggedInUserObj?.name || (isGuruSwamy ? "Guru Swamy K" : "Partner Account")} — Account Financial Ledger & Net Audit
+                          </h2>
+                          <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] font-black">
+                            ✓ 100% Reconciled
+                          </Badge>
+                        </div>
+                        <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5">
+                          Comprehensive ledger breakdown covering verified earnings, network royalties, and partner incentives.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Partnership Roles & Profile Badges - Conditionally rendered per member */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      {isUserVendor && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10.5px] font-extrabold shadow-xs">
+                          <Store className="h-3 w-3" /> Vendor Merchant
+                        </span>
+                      )}
+                      {isUserFranchise && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10.5px] font-extrabold shadow-xs">
+                          <Building2 className="h-3 w-3" /> Franchise Partner
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10.5px] font-extrabold shadow-xs">
+                        <Users className="h-3 w-3" /> {isGuruSwamy ? "Prime Referral" : "Referral Partner"}
+                      </span>
+                      {isUserKycVerified ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10.5px] font-extrabold shadow-xs">
+                          <ShieldCheck className="h-3 w-3" /> Verified KYC
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-500/20 text-slate-300 border border-slate-400/30 text-[10.5px] font-extrabold shadow-xs">
+                          Active Member
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mathematical Ledger Equation Hero Box */}
+                  <div className="mt-4 sm:mt-6 bg-black/30 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10">
+                    <div className="text-[10px] sm:text-[11px] text-indigo-200 font-extrabold uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span>Mathematical Reconciliation Formula</span>
+                      <span className="text-emerald-400 font-bold">Ledger Balance Audit Verified</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-center">
+                      {/* Gross Inflow */}
+                      <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <p className="text-[10px] text-slate-300 font-semibold uppercase">Total Gross Inflow</p>
+                        <p className="text-xl sm:text-2xl font-black text-amber-300 font-sans mt-0.5">
+                          ₹{formatINR(memberTotalGross)}
+                        </p>
+                        <p className="text-[9.5px] text-slate-400 mt-1">
+                          All verified earnings & sales credits across channels
+                        </p>
+                      </div>
+
+                      {/* Return Escrow Hold */}
+                      <div className="bg-white/5 rounded-xl p-3 border border-amber-400/20 relative">
+                        <div className="absolute -top-2.5 left-4 bg-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.2 rounded-full uppercase">
+                          Less: Security Hold
+                        </div>
+                        <p className="text-[10px] text-amber-200 font-semibold uppercase mt-1">7-Day Escrow Buffer</p>
+                        <p className="text-xl sm:text-2xl font-black text-amber-400 font-sans mt-0.5">
+                          -₹{formatINR(memberHold)}
+                        </p>
+                        <p className="text-[9.5px] text-slate-400 mt-1">
+                          Reserved for return/refund window; auto-releases
+                        </p>
+                      </div>
+
+                      {/* Net Available */}
+                      <div className="bg-emerald-950/40 rounded-xl p-3 border border-emerald-400/40 relative">
+                        <div className="absolute -top-2.5 left-4 bg-emerald-400 text-slate-950 font-black text-[9px] px-2 py-0.2 rounded-full uppercase">
+                          Net Available
+                        </div>
+                        <p className="text-[10px] text-emerald-200 font-semibold uppercase mt-1">Ready to Withdraw</p>
+                        <p className="text-xl sm:text-2xl font-black text-emerald-400 font-sans mt-0.5">
+                          ₹{formatINR(memberAvailable)}
+                        </p>
+                        <p className="text-[9.5px] text-emerald-200/80 mt-1">
+                          Instant bank transfer / wallet payout balance
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Multi-Stream Distribution Summary Cards - Rendered only if relevant to member */}
+                <div className="p-4 sm:p-6 bg-slate-50/70 border-b border-slate-200/80">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-navy flex items-center gap-1.5">
+                      <TrendingUp className="h-4 w-4 text-emerald-600" />
+                      Earnings Breakdown by Role & Stream
+                    </h3>
+                    <span className="text-[10.5px] text-slate-500 font-bold">
+                      Click any stream card below to filter the ledger
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
+                    {/* Vendor Store Settlements (Only shown if member has vendor role or vendor transactions) */}
+                    {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
+                      <div
+                        onClick={() => setEarningsTypeFilter("vendor")}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "vendor" || earningsTypeFilter === "Vendor Sales"
+                          ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/30 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-emerald-300 hover:shadow-xs"
+                          }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase text-emerald-700 flex items-center gap-1">
+                            <Store className="h-3 w-3" /> Vendor
+                          </span>
+                          <span className="text-[9.5px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
+                            {ledgerTabStats.vendor.count} txns
+                          </span>
+                        </div>
+                        <p className="text-base sm:text-lg font-black text-emerald-800 font-sans mt-1">
+                          ₹{formatINR(ledgerTabStats.vendor.total)}
+                        </p>
+                        <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
+                          B2B Store order settlements
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Franchise Territory Share (Only shown if member has franchise role or franchise transactions) */}
+                    {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
+                      <div
+                        onClick={() => setEarningsTypeFilter("franchise")}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "franchise" || earningsTypeFilter === "Franchise Incentive"
+                          ? "bg-indigo-50 border-indigo-400 ring-2 ring-indigo-500/30 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xs"
+                          }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase text-indigo-700 flex items-center gap-1">
+                            <Building2 className="h-3 w-3" /> Franchise
+                          </span>
+                          <span className="text-[9.5px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded-full">
+                            {ledgerTabStats.franchise.count} txns
+                          </span>
+                        </div>
+                        <p className="text-base sm:text-lg font-black text-indigo-800 font-sans mt-1">
+                          ₹{formatINR(ledgerTabStats.franchise.total)}
+                        </p>
+                        <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
+                          Territory hub distribution pool
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Direct Referral (Level 1) */}
+                    <div
+                      onClick={() => setEarningsTypeFilter("direct")}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "direct" || earningsTypeFilter === "First Purchase"
+                        ? "bg-blue-50 border-blue-400 ring-2 ring-blue-500/30 shadow-sm"
+                        : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xs"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-blue-700 flex items-center gap-1">
+                          <Users className="h-3 w-3" /> Direct L1
+                        </span>
+                        <span className="text-[9.5px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded-full">
+                          {ledgerTabStats.direct.count} txns
+                        </span>
+                      </div>
+                      <p className="text-base sm:text-lg font-black text-blue-800 font-sans mt-1">
+                        ₹{formatINR(ledgerTabStats.direct.total)}
+                      </p>
+                      <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
+                        Direct invitees first purchase & KYC
+                      </p>
+                    </div>
+
+                    {/* Team Downline Commissions */}
+                    <div
+                      onClick={() => setEarningsTypeFilter("indirect")}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "indirect" || earningsTypeFilter === "Product Commission"
+                        ? "bg-purple-50 border-purple-400 ring-2 ring-purple-500/30 shadow-sm"
+                        : "bg-white border-slate-200 hover:border-purple-300 hover:shadow-xs"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-purple-700 flex items-center gap-1">
+                          <Network className="h-3 w-3" /> Team L2/L3
+                        </span>
+                        <span className="text-[9.5px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded-full">
+                          {ledgerTabStats.indirect.count || ledgerTabStats.productCommission.count} txns
+                        </span>
+                      </div>
+                      <p className="text-base sm:text-lg font-black text-purple-800 font-sans mt-1">
+                        ₹{formatINR(ledgerTabStats.indirect.total || ledgerTabStats.productCommission.total)}
+                      </p>
+                      <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
+                        Multi-tier cart product royalties
+                      </p>
+                    </div>
+
+                    {/* Security Hold Reserve (Only shown if member has hold balance) */}
+                    {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
+                      <div
+                        onClick={() => setEarningsTypeFilter("hold")}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "hold" || earningsTypeFilter === "Hold Reserve"
+                          ? "bg-amber-50 border-amber-400 ring-2 ring-amber-500/30 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-amber-300 hover:shadow-xs"
+                          }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase text-amber-700 flex items-center gap-1">
+                            <Lock className="h-3 w-3" /> Escrow Hold
+                          </span>
+                          <span className="text-[9.5px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">
+                            Active Hold
+                          </span>
+                        </div>
+                        <p className="text-base sm:text-lg font-black text-amber-700 font-sans mt-1">
+                          ₹{formatINR(memberHold)}
+                        </p>
+                        <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
+                          7-day return safety reserve
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Visual graph and transaction list toggles */}
+              <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
+                  <div>
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy flex items-center gap-2">
+                      <span>📑</span> Itemized Account Ledger Audit Trail
+                    </CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">
+                      Real-time transaction entries showing verified amounts, order references, and channel streams.
+                    </CardDescription>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+                    <div className="relative w-full sm:w-auto">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <Input
+                        placeholder="Search Txn ID, order, store, name..."
+                        value={dirSearchQuery}
+                        onChange={(e) => setDirSearchQuery(e.target.value)}
+                        className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-56"
                       />
                     </div>
-
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2 text-xs">
-                      <div className="flex justify-between text-slate-600">
-                        <span>Direct Signup Bonus:</span>
-                        <span className="font-bold text-navy">₹{formatINR(calculatedEstimations.directInviteIncome)}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>If all make purchases:</span>
-                        <span className="font-bold text-emerald-600">₹{formatINR(calculatedEstimations.purchaseIncomeIfAllBuy)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* MLM Leaderboard Card */}
-                <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                  <CardHeader className="p-4 pb-3 border-b border-slate-100 bg-slate-50/50">
-                    <CardTitle className="text-xs sm:text-sm font-extrabold text-navy flex items-center gap-1.5">
-                      <span>🏆</span> Weekly Top Referrers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {filteredLeaderboardData.length === 0 ? (
-                      <div className="p-6 text-center text-slate-400 text-xs">
-                        No leaderboard data found.
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-slate-100 text-xs">
-                        {filteredLeaderboardData.map((row, idx) => (
-                          <div key={idx} className={`p-3 flex justify-between items-center ${row.isCurrentUser ? 'bg-purple-50/65 font-bold border-l-4 border-purple-500' : ''}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="w-5 text-center font-bold text-slate-500">{row.displayRank || (idx + 1)}</span>
-                              <div>
-                                <p className="text-navy font-bold">{row.name} {row.isCurrentUser && "(You)"}</p>
-                                <p className="text-[10px] text-slate-400">Total: {row.count} invites</p>
-                              </div>
-                            </div>
-                            <span className="font-extrabold text-emerald-700">₹{formatINR(row.earnings)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Earnings Tab Content */}
-          <TabsContent value="earnings" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            {/* Executive Account Ledger & Multi-Stream Reconciliation Card */}
-            <Card className="border border-slate-200/90 shadow-md rounded-2xl sm:rounded-3xl bg-white overflow-hidden w-full max-w-full min-w-0">
-              <div className="bg-gradient-to-r from-[#07132B] via-[#0B1E48] to-[#122A63] text-white p-4 sm:p-6 border-b border-white/10">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0">
-                      <Landmark className="h-6 w-6 text-amber-300" />
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
-                          {loggedInUserObj?.name || (isGuruSwamy ? "Guru Swamy K" : "Partner Account")} — Account Financial Ledger & Net Audit
-                        </h2>
-                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] font-black">
-                          ✓ 100% Reconciled
-                        </Badge>
-                      </div>
-                      <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5">
-                        Comprehensive ledger breakdown covering verified earnings, network royalties, and partner incentives.
-                      </p>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <select
+                        value={earningsTypeFilter}
+                        onChange={(e) => setEarningsTypeFilter(e.target.value)}
+                        className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                      >
+                        <option value="all">All Channels & Streams</option>
+                        <option value="available">Available Balance (₹{formatINR(memberAvailable)})</option>
+                        {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
+                          <option value="vendor">Vendor Store Orders</option>
+                        )}
+                        {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
+                          <option value="franchise">Franchise Territory Pools</option>
+                        )}
+                        <option value="direct">Direct Referrals (Level 1)</option>
+                        <option value="indirect">Team Downline (Level 2/3)</option>
+                        <option value="First Purchase">First Purchase Only</option>
+                        <option value="Product Commission">Product Commissions</option>
+                        <option value="Signup Bonus">Signup Bonuses</option>
+                        {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
+                          <option value="hold">Active Hold Reserve (₹{formatINR(memberHold)})</option>
+                        )}
+                      </select>
+                      <select
+                        value={earningsDateFilter}
+                        onChange={(e) => setEarningsDateFilter(e.target.value)}
+                        className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                      >
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                      </select>
                     </div>
                   </div>
+                </CardHeader>
 
-                  {/* Partnership Roles & Profile Badges - Conditionally rendered per member */}
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    {isUserVendor && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10.5px] font-extrabold shadow-xs">
-                        <Store className="h-3 w-3" /> Vendor Merchant
-                      </span>
-                    )}
-                    {isUserFranchise && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10.5px] font-extrabold shadow-xs">
-                        <Building2 className="h-3 w-3" /> Franchise Partner
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10.5px] font-extrabold shadow-xs">
-                      <Users className="h-3 w-3" /> {isGuruSwamy ? "Prime Referral" : "Referral Partner"}
-                    </span>
-                    {isUserKycVerified ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10.5px] font-extrabold shadow-xs">
-                        <ShieldCheck className="h-3 w-3" /> Verified KYC
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-500/20 text-slate-300 border border-slate-400/30 text-[10.5px] font-extrabold shadow-xs">
-                        Active Member
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mathematical Ledger Equation Hero Box */}
-                <div className="mt-4 sm:mt-6 bg-black/30 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10">
-                  <div className="text-[10px] sm:text-[11px] text-indigo-200 font-extrabold uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>Mathematical Reconciliation Formula</span>
-                    <span className="text-emerald-400 font-bold">Ledger Balance Audit Verified</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-center">
-                    {/* Gross Inflow */}
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <p className="text-[10px] text-slate-300 font-semibold uppercase">Total Gross Inflow</p>
-                      <p className="text-xl sm:text-2xl font-black text-amber-300 font-sans mt-0.5">
-                        ₹{formatINR(memberTotalGross)}
-                      </p>
-                      <p className="text-[9.5px] text-slate-400 mt-1">
-                        All verified earnings & sales credits across channels
-                      </p>
-                    </div>
-
-                    {/* Return Escrow Hold */}
-                    <div className="bg-white/5 rounded-xl p-3 border border-amber-400/20 relative">
-                      <div className="absolute -top-2.5 left-4 bg-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.2 rounded-full uppercase">
-                        Less: Security Hold
-                      </div>
-                      <p className="text-[10px] text-amber-200 font-semibold uppercase mt-1">7-Day Escrow Buffer</p>
-                      <p className="text-xl sm:text-2xl font-black text-amber-400 font-sans mt-0.5">
-                        -₹{formatINR(memberHold)}
-                      </p>
-                      <p className="text-[9.5px] text-slate-400 mt-1">
-                        Reserved for return/refund window; auto-releases
-                      </p>
-                    </div>
-
-                    {/* Net Available */}
-                    <div className="bg-emerald-950/40 rounded-xl p-3 border border-emerald-400/40 relative">
-                      <div className="absolute -top-2.5 left-4 bg-emerald-400 text-slate-950 font-black text-[9px] px-2 py-0.2 rounded-full uppercase">
-                        Net Available
-                      </div>
-                      <p className="text-[10px] text-emerald-200 font-semibold uppercase mt-1">Ready to Withdraw</p>
-                      <p className="text-xl sm:text-2xl font-black text-emerald-400 font-sans mt-0.5">
-                        ₹{formatINR(memberAvailable)}
-                      </p>
-                      <p className="text-[9.5px] text-emerald-200/80 mt-1">
-                        Instant bank transfer / wallet payout balance
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Multi-Stream Distribution Summary Cards - Rendered only if relevant to member */}
-              <div className="p-4 sm:p-6 bg-slate-50/70 border-b border-slate-200/80">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-navy flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                    Earnings Breakdown by Role & Stream
-                  </h3>
-                  <span className="text-[10.5px] text-slate-500 font-bold">
-                    Click any stream card below to filter the ledger
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
-                  {/* Vendor Store Settlements (Only shown if member has vendor role or vendor transactions) */}
-                  {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
-                    <div
-                      onClick={() => setEarningsTypeFilter("vendor")}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "vendor" || earningsTypeFilter === "Vendor Sales"
-                        ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/30 shadow-sm"
-                        : "bg-white border-slate-200 hover:border-emerald-300 hover:shadow-xs"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase text-emerald-700 flex items-center gap-1">
-                          <Store className="h-3 w-3" /> Vendor
-                        </span>
-                        <span className="text-[9.5px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
-                          {ledgerTabStats.vendor.count} txns
-                        </span>
-                      </div>
-                      <p className="text-base sm:text-lg font-black text-emerald-800 font-sans mt-1">
-                        ₹{formatINR(ledgerTabStats.vendor.total)}
-                      </p>
-                      <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
-                        B2B Store order settlements
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Franchise Territory Share (Only shown if member has franchise role or franchise transactions) */}
-                  {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
-                    <div
-                      onClick={() => setEarningsTypeFilter("franchise")}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "franchise" || earningsTypeFilter === "Franchise Incentive"
-                        ? "bg-indigo-50 border-indigo-400 ring-2 ring-indigo-500/30 shadow-sm"
-                        : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xs"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase text-indigo-700 flex items-center gap-1">
-                          <Building2 className="h-3 w-3" /> Franchise
-                        </span>
-                        <span className="text-[9.5px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded-full">
-                          {ledgerTabStats.franchise.count} txns
-                        </span>
-                      </div>
-                      <p className="text-base sm:text-lg font-black text-indigo-800 font-sans mt-1">
-                        ₹{formatINR(ledgerTabStats.franchise.total)}
-                      </p>
-                      <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
-                        Territory hub distribution pool
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Direct Referral (Level 1) */}
-                  <div
-                    onClick={() => setEarningsTypeFilter("direct")}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "direct" || earningsTypeFilter === "First Purchase"
-                      ? "bg-blue-50 border-blue-400 ring-2 ring-blue-500/30 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xs"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase text-blue-700 flex items-center gap-1">
-                        <Users className="h-3 w-3" /> Direct L1
-                      </span>
-                      <span className="text-[9.5px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded-full">
-                        {ledgerTabStats.direct.count} txns
-                      </span>
-                    </div>
-                    <p className="text-base sm:text-lg font-black text-blue-800 font-sans mt-1">
-                      ₹{formatINR(ledgerTabStats.direct.total)}
-                    </p>
-                    <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
-                      Direct invitees first purchase & KYC
-                    </p>
-                  </div>
-
-                  {/* Team Downline Commissions */}
-                  <div
-                    onClick={() => setEarningsTypeFilter("indirect")}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "indirect" || earningsTypeFilter === "Product Commission"
-                      ? "bg-purple-50 border-purple-400 ring-2 ring-purple-500/30 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-purple-300 hover:shadow-xs"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase text-purple-700 flex items-center gap-1">
-                        <Network className="h-3 w-3" /> Team L2/L3
-                      </span>
-                      <span className="text-[9.5px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded-full">
-                        {ledgerTabStats.indirect.count || ledgerTabStats.productCommission.count} txns
-                      </span>
-                    </div>
-                    <p className="text-base sm:text-lg font-black text-purple-800 font-sans mt-1">
-                      ₹{formatINR(ledgerTabStats.indirect.total || ledgerTabStats.productCommission.total)}
-                    </p>
-                    <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
-                      Multi-tier cart product royalties
-                    </p>
-                  </div>
-
-                  {/* Security Hold Reserve (Only shown if member has hold balance) */}
-                  {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
-                    <div
-                      onClick={() => setEarningsTypeFilter("hold")}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${earningsTypeFilter === "hold" || earningsTypeFilter === "Hold Reserve"
-                        ? "bg-amber-50 border-amber-400 ring-2 ring-amber-500/30 shadow-sm"
-                        : "bg-white border-slate-200 hover:border-amber-300 hover:shadow-xs"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase text-amber-700 flex items-center gap-1">
-                          <Lock className="h-3 w-3" /> Escrow Hold
-                        </span>
-                        <span className="text-[9.5px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">
-                          Active Hold
-                        </span>
-                      </div>
-                      <p className="text-base sm:text-lg font-black text-amber-700 font-sans mt-1">
-                        ₹{formatINR(memberHold)}
-                      </p>
-                      <p className="text-[9.5px] text-slate-500 mt-0.5 truncate">
-                        7-day return safety reserve
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Visual graph and transaction list toggles */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
-                <div>
-                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy flex items-center gap-2">
-                    <span>📑</span> Itemized Account Ledger Audit Trail
-                  </CardTitle>
-                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">
-                    Real-time transaction entries showing verified amounts, order references, and channel streams.
-                  </CardDescription>
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
-                  <div className="relative w-full sm:w-auto">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                    <Input
-                      placeholder="Search Txn ID, order, store, name..."
-                      value={dirSearchQuery}
-                      onChange={(e) => setDirSearchQuery(e.target.value)}
-                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-56"
-                    />
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <select
-                      value={earningsTypeFilter}
-                      onChange={(e) => setEarningsTypeFilter(e.target.value)}
-                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
-                    >
-                      <option value="all">All Channels & Streams</option>
-                      <option value="available">Available Balance (₹{formatINR(memberAvailable)})</option>
-                      {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
-                        <option value="vendor">Vendor Store Orders</option>
-                      )}
-                      {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
-                        <option value="franchise">Franchise Territory Pools</option>
-                      )}
-                      <option value="direct">Direct Referrals (Level 1)</option>
-                      <option value="indirect">Team Downline (Level 2/3)</option>
-                      <option value="First Purchase">First Purchase Only</option>
-                      <option value="Product Commission">Product Commissions</option>
-                      <option value="Signup Bonus">Signup Bonuses</option>
-                      {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
-                        <option value="hold">Active Hold Reserve (₹{formatINR(memberHold)})</option>
-                      )}
-                    </select>
-                    <select
-                      value={earningsDateFilter}
-                      onChange={(e) => setEarningsDateFilter(e.target.value)}
-                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
-                    >
-                      <option value="all">All Dates</option>
-                      <option value="today">Today</option>
-                      <option value="yesterday">Yesterday</option>
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                    </select>
-                  </div>
-                </div>
-              </CardHeader>
-
-              {/* Fast Filter Navigation Tabs */}
-              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
-                <button
-                  type="button"
-                  onClick={() => setEarningsTypeFilter("all")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "all"
-                    ? "bg-navy text-white shadow-sm ring-1 ring-navy"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                    }`}
-                >
-                  <span>📋</span> All Ledger
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                    {ledgerTabStats.all.count}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEarningsTypeFilter("available")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "available"
-                    ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
-                    : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
-                    }`}
-                >
-                  <span>💰</span> Available (₹{formatINR(memberAvailable)})
-                </button>
-
-                {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
+                {/* Fast Filter Navigation Tabs */}
+                <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
                   <button
                     type="button"
-                    onClick={() => setEarningsTypeFilter("vendor")}
-                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "vendor" || earningsTypeFilter === "Vendor Sales"
-                      ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                    onClick={() => setEarningsTypeFilter("all")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "all"
+                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                      }`}
+                  >
+                    <span>📋</span> All Ledger
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                      {ledgerTabStats.all.count}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEarningsTypeFilter("available")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "available"
+                      ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
                       : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
                       }`}
                   >
-                    <Store className="h-3 w-3" /> Vendor Sales
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "vendor" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
-                      {ledgerTabStats.vendor.count}
-                    </span>
-                    {ledgerTabStats.vendor.total > 0 && (
-                      <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.vendor.total)}</span>
-                    )}
+                    <span>💰</span> Available (₹{formatINR(memberAvailable)})
                   </button>
-                )}
 
-                {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
+                  {(isUserVendor || ledgerTabStats.vendor.count > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setEarningsTypeFilter("vendor")}
+                      className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "vendor" || earningsTypeFilter === "Vendor Sales"
+                        ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                        : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
+                        }`}
+                    >
+                      <Store className="h-3 w-3" /> Vendor Sales
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "vendor" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                        {ledgerTabStats.vendor.count}
+                      </span>
+                      {ledgerTabStats.vendor.total > 0 && (
+                        <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.vendor.total)}</span>
+                      )}
+                    </button>
+                  )}
+
+                  {(isUserFranchise || ledgerTabStats.franchise.count > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setEarningsTypeFilter("franchise")}
+                      className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "franchise" || earningsTypeFilter === "Franchise Incentive"
+                        ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
+                        : "bg-white text-indigo-800 hover:bg-indigo-50/60 border border-indigo-200/80"
+                        }`}
+                    >
+                      <Building2 className="h-3 w-3" /> Franchise
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "franchise" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
+                        {ledgerTabStats.franchise.count}
+                      </span>
+                      {ledgerTabStats.franchise.total > 0 && (
+                        <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.franchise.total)}</span>
+                      )}
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => setEarningsTypeFilter("franchise")}
-                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "franchise" || earningsTypeFilter === "Franchise Incentive"
+                    onClick={() => setEarningsTypeFilter("First Purchase")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "First Purchase"
+                      ? "bg-teal-600 text-white shadow-sm ring-1 ring-teal-600"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                      }`}
+                  >
+                    <span>🛍️</span> First Purchase
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "First Purchase" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                      {ledgerTabStats.firstPurchase.count}
+                    </span>
+                    {ledgerTabStats.firstPurchase.total > 0 && (
+                      <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.firstPurchase.total)}</span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEarningsTypeFilter("Product Commission")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "Product Commission"
+                      ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                      }`}
+                  >
+                    <span>📦</span> Product Comm
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Product Commission" ? "bg-white/20 text-white" : "bg-purple-50 text-purple-700"}`}>
+                      {ledgerTabStats.productCommission.count}
+                    </span>
+                    {ledgerTabStats.productCommission.total > 0 && (
+                      <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.productCommission.total)}</span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEarningsTypeFilter("Signup Bonus")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "Signup Bonus"
+                      ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                      }`}
+                  >
+                    <span>🎁</span> Signup Bonus
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Signup Bonus" ? "bg-white/20 text-white" : "bg-amber-50 text-amber-700"}`}>
+                      {ledgerTabStats.signupBonus.count}
+                    </span>
+                    {ledgerTabStats.signupBonus.total > 0 && (
+                      <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.signupBonus.total)}</span>
+                    )}
+                  </button>
+
+                  {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setEarningsTypeFilter("hold")}
+                      className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "hold" || earningsTypeFilter === "Hold Reserve"
+                        ? "bg-amber-600 text-white shadow-sm ring-2 ring-amber-400/30"
+                        : "bg-white text-amber-800 hover:bg-amber-50/60 border border-amber-200/80"
+                        }`}
+                    >
+                      <Lock className="h-3 w-3" /> Hold Reserve (₹{formatINR(memberHold)})
+                    </button>
+                  )}
+                </div>
+
+                {/* Ledger Table */}
+                <CardContent className="p-0 w-full max-w-full min-w-0">
+                  {filteredLedger.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 text-xs">
+                      No matching transactions found for the selected filter.
+                    </div>
+                  ) : (
+                    <>
+                      {/* 📱 MOBILE VIEW: Wallet-style Transaction Cards (Like /wallet) */}
+                      <div className="md:hidden p-3 space-y-3">
+                        {filteredLedger.map((row, idx) => {
+                          const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                          const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                          const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+                          const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
+
+                          return (
+                            <div
+                              key={row.id || row.transactionId || idx}
+                              className={`bg-white border rounded-2xl p-4 flex flex-col gap-3 transition shadow-xs text-left ${isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200 hover:border-amber-400/40"
+                                }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                {/* Wallet-style Icon */}
+                                <div
+                                  className={`p-2.5 rounded-2xl shrink-0 ${isHold
+                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
+                                    }`}
+                                >
+                                  {isHold ? (
+                                    <Lock className="h-5 w-5" />
+                                  ) : (
+                                    <ArrowDownLeft className="h-5 w-5" />
+                                  )}
+                                </div>
+
+                                {/* Title, Badge, Ref */}
+                                <div className="space-y-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug">
+                                      {row.referralName || row.remarks || row.type || "Referral Bonus"}
+                                    </h4>
+                                    {isVendor ? (
+                                      <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9px] font-extrabold px-1.5 py-0">
+                                        Vendor Sales
+                                      </Badge>
+                                    ) : isFranchise ? (
+                                      <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9px] font-extrabold px-1.5 py-0">
+                                        Franchise
+                                      </Badge>
+                                    ) : isHold ? (
+                                      <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9px] font-extrabold px-1.5 py-0">
+                                        Escrow Hold
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9px] font-extrabold px-1.5 py-0">
+                                        {row.level || "Referral"}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {row.remarks && row.remarks !== row.referralName && (
+                                    <p className="text-[10.5px] text-slate-500 line-clamp-1">{row.remarks}</p>
+                                  )}
+
+                                  <p className="text-[10px] text-slate-400 font-mono">
+                                    ID: {row.transactionId || `TXN-${idx + 1}`}
+                                    {orderRef && ` • Ref: ${orderRef}`}
+                                    {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Bottom Row: Amount & Status (Wallet Style) */}
+                              <div className="flex justify-between items-center border-t border-slate-100 pt-2.5">
+                                <span className={`text-base font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
+                                  +₹{formatINR(row.amount)}
+                                </span>
+
+                                {isHold ? (
+                                  <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
+                                    <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    {row.status ? row.status.toUpperCase() : "COMPLETED"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* 💻 DESKTOP VIEW: Full Horizontal Table (Untouched) */}
+                      <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
+                        <table className="w-full text-xs text-left min-w-[760px]">
+                          <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                            <tr>
+                              <th className="p-3">Txn & Order ID</th>
+                              <th className="p-3">Date</th>
+                              <th className="p-3">Stream / Role</th>
+                              <th className="p-3">Source & Description</th>
+                              <th className="p-3">Type & Category</th>
+                              <th className="p-3 text-right">Amount (₹)</th>
+                              <th className="p-3 text-center">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredLedger.map((row, idx) => {
+                              const isHold = row.status === "hold" || row.type === "Hold Reserve";
+                              const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
+                              const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
+
+                              return (
+                                <tr key={row.id || idx} className={`transition-all ${isHold ? "bg-amber-50/30 hover:bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
+                                  <td className="p-3">
+                                    <div className="font-mono text-[10px] font-bold text-slate-700">
+                                      {row.transactionId || `TXN-${idx + 1}`}
+                                    </div>
+                                    <div className="text-[9.5px] text-slate-400 font-mono">
+                                      Ref: {typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "N/A") : (row.orderId || "N/A")}
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-slate-500 whitespace-nowrap text-[11px]">
+                                    {new Date(row.date).toLocaleDateString("en-IN", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </td>
+                                  <td className="p-3">
+                                    {isVendor ? (
+                                      <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                        <Store className="h-2.5 w-2.5" /> Vendor Sales
+                                      </Badge>
+                                    ) : isFranchise ? (
+                                      <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                        <Building2 className="h-2.5 w-2.5" /> Franchise Hub
+                                      </Badge>
+                                    ) : isHold ? (
+                                      <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                        <Lock className="h-2.5 w-2.5" /> Return Escrow
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
+                                        <Users className="h-2.5 w-2.5" /> {row.level || "Referral"}
+                                      </Badge>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="font-bold text-navy text-xs">{row.referralName}</div>
+                                    {row.remarks && (
+                                      <div className="text-[10px] text-slate-400 truncate max-w-xs">{row.remarks}</div>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-semibold text-slate-700 text-[11px] block">{row.type}</span>
+                                    <span className="text-[9.5px] text-slate-400 block">{row.category}</span>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <span className={`font-black text-xs sm:text-sm font-sans ${isHold ? "text-amber-600" : "text-emerald-700"}`}>
+                                      +{formatINR(row.amount)}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center whitespace-nowrap">
+                                    {isHold ? (
+                                      <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
+                                        <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200">
+                                        {row.status ? row.status.toUpperCase() : "CREDITED"}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Roster Directory Tab Content */}
+            <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+              {/* Top KPI Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4 w-full min-w-0">
+                <Card className="border border-slate-200/90 shadow-sm rounded-2xl bg-white">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Downlines</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-navy">{allReferredUsers.length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-emerald-150 shadow-sm rounded-2xl bg-emerald-50/30">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-wider">Level 1 Direct</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-emerald-700">{level1Users.length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-blue-150 shadow-sm rounded-2xl bg-blue-50/30">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-blue-600 uppercase tracking-wider">Level 2</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-blue-700">{level2Users.length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-purple-150 shadow-sm rounded-2xl bg-purple-50/30">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-purple-600 uppercase tracking-wider">Level 3</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-purple-700">{level3Users.length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-indigo-150 shadow-sm rounded-2xl bg-indigo-50/30">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-indigo-600 uppercase tracking-wider">Verified KYC</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-indigo-700">{allReferredUsers.filter(isUserQualified).length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-amber-150 shadow-sm rounded-2xl bg-amber-50/30">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[9.5px] sm:text-[10px] font-black text-amber-600 uppercase tracking-wider">Commissions Generated</p>
+                    <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-amber-700">₹{formatINR(allReferredUsers.reduce((s, u) => s + (u.totalCommissionGenerated || 0), 0))}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
+                <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
+                  <div>
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">
+                      Manage direct and multi-tier downline relationships, contact members, and verify KYC statuses.
+                    </CardDescription>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+                    <div className="relative w-full sm:w-auto">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <Input
+                        placeholder="Search name, phone, email, code..."
+                        value={networkSearchQuery}
+                        onChange={(e) => setNetworkSearchQuery(e.target.value)}
+                        className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-60"
+                      />
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <select
+                        value={referralLevelFilter}
+                        onChange={(e) => setReferralLevelFilter(e.target.value)}
+                        className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                      >
+                        <option value="1">1) Level 1 Direct ({level1Users.length})</option>
+                        <option value="2">2) Level 2 ({level2Users.length})</option>
+                        <option value="3">3) Level 3 ({level3Users.length})</option>
+                        <option value="all">4) All Downlines ({allReferredUsers.length})</option>
+                        <option value="qualified">5) Qualified KYC ({allReferredUsers.filter(isUserQualified).length})</option>
+                        <option value="pending">6) Action Pending ({allReferredUsers.filter(u => !isUserQualified(u)).length})</option>
+                      </select>
+                      <select
+                        value={dirSortOption}
+                        onChange={(e) => setDirSortOption(e.target.value)}
+                        className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
+                      >
+                        <option value="newest">Sort: Newest</option>
+                        <option value="commission">Sort: Earnings</option>
+                        <option value="orders">Sort: Orders Count</option>
+                        <option value="inactive">Sort: Inactive First</option>
+                      </select>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                {/* Category Pills Navigation in User-Requested Order: 1) Level 1 - 2) Level 2 - 3) Level 3 - 4) All Downlines - 5) Qualified KYC - 6) Action Pending */}
+                <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
+                  {/* 1) Level 1 */}
+                  <button
+                    type="button"
+                    onClick={() => setReferralLevelFilter("1")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "1"
+                      ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
+                      : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
+                      }`}
+                  >
+                    <span>🟢</span> 1) Level 1 Direct
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "1" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                      {level1Users.length}
+                    </span>
+                  </button>
+
+                  {/* 2) Level 2 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isCustomer) {
+                        setShowUpgradeModal(true);
+                      } else {
+                        setReferralLevelFilter("2");
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "2"
+                      ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-600"
+                      : isCustomer
+                        ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
+                        : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
+                      }`}
+                    title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
+                  >
+                    <span>{isCustomer ? "🔒" : "🔵"}</span> 2) Level 2 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-800"}`}>
+                      {isCustomer ? "🔒" : level2Users.length}
+                    </span>
+                  </button>
+
+                  {/* 3) Level 3 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isCustomer) {
+                        setShowUpgradeModal(true);
+                      } else {
+                        setReferralLevelFilter("3");
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "3"
+                      ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
+                      : isCustomer
+                        ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
+                        : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
+                      }`}
+                    title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
+                  >
+                    <span>{isCustomer ? "🔒" : "🟣"}</span> 3) Level 3 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-purple-100 text-purple-800"}`}>
+                      {isCustomer ? "🔒" : level3Users.length}
+                    </span>
+                  </button>
+
+                  {/* 4) All Downlines */}
+                  <button
+                    type="button"
+                    onClick={() => setReferralLevelFilter("all")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "all"
+                      ? "bg-navy text-white shadow-sm ring-1 ring-navy"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+                      }`}
+                  >
+                    <span>👥</span> 4) All Downlines
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
+                      {allReferredUsers.length}
+                    </span>
+                  </button>
+
+                  {/* 5) Qualified KYC */}
+                  <button
+                    type="button"
+                    onClick={() => setReferralLevelFilter("qualified")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "qualified"
                       ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
                       : "bg-white text-indigo-800 hover:bg-indigo-50/60 border border-indigo-200/80"
                       }`}
                   >
-                    <Building2 className="h-3 w-3" /> Franchise
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "franchise" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
-                      {ledgerTabStats.franchise.count}
+                    <span>✓</span> 5) Qualified KYC
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "qualified" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
+                      {allReferredUsers.filter(isUserQualified).length}
                     </span>
-                    {ledgerTabStats.franchise.total > 0 && (
-                      <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.franchise.total)}</span>
-                    )}
                   </button>
-                )}
 
-                <button
-                  type="button"
-                  onClick={() => setEarningsTypeFilter("First Purchase")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "First Purchase"
-                    ? "bg-teal-600 text-white shadow-sm ring-1 ring-teal-600"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                    }`}
-                >
-                  <span>🛍️</span> First Purchase
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "First Purchase" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
-                    {ledgerTabStats.firstPurchase.count}
-                  </span>
-                  {ledgerTabStats.firstPurchase.total > 0 && (
-                    <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.firstPurchase.total)}</span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEarningsTypeFilter("Product Commission")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "Product Commission"
-                    ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                    }`}
-                >
-                  <span>📦</span> Product Comm
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Product Commission" ? "bg-white/20 text-white" : "bg-purple-50 text-purple-700"}`}>
-                    {ledgerTabStats.productCommission.count}
-                  </span>
-                  {ledgerTabStats.productCommission.total > 0 && (
-                    <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.productCommission.total)}</span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEarningsTypeFilter("Signup Bonus")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "Signup Bonus"
-                    ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                    }`}
-                >
-                  <span>🎁</span> Signup Bonus
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${earningsTypeFilter === "Signup Bonus" ? "bg-white/20 text-white" : "bg-amber-50 text-amber-700"}`}>
-                    {ledgerTabStats.signupBonus.count}
-                  </span>
-                  {ledgerTabStats.signupBonus.total > 0 && (
-                    <span className="text-[10.5px] font-extrabold">₹{formatINR(ledgerTabStats.signupBonus.total)}</span>
-                  )}
-                </button>
-
-                {(memberHold > 0 || ledgerTabStats.hold.count > 0) && (
+                  {/* 6) Action Pending */}
                   <button
                     type="button"
-                    onClick={() => setEarningsTypeFilter("hold")}
-                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${earningsTypeFilter === "hold" || earningsTypeFilter === "Hold Reserve"
-                      ? "bg-amber-600 text-white shadow-sm ring-2 ring-amber-400/30"
+                    onClick={() => setReferralLevelFilter("pending")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "pending"
+                      ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
                       : "bg-white text-amber-800 hover:bg-amber-50/60 border border-amber-200/80"
                       }`}
                   >
-                    <Lock className="h-3 w-3" /> Hold Reserve (₹{formatINR(memberHold)})
+                    <span>⏳</span> 6) Action Pending
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "pending" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
+                      {allReferredUsers.filter(u => !isUserQualified(u)).length}
+                    </span>
                   </button>
-                )}
-              </div>
+                </div>
 
-              {/* Ledger Table */}
-              <CardContent className="p-0 w-full max-w-full min-w-0">
-                {filteredLedger.length === 0 ? (
-                  <div className="p-12 text-center text-slate-400 text-xs">
-                    No matching transactions found for the selected filter.
-                  </div>
-                ) : (
-                  <>
-                    {/* 📱 MOBILE VIEW: Wallet-style Transaction Cards (Like /wallet) */}
-                    <div className="md:hidden p-3 space-y-3">
-                      {filteredLedger.map((row, idx) => {
-                        const isHold = row.status === "hold" || row.type === "Hold Reserve";
-                        const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
-                        const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
-                        const orderRef = typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "") : (row.orderId || "");
-
-                        return (
-                          <div
-                            key={row.id || row.transactionId || idx}
-                            className={`bg-white border rounded-2xl p-4 flex flex-col gap-3 transition shadow-xs text-left ${
-                              isHold ? "border-amber-200/90 bg-amber-50/20" : "border-slate-200 hover:border-amber-400/40"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {/* Wallet-style Icon */}
-                              <div
-                                className={`p-2.5 rounded-2xl shrink-0 ${
-                                  isHold
-                                    ? "bg-amber-50 text-amber-600 border border-amber-300/40"
-                                    : "bg-emerald-50 text-emerald-600 border border-emerald-500/20"
-                                }`}
-                              >
-                                {isHold ? (
-                                  <Lock className="h-5 w-5" />
-                                ) : (
-                                  <ArrowDownLeft className="h-5 w-5" />
-                                )}
-                              </div>
-
-                              {/* Title, Badge, Ref */}
-                              <div className="space-y-0.5 min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug">
-                                    {row.referralName || row.remarks || row.type || "Referral Bonus"}
-                                  </h4>
-                                  {isVendor ? (
-                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9px] font-extrabold px-1.5 py-0">
-                                      Vendor Sales
-                                    </Badge>
-                                  ) : isFranchise ? (
-                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9px] font-extrabold px-1.5 py-0">
-                                      Franchise
-                                    </Badge>
-                                  ) : isHold ? (
-                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9px] font-extrabold px-1.5 py-0">
-                                      Escrow Hold
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9px] font-extrabold px-1.5 py-0">
-                                      {row.level || "Referral"}
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                {row.remarks && row.remarks !== row.referralName && (
-                                  <p className="text-[10.5px] text-slate-500 line-clamp-1">{row.remarks}</p>
-                                )}
-
-                                <p className="text-[10px] text-slate-400 font-mono">
-                                  ID: {row.transactionId || `TXN-${idx + 1}`}
-                                  {orderRef && ` • Ref: ${orderRef}`}
-                                  {row.date && ` • ${new Date(row.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Bottom Row: Amount & Status (Wallet Style) */}
-                            <div className="flex justify-between items-center border-t border-slate-100 pt-2.5">
-                              <span className={`text-base font-black ${isHold ? "text-amber-600" : "text-emerald-600"}`}>
-                                +₹{formatINR(row.amount)}
-                              </span>
-
-                              {isHold ? (
-                                <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
-                                  <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
-                                </span>
-                              ) : (
-                                <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
-                                  {row.status ? row.status.toUpperCase() : "COMPLETED"}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                <CardContent className="p-0 w-full max-w-full min-w-0">
+                  {sortedRoster.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 text-xs">
+                      No downline members found matching current query parameters.
                     </div>
-
-                    {/* 💻 DESKTOP VIEW: Full Horizontal Table (Untouched) */}
-                    <div className="hidden md:block overflow-x-auto scrollbar-none w-full max-w-full">
-                      <table className="w-full text-xs text-left min-w-[760px]">
+                  ) : (
+                    <div className="overflow-x-auto scrollbar-none w-full max-w-full">
+                      <table className="w-full text-xs text-left min-w-[720px]">
                         <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
                           <tr>
-                            <th className="p-3">Txn & Order ID</th>
-                            <th className="p-3">Date</th>
-                            <th className="p-3">Stream / Role</th>
-                            <th className="p-3">Source & Description</th>
-                            <th className="p-3">Type & Category</th>
-                            <th className="p-3 text-right">Amount (₹)</th>
-                            <th className="p-3 text-center">Status</th>
+                            <th className="p-3">Member Details</th>
+                            <th className="p-3">Hierarchy Tier</th>
+                            <th className="p-3">Joined Date</th>
+                            <th className="p-3 text-center">Orders</th>
+                            <th className="p-3 text-right">Commission Generated</th>
+                            <th className="p-3 text-center">KYC &amp; Activity</th>
+                            <th className="p-3 text-center">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {filteredLedger.map((row, idx) => {
-                            const isHold = row.status === "hold" || row.type === "Hold Reserve";
-                            const isVendor = row.channel === "vendor" || row.type === "Vendor Sales";
-                            const isFranchise = row.channel === "franchise" || row.type === "Franchise Incentive";
-
+                          {sortedRoster.map((u) => {
+                            const phone = u.phone || u.mobile || "";
+                            const cleanPhone = phone.replace(/[^0-9]/g, "");
+                            const qualified = isUserQualified(u);
+                            const isDirectLevel = u.levelNum === 1;
                             return (
-                              <tr key={row.id || idx} className={`transition-all ${isHold ? "bg-amber-50/30 hover:bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
+                              <tr key={u._id} className="hover:bg-slate-50/70 transition-all">
                                 <td className="p-3">
-                                  <div className="font-mono text-[10px] font-bold text-slate-700">
-                                    {row.transactionId || `TXN-${idx + 1}`}
+                                  <div className="flex items-start gap-2.5">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${u.levelNum === 1
+                                      ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                      : u.levelNum === 2
+                                        ? "bg-blue-50 border-blue-300 text-blue-800"
+                                        : "bg-purple-50 border-purple-300 text-purple-800"
+                                      }`}>
+                                      {u.name.substring(0, 1).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0 space-y-0.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <p className="font-extrabold text-navy text-xs truncate">{u.name}</p>
+                                        {u.referralCode && (
+                                          <Badge variant="outline" className="text-[9px] px-1 py-0 border-indigo-200 bg-indigo-50/60 text-indigo-700 font-mono">
+                                            {u.referralCode}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                                        {isDirectLevel ? (
+                                          <>
+                                            {phone ? (
+                                              <div className="flex items-center gap-1">
+                                                <a
+                                                  href={`tel:${phone}`}
+                                                  className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9.5px] border border-slate-200/60"
+                                                  title="Call phone"
+                                                >
+                                                  <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                                  {phone}
+                                                </a>
+                                                <a
+                                                  href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}, welcome to ApexBee! Let us know if you need any assistance getting started.`)}`}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-green-200"
+                                                  title="Chat on WhatsApp"
+                                                >
+                                                  💬 WA
+                                                </a>
+                                              </div>
+                                            ) : (
+                                              <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                            )}
+                                            {u.email ? (
+                                              <a
+                                                href={`mailto:${u.email}`}
+                                                className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-700 font-medium bg-slate-100 hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9.5px] truncate max-w-[140px]"
+                                                title="Send Email"
+                                              >
+                                                <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                                <span className="truncate">{u.email}</span>
+                                              </a>
+                                            ) : null}
+                                          </>
+                                        ) : (
+                                          <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-mono">
+                                            <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold" title="Phone masked for Level 2 & 3">
+                                              🔒 {phone ? maskPhone(phone) : "Hidden"}
+                                            </span>
+                                            {u.email && (
+                                              <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold truncate max-w-[130px]" title="Email masked for Level 2 & 3">
+                                                🔒 {maskEmail(u.email)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="text-[9.5px] text-slate-400 font-mono">
-                                    Ref: {typeof row.orderId === 'object' ? ((row.orderId as any)?.orderNumber || (row.orderId as any)?._id || "N/A") : (row.orderId || "N/A")}
-                                  </div>
-                                </td>
-                                <td className="p-3 text-slate-500 whitespace-nowrap text-[11px]">
-                                  {new Date(row.date).toLocaleDateString("en-IN", {
-                                    day: "2-digit",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
                                 </td>
                                 <td className="p-3">
-                                  {isVendor ? (
-                                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                      <Store className="h-2.5 w-2.5" /> Vendor Sales
-                                    </Badge>
-                                  ) : isFranchise ? (
-                                    <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                      <Building2 className="h-2.5 w-2.5" /> Franchise Hub
-                                    </Badge>
-                                  ) : isHold ? (
-                                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                      <Lock className="h-2.5 w-2.5" /> Return Escrow
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-blue-50 text-blue-800 border-blue-200 text-[9.5px] font-extrabold flex items-center gap-1 w-fit">
-                                      <Users className="h-2.5 w-2.5" /> {row.level || "Referral"}
-                                    </Badge>
-                                  )}
+                                  <Badge variant="outline" className={`text-[9.5px] font-bold px-2 py-0.5 ${u.levelNum === 1
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                    : u.levelNum === 2
+                                      ? "bg-blue-50 text-blue-800 border-blue-300"
+                                      : "bg-purple-50 text-purple-800 border-purple-300"
+                                    }`}>
+                                    {u.levelNum === 1 ? "🟢 Level 1 Direct" : u.levelNum === 2 ? "🔵 Level 2" : "🟣 Level 3"}
+                                  </Badge>
                                 </td>
-                                <td className="p-3">
-                                  <div className="font-bold text-navy text-xs">{row.referralName}</div>
-                                  {row.remarks && (
-                                    <div className="text-[10px] text-slate-400 truncate max-w-xs">{row.remarks}</div>
-                                  )}
+                                <td className="p-3 text-slate-500 font-medium text-[11px]">
+                                  {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                                 </td>
-                                <td className="p-3">
-                                  <span className="font-semibold text-slate-700 text-[11px] block">{row.type}</span>
-                                  <span className="text-[9.5px] text-slate-400 block">{row.category}</span>
+                                <td className="p-3 text-center">
+                                  <span className="font-extrabold text-navy text-xs">{u.totalPurchases || 0}</span>
+                                  <span className="text-[9.5px] text-slate-400 block font-medium">orders</span>
                                 </td>
                                 <td className="p-3 text-right">
-                                  <span className={`font-black text-xs sm:text-sm font-sans ${isHold ? "text-amber-600" : "text-emerald-700"}`}>
-                                    +{formatINR(row.amount)}
+                                  <span className="font-extrabold text-emerald-700 text-xs sm:text-sm">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <span className="p-3 text-center">
+                                    {qualified ? (
+                                      <div className="inline-flex flex-col items-center gap-0.5">
+                                        <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                          ✓ Qualified
+                                        </span>
+                                        <span className="text-[8.5px] text-slate-400 font-medium">KYC &amp; Orders Done</span>
+                                      </div>
+                                    ) : (
+                                      <div className="inline-flex flex-col items-center gap-0.5">
+                                        <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                          ⏳ Pending
+                                        </span>
+                                        <span className="text-[8.5px] text-slate-400 font-medium">
+                                          {!phone ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
+                                        </span>
+                                      </div>
+                                    )}
                                   </span>
                                 </td>
-                                <td className="p-3 text-center whitespace-nowrap">
-                                  {isHold ? (
-                                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1">
-                                      <Lock className="h-2.5 w-2.5" /> HOLD (7-DAY)
-                                    </span>
-                                  ) : (
-                                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200">
-                                      {row.status ? row.status.toUpperCase() : "CREDITED"}
-                                    </span>
-                                  )}
+                                <td className="p-3 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-[10px] h-7 px-2.5 border-slate-200 text-slate-700 hover:text-navy hover:bg-slate-100 font-bold rounded-lg cursor-pointer"
+                                      onClick={() => setSelectedProfileNode(u)}
+                                    >
+                                      Profile Details
+                                    </Button>
+                                    {isDirectLevel && !qualified && phone && (
+                                      <a
+                                        href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}! Reminder from ApexBee: complete your account verification and first purchase to activate full referral earnings.`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[10px] h-7 px-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all"
+                                        title="Send WhatsApp Reminder"
+                                      >
+                                        💬 Remind
+                                      </a>
+                                    )}
+                                    {!isDirectLevel && (
+                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 text-slate-400 bg-slate-50 border-slate-200 font-bold">
+                                        Tier {u.levelNum} Protected
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -3175,1228 +3549,849 @@ const Referrals = () => {
                         </tbody>
                       </table>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Roster Directory Tab Content */}
-          <TabsContent value="referrals" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            {/* Top KPI Metric Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4 w-full min-w-0">
-              <Card className="border border-slate-200/90 shadow-sm rounded-2xl bg-white">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Downlines</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-navy">{allReferredUsers.length}</p>
-                </CardContent>
-              </Card>
-              <Card className="border border-emerald-150 shadow-sm rounded-2xl bg-emerald-50/30">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-wider">Level 1 Direct</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-emerald-700">{level1Users.length}</p>
-                </CardContent>
-              </Card>
-              <Card className="border border-blue-150 shadow-sm rounded-2xl bg-blue-50/30">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-blue-600 uppercase tracking-wider">Level 2</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-blue-700">{level2Users.length}</p>
-                </CardContent>
-              </Card>
-              <Card className="border border-purple-150 shadow-sm rounded-2xl bg-purple-50/30">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-purple-600 uppercase tracking-wider">Level 3</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-purple-700">{level3Users.length}</p>
-                </CardContent>
-              </Card>
-              <Card className="border border-indigo-150 shadow-sm rounded-2xl bg-indigo-50/30">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-indigo-600 uppercase tracking-wider">Verified KYC</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-indigo-700">{allReferredUsers.filter(isUserQualified).length}</p>
-                </CardContent>
-              </Card>
-              <Card className="border border-amber-150 shadow-sm rounded-2xl bg-amber-50/30">
-                <CardContent className="p-3 sm:p-4">
-                  <p className="text-[9.5px] sm:text-[10px] font-black text-amber-600 uppercase tracking-wider">Commissions Generated</p>
-                  <p className="text-lg sm:text-xl font-black mt-0.5 sm:mt-1 text-amber-700">₹{formatINR(allReferredUsers.reduce((s, u) => s + (u.totalCommissionGenerated || 0), 0))}</p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Commissions Tab Content (Audit Splits - Business Partner Only) */}
+            {isBusinessPartner && (
+              <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+                <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
+                  <CardHeader className="border-b border-slate-100 p-4 sm:p-6 pb-4">
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0 w-full max-w-full min-w-0">
+                    {validCommissions.length === 0 ? (
+                      <div className="p-12 text-center text-slate-400 text-xs">
+                        No commission transactions found in ledger database.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto scrollbar-none w-full max-w-full">
+                        <table className="w-full text-xs text-left min-w-[650px]">
+                          <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                            <tr>
+                              <th className="p-3">TXN ID</th>
+                              <th className="p-3">Date</th>
+                              <th className="p-3">Source Member</th>
+                              <th className="p-3">Type</th>
+                              <th className="p-3 text-right">Order Value</th>
+                              <th className="p-3 text-right">Commission Rate</th>
+                              <th className="p-3 text-right">Commission Split</th>
+                              <th className="p-3 text-center">Ledger Entry</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {validCommissions.map((c) => {
+                              const isHold = c.status === "hold";
+                              const isPending = c.status === "pending";
+                              const txnDisplay = (c as any).transactionId || `TXN-AB-${String(c._id).slice(-6).toUpperCase()}`;
+                              return (
+                                <tr key={c._id} className="hover:bg-slate-50/55 transition-all">
+                                  <td className="p-3 font-mono font-bold text-slate-600 text-[11px]">{txnDisplay}</td>
+                                  <td className="p-3 text-slate-400 whitespace-nowrap text-[11px]">{new Date(c.date || c.createdAt).toLocaleDateString("en-IN")}</td>
+                                  <td className="p-3 font-bold text-navy">
+                                    <div>{c.userName || "System"}</div>
+                                    {(c as any).level && (
+                                      <span className="text-[9.5px] text-slate-400 font-normal">{(c as any).level}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    <Badge variant="outline" className="bg-slate-100 text-slate-700 text-[9px] border-slate-200">
+                                      {c.commissionType || "Product Commission"}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-3 text-right text-slate-600 font-medium">
+                                    {c.orderValue && c.orderValue > 0 ? `₹${formatINR(c.orderValue)}` : "—"}
+                                  </td>
+                                  <td className="p-3 text-right text-slate-500">
+                                    {c.commissionPercentage !== undefined && c.commissionPercentage !== null ? `${c.commissionPercentage}%` : "—"}
+                                  </td>
+                                  <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(c.commissionAmount || c.amount || 0)}</td>
+                                  <td className="p-3 text-center">
+                                    {isHold ? (
+                                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] font-bold">
+                                        In Hold Escrow
+                                      </Badge>
+                                    ) : isPending ? (
+                                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[9px] font-bold">
+                                        Pending Clearance
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-green-150 border border-green-250 text-green-700 hover:bg-green-150 text-[9px] font-bold">
+                                        Added to Wallet
+                                      </Badge>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
 
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
-              <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-slate-100 p-4 sm:p-6 pb-4">
-                <div>
-                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Referral Network Directory</CardTitle>
-                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">
-                    Manage direct and multi-tier downline relationships, contact members, and verify KYC statuses.
-                  </CardDescription>
-                </div>
-
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
-                  <div className="relative w-full sm:w-auto">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                    <Input
-                      placeholder="Search name, phone, email, code..."
-                      value={networkSearchQuery}
-                      onChange={(e) => setNetworkSearchQuery(e.target.value)}
-                      className="text-xs pl-8 h-9 rounded-xl border border-slate-200 w-full sm:w-60"
-                    />
+            {/* Network Tree Tab Content */}
+            <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+              <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
+                <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
+                    <CardDescription className="text-[11px] sm:text-xs text-slate-500">
+                      Click any Level 1 node to view Level 2 downlines, and click Level 2 to reveal Level 3 downlines.
+                    </CardDescription>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <select
-                      value={referralLevelFilter}
-                      onChange={(e) => setReferralLevelFilter(e.target.value)}
-                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
-                    >
-                      <option value="1">1) Level 1 Direct ({level1Users.length})</option>
-                      <option value="2">2) Level 2 ({level2Users.length})</option>
-                      <option value="3">3) Level 3 ({level3Users.length})</option>
-                      <option value="all">4) All Downlines ({allReferredUsers.length})</option>
-                      <option value="qualified">5) Qualified KYC ({allReferredUsers.filter(isUserQualified).length})</option>
-                      <option value="pending">6) Action Pending ({allReferredUsers.filter(u => !isUserQualified(u)).length})</option>
-                    </select>
-                    <select
-                      value={dirSortOption}
-                      onChange={(e) => setDirSortOption(e.target.value)}
-                      className="text-xs border rounded-xl px-2.5 py-1 bg-white font-semibold text-slate-700 h-9 flex-1 sm:flex-initial"
-                    >
-                      <option value="newest">Sort: Newest</option>
-                      <option value="commission">Sort: Earnings</option>
-                      <option value="orders">Sort: Orders Count</option>
-                      <option value="inactive">Sort: Inactive First</option>
-                    </select>
-                  </div>
-                </div>
-              </CardHeader>
+                  {level1Users.length > 0 && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-[11px] h-7 px-2.5 rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-bold"
+                        onClick={() => {
+                          const next: Record<string, boolean> = {};
+                          level1Users.forEach(u1 => {
+                            const k1 = String(u1._id || (u1 as any).id || "");
+                            if (k1) next[`l1_${k1}`] = true;
+                          });
+                          level2Users.forEach(u2 => {
+                            const k2 = String(u2._id || (u2 as any).id || "");
+                            if (k2) next[`l2_${k2}`] = true;
+                          });
+                          setExpandedRows(next);
+                        }}
+                      >
+                        Expand All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-[11px] h-7 px-2.5 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                        onClick={() => setExpandedRows({})}
+                      >
+                        Collapse All
+                      </Button>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="p-3 sm:p-6">
+                  {isCustomer && (
+                    <div className="mb-4 bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-500/10 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-start sm:items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-base shrink-0 shadow-xs border border-amber-200">
+                          🔒
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-navy">Level 2 &amp; Level 3 Downline Multi-Tier Hierarchy Locked</p>
+                          <p className="text-[11px] text-slate-500 leading-relaxed">
+                            As a Customer tier member, your direct network is restricted to Level 1. Upgrade to <strong className="text-navy">Business Partner (100% Free)</strong> to view full 3-level team lineage and earn multi-tier incentives.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setShowUpgradeModal(true)}
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-sm rounded-xl py-2 px-4"
+                      >
+                        🚀 Upgrade Partner (Free)
+                      </Button>
+                    </div>
+                  )}
+                  {level1Users.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 text-xs">
+                      No downlines found in network hierarchy database.
+                    </div>
+                  ) : (
+                    <div className="space-y-3 sm:space-y-4">
+                      {/* Root Node: Current User */}
+                      <div className="bg-indigo-900 text-white rounded-2xl p-3 sm:p-4 flex items-center justify-between border-2 border-indigo-700 shadow gap-2">
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-800 border flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
+                            ME
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-xs sm:text-sm truncate">{networkData?.user?.name || "You"}</p>
+                            <p className="text-[10px] sm:text-xs text-indigo-300">Code: {referralCode}</p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
+                          <div>
+                            <p className="font-extrabold text-emerald-400 text-xs sm:text-sm">
+                              ₹{formatINR((networkData?.user as any)?.totalCommissionGenerated || stats.totalEarnings || stats.totalEarned || memberAvailable || 0)}
+                            </p>
+                            <p className="text-[9.5px] text-indigo-200 font-semibold">
+                              {(networkData?.user as any)?.totalPurchases || ledgerTabStats.all.count || stats.transactionCount || 0} orders
+                            </p>
+                          </div>
+                          <Badge className="bg-emerald-500 text-white font-bold text-[9px] sm:text-[10px]">ROOT LEVEL</Badge>
+                        </div>
+                      </div>
 
-              {/* Category Pills Navigation in User-Requested Order: 1) Level 1 - 2) Level 2 - 3) Level 3 - 4) All Downlines - 5) Qualified KYC - 6) Action Pending */}
-              <div className="bg-slate-50/80 p-2.5 sm:p-3 border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none w-full max-w-full">
-                {/* 1) Level 1 */}
-                <button
-                  type="button"
-                  onClick={() => setReferralLevelFilter("1")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "1"
-                    ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/30"
-                    : "bg-white text-emerald-800 hover:bg-emerald-50/60 border border-emerald-200/80"
-                    }`}
-                >
-                  <span>🟢</span> 1) Level 1 Direct
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "1" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
-                    {level1Users.length}
-                  </span>
-                </button>
-
-                {/* 2) Level 2 */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isCustomer) {
-                      setShowUpgradeModal(true);
-                    } else {
-                      setReferralLevelFilter("2");
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "2"
-                    ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-600"
-                    : isCustomer 
-                      ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
-                      : "bg-white text-blue-800 hover:bg-blue-50/60 border border-blue-200/80"
-                    }`}
-                  title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
-                >
-                  <span>{isCustomer ? "🔒" : "🔵"}</span> 2) Level 2 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "2" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-800"}`}>
-                    {isCustomer ? "🔒" : level2Users.length}
-                  </span>
-                </button>
-
-                {/* 3) Level 3 */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isCustomer) {
-                      setShowUpgradeModal(true);
-                    } else {
-                      setReferralLevelFilter("3");
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "3"
-                    ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-600"
-                    : isCustomer
-                      ? "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
-                      : "bg-white text-purple-800 hover:bg-purple-50/60 border border-purple-200/80"
-                    }`}
-                  title={isCustomer ? "Unlock 3-Tier downlines with Free Partner Upgrade" : undefined}
-                >
-                  <span>{isCustomer ? "🔒" : "🟣"}</span> 3) Level 3 {isCustomer && <span className="text-[10px] text-amber-600 font-semibold">(Partner Only)</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "3" ? "bg-white/20 text-white" : isCustomer ? "bg-slate-200 text-slate-600" : "bg-purple-100 text-purple-800"}`}>
-                    {isCustomer ? "🔒" : level3Users.length}
-                  </span>
-                </button>
-
-                {/* 4) All Downlines */}
-                <button
-                  type="button"
-                  onClick={() => setReferralLevelFilter("all")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "all"
-                    ? "bg-navy text-white shadow-sm ring-1 ring-navy"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
-                    }`}
-                >
-                  <span>👥</span> 4) All Downlines
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                    {allReferredUsers.length}
-                  </span>
-                </button>
-
-                {/* 5) Qualified KYC */}
-                <button
-                  type="button"
-                  onClick={() => setReferralLevelFilter("qualified")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "qualified"
-                    ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
-                    : "bg-white text-indigo-800 hover:bg-indigo-50/60 border border-indigo-200/80"
-                    }`}
-                >
-                  <span>✓</span> 5) Qualified KYC
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "qualified" ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-800"}`}>
-                    {allReferredUsers.filter(isUserQualified).length}
-                  </span>
-                </button>
-
-                {/* 6) Action Pending */}
-                <button
-                  type="button"
-                  onClick={() => setReferralLevelFilter("pending")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${referralLevelFilter === "pending"
-                    ? "bg-amber-600 text-white shadow-sm ring-1 ring-amber-600"
-                    : "bg-white text-amber-800 hover:bg-amber-50/60 border border-amber-200/80"
-                    }`}
-                >
-                  <span>⏳</span> 6) Action Pending
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${referralLevelFilter === "pending" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
-                    {allReferredUsers.filter(u => !isUserQualified(u)).length}
-                  </span>
-                </button>
-              </div>
-
-              <CardContent className="p-0 w-full max-w-full min-w-0">
-                {sortedRoster.length === 0 ? (
-                  <div className="p-12 text-center text-slate-400 text-xs">
-                    No downline members found matching current query parameters.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto scrollbar-none w-full max-w-full">
-                    <table className="w-full text-xs text-left min-w-[720px]">
-                      <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                        <tr>
-                          <th className="p-3">Member Details</th>
-                          <th className="p-3">Hierarchy Tier</th>
-                          <th className="p-3">Joined Date</th>
-                          <th className="p-3 text-center">Orders</th>
-                          <th className="p-3 text-right">Commission Generated</th>
-                          <th className="p-3 text-center">KYC &amp; Activity</th>
-                          <th className="p-3 text-center">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {sortedRoster.map((u) => {
-                          const phone = u.phone || u.mobile || "";
-                          const cleanPhone = phone.replace(/[^0-9]/g, "");
-                          const qualified = isUserQualified(u);
-                          const isDirectLevel = u.levelNum === 1;
+                      {/* Level 1 Nodes */}
+                      <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-indigo-200 pl-2 sm:pl-4 space-y-2.5 sm:space-y-3">
+                        {level1Users.map((u1) => {
+                          const u1Id = String(u1._id || (u1 as any).id || "");
+                          const kids2 = level2Users.filter(u2 => {
+                            const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
+                            return pId === u1Id || (level1Users.length === 1 && level2Users.length > 0);
+                          });
+                          const kids3UnderU1 = level3Users.filter(u3 => {
+                            const p1Id = String(u3.referralHierarchy?.level1UserId || (u3.referredBy as any)?._id || u3.referredBy || "");
+                            const p2Id = String(u3.referralHierarchy?.level2UserId || "");
+                            return p2Id === u1Id || kids2.some(u2 => String(u2._id || (u2 as any).id) === p1Id) || (level1Users.length === 1 && level3Users.length > 0);
+                          });
+                          const totalDownlinesU1 = kids2.length + kids3UnderU1.length;
+                          // Collapsed by default - opens Level 2 only when clicked
+                          const isL1Expanded = !!expandedRows[`l1_${u1Id}`];
+                          const u1Phone = u1.phone || (u1 as any).mobile || "";
+                          const u1CleanPhone = u1Phone.replace(/[^0-9]/g, "");
                           return (
-                            <tr key={u._id} className="hover:bg-slate-50/70 transition-all">
-                              <td className="p-3">
-                                <div className="flex items-start gap-2.5">
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${u.levelNum === 1
-                                    ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                    : u.levelNum === 2
-                                      ? "bg-blue-50 border-blue-300 text-blue-800"
-                                      : "bg-purple-50 border-purple-300 text-purple-800"
-                                    }`}>
-                                    {u.name.substring(0, 1).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0 space-y-0.5">
+                            <div key={u1._id || u1Id} className="space-y-2">
+                              <div
+                                className="bg-white border rounded-xl p-3 sm:p-3.5 flex justify-between items-start sm:items-center hover:shadow-sm hover:border-indigo-300 transition-all cursor-pointer gap-2 select-none"
+                                onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }))}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }));
+                                  }
+                                }}
+                              >
+                                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                                  <span className="text-emerald-600 shrink-0 text-sm mt-0.5">🟢</span>
+                                  <div className="min-w-0 space-y-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="font-extrabold text-navy text-xs truncate">{u.name}</p>
-                                      {u.referralCode && (
-                                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-indigo-200 bg-indigo-50/60 text-indigo-700 font-mono">
-                                          {u.referralCode}
+                                      <p className="font-extrabold text-navy text-xs sm:text-sm truncate">{u1.name}</p>
+                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-800 font-bold">
+                                        Level 1 Direct
+                                      </Badge>
+                                      {u1.referralCode && (
+                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-indigo-200 bg-indigo-50/50 text-indigo-700 font-mono">
+                                          Ref: {u1.referralCode}
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                                      {isDirectLevel ? (
-                                        <>
-                                          {phone ? (
-                                            <div className="flex items-center gap-1">
-                                              <a
-                                                href={`tel:${phone}`}
-                                                className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded text-[9.5px] border border-slate-200/60"
-                                                title="Call phone"
-                                              >
-                                                <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                                {phone}
-                                              </a>
-                                              <a
-                                                href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}, welcome to ApexBee! Let us know if you need any assistance getting started.`)}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-0.5 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-green-200"
-                                                title="Chat on WhatsApp"
-                                              >
-                                                💬 WA
-                                              </a>
-                                            </div>
-                                          ) : (
-                                            <span className="text-[9.5px] text-slate-400 italic">No phone</span>
-                                          )}
-                                          {u.email ? (
-                                            <a
-                                              href={`mailto:${u.email}`}
-                                              className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-700 font-medium bg-slate-100 hover:bg-blue-50 px-1.5 py-0.5 rounded text-[9.5px] truncate max-w-[140px]"
-                                              title="Send Email"
-                                            >
-                                              <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                                              <span className="truncate">{u.email}</span>
-                                            </a>
-                                          ) : null}
-                                        </>
-                                      ) : (
-                                        <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-mono">
-                                          <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold" title="Phone masked for Level 2 & 3">
-                                            🔒 {phone ? maskPhone(phone) : "Hidden"}
-                                          </span>
-                                          {u.email && (
-                                            <span className="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px] text-slate-500 font-semibold truncate max-w-[130px]" title="Email masked for Level 2 & 3">
-                                              🔒 {maskEmail(u.email)}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="p-3">
-                                <Badge variant="outline" className={`text-[9.5px] font-bold px-2 py-0.5 ${u.levelNum === 1
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                                  : u.levelNum === 2
-                                    ? "bg-blue-50 text-blue-800 border-blue-300"
-                                    : "bg-purple-50 text-purple-800 border-purple-300"
-                                  }`}>
-                                  {u.levelNum === 1 ? "🟢 Level 1 Direct" : u.levelNum === 2 ? "🔵 Level 2" : "🟣 Level 3"}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-slate-500 font-medium text-[11px]">
-                                {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="font-extrabold text-navy text-xs">{u.totalPurchases || 0}</span>
-                                <span className="text-[9.5px] text-slate-400 block font-medium">orders</span>
-                              </td>
-                              <td className="p-3 text-right">
-                                <span className="font-extrabold text-emerald-700 text-xs sm:text-sm">₹{formatINR(u.totalCommissionGenerated || 0)}</span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="p-3 text-center">
-                                  {qualified ? (
-                                    <div className="inline-flex flex-col items-center gap-0.5">
-                                      <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                        ✓ Qualified
+                                    <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-500 font-medium">
+                                      <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-150">
+                                        👥 Total: {kids2.length} Direct downline ({totalDownlinesU1} total downline)
                                       </span>
-                                      <span className="text-[8.5px] text-slate-400 font-medium">KYC &amp; Orders Done</span>
+                                      <span>•</span>
+                                      <span>Joined: {new Date(u1.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                  ) : (
-                                    <div className="inline-flex flex-col items-center gap-0.5">
-                                      <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                                        ⏳ Pending
-                                      </span>
-                                      <span className="text-[8.5px] text-slate-400 font-medium">
-                                        {!phone ? "Phone Req." : !u.email ? "Email Req." : (u.totalPurchases || 0) === 0 ? "1st Order Req." : "KYC Req."}
-                                      </span>
-                                    </div>
-                                  )}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-[10px] h-7 px-2.5 border-slate-200 text-slate-700 hover:text-navy hover:bg-slate-100 font-bold rounded-lg cursor-pointer"
-                                    onClick={() => setSelectedProfileNode(u)}
-                                  >
-                                    Profile Details
-                                  </Button>
-                                  {isDirectLevel && !qualified && phone && (
-                                    <a
-                                      href={`https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=${encodeURIComponent(`Hi ${u.name}! Reminder from ApexBee: complete your account verification and first purchase to activate full referral earnings.`)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-[10px] h-7 px-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all"
-                                      title="Send WhatsApp Reminder"
-                                    >
-                                      💬 Remind
-                                    </a>
-                                  )}
-                                  {!isDirectLevel && (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 text-slate-400 bg-slate-50 border-slate-200 font-bold">
-                                      Tier {u.levelNum} Protected
-                                    </Badge>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Commissions Tab Content (Audit Splits - Business Partner Only) */}
-          {isBusinessPartner && (
-            <TabsContent value="commissions" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden w-full max-w-full min-w-0">
-              <CardHeader className="border-b border-slate-100 p-4 sm:p-6 pb-4">
-                <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Financial Commission Ledger</CardTitle>
-                <CardDescription className="text-[11px] sm:text-xs text-slate-500">Track and audit transaction-level commissions generated across your downline referral tiers.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 w-full max-w-full min-w-0">
-                {validCommissions.length === 0 ? (
-                  <div className="p-12 text-center text-slate-400 text-xs">
-                    No commission transactions found in ledger database.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto scrollbar-none w-full max-w-full">
-                    <table className="w-full text-xs text-left min-w-[650px]">
-                      <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                        <tr>
-                          <th className="p-3">TXN ID</th>
-                          <th className="p-3">Date</th>
-                          <th className="p-3">Source Member</th>
-                          <th className="p-3">Type</th>
-                          <th className="p-3 text-right">Order Value</th>
-                          <th className="p-3 text-right">Commission Rate</th>
-                          <th className="p-3 text-right">Commission Split</th>
-                          <th className="p-3 text-center">Ledger Entry</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {validCommissions.map((c) => {
-                          const isHold = c.status === "hold";
-                          const isPending = c.status === "pending";
-                          const txnDisplay = (c as any).transactionId || `TXN-AB-${String(c._id).slice(-6).toUpperCase()}`;
-                          return (
-                            <tr key={c._id} className="hover:bg-slate-50/55 transition-all">
-                              <td className="p-3 font-mono font-bold text-slate-600 text-[11px]">{txnDisplay}</td>
-                              <td className="p-3 text-slate-400 whitespace-nowrap text-[11px]">{new Date(c.date || c.createdAt).toLocaleDateString("en-IN")}</td>
-                              <td className="p-3 font-bold text-navy">
-                                <div>{c.userName || "System"}</div>
-                                {(c as any).level && (
-                                  <span className="text-[9.5px] text-slate-400 font-normal">{(c as any).level}</span>
-                                )}
-                              </td>
-                              <td className="p-3">
-                                <Badge variant="outline" className="bg-slate-100 text-slate-700 text-[9px] border-slate-200">
-                                  {c.commissionType || "Product Commission"}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-right text-slate-600 font-medium">
-                                {c.orderValue && c.orderValue > 0 ? `₹${formatINR(c.orderValue)}` : "—"}
-                              </td>
-                              <td className="p-3 text-right text-slate-500">
-                                {c.commissionPercentage !== undefined && c.commissionPercentage !== null ? `${c.commissionPercentage}%` : "—"}
-                              </td>
-                              <td className="p-3 text-right font-extrabold text-navy">₹{formatINR(c.commissionAmount || c.amount || 0)}</td>
-                              <td className="p-3 text-center">
-                                {isHold ? (
-                                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] font-bold">
-                                    In Hold Escrow
-                                  </Badge>
-                                ) : isPending ? (
-                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[9px] font-bold">
-                                    Pending Clearance
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-green-150 border border-green-250 text-green-700 hover:bg-green-150 text-[9px] font-bold">
-                                    Added to Wallet
-                                  </Badge>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          )}
-
-          {/* Network Tree Tab Content */}
-          <TabsContent value="network" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            <Card className="border border-slate-200 shadow-sm rounded-2xl w-full max-w-full min-w-0">
-              <CardHeader className="p-4 sm:p-6 pb-3 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Interactive Downline Tree</CardTitle>
-                  <CardDescription className="text-[11px] sm:text-xs text-slate-500">
-                    Click any Level 1 node to view Level 2 downlines, and click Level 2 to reveal Level 3 downlines.
-                  </CardDescription>
-                </div>
-                {level1Users.length > 0 && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-[11px] h-7 px-2.5 rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-bold"
-                      onClick={() => {
-                        const next: Record<string, boolean> = {};
-                        level1Users.forEach(u1 => {
-                          const k1 = String(u1._id || (u1 as any).id || "");
-                          if (k1) next[`l1_${k1}`] = true;
-                        });
-                        level2Users.forEach(u2 => {
-                          const k2 = String(u2._id || (u2 as any).id || "");
-                          if (k2) next[`l2_${k2}`] = true;
-                        });
-                        setExpandedRows(next);
-                      }}
-                    >
-                      Expand All
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-[11px] h-7 px-2.5 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
-                      onClick={() => setExpandedRows({})}
-                    >
-                      Collapse All
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="p-3 sm:p-6">
-                {isCustomer && (
-                  <div className="mb-4 bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-500/10 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-start sm:items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-base shrink-0 shadow-xs border border-amber-200">
-                        🔒
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-navy">Level 2 &amp; Level 3 Downline Multi-Tier Hierarchy Locked</p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          As a Customer tier member, your direct network is restricted to Level 1. Upgrade to <strong className="text-navy">Business Partner (100% Free)</strong> to view full 3-level team lineage and earn multi-tier incentives.
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => setShowUpgradeModal(true)}
-                      size="sm"
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-sm rounded-xl py-2 px-4"
-                    >
-                      🚀 Upgrade Partner (Free)
-                    </Button>
-                  </div>
-                )}
-                {level1Users.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 text-xs">
-                    No downlines found in network hierarchy database.
-                  </div>
-                ) : (
-                  <div className="space-y-3 sm:space-y-4">
-                    {/* Root Node: Current User */}
-                    <div className="bg-indigo-900 text-white rounded-2xl p-3 sm:p-4 flex items-center justify-between border-2 border-indigo-700 shadow gap-2">
-                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-800 border flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
-                          ME
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-extrabold text-xs sm:text-sm truncate">{networkData?.user?.name || "You"}</p>
-                          <p className="text-[10px] sm:text-xs text-indigo-300">Code: {referralCode}</p>
-                        </div>
-                      </div>
-                      <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
-                        <div>
-                          <p className="font-extrabold text-emerald-400 text-xs sm:text-sm">
-                            ₹{formatINR((networkData?.user as any)?.totalCommissionGenerated || stats.totalEarnings || stats.totalEarned || memberAvailable || 0)}
-                          </p>
-                          <p className="text-[9.5px] text-indigo-200 font-semibold">
-                            {(networkData?.user as any)?.totalPurchases || ledgerTabStats.all.count || stats.transactionCount || 0} orders
-                          </p>
-                        </div>
-                        <Badge className="bg-emerald-500 text-white font-bold text-[9px] sm:text-[10px]">ROOT LEVEL</Badge>
-                      </div>
-                    </div>
-
-                    {/* Level 1 Nodes */}
-                    <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-indigo-200 pl-2 sm:pl-4 space-y-2.5 sm:space-y-3">
-                      {level1Users.map((u1) => {
-                        const u1Id = String(u1._id || (u1 as any).id || "");
-                        const kids2 = level2Users.filter(u2 => {
-                          const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
-                          return pId === u1Id || (level1Users.length === 1 && level2Users.length > 0);
-                        });
-                        const kids3UnderU1 = level3Users.filter(u3 => {
-                          const p1Id = String(u3.referralHierarchy?.level1UserId || (u3.referredBy as any)?._id || u3.referredBy || "");
-                          const p2Id = String(u3.referralHierarchy?.level2UserId || "");
-                          return p2Id === u1Id || kids2.some(u2 => String(u2._id || (u2 as any).id) === p1Id) || (level1Users.length === 1 && level3Users.length > 0);
-                        });
-                        const totalDownlinesU1 = kids2.length + kids3UnderU1.length;
-                        // Collapsed by default - opens Level 2 only when clicked
-                        const isL1Expanded = !!expandedRows[`l1_${u1Id}`];
-                        const u1Phone = u1.phone || (u1 as any).mobile || "";
-                        const u1CleanPhone = u1Phone.replace(/[^0-9]/g, "");
-                        return (
-                          <div key={u1._id || u1Id} className="space-y-2">
-                            <div
-                              className="bg-white border rounded-xl p-3 sm:p-3.5 flex justify-between items-start sm:items-center hover:shadow-sm hover:border-indigo-300 transition-all cursor-pointer gap-2 select-none"
-                              onClick={() => setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }))}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  setExpandedRows(prev => ({ ...prev, [`l1_${u1Id}`]: !isL1Expanded }));
-                                }
-                              }}
-                            >
-                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
-                                <span className="text-emerald-600 shrink-0 text-sm mt-0.5">🟢</span>
-                                <div className="min-w-0 space-y-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className="font-extrabold text-navy text-xs sm:text-sm truncate">{u1.name}</p>
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-800 font-bold">
-                                      Level 1 Direct
-                                    </Badge>
-                                    {u1.referralCode && (
-                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-indigo-200 bg-indigo-50/50 text-indigo-700 font-mono">
-                                        Ref: {u1.referralCode}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-500 font-medium">
-                                    <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-150">
-                                      👥 Total: {kids2.length} Direct downline ({totalDownlinesU1} total downline)
-                                    </span>
-                                    <span>•</span>
-                                    <span>Joined: {new Date(u1.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                  {/* Contact Details */}
-                                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                    {u1Phone ? (
-                                      <div className="flex items-center gap-1">
-                                        <a
-                                          href={`tel:${u1Phone}`}
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60"
-                                          title="Call phone"
-                                        >
-                                          <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                          {u1Phone}
-                                        </a>
-                                        <a
-                                          href={`https://wa.me/${u1CleanPhone.startsWith("91") ? u1CleanPhone : "91" + u1CleanPhone}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="inline-flex items-center gap-1 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 py-0.5 rounded-md text-[9.5px] font-bold border border-green-200"
-                                          title="Chat on WhatsApp"
-                                        >
-                                          💬 WhatsApp
-                                        </a>
-                                      </div>
-                                    ) : (
-                                      <span className="text-[9.5px] text-slate-400 italic">No phone</span>
-                                    )}
-                                    {u1.email ? (
-                                      <a
-                                        href={`mailto:${u1.email}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:underline font-semibold bg-slate-100 hover:bg-blue-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60 truncate max-w-[200px]"
-                                        title="Send Email"
-                                      >
-                                        <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                                        <span className="truncate">{u1.email}</span>
-                                      </a>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
-                                <div>
-                                  <p className="font-extrabold text-navy text-xs sm:text-sm">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
-                                  <p className="text-[9.5px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
-                                </div>
-                                <div className="flex items-center gap-1 text-slate-500 font-semibold text-xs">
-                                  <span className="hidden sm:inline text-[11px] text-slate-400">
-                                    {isL1Expanded ? "Collapse" : "Click to view Level 2"}
-                                  </span>
-                                  {isL1Expanded ? (
-                                    <ChevronUp className="w-4 h-4 text-indigo-600 transition-transform" />
-                                  ) : (
-                                    <ChevronDown className="w-4 h-4 text-slate-400 transition-transform" />
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Level 2 & Level 3 Nodes under this L1 */}
-                            {isL1Expanded && (
-                              <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-emerald-200 pl-2 sm:pl-4 space-y-2">
-                                {totalDownlinesU1 === 0 ? (
-                                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center text-slate-400 text-xs">
-                                    No direct downline members under {u1.name} yet.
-                                  </div>
-                                ) : (
-                                  <>
-                                    {/* Branch Downline Summary */}
-                                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2">
-                                      <div className="space-y-0.5">
-                                        <p className="text-xs font-bold text-navy">
-                                          {u1.name}'s Downline Network
-                                        </p>
-                                        <p className="text-[10px] text-slate-500">
-                                          Level 2: <span className="font-bold text-blue-700">{kids2.length}</span> • Level 3: <span className="font-bold text-purple-700">{kids3UnderU1.length}</span>
-                                        </p>
-                                      </div>
-                                      <Badge className="bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1">
-                                        Total Downline: {totalDownlinesU1}
-                                      </Badge>
-                                    </div>
-
-                                    {/* Level 2 Nodes - Collapsed by default, opens Level 3 only on click */}
-                                    {kids2.map((u2) => {
-                                      const u2Id = String(u2._id || (u2 as any).id || "");
-                                      const kids3 = level3Users.filter(u3 => {
-                                        const pId = String(
-                                          (u3.referralHierarchy?.level1UserId as any)?._id ||
-                                          u3.referralHierarchy?.level1UserId ||
-                                          (u3.referredBy as any)?._id ||
-                                          u3.referredBy ||
-                                          ""
-                                        );
-                                        return pId === u2Id || (kids2.length === 1 && level3Users.length > 0);
-                                      });
-                                      // Collapsed by default - opens Level 3 only when clicked
-                                      const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
-                                      return (
-                                        <div key={u2._id || u2Id} className="space-y-1.5">
-                                          <div
-                                            className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
-                                            onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter" || e.key === " ") {
-                                                e.preventDefault();
-                                                setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }));
-                                              }
-                                            }}
+                                    {/* Contact Details */}
+                                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                      {u1Phone ? (
+                                        <div className="flex items-center gap-1">
+                                          <a
+                                            href={`tel:${u1Phone}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="inline-flex items-center gap-1 text-slate-700 hover:text-emerald-700 hover:underline font-semibold bg-slate-100 hover:bg-emerald-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60"
+                                            title="Call phone"
                                           >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                              <span className="text-blue-500 shrink-0 text-xs">🔵</span>
-                                              <p className="font-bold text-navy text-xs sm:text-sm truncate">{u2.name}</p>
-                                              <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold shrink-0">
-                                                Level 2
-                                              </Badge>
-                                              {u2.referralCode && (
-                                                <span className="text-[9.5px] text-slate-400 font-mono hidden sm:inline">
-                                                  ({u2.referralCode})
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                              <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
-                                                👥 Level 3: {kids3.length}
-                                              </span>
-                                              <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                                                <span className="hidden sm:inline text-[10px] text-slate-400">
-                                                  {isL2Expanded ? "Collapse" : "Click to view Level 3"}
-                                                </span>
-                                                {isL2Expanded ? (
-                                                  <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
-                                                ) : (
-                                                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
+                                            <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                            {u1Phone}
+                                          </a>
+                                          <a
+                                            href={`https://wa.me/${u1CleanPhone.startsWith("91") ? u1CleanPhone : "91" + u1CleanPhone}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="inline-flex items-center gap-1 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 py-0.5 rounded-md text-[9.5px] font-bold border border-green-200"
+                                            title="Chat on WhatsApp"
+                                          >
+                                            💬 WhatsApp
+                                          </a>
+                                        </div>
+                                      ) : (
+                                        <span className="text-[9.5px] text-slate-400 italic">No phone</span>
+                                      )}
+                                      {u1.email ? (
+                                        <a
+                                          href={`mailto:${u1.email}`}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:underline font-semibold bg-slate-100 hover:bg-blue-50 px-2 py-0.5 rounded-md text-[10px] border border-slate-200/60 truncate max-w-[200px]"
+                                          title="Send Email"
+                                        >
+                                          <Mail className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                          <span className="truncate">{u1.email}</span>
+                                        </a>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right flex items-center gap-2.5 sm:gap-4 shrink-0">
+                                  <div>
+                                    <p className="font-extrabold text-navy text-xs sm:text-sm">₹{formatINR(u1.totalCommissionGenerated || 0)}</p>
+                                    <p className="text-[9.5px] text-slate-400 font-semibold">{u1.totalPurchases || 0} orders</p>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-slate-500 font-semibold text-xs">
+                                    <span className="hidden sm:inline text-[11px] text-slate-400">
+                                      {isL1Expanded ? "Collapse" : "Click to view Level 2"}
+                                    </span>
+                                    {isL1Expanded ? (
+                                      <ChevronUp className="w-4 h-4 text-indigo-600 transition-transform" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4 text-slate-400 transition-transform" />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Level 2 & Level 3 Nodes under this L1 */}
+                              {isL1Expanded && (
+                                <div className="ml-2.5 sm:ml-6 border-l-2 border-dashed border-emerald-200 pl-2 sm:pl-4 space-y-2">
+                                  {totalDownlinesU1 === 0 ? (
+                                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center text-slate-400 text-xs">
+                                      No direct downline members under {u1.name} yet.
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {/* Branch Downline Summary */}
+                                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2">
+                                        <div className="space-y-0.5">
+                                          <p className="text-xs font-bold text-navy">
+                                            {u1.name}'s Downline Network
+                                          </p>
+                                          <p className="text-[10px] text-slate-500">
+                                            Level 2: <span className="font-bold text-blue-700">{kids2.length}</span> • Level 3: <span className="font-bold text-purple-700">{kids3UnderU1.length}</span>
+                                          </p>
+                                        </div>
+                                        <Badge className="bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1">
+                                          Total Downline: {totalDownlinesU1}
+                                        </Badge>
+                                      </div>
+
+                                      {/* Level 2 Nodes - Collapsed by default, opens Level 3 only on click */}
+                                      {kids2.map((u2) => {
+                                        const u2Id = String(u2._id || (u2 as any).id || "");
+                                        const kids3 = level3Users.filter(u3 => {
+                                          const pId = String(
+                                            (u3.referralHierarchy?.level1UserId as any)?._id ||
+                                            u3.referralHierarchy?.level1UserId ||
+                                            (u3.referredBy as any)?._id ||
+                                            u3.referredBy ||
+                                            ""
+                                          );
+                                          return pId === u2Id || (kids2.length === 1 && level3Users.length > 0);
+                                        });
+                                        // Collapsed by default - opens Level 3 only when clicked
+                                        const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
+                                        return (
+                                          <div key={u2._id || u2Id} className="space-y-1.5">
+                                            <div
+                                              className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
+                                              onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
+                                              role="button"
+                                              tabIndex={0}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                  e.preventDefault();
+                                                  setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }));
+                                                }
+                                              }}
+                                            >
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-blue-500 shrink-0 text-xs">🔵</span>
+                                                <p className="font-bold text-navy text-xs sm:text-sm truncate">{u2.name}</p>
+                                                <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold shrink-0">
+                                                  Level 2
+                                                </Badge>
+                                                {u2.referralCode && (
+                                                  <span className="text-[9.5px] text-slate-400 font-mono hidden sm:inline">
+                                                    ({u2.referralCode})
+                                                  </span>
                                                 )}
                                               </div>
+                                              <div className="flex items-center gap-2 shrink-0">
+                                                <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                                                  👥 Level 3: {kids3.length}
+                                                </span>
+                                                <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                                                  <span className="hidden sm:inline text-[10px] text-slate-400">
+                                                    {isL2Expanded ? "Collapse" : "Click to view Level 3"}
+                                                  </span>
+                                                  {isL2Expanded ? (
+                                                    <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
+                                                  ) : (
+                                                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
+                                                  )}
+                                                </div>
+                                              </div>
                                             </div>
-                                          </div>
 
-                                          {/* Level 3 Nodes under this L2 */}
-                                          {isL2Expanded && (
-                                            kids3.length > 0 ? (
-                                              <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
-                                                {kids3.map((u3) => (
-                                                  <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
-                                                    <div className="flex items-center gap-2 text-xs min-w-0">
-                                                      <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
-                                                      <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
-                                                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
-                                                        Level 3
-                                                      </Badge>
-                                                      {u3.referralCode && (
-                                                        <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">
-                                                          ({u3.referralCode})
+                                            {/* Level 3 Nodes under this L2 */}
+                                            {isL2Expanded && (
+                                              kids3.length > 0 ? (
+                                                <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
+                                                  {kids3.map((u3) => (
+                                                    <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
+                                                      <div className="flex items-center gap-2 text-xs min-w-0">
+                                                        <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                                        <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
+                                                        <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
+                                                          Level 3
+                                                        </Badge>
+                                                        {u3.referralCode && (
+                                                          <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">
+                                                            ({u3.referralCode})
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                      {u3.createdAt && (
+                                                        <span className="text-[9px] text-slate-400">
+                                                          {new Date(u3.createdAt).toLocaleDateString()}
                                                         </span>
                                                       )}
                                                     </div>
-                                                    {u3.createdAt && (
-                                                      <span className="text-[9px] text-slate-400">
-                                                        {new Date(u3.createdAt).toLocaleDateString()}
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            ) : (
-                                              <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 py-1.5 text-[10.5px] text-slate-400 italic">
-                                                No Level 3 downline members under {u2.name} yet.
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* Standalone Level 2 / Level 3 Users if not nested under any Level 1 */}
-                      {level2Users.filter(u2 => !level1Users.some(u1 => {
-                        const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
-                        return pId === String(u1._id || (u1 as any).id);
-                      })).length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-slate-200">
-                          <p className="text-xs font-bold text-slate-700 mb-2">Extended Network Members (Level 2 & Level 3)</p>
-                          <div className="space-y-2">
-                            {level2Users.filter(u2 => !level1Users.some(u1 => {
-                              const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
-                              return pId === String(u1._id || (u1 as any).id);
-                            })).map(u2 => {
-                              const u2Id = String(u2._id || (u2 as any).id || "");
-                              const kids3 = level3Users.filter(u3 => {
-                                const pId = String(
-                                  (u3.referralHierarchy?.level1UserId as any)?._id ||
-                                  u3.referralHierarchy?.level1UserId ||
-                                  (u3.referredBy as any)?._id ||
-                                  u3.referredBy ||
-                                  ""
-                                );
-                                return pId === u2Id;
-                              });
-                              const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
-                              return (
-                                <div key={u2._id || u2Id} className="space-y-1.5">
-                                  <div
-                                    className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
-                                    onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <span className="text-blue-500 shrink-0 text-xs">🔵</span>
-                                      <p className="font-bold text-navy text-xs truncate">{u2.name}</p>
-                                      <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
-                                        Level 2
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
-                                        👥 Level 3: {kids3.length}
-                                      </span>
-                                      {isL2Expanded ? (
-                                        <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
-                                      ) : (
-                                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-                                      )}
-                                    </div>
-                                  </div>
-                                  {isL2Expanded && kids3.length > 0 && (
-                                    <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
-                                      {kids3.map((u3) => (
-                                        <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
-                                          <div className="flex items-center gap-2 text-xs min-w-0">
-                                            <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
-                                            <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
-                                            <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
-                                              Level 3
-                                            </Badge>
+                                                  ))}
+                                                </div>
+                                              ) : (
+                                                <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 py-1.5 text-[10.5px] text-slate-400 italic">
+                                                  No Level 3 downline members under {u2.name} yet.
+                                                </div>
+                                              )
+                                            )}
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
+                                        );
+                                      })}
+                                    </>
                                   )}
                                 </div>
-                              );
-                            })}
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Standalone Level 2 / Level 3 Users if not nested under any Level 1 */}
+                        {level2Users.filter(u2 => !level1Users.some(u1 => {
+                          const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
+                          return pId === String(u1._id || (u1 as any).id);
+                        })).length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-slate-200">
+                              <p className="text-xs font-bold text-slate-700 mb-2">Extended Network Members (Level 2 & Level 3)</p>
+                              <div className="space-y-2">
+                                {level2Users.filter(u2 => !level1Users.some(u1 => {
+                                  const pId = String(u2.referralHierarchy?.level1UserId || (u2.referredBy as any)?._id || u2.referredBy || "");
+                                  return pId === String(u1._id || (u1 as any).id);
+                                })).map(u2 => {
+                                  const u2Id = String(u2._id || (u2 as any).id || "");
+                                  const kids3 = level3Users.filter(u3 => {
+                                    const pId = String(
+                                      (u3.referralHierarchy?.level1UserId as any)?._id ||
+                                      u3.referralHierarchy?.level1UserId ||
+                                      (u3.referredBy as any)?._id ||
+                                      u3.referredBy ||
+                                      ""
+                                    );
+                                    return pId === u2Id;
+                                  });
+                                  const isL2Expanded = !!expandedRows[`l2_${u2Id}`];
+                                  return (
+                                    <div key={u2._id || u2Id} className="space-y-1.5">
+                                      <div
+                                        className="bg-slate-50 border border-blue-100 hover:border-blue-300 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:shadow-sm transition-all cursor-pointer gap-2 select-none"
+                                        onClick={() => setExpandedRows(prev => ({ ...prev, [`l2_${u2Id}`]: !isL2Expanded }))}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="text-blue-500 shrink-0 text-xs">🔵</span>
+                                          <p className="font-bold text-navy text-xs truncate">{u2.name}</p>
+                                          <Badge variant="outline" className="text-[8.5px] px-1.5 py-0 border-blue-200 bg-blue-50 text-blue-800 font-bold">
+                                            Level 2
+                                          </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                                            👥 Level 3: {kids3.length}
+                                          </span>
+                                          {isL2Expanded ? (
+                                            <ChevronUp className="w-3.5 h-3.5 text-blue-600 transition-transform" />
+                                          ) : (
+                                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
+                                          )}
+                                        </div>
+                                      </div>
+                                      {isL2Expanded && kids3.length > 0 && (
+                                        <div className="ml-2 sm:ml-4 border-l-2 border-dashed border-blue-200 pl-2 sm:pl-3 space-y-1.5 pt-1">
+                                          {kids3.map((u3) => (
+                                            <div key={u3._id || (u3 as any).id} className="bg-purple-50/50 border border-purple-200 rounded-xl p-2 sm:p-2.5 flex justify-between items-center hover:shadow-sm transition-all gap-2">
+                                              <div className="flex items-center gap-2 text-xs min-w-0">
+                                                <span className="text-purple-600 shrink-0 text-[10px]">🟣</span>
+                                                <p className="font-bold text-slate-800 text-xs truncate">{u3.name}</p>
+                                                <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-800 font-bold shrink-0">
+                                                  Level 3
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Analytics Tab Content */}
+            <TabsContent value="analytics" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+              <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full min-w-0">
+                {/* Earnings Composition Pie */}
+                <Card className="border border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                    <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Distribution Sources</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-56 sm:h-64 p-2 sm:p-4 flex items-center justify-center">
+                    {earningsComposition.length === 0 ? (
+                      <p className="text-xs text-slate-400">No active earnings compositions detected.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={earningsComposition}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={70}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {earningsComposition.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => `₹${value}`} />
+                          <Legend wrapperStyle={{ fontSize: "10px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Network Tiers Growth Bar */}
+                <Card className="border border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                    <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Referral Network Tier Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={levelGrowthData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" stroke="#64748B" style={{ fontSize: "9px" }} />
+                        <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
+                        <Tooltip />
+                        <Legend wrapperStyle={{ fontSize: "10px" }} />
+                        <Bar dataKey="members" fill="#6366F1" name="Members Count" />
+                        <Bar dataKey="earnings" fill="#10B981" name="Earnings (₹)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Earnings Daily Trend */}
+                <Card className="border border-slate-200 shadow-sm rounded-2xl lg:col-span-2">
+                  <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+                    <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Earning Daily Trend</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={dailyEarningsTrend}>
+                        <defs>
+                          <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" stroke="#64748B" style={{ fontSize: "9px" }} />
+                        <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
+                        <Tooltip formatter={(value) => `₹${value}`} />
+                        <Area type="monotone" dataKey="earnings" stroke="#10B981" fillOpacity={1} fill="url(#colorEarnings)" name="Daily Commission (₹)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Withdraw Tab Content */}
+            <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
+              {/* Payout Policy & Eligibility Rules Banner */}
+              <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs w-full min-w-0">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 text-base shrink-0 shadow-xs border border-blue-200">
+                    🏦
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-navy flex items-center gap-2">
+                      Referral Payout Criteria &amp; Direct Bank Settlement
+                      <Badge className="bg-navy text-white text-[9px] px-2 py-0.5">
+                        {isBusinessPartner ? "Business Partner Tier" : "Customer Tier"}
+                      </Badge>
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Minimum withdrawal threshold is <strong>₹500</strong>. Payouts require verified bank credentials and completed <strong>PAN / KYC verification</strong> in accordance with statutory compliance.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge className={`text-[10px] px-2.5 py-1 font-bold ${isUserKycVerified ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-amber-100 text-amber-800 border-amber-300"}`}>
+                    {isUserKycVerified ? "✓ KYC Verified" : "⏳ KYC Action Required"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+                {/* Left Column: Bank account details form */}
+                <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 p-4 sm:p-6 pb-4 gap-2">
+                    <div>
+                      <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Verified Bank Settlement Details</CardTitle>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Please ensure name matches PAN/Aadhaar exactly.</p>
+                    </div>
+                    <Badge className={bankSaved ? "bg-green-100 text-green-800 border-green-200 text-[10px]" : "bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px]"}>
+                      {bankSaved ? "Verified & Active" : "Requires Setup"}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600 block">Account Holder Name</label>
+                        <Input
+                          value={bankDetails.accountHolderName}
+                          onChange={(e) => setBankDetails((p) => ({ ...p, accountHolderName: e.target.value }))}
+                          placeholder="Name on bank passbook"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600 block">Bank Name</label>
+                        <Input
+                          value={bankDetails.bankName}
+                          onChange={(e) => setBankDetails((p) => ({ ...p, bankName: e.target.value }))}
+                          placeholder="HDFC, SBI, ICICI..."
+                        />
+                      </div>
+                      <div className="space-y-1.5 relative">
+                        <label className="text-xs font-bold text-slate-600 block">Account Number</label>
+                        <div className="relative">
+                          <Input
+                            type={showAccountNumber ? "text" : "password"}
+                            value={bankDetails.accountNumber}
+                            onChange={(e) => setBankDetails((p) => ({ ...p, accountNumber: e.target.value }))}
+                            placeholder="XXXXXXXXXXXX"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowAccountNumber(!showAccountNumber)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer"
+                          >
+                            {showAccountNumber ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 relative">
+                        <label className="text-xs font-bold text-slate-600 block">Bank IFSC Code</label>
+                        <div className="relative">
+                          <Input
+                            type={showIfsc ? "text" : "password"}
+                            value={bankDetails.ifsc}
+                            onChange={(e) => setBedDetailsAndCapitalize(e.target.value)}
+                            placeholder="SBIN0000000"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowIfsc(!showIfsc)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer"
+                          >
+                            {showIfsc ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2 space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600 block">UPI ID (Optional)</label>
+                        <Input
+                          value={bankDetails.upiId || ""}
+                          onChange={(e) => setBankDetails((p) => ({ ...p, upiId: e.target.value }))}
+                          placeholder="username@upi"
+                        />
+                      </div>
+                    </div>
+
+                    <Button onClick={saveBankDetailsWithGate} className="w-full sm:w-auto bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 px-6 rounded-xl">
+                      Save &amp; Verify Account
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Right Column: Withdraw amount form */}
+                <Card className="border border-slate-200 shadow-md rounded-2xl h-fit overflow-hidden bg-white">
+                  <CardHeader className="bg-gradient-to-r from-slate-950 via-[#0A1128] to-slate-900 text-white p-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+                        <span>💳 Withdraw Request</span>
+                      </CardTitle>
+                      <span className="text-[9.5px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
+                        Instant Payout
+                      </span>
+                    </div>
+
+                    {/* CLEAR BALANCE & FEE HIGHLIGHT BANNER */}
+                    <div className="mt-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-xs text-slate-100 font-semibold space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm font-black">
+                        <span>Total: <strong className="text-amber-300 font-black">₹{formatINR(stats.walletTotal || memberTotalGross || stats.walletBalance || stats.availableBalance || 0)}</strong></span>
+                        <span className="text-slate-400">•</span>
+                        <span>Hold: <strong className="text-orange-300 font-black">₹{formatINR(stats.walletHold || stats.pendingBalance || memberHold || 0)}</strong></span>
+                      </div>
+                      <div className="text-[10.5px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
+                        <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM)</strong></span>
+                        <span className="text-[9px] text-emerald-300 font-black bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">100% Tax Compliant</span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 block">Amount to Withdraw</label>
+                      <Input
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(e.target.value)}
+                        placeholder="₹500 - ₹50,000"
+                        type="number"
+                      />
+
+                      {Number(withdrawAmount) > 0 && (
+                        <div className="mt-3 bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs space-y-2 text-slate-800 shadow-2xs">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-slate-600">Requested Amount</span>
+                            <span className="font-extrabold text-slate-900">₹{formatINR(Number(withdrawAmount))}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-rose-700 font-semibold">
+                            <span>Fee: 15% (TDS + PLATFORM)</span>
+                            <span className="font-bold">- ₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).fee)}</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-xs sm:text-sm font-black">
+                            <span className="text-slate-900">Net Bank Payout</span>
+                            <span className="text-emerald-700">₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).net)}</span>
                           </div>
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Analytics Tab Content */}
-          <TabsContent value="analytics" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full min-w-0">
-              {/* Earnings Composition Pie */}
-              <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Distribution Sources</CardTitle>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600 block">Remarks / Notes</label>
+                      <Textarea
+                        value={withdrawNote}
+                        onChange={(e) => setWithdrawNote(e.target.value)}
+                        placeholder="E.g., urgent monthly settlement"
+                        className="min-h-16 text-xs"
+                      />
+                    </div>
+
+                    <Button onClick={requestWithdrawWithGate} className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.01] active:scale-95">
+                      Submit Withdrawal Request
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Withdrawals list */}
+              <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-4 sm:mt-6 w-full max-w-full min-w-0">
+                <CardHeader className="border-b border-slate-100 p-4 pb-3 bg-slate-50/50">
+                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Withdrawal Audit History</CardTitle>
                 </CardHeader>
-                <CardContent className="h-56 sm:h-64 p-2 sm:p-4 flex items-center justify-center">
-                  {earningsComposition.length === 0 ? (
-                    <p className="text-xs text-slate-400">No active earnings compositions detected.</p>
+                <CardContent className="p-0 w-full max-w-full min-w-0">
+                  {withdrawals.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-xs">
+                      No withdrawals found in database ledger.
+                    </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={earningsComposition}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={70}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {earningsComposition.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `₹${value}`} />
-                        <Legend wrapperStyle={{ fontSize: "10px" }} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <div className="overflow-x-auto scrollbar-none text-xs w-full max-w-full">
+                      <table className="w-full text-left min-w-[700px]">
+                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                          <tr>
+                            <th className="p-3">Transaction ID</th>
+                            <th className="p-3">Reference ID</th>
+                            <th className="p-3">Method</th>
+                            <th className="p-3">Date</th>
+                            <th className="p-3 text-right">Amount</th>
+                            <th className="p-3 text-center">Status</th>
+                            <th className="p-3">Audit Details</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {withdrawals.map((w) => {
+                            const txnId = w.transactionId || (w._id ? `TXN-${w._id.slice(-8).toUpperCase()}` : `TXN-WDR`);
+                            const refId = w.referenceId || (w.status === 'pending' ? 'Pending Release' : `REF-${w._id ? w._id.slice(-6).toUpperCase() : 'BANK'}`);
+                            return (
+                              <tr key={w._id} className="hover:bg-slate-50/70 transition">
+                                <td className="p-3">
+                                  <div className="inline-flex items-center gap-1.5 bg-[#0A1128] text-amber-400 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-amber-400/30">
+                                    <span>{txnId}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(txnId, "code")}
+                                      title="Copy Transaction ID"
+                                      className="hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
+                                    >
+                                      <Copy className="w-3 h-3 text-amber-400 hover:text-white" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <div className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-slate-200">
+                                    <span>{refId}</span>
+                                    {w.referenceId && (
+                                      <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(w.referenceId!, "code")}
+                                        title="Copy Reference ID"
+                                        className="hover:text-slate-900 transition border-none bg-transparent cursor-pointer ml-0.5 text-slate-400"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-3 text-slate-700 font-bold text-xs">
+                                  <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
+                                    {w.paymentMethod || 'Bank Transfer'}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-slate-500 font-medium">{new Date(w.createdAt).toLocaleDateString("en-IN")}</td>
+                                <td className="p-3 text-right font-black text-slate-900 text-xs">₹{formatINR(w.amount)}</td>
+                                <td className="p-3 text-center">
+                                  <Badge className={
+                                    w.status === "paid" ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" :
+                                      w.status === "pending" ? "bg-amber-100 text-amber-800 border-amber-300 font-bold" :
+                                        "bg-red-100 text-red-800 border-red-300 font-bold"
+                                  }>
+                                    {w.status.toUpperCase()}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-slate-600 font-medium">{w.note || w.rejectReason || "Verified Settlement"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
-
-              {/* Network Tiers Growth Bar */}
-              <Card className="border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Referral Network Tier Performance</CardTitle>
-                </CardHeader>
-                <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={levelGrowthData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" stroke="#64748B" style={{ fontSize: "9px" }} />
-                      <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: "10px" }} />
-                      <Bar dataKey="members" fill="#6366F1" name="Members Count" />
-                      <Bar dataKey="earnings" fill="#10B981" name="Earnings (₹)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Earnings Daily Trend */}
-              <Card className="border border-slate-200 shadow-sm rounded-2xl lg:col-span-2">
-                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Commission Earning Daily Trend</CardTitle>
-                </CardHeader>
-                <CardContent className="h-56 sm:h-64 p-2 sm:p-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={dailyEarningsTrend}>
-                      <defs>
-                        <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" stroke="#64748B" style={{ fontSize: "9px" }} />
-                      <YAxis stroke="#64748B" style={{ fontSize: "9px" }} />
-                      <Tooltip formatter={(value) => `₹${value}`} />
-                      <Area type="monotone" dataKey="earnings" stroke="#10B981" fillOpacity={1} fill="url(#colorEarnings)" name="Daily Commission (₹)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Withdraw Tab Content */}
-          <TabsContent value="withdraw" className="space-y-4 sm:space-y-6 text-left w-full max-w-full min-w-0 overflow-hidden">
-            {/* Payout Policy & Eligibility Rules Banner */}
-            <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs w-full min-w-0">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 text-base shrink-0 shadow-xs border border-blue-200">
-                  🏦
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-navy flex items-center gap-2">
-                    Referral Payout Criteria &amp; Direct Bank Settlement
-                    <Badge className="bg-navy text-white text-[9px] px-2 py-0.5">
-                      {isBusinessPartner ? "Business Partner Tier" : "Customer Tier"}
-                    </Badge>
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                    Minimum withdrawal threshold is <strong>₹500</strong>. Payouts require verified bank credentials and completed <strong>PAN / KYC verification</strong> in accordance with statutory compliance.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge className={`text-[10px] px-2.5 py-1 font-bold ${isUserKycVerified ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-amber-100 text-amber-800 border-amber-300"}`}>
-                  {isUserKycVerified ? "✓ KYC Verified" : "⏳ KYC Action Required"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
-              {/* Left Column: Bank account details form */}
-              <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 p-4 sm:p-6 pb-4 gap-2">
-                  <div>
-                    <CardTitle className="text-sm sm:text-base font-extrabold text-navy">Verified Bank Settlement Details</CardTitle>
-                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Please ensure name matches PAN/Aadhaar exactly.</p>
-                  </div>
-                  <Badge className={bankSaved ? "bg-green-100 text-green-800 border-green-200 text-[10px]" : "bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px]"}>
-                    {bankSaved ? "Verified & Active" : "Requires Setup"}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600 block">Account Holder Name</label>
-                      <Input
-                        value={bankDetails.accountHolderName}
-                        onChange={(e) => setBankDetails((p) => ({ ...p, accountHolderName: e.target.value }))}
-                        placeholder="Name on bank passbook"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600 block">Bank Name</label>
-                      <Input
-                        value={bankDetails.bankName}
-                        onChange={(e) => setBankDetails((p) => ({ ...p, bankName: e.target.value }))}
-                        placeholder="HDFC, SBI, ICICI..."
-                      />
-                    </div>
-                    <div className="space-y-1.5 relative">
-                      <label className="text-xs font-bold text-slate-600 block">Account Number</label>
-                      <div className="relative">
-                        <Input
-                          type={showAccountNumber ? "text" : "password"}
-                          value={bankDetails.accountNumber}
-                          onChange={(e) => setBankDetails((p) => ({ ...p, accountNumber: e.target.value }))}
-                          placeholder="XXXXXXXXXXXX"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowAccountNumber(!showAccountNumber)}
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer"
-                        >
-                          {showAccountNumber ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5 relative">
-                      <label className="text-xs font-bold text-slate-600 block">Bank IFSC Code</label>
-                      <div className="relative">
-                        <Input
-                          type={showIfsc ? "text" : "password"}
-                          value={bankDetails.ifsc}
-                          onChange={(e) => setBedDetailsAndCapitalize(e.target.value)}
-                          placeholder="SBIN0000000"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowIfsc(!showIfsc)}
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer"
-                        >
-                          {showIfsc ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="sm:col-span-2 space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600 block">UPI ID (Optional)</label>
-                      <Input
-                        value={bankDetails.upiId || ""}
-                        onChange={(e) => setBankDetails((p) => ({ ...p, upiId: e.target.value }))}
-                        placeholder="username@upi"
-                      />
-                    </div>
-                  </div>
-
-                  <Button onClick={saveBankDetailsWithGate} className="w-full sm:w-auto bg-navy hover:bg-navy/90 text-white font-bold text-xs py-2.5 px-6 rounded-xl">
-                    Save &amp; Verify Account
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Right Column: Withdraw amount form */}
-              <Card className="border border-slate-200 shadow-md rounded-2xl h-fit overflow-hidden bg-white">
-                <CardHeader className="bg-gradient-to-r from-slate-950 via-[#0A1128] to-slate-900 text-white p-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <span>💳 Withdraw Request</span>
-                    </CardTitle>
-                    <span className="text-[9.5px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
-                      Instant Payout
-                    </span>
-                  </div>
-
-                  {/* CLEAR BALANCE & FEE HIGHLIGHT BANNER */}
-                  <div className="mt-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-xs text-slate-100 font-semibold space-y-1.5 shadow-2xs">
-                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm font-black">
-                      <span>Total: <strong className="text-amber-300 font-black">₹{formatINR(stats.walletTotal || memberTotalGross || stats.walletBalance || stats.availableBalance || 0)}</strong></span>
-                      <span className="text-slate-400">•</span>
-                      <span>Hold: <strong className="text-orange-300 font-black">₹{formatINR(stats.walletHold || stats.pendingBalance || memberHold || 0)}</strong></span>
-                    </div>
-                    <div className="text-[10.5px] font-bold text-amber-200/90 pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1">
-                      <span>Fee: <strong className="text-white font-black">15% (TDS + PLATFORM)</strong></span>
-                      <span className="text-[9px] text-emerald-300 font-black bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">100% Tax Compliant</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 block">Amount to Withdraw</label>
-                    <Input
-                      value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder="₹500 - ₹50,000"
-                      type="number"
-                    />
-
-                    {Number(withdrawAmount) > 0 && (
-                      <div className="mt-3 bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs space-y-2 text-slate-800 shadow-2xs">
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold text-slate-600">Requested Amount</span>
-                          <span className="font-extrabold text-slate-900">₹{formatINR(Number(withdrawAmount))}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-rose-700 font-semibold">
-                          <span>Fee: 15% (TDS + PLATFORM)</span>
-                          <span className="font-bold">- ₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).fee)}</span>
-                        </div>
-                        <div className="flex justify-between items-center border-t border-amber-200/80 pt-2 text-xs sm:text-sm font-black">
-                          <span className="text-slate-900">Net Bank Payout</span>
-                          <span className="text-emerald-700">₹{formatINR(calcWithdrawFee(Number(withdrawAmount)).net)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600 block">Remarks / Notes</label>
-                    <Textarea
-                      value={withdrawNote}
-                      onChange={(e) => setWithdrawNote(e.target.value)}
-                      placeholder="E.g., urgent monthly settlement"
-                      className="min-h-16 text-xs"
-                    />
-                  </div>
-
-                  <Button onClick={requestWithdrawWithGate} className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg border border-amber-300/40 transition-all duration-300 cursor-pointer transform hover:scale-[1.01] active:scale-95">
-                    Submit Withdrawal Request
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Withdrawals list */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-4 sm:mt-6 w-full max-w-full min-w-0">
-              <CardHeader className="border-b border-slate-100 p-4 pb-3 bg-slate-50/50">
-                <CardTitle className="text-xs sm:text-sm font-extrabold text-navy">Withdrawal Audit History</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 w-full max-w-full min-w-0">
-                {withdrawals.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-xs">
-                    No withdrawals found in database ledger.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto scrollbar-none text-xs w-full max-w-full">
-                    <table className="w-full text-left min-w-[700px]">
-                      <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                        <tr>
-                          <th className="p-3">Transaction ID</th>
-                          <th className="p-3">Reference ID</th>
-                          <th className="p-3">Method</th>
-                          <th className="p-3">Date</th>
-                          <th className="p-3 text-right">Amount</th>
-                          <th className="p-3 text-center">Status</th>
-                          <th className="p-3">Audit Details</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {withdrawals.map((w) => {
-                          const txnId = w.transactionId || (w._id ? `TXN-${w._id.slice(-8).toUpperCase()}` : `TXN-WDR`);
-                          const refId = w.referenceId || (w.status === 'pending' ? 'Pending Release' : `REF-${w._id ? w._id.slice(-6).toUpperCase() : 'BANK'}`);
-                          return (
-                            <tr key={w._id} className="hover:bg-slate-50/70 transition">
-                              <td className="p-3">
-                                <div className="inline-flex items-center gap-1.5 bg-[#0A1128] text-amber-400 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-amber-400/30">
-                                  <span>{txnId}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(txnId, "code")}
-                                    title="Copy Transaction ID"
-                                    className="hover:text-white transition border-none bg-transparent cursor-pointer ml-0.5"
-                                  >
-                                    <Copy className="w-3 h-3 text-amber-400 hover:text-white" />
-                                  </button>
-                                </div>
-                              </td>
-                              <td className="p-3">
-                                <div className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-xl font-mono text-xs font-bold border border-slate-200">
-                                  <span>{refId}</span>
-                                  {w.referenceId && (
-                                    <button
-                                      type="button"
-                                      onClick={() => copyToClipboard(w.referenceId!, "code")}
-                                      title="Copy Reference ID"
-                                      className="hover:text-slate-900 transition border-none bg-transparent cursor-pointer ml-0.5 text-slate-400"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="p-3 text-slate-700 font-bold text-xs">
-                                <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
-                                  {w.paymentMethod || 'Bank Transfer'}
-                                </span>
-                              </td>
-                              <td className="p-3 text-slate-500 font-medium">{new Date(w.createdAt).toLocaleDateString("en-IN")}</td>
-                              <td className="p-3 text-right font-black text-slate-900 text-xs">₹{formatINR(w.amount)}</td>
-                              <td className="p-3 text-center">
-                                <Badge className={
-                                  w.status === "paid" ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" :
-                                    w.status === "pending" ? "bg-amber-100 text-amber-800 border-amber-300 font-bold" :
-                                      "bg-red-100 text-red-800 border-red-300 font-bold"
-                                }>
-                                  {w.status.toUpperCase()}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-slate-600 font-medium">{w.note || w.rejectReason || "Verified Settlement"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
