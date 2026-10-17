@@ -88,119 +88,54 @@ const HERO_BANNERS = [
   },
 ];
 
-// DINEOUT VENUES DATA WITH RICH IMAGES & VIDEO DETAILS
-const DINEOUT_RESTAURANTS = [
-  {
-    id: 'do-tamsi-1',
-    name: 'Tamsi Royal Family Dhaba & Dining',
-    cuisine: 'Telangana Special, Hyderabadi & Tandoori',
-    locality: 'Tamsi Mandal, Adilabad - 504312',
-    pincode: '504312',
-    mandal: 'Tamsi',
-    district: 'Adilabad',
-    rating: 4.9,
-    offer: 'FLAT 25% OFF ON TOTAL DINING BILL',
-    costForTwo: '₹800',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-    ],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cooking-food-in-a-pan-43098-large.mp4',
-    tag: 'Tamsi Top Pick',
-    description: 'Top-rated family dhaba and dining garden in Tamsi Mandal, Adilabad. Serves authentic spicy Telangana curries, dum biryani, and tandoori specials.',
-    features: ['👨‍👩‍👧‍👦 Outdoor Family Garden', '🅿️ Ample Parking Space', '🌱 Pure Veg & Non-Veg Sections'],
-    timings: '11:00 AM – 10:30 PM (Daily)',
-  },
-  {
-    id: 'do-1',
-    name: 'Royal Pavilion Fine Dining',
-    cuisine: 'North Indian, Mughlai & Bar',
-    locality: 'Jubilee Hills, Road No 36',
-    rating: 4.9,
-    offer: 'FLAT 30% OFF ON TOTAL BILL',
-    costForTwo: '₹1,500',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=800&auto=format&fit=crop',
-    ],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cooking-food-in-a-pan-43098-large.mp4',
-    tag: 'Exclusive Luxury',
-    description: 'Experience regal dining with authentic Mughlai recipes passed down through generations. Features private dining cabanas, live instrumental music, and curated vintage wine list.',
-    features: ['🍷 Full Bar & Cocktails', '🎻 Live Music Sessions', '🅿️ Free Valet Parking', '❄️ Air Conditioned Cabanas', '🌱 Veg & Non-Veg Options'],
-    timings: '12:00 PM – 11:30 PM (Daily)',
-  },
-  {
-    id: 'do-2',
-    name: 'Skyline Rooftop Bistro & Lounge',
-    cuisine: 'Continental, Asian & Cocktails',
-    locality: 'Banjara Hills, Road No 12',
-    rating: 4.8,
-    offer: 'BUY 1 GET 1 DRINK + 20% OFF FOOD',
-    costForTwo: '₹1,800',
-    image: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&auto=format&fit=crop',
-    ],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-pouring-a-cocktail-in-a-glass-43101-large.mp4',
-    tag: 'Romantic Rooftop',
-    description: 'Breathtaking 360° panoramic city skyline views with signature wood-fired artisan pizzas, hand-crafted cocktails, and ambient lounge seating under starry skies.',
-    features: ['🌌 Open Air Rooftop', '🍹 Mixology Bar', '🎵 DJ & Acoustic Evenings', '🅿️ Valet Parking', '🕯️ Candle Light Dining'],
-    timings: '04:00 PM – 01:00 AM (Daily)',
-  },
-  {
-    id: 'do-3',
-    name: 'The Spice Route Courtyard',
-    cuisine: 'Hyderabadi, South Indian & Tandoori',
-    locality: 'Madhapur / Hitech City',
-    rating: 4.7,
-    offer: 'FLAT 25% OFF ON DINING BILL',
-    costForTwo: '₹1,200',
-    image: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-    ],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-preparing-a-dish-in-the-kitchen-43095-large.mp4',
-    tag: 'Family Favorite',
-    description: 'Heritage courtyard ambiance serving authentic Hyderabadi Dum Biryanis, sizzling kebabs, and authentic coastal South Indian delicacies.',
-    features: ['🌿 Heritage Courtyard', '👨‍👩‍👧‍👦 Family Seating', '🍚 Unlimited Thalis', '🅿️ Ample Parking', '🌱 Pure Veg Section'],
-    timings: '11:30 AM – 11:00 PM (Daily)',
-  },
-  {
-    id: 'do-4',
-    name: 'Italiano Trattoria & Cafe',
-    cuisine: 'Italian, Woodfired Pizza & Wine',
-    locality: 'Gachibowli, Financial District',
-    rating: 4.8,
-    offer: 'COMPLIMENTARY DESSERT + 20% OFF',
-    costForTwo: '₹1,400',
-    image: 'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&auto=format&fit=crop',
-    ],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-making-a-pizza-43097-large.mp4',
-    tag: 'Live Acoustic',
-    description: 'Cozy rustic Italian bistro with authentic brick woodfired pizza ovens, fresh handmade pastas, imported cheeses, and artisanal espresso coffee.',
-    features: ['🍕 Woodfired Pizza Oven', '☕ Artisanal Coffee Bar', '🍷 Wine Cellar', '🎶 Live Jazz Nights', '📶 High Speed WiFi'],
-    timings: '08:30 AM – 11:00 PM (Daily)',
-  },
-];
+// REAL DINING RESTAURANTS ARE LOADED DYNAMICALLY FROM THE DATABASE (Zero mock data)
+
+
+import { OutletCategory, getOutletType, isDineoutEnabled } from '../utils/outletHelper';
+export type { OutletCategory };
+export { getOutletType, isDineoutEnabled };
+
+export const getDishPriceInfo = (item: any) => {
+  if (!item) return { price: 0, mrp: 0, discountPercent: 0 };
+  const rawOffer = item.offerPrice !== undefined && item.offerPrice !== null && Number(item.offerPrice) > 0 ? Number(item.offerPrice) : null;
+  const rawBase = item.basePrice !== undefined && item.basePrice !== null && Number(item.basePrice) > 0 ? Number(item.basePrice) : null;
+  const rawSelling = item.baseSellingPrice ?? item.sellingPrice ?? item.price ?? item.afterDiscount ?? item.userPrice;
+  const rawMrp = item.baseMrp ?? item.mrp ?? item.originalPrice;
+
+  let price = 0;
+  if (rawOffer !== null) {
+    price = rawOffer;
+  } else if (rawSelling !== undefined && rawSelling !== null && Number(rawSelling) > 0) {
+    price = Number(rawSelling);
+  } else if (rawBase !== null) {
+    price = rawBase;
+  }
+
+  let mrp = price;
+  if (rawMrp !== undefined && rawMrp !== null && Number(rawMrp) > 0) {
+    mrp = Number(rawMrp);
+  } else if (rawOffer !== null && rawBase !== null && rawBase > rawOffer) {
+    mrp = rawBase;
+  }
+
+  const discountPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : (Number(item.discountPercent) || 0);
+
+  return { price, mrp, discountPercent };
+};
 
 export const FoodDining: React.FC = () => {
   const navigate = useNavigate();
 
   // 3 MAIN VIEWS: 'items' | 'restaurants' | 'dineout'
-  const [activeMainTab, setActiveMainTab] = useState<'items' | 'restaurants' | 'dineout'>('items');
+  const [activeMainTab, setActiveMainTab] = useState<'items' | 'restaurants' | 'dineout'>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      const sub = (p.get('sub') || p.get('cat') || p.get('tab') || '').toLowerCase();
+      if (sub.includes('dine') || sub.includes('booking') || sub === 'dineout') return 'dineout';
+      if (sub.includes('restaurant') || sub.includes('bakery') || sub.includes('fast')) return 'restaurants';
+    }
+    return 'items';
+  });
 
   // State
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -208,19 +143,27 @@ export const FoodDining: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState<string>('ALL');
+  const [selectedOutletType, setSelectedOutletType] = useState<OutletCategory>('ALL');
   const [selectedItemCat, setSelectedItemCat] = useState<string>('ALL');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | 'VEG' | 'NON_VEG'>('ALL');
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const subParamRaw = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || '';
+  const subParamRaw = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || searchParams.get('type') || '';
 
-  // Parse incoming category parameters from URL (e.g. /food?sub=Restaurants)
+  // Parse incoming category parameters from URL (e.g. /food?sub=Bakeries or /food?sub=Restaurants)
   useEffect(() => {
-    const subParam = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab');
+    const subParam = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || searchParams.get('type');
     if (subParam) {
       const lower = subParam.toLowerCase();
-      if (lower.includes('restaurant') || lower === 'restaurants') {
+      if (lower.includes('bakery') || lower.includes('bakeries') || lower.includes('sweet') || lower.includes('cake')) {
         setActiveMainTab('restaurants');
+        setSelectedOutletType('BAKERY');
+      } else if (lower.includes('fast') || lower.includes('burger') || lower.includes('pizza') || lower.includes('cafe') || lower.includes('snack')) {
+        setActiveMainTab('restaurants');
+        setSelectedOutletType('FAST_FOOD');
+      } else if (lower.includes('restaurant') || lower === 'restaurants') {
+        setActiveMainTab('restaurants');
+        setSelectedOutletType('RESTAURANT');
       } else if (lower.includes('dine') || lower.includes('booking') || lower === 'dineout') {
         setActiveMainTab('dineout');
       } else {
@@ -277,12 +220,35 @@ export const FoodDining: React.FC = () => {
   const [activeGalleryImg, setActiveGalleryImg] = useState<string>('');
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Table Booking Modal State
+  // Table Booking Modal State with Full Form Fields
   const [selectedDineoutVenue, setSelectedDineoutVenue] = useState<any>(null);
-  const [bookingDate, setBookingDate] = useState('');
+  const [bookingDate, setBookingDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [bookingTime, setBookingTime] = useState('19:30');
   const [bookingGuests, setBookingGuests] = useState('2');
+  const [bookingName, setBookingName] = useState(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u).name || JSON.parse(u).fullName || '' : '';
+    } catch { return ''; }
+  });
+  const [bookingPhone, setBookingPhone] = useState(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u).phone || JSON.parse(u).mobile || '' : '';
+    } catch { return ''; }
+  });
+  const [bookingEmail, setBookingEmail] = useState(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u).email || '' : '';
+    } catch { return ''; }
+  });
+  const [bookingSeating, setBookingSeating] = useState('Main Dining Hall');
+  const [bookingOccasion, setBookingOccasion] = useState('Casual Dining');
+  const [bookingSpecialNotes, setBookingSpecialNotes] = useState('');
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [confirmedBookingNum, setConfirmedBookingNum] = useState('');
 
   const getActiveUserLocation = () => {
     const userLocRaw = localStorage.getItem("userLocation") || localStorage.getItem("user_location") || localStorage.getItem("apexbee_user_location");
@@ -300,31 +266,56 @@ export const FoodDining: React.FC = () => {
     const loc = getActiveUserLocation();
     const { activePincode, activeMandal, activeDistrict, fullAddress } = loc;
 
-    const dbDineout = (restaurants || []).map((r: any) => ({
-      id: r._id || r.id,
-      restaurantId: r._id || r.id,
-      name: r.restaurantName || r.name,
-      cuisine: Array.isArray(r.cuisines) ? r.cuisines.join(', ') : r.cuisines || 'Multi-Cuisine & Dining',
-      locality: r.locality || r.mandal || r.district || r.city || (r.pincode ? `PIN ${r.pincode}` : 'Local Dining'),
-      pincode: r.pincode || r.zipcode || r.address?.pincode || '',
-      mandal: r.mandal || '',
-      district: r.district || '',
-      rating: formatRating(r.rating),
-      offer: r.diningInfo?.offer || 'FLAT 20% OFF ON DINING BILL',
-      costForTwo: r.diningInfo?.costForTwo || '₹1,200',
-      image: r.bannerImage || r.coverBanner || r.coverImage || r.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
-      gallery: r.diningInfo?.images || [r.bannerImage || r.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop'],
-      videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cooking-food-in-a-pan-43098-large.mp4',
-      tag: 'Verified Partner',
-      description: r.description || 'Experience premium dining with authentic chef specials, vibrant ambiance, and table service.',
-      features: ['🍷 Dining Service', '🅿️ Parking Available', '❄️ AC Seating'],
-      timings: '11:00 AM – 11:00 PM'
-    }));
+    // Filter strictly to venues that have active dining enabled
+    const dbDineout = (restaurants || [])
+      .filter((r: any) => isDineoutEnabled(r))
+      .map((r: any) => ({
+        id: r._id || r.id,
+        restaurantId: r._id || r.id,
+        name: r.restaurantName || r.name,
+        cuisine: Array.isArray(r.cuisines) ? r.cuisines.join(', ') : r.cuisines || 'Multi-Cuisine & Dining',
+        locality: r.locality || r.mandal || r.district || r.city || (r.pincode ? `PIN ${r.pincode}` : 'Local Dining'),
+        pincode: r.pincode || r.zipcode || r.address?.pincode || '',
+        mandal: r.mandal || '',
+        district: r.district || '',
+        rating: formatRating(r.rating),
+        offer: r.diningInfo?.offer || 'FLAT 25% OFF ON DINING BILL',
+        costForTwo: r.diningInfo?.costForTwo || '₹1,200',
+        image: r.bannerImage || r.coverBanner || r.coverImage || r.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop',
+        gallery: r.diningInfo?.images || [r.bannerImage || r.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop'],
+        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cooking-food-in-a-pan-43098-large.mp4',
+        tag: 'Dine-in Partner',
+        description: r.description || 'Experience premium dining with authentic chef specials, vibrant ambiance, and table service.',
+        features: ['🍷 Dining Service', '🅿️ Parking Available', '❄️ AC Seating'],
+        timings: '11:00 AM – 11:00 PM'
+      }));
 
-    const rawDineout = dineoutVenues.length > 0 ? dineoutVenues : DINEOUT_RESTAURANTS;
-    const combined = [...dbDineout];
-    rawDineout.forEach(v => {
-      if (!combined.some(c => c.name === v.name || c.id === v.id)) {
+    // Exclude mock venues and only allow real MongoDB restaurants
+    const MOCK_NAMES = [
+      'royal pavilion fine dining',
+      'skyline rooftop bistro & lounge',
+      'the spice route courtyard',
+      'italiano trattoria & cafe',
+      'tamsi royal family dhaba & dining'
+    ];
+
+    const filteredApiDineout = (dineoutVenues || []).filter((v: any) => {
+      const vName = (v.name || v.restaurantName || '').toLowerCase().trim();
+      if (MOCK_NAMES.includes(vName)) return false;
+      return isDineoutEnabled(v);
+    });
+
+    const combined: any[] = [];
+    dbDineout.forEach(v => {
+      const vName = (v.name || '').toLowerCase().trim();
+      if (!MOCK_NAMES.includes(vName) && !combined.some(c => c.name === v.name || c.id === v.id)) {
+        combined.push(v);
+      }
+    });
+
+    filteredApiDineout.forEach(v => {
+      const vName = (v.name || '').toLowerCase().trim();
+      if (!MOCK_NAMES.includes(vName) && !combined.some(c => c.name === v.name || c.id === v.id)) {
         combined.push(v);
       }
     });
@@ -412,9 +403,52 @@ export const FoodDining: React.FC = () => {
         return rName.includes(q) || rCuisine.includes(q) || rLoc.includes(q);
       }
 
+      // 4. Outlet Category Filter (ALL, RESTAURANTS, BAKERIES, FAST FOOD)
+      if (selectedOutletType !== 'ALL') {
+        const oType = getOutletType(rest);
+        if (oType !== selectedOutletType) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [restaurants, selectedCuisine, searchQuery]);
+  }, [restaurants, selectedOutletType, selectedCuisine, searchQuery]);
+
+  // Dynamic counts of outlets in user location
+  const outletCounts = useMemo(() => {
+    const loc = getActiveUserLocation();
+    const { activePincode, activeMandal, activeDistrict, fullAddress } = loc;
+
+    const inLocation = (restaurants || []).filter((rest: any) => {
+      if (!activePincode && !activeMandal && !activeDistrict && !fullAddress) return true;
+      const restPin = (rest.pincode || rest.zipcode || rest.pinCode || rest.address?.pincode || rest.location?.pincode || "").toString().toLowerCase();
+      const restMandal = (rest.mandal || rest.subdistrict || "").toString().toLowerCase();
+      const restDistrict = (rest.district || rest.city || "").toString().toLowerCase();
+      const restLocality = (rest.locality || rest.address || rest.city || rest.name || rest.restaurantName || "").toString().toLowerCase();
+      const restFull = `${restLocality} ${restMandal} ${restDistrict} ${restPin}`.toLowerCase();
+
+      const isTamsiAdilabadUser = activePincode === '504312' || activeMandal.includes('tamsi') || activeDistrict.includes('adilabad') || fullAddress.includes('tamsi') || fullAddress.includes('adilabad');
+      if (isTamsiAdilabadUser) {
+        const isDistantCity = restFull.includes('buchi') || restFull.includes('nellore') || restFull.includes('hyderabad central') || restFull.includes('secunderabad');
+        const isExplicitTamsiAdilabad = restFull.includes('tamsi') || restFull.includes('adilabad') || restPin === '504312';
+        if (isDistantCity && !isExplicitTamsiAdilabad) return false;
+        if (!isExplicitTamsiAdilabad && restPin && restPin !== '504312' && restPin.length === 6) return false;
+        return true;
+      }
+      const matchPin = activePincode && restPin === activePincode;
+      const matchMandal = activeMandal && (restMandal.includes(activeMandal) || restLocality.includes(activeMandal));
+      const matchDistrict = activeDistrict && (restDistrict.includes(activeDistrict) || restLocality.includes(activeDistrict));
+      return Boolean(matchPin || matchMandal || matchDistrict);
+    });
+
+    return {
+      all: inLocation.length,
+      restaurants: inLocation.filter(r => getOutletType(r) === 'RESTAURANT').length,
+      bakeries: inLocation.filter(r => getOutletType(r) === 'BAKERY').length,
+      fastFood: inLocation.filter(r => getOutletType(r) === 'FAST_FOOD').length,
+    };
+  }, [restaurants]);
 
   const cuisinesList = [
     { name: 'All Cuisines', value: 'ALL', icon: '🍽️' },
@@ -455,8 +489,11 @@ export const FoodDining: React.FC = () => {
       const cat = (shop.category || (shop.categories && shop.categories[0]) || shop.industryType || "").toString().toLowerCase();
       const name = (shop.businessName || shop.shopName || shop.name || "").toString().toLowerCase();
 
+      const isBakery = name.includes('bakery') || name.includes('sweets') || name.includes('sweet') ||
+        cat.includes('bakes') || cat.includes('sweets') || cat.includes('bakery');
+
       const isFood = cat.includes("food") || cat.includes("restaurant") || cat.includes("dining") ||
-        cat.includes("bakes") || cat.includes("sweets") || cat.includes("cafe") ||
+        isBakery || cat.includes("cafe") ||
         name.includes("restaurant") || name.includes("biryani") || name.includes("bistro") ||
         name.includes("cafe") || name.includes("diner") || name.includes("dhaba") || name.includes("kitchen");
 
@@ -469,6 +506,8 @@ export const FoodDining: React.FC = () => {
             _id: id,
             restaurantName: shop.shopName || shop.businessName || shop.name,
             name: shop.shopName || shop.businessName || shop.name,
+            businessType: isBakery ? 'CAFE_BAKERY' : (shop.businessType || 'RESTAURANT'),
+            diningEnabled: false, // Vendor shops do not have dining reservations enabled
             bannerImage: shop.bannerImage || shop.storeDesign?.logo || shop.logoUrl || shop.coverImage || shop.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop",
             coverImage: shop.bannerImage || shop.storeDesign?.logo || shop.logoUrl || shop.coverImage || shop.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop",
             logo: shop.logo || shop.storeDesign?.logo || shop.logoUrl,
@@ -639,11 +678,12 @@ export const FoodDining: React.FC = () => {
         return;
       }
       const user = JSON.parse(userStr);
+      const priceInfo = getDishPriceInfo(item);
       const payload = {
         userId: user._id || user.id,
         productId: item._id || item.id,
         name: item.name || item.itemName,
-        price: item.price || item.afterDiscount || item.userPrice,
+        price: priceInfo.price,
         image: item.image || item.images?.[0],
         quantity: quantity,
         vendorId: item.vendorId || item.restaurantId || null,
@@ -664,29 +704,40 @@ export const FoodDining: React.FC = () => {
 
   const handleBookTableSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!bookingName.trim()) {
+      alert('Please enter your full name for the table reservation.');
+      return;
+    }
+    if (!bookingPhone.trim() || bookingPhone.trim().length < 10) {
+      alert('Please enter a valid 10-digit mobile contact number.');
+      return;
+    }
+
+    setBookingSubmitting(true);
     try {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : {};
       const payload = {
         restaurantId: selectedDineoutVenue?.restaurantId || selectedDineoutVenue?.id,
-        customerName: user.name || user.fullName || 'ApexBee Customer',
-        customerPhone: user.phone || user.mobile || '9707010797',
-        customerEmail: user.email || 'customer@apexbee.in',
+        customerName: bookingName.trim(),
+        customerPhone: bookingPhone.trim(),
+        customerEmail: bookingEmail.trim() || user.email || 'customer@apexbee.in',
         guestCount: Number(bookingGuests) || 2,
         bookingDate: bookingDate || new Date().toISOString().split('T')[0],
         bookingTime: bookingTime || '19:30',
-        tableType: 'Standard Dining Table',
-        occasion: 'Casual Dining',
+        tableType: bookingSeating || 'Main Dining Hall',
+        occasion: bookingOccasion || 'Casual Dining',
+        specialRequests: bookingSpecialNotes.trim() || '',
       };
 
-      await axios.post(`${API_BASE}/food/dining/book`, payload);
+      const res = await axios.post(`${API_BASE}/food/dining/book`, payload);
+      const bNum = res.data?.bookingNumber || `TB-${Math.floor(100000 + Math.random() * 900000)}`;
+      setConfirmedBookingNum(bNum);
       setBookingSuccess(true);
-      setTimeout(() => {
-        setBookingSuccess(false);
-        setSelectedDineoutVenue(null);
-      }, 2500);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to submit table booking reservation');
+    } finally {
+      setBookingSubmitting(false);
     }
   };
 
@@ -737,8 +788,8 @@ export const FoodDining: React.FC = () => {
       {/* MAIN CONTENT CONTAINER */}
       <div className="max-w-7xl mx-auto px-2 sm:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
 
-        {/* DEDICATED SUBCATEGORY HERO BANNER & BREADCRUMBS (Renders when ?sub=... URL parameter is present) */}
-        {subParamRaw && (
+        {/* DEDICATED SUBCATEGORY HERO BANNER & BREADCRUMBS (Renders when ?sub=... URL parameter is present, except for dineout which has its own dedicated banner) */}
+        {subParamRaw && activeMainTab !== 'dineout' && (
           <div className="bg-gradient-to-r from-[#0A1128] via-slate-900 to-amber-950 text-white rounded-3xl p-5 sm:p-6 border border-amber-400/40 shadow-xl relative overflow-hidden text-left">
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -839,7 +890,15 @@ export const FoodDining: React.FC = () => {
               }`}
           >
             <span className="text-sm sm:text-lg">🏪</span>
-            <span>Restaurants</span>
+            <div className="flex items-center gap-1">
+              <span>Restaurants &amp; Bakeries</span>
+              {outletCounts.all > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeMainTab === 'restaurants' ? 'bg-amber-400/20 text-amber-300' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                  {outletCounts.all}
+                </span>
+              )}
+            </div>
           </button>
 
           <button
@@ -851,7 +910,15 @@ export const FoodDining: React.FC = () => {
               }`}
           >
             <span className="text-sm sm:text-lg">🍽️</span>
-            <span>Dineout</span>
+            <div className="flex items-center gap-1">
+              <span>Dineout</span>
+              {allCombinedDineout.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeMainTab === 'dineout' ? 'bg-amber-400/20 text-amber-300' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                  {allCombinedDineout.length} Active
+                </span>
+              )}
+            </div>
           </button>
         </div>
 
@@ -889,7 +956,7 @@ export const FoodDining: React.FC = () => {
 
           <div className="text-[10px] sm:text-xs text-slate-500 font-semibold px-1 shrink-0">
             <span className="text-[#0A1128] font-black">
-              {activeMainTab === 'items' ? filteredFoodItems.length : activeMainTab === 'restaurants' ? filteredRestaurants.length : DINEOUT_RESTAURANTS.length}
+              {activeMainTab === 'items' ? filteredFoodItems.length : activeMainTab === 'restaurants' ? filteredRestaurants.length : allCombinedDineout.length}
             </span> {activeMainTab === 'items' ? 'Items' : 'Outlets'}
           </div>
         </div>
@@ -971,9 +1038,7 @@ export const FoodDining: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
                 {filteredFoodItems.map((item: any) => {
                   const title = item.name || item.itemName || 'Delicious Dish';
-                  const price = Number(item.price || item.afterDiscount || item.userPrice || 199);
-                  const mrp = Number(item.mrp || item.baseMrp || price * 1.3);
-                  const dp = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+                  const { price, mrp, discountPercent: dp } = getDishPriceInfo(item);
                   const img = item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop';
                   const isVeg = item.isVeg !== undefined ? item.isVeg : true;
 
@@ -1057,10 +1122,93 @@ export const FoodDining: React.FC = () => {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* TAB 2: RESTAURANTS DIRECTORY */}
+        {/* TAB 2: RESTAURANTS, BAKERIES & FAST FOOD DIRECTORY */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeMainTab === 'restaurants' && (
           <div className="space-y-6">
+            {/* 3 PRIMARY OUTLET CATEGORIES (BAKERIES, FAST FOOD, RESTAURANTS) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedOutletType('ALL')}
+                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'ALL'
+                  ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-amber-400/30'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-xl sm:text-2xl">🌟</span>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold font-heading">All Places</div>
+                    <div className="text-[10px] text-slate-400 font-medium">All local food outlets</div>
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-500">
+                  {outletCounts.all}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOutletType('RESTAURANT')}
+                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'RESTAURANT'
+                  ? 'bg-[#0A1128] text-cyan-300 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-cyan-400/30'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-xl sm:text-2xl">🍽️</span>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold font-heading">Restaurants</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Meals, Biryani &amp; Dining</div>
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-cyan-400/20 text-cyan-600">
+                  {outletCounts.restaurants}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOutletType('BAKERY')}
+                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'BAKERY'
+                  ? 'bg-[#0A1128] text-purple-300 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-purple-400/30'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-xl sm:text-2xl">🥖</span>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold font-heading">Bakeries &amp; Sweets</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Cakes, Bakes &amp; Sweets</div>
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-purple-400/20 text-purple-600">
+                  {outletCounts.bakeries}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOutletType('FAST_FOOD')}
+                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'FAST_FOOD'
+                  ? 'bg-[#0A1128] text-orange-400 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-orange-400/30'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-xl sm:text-2xl">🍔</span>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold font-heading">Fast Food &amp; Cafes</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Burgers, Pizzas &amp; Snacks</div>
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-orange-400/20 text-orange-600">
+                  {outletCounts.fastFood}
+                </span>
+              </button>
+            </div>
+
             {/* CUISINE FILTER SLIDER */}
             <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-none">
               {cuisinesList.map((c) => (
@@ -1095,6 +1243,15 @@ export const FoodDining: React.FC = () => {
                   ? `${activePincode}${userLocation?.mandal ? ` (${userLocation.mandal})` : userLocation?.city ? ` (${userLocation.city})` : ''}`
                   : fullAddress || 'your selected location';
 
+                const typeLabel =
+                  selectedOutletType === 'BAKERY'
+                    ? 'Bakeries or Sweet Shops'
+                    : selectedOutletType === 'FAST_FOOD'
+                      ? 'Fast Food Outlets or Cafes'
+                      : selectedOutletType === 'RESTAURANT'
+                        ? 'Restaurants'
+                        : 'Food Outlets';
+
                 return (
                   <div className="bg-gradient-to-br from-slate-900 via-[#0A1128] to-slate-950 text-white rounded-3xl p-8 sm:p-12 border border-amber-400/30 shadow-2xl text-center space-y-5 relative overflow-hidden my-6">
                     <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -1110,27 +1267,37 @@ export const FoodDining: React.FC = () => {
                           Location Status
                         </span>
                         <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
-                          No Restaurants Delivering to <span className="text-amber-400">{displayLoc}</span> Yet
+                          No {typeLabel} Delivering to <span className="text-amber-400">{displayLoc}</span> Yet
                         </h3>
                         <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-                          We currently don't have registered restaurant partners in <strong className="text-amber-300">{displayLoc}</strong>. We are rapidly expanding our food network in your area!
+                          We currently don't have registered {typeLabel.toLowerCase()} in <strong className="text-amber-300">{displayLoc}</strong>. Check out all food options or adjust your location filter!
                         </p>
                       </div>
 
                       <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        {selectedOutletType !== 'ALL' && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOutletType('ALL')}
+                            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2"
+                          >
+                            <span>View All Outlets in {displayLoc} ({outletCounts.all})</span>
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           onClick={handleClearSubcategoryFilter}
-                          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2"
+                          className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs rounded-2xl border border-white/20 backdrop-blur-md transition flex items-center justify-center space-x-2 cursor-pointer"
                         >
-                          <span>Explore All Outlets Across Platform</span>
+                          <span>Explore All Across Platform</span>
                         </button>
 
                         <Link
                           to="/"
                           className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs rounded-2xl border border-white/20 backdrop-blur-md transition flex items-center justify-center space-x-2"
                         >
-                          <span>📍 Change Location / Pincode</span>
+                          <span>📍 Change Location</span>
                         </Link>
                       </div>
                     </div>
@@ -1142,6 +1309,9 @@ export const FoodDining: React.FC = () => {
                 {filteredRestaurants.map((rest) => {
                   const defaultImage = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop';
                   const displayImage = rest.bannerImage || rest.coverImage || rest.logo || defaultImage;
+                  const outletType = getOutletType(rest);
+                  const isBakery = outletType === 'BAKERY';
+                  const isFastFood = outletType === 'FAST_FOOD';
 
                   return (
                     <Link
@@ -1174,6 +1344,25 @@ export const FoodDining: React.FC = () => {
                             >
                               {rest.isOpen ? 'OPEN NOW' : 'CLOSED'}
                             </span>
+
+                            {/* CATEGORY PILL BADGE */}
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shadow-md flex items-center gap-1 ${isBakery
+                                ? 'bg-purple-950/90 text-purple-200 border border-purple-400/50'
+                                : isFastFood
+                                  ? 'bg-orange-950/90 text-orange-200 border border-orange-400/50'
+                                  : 'bg-cyan-950/90 text-cyan-200 border border-cyan-400/50'
+                                }`}
+                            >
+                              <span>{isBakery ? '🥖 Bakery & Sweets' : isFastFood ? '🍔 Fast Food' : '🍽️ Restaurant'}</span>
+                            </span>
+
+                            {/* DINEOUT ACTIVE BADGE */}
+                            {rest.diningEnabled && (
+                              <span className="px-2.5 py-0.5 bg-amber-400 text-slate-950 rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
+                                <span>🍷 Table Booking</span>
+                              </span>
+                            )}
 
                             {rest.activeOfferSummary && (
                               <span className="px-2.5 py-0.5 bg-amber-500 text-[#0A1128] rounded-full font-black text-[10px] shadow-md flex items-center space-x-1">
@@ -1243,9 +1432,20 @@ export const FoodDining: React.FC = () => {
         {activeMainTab === 'dineout' && (
           <div className="space-y-6">
             {/* DINEOUT BANNER HERO */}
-            <div className="bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#0A1128] via-[#1a2b5c] to-[#0A1128] text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden text-left">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-2">
+                <div className="space-y-2.5">
+                  <div className="flex items-center space-x-2 text-xs text-amber-300 font-bold flex-wrap">
+                    <Link to="/" className="hover:underline text-amber-300">Home</Link>
+                    <span>/</span>
+                    <button type="button" onClick={handleClearSubcategoryFilter} className="hover:underline text-amber-300 bg-transparent border-none p-0 cursor-pointer">
+                      Food &amp; Dining
+                    </button>
+                    <span>/</span>
+                    <span className="text-white font-extrabold">Dineout Reservations</span>
+                  </div>
+
                   <span className="inline-flex items-center gap-1.5 bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-black">
                     <Award className="w-3.5 h-3.5" /> ApexBee Dining Pass
                   </span>
@@ -1254,30 +1454,165 @@ export const FoodDining: React.FC = () => {
                     Enjoy luxury dining, rooftop lounges, and top-rated restaurants with guaranteed table reservations, gallery previews, video tours, and instant bill discounts.
                   </p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center shrink-0">
-                  <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Instant Confirmation</p>
-                  <p className="text-xl font-black text-white">Zero Booking Fees</p>
+                <div className="flex flex-col sm:flex-row md:flex-col items-center gap-3 shrink-0">
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center w-full">
+                    <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Instant Confirmation</p>
+                    <p className="text-xl font-black text-white">Zero Booking Fees</p>
+                  </div>
+                  <Link
+                    to="/my-orders?view=tables"
+                    className="w-full text-center px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition no-underline block cursor-pointer"
+                  >
+                    🍷 My Reserved Tables →
+                  </Link>
                 </div>
               </div>
             </div>
 
-            {/* DINEOUT VENUES GRID WITH VIDEO TOUR & IMAGES DETAILS BUTTON */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {allCombinedDineout.map((venue) => (
-                <div
-                  key={venue.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="h-52 relative overflow-hidden group">
-                      <img src={venue.image} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+            {/* DINEOUT VENUES GRID (REAL RESTAURANTS WITH ACTIVE DINING ENABLED ONLY) */}
+            {allCombinedDineout.length === 0 ? (
+              (() => {
+                const { activePincode, activeMandal, activeDistrict, fullAddress } = getActiveUserLocation();
+                const userLocRaw = localStorage.getItem("userLocation");
+                const userLocation = userLocRaw ? JSON.parse(userLocRaw) : null;
+                const displayLoc = activePincode
+                  ? `${activePincode}${userLocation?.mandal ? ` (${userLocation.mandal})` : userLocation?.city ? ` (${userLocation.city})` : ''}`
+                  : fullAddress || 'your selected location';
 
-                      <span className="absolute top-3 left-3 bg-amber-400 text-[#0A1128] font-black text-xs px-3 py-1 rounded-full shadow-md">
-                        {venue.tag}
-                      </span>
+                return (
+                  <div className="bg-gradient-to-br from-slate-900 via-[#0A1128] to-slate-950 text-white rounded-3xl p-8 sm:p-12 border border-purple-500/30 shadow-2xl text-center space-y-5 relative overflow-hidden my-6">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                      {/* VIDEO TOUR PREVIEW BUTTON */}
+                    <div className="relative z-10 space-y-4 max-w-xl mx-auto">
+                      <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/40 flex items-center justify-center mx-auto shadow-lg">
+                        <Utensils className="w-8 h-8 text-purple-300 animate-pulse" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="bg-purple-500/20 text-purple-300 border border-purple-400/40 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                          Dineout Reservations Status
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
+                          No Dineout Table Booking Venues Active in <span className="text-amber-400">{displayLoc}</span>
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                          Table reservations are only displayed when verified dine-in partner restaurants have dining active. Bakeries and fast food joints are strictly takeout &amp; doorstep delivery. Order fresh meals, bakes, or quick bites online below!
+                        </p>
+                      </div>
+
+                      <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMainTab('restaurants');
+                            setSelectedOutletType('RESTAURANT');
+                          }}
+                          className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center space-x-1.5"
+                        >
+                          <Store className="w-4 h-4" />
+                          <span>🍽️ Browse Restaurants ({outletCounts.restaurants})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMainTab('restaurants');
+                            setSelectedOutletType('BAKERY');
+                          }}
+                          className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center space-x-1.5"
+                        >
+                          <span>🥖 Browse Bakeries ({outletCounts.bakeries})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMainTab('restaurants');
+                            setSelectedOutletType('FAST_FOOD');
+                          }}
+                          className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition cursor-pointer flex items-center space-x-1.5"
+                        >
+                          <span>🍔 Browse Fast Food ({outletCounts.fastFood})</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {allCombinedDineout.map((venue) => (
+                  <div
+                    key={venue.id}
+                    className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="h-52 relative overflow-hidden group">
+                        <img src={venue.image} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+
+                        <span className="absolute top-3 left-3 bg-amber-400 text-[#0A1128] font-black text-xs px-3 py-1 rounded-full shadow-md">
+                          {venue.tag}
+                        </span>
+
+                        {/* VIDEO TOUR PREVIEW BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDineoutDetails(venue);
+                            setActiveGalleryImg(venue.image);
+                            setIsVideoPlaying(false);
+                          }}
+                          className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition border-none cursor-pointer"
+                        >
+                          <span className="px-4 py-2.5 bg-amber-500 text-[#0A1128] font-black text-xs rounded-2xl shadow-xl flex items-center gap-2 transform group-hover:scale-105 transition">
+                            <Play className="w-4 h-4 fill-[#0A1128]" /> View Images & Video Tour
+                          </span>
+                        </button>
+
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+                          <div className="flex items-center gap-1 text-xs font-black bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-xl">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span>{venue.rating} Rating</span>
+                          </div>
+                          <span className="text-xs font-bold bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-xl">
+                            Avg {venue.costForTwo} for 2
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xl text-[#0A1128]">{venue.name}</h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDineoutDetails(venue);
+                                setActiveGalleryImg(venue.image);
+                                setIsVideoPlaying(false);
+                              }}
+                              className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 cursor-pointer"
+                            >
+                              <Info className="w-3.5 h-3.5" /> Details
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-500 font-semibold mt-1">{venue.cuisine} • 📍 {venue.locality}</p>
+                        </div>
+
+                        {/* OFFER CARD */}
+                        <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 p-3 rounded-2xl flex items-center gap-2">
+                          <BadgePercent className="w-5 h-5 text-rose-600 shrink-0" />
+                          <div>
+                            <p className="text-xs font-black text-rose-700">{venue.offer}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">Valid on all food & beverage orders via ApexBee Pay</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 pt-0 flex gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -1285,80 +1620,25 @@ export const FoodDining: React.FC = () => {
                           setActiveGalleryImg(venue.image);
                           setIsVideoPlaying(false);
                         }}
-                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition border-none cursor-pointer"
+                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-[#0A1128] font-black text-xs rounded-2xl transition flex items-center justify-center gap-1.5 border-none cursor-pointer"
                       >
-                        <span className="px-4 py-2.5 bg-amber-500 text-[#0A1128] font-black text-xs rounded-2xl shadow-xl flex items-center gap-2 transform group-hover:scale-105 transition">
-                          <Play className="w-4 h-4 fill-[#0A1128]" /> View Images & Video Tour
-                        </span>
+                        <Eye className="w-4 h-4" />
+                        <span>Photos & Video</span>
                       </button>
 
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
-                        <div className="flex items-center gap-1 text-xs font-black bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-xl">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span>{venue.rating} Rating</span>
-                        </div>
-                        <span className="text-xs font-bold bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-xl">
-                          Avg {venue.costForTwo} for 2
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-5 space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-black text-xl text-[#0A1128]">{venue.name}</h3>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedDineoutDetails(venue);
-                              setActiveGalleryImg(venue.image);
-                              setIsVideoPlaying(false);
-                            }}
-                            className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 cursor-pointer"
-                          >
-                            <Info className="w-3.5 h-3.5" /> Details
-                          </button>
-                        </div>
-                        <p className="text-xs text-slate-500 font-semibold mt-1">{venue.cuisine} • 📍 {venue.locality}</p>
-                      </div>
-
-                      {/* OFFER CARD */}
-                      <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 p-3 rounded-2xl flex items-center gap-2">
-                        <BadgePercent className="w-5 h-5 text-rose-600 shrink-0" />
-                        <div>
-                          <p className="text-xs font-black text-rose-700">{venue.offer}</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Valid on all food & beverage orders via ApexBee Pay</p>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDineoutVenue(venue)}
+                        className="flex-1 py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition flex items-center justify-center gap-1.5 shadow-md border-none cursor-pointer"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Book Table</span>
+                      </button>
                     </div>
                   </div>
-
-                  <div className="p-5 pt-0 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDineoutDetails(venue);
-                        setActiveGalleryImg(venue.image);
-                        setIsVideoPlaying(false);
-                      }}
-                      className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-[#0A1128] font-black text-xs rounded-2xl transition flex items-center justify-center gap-1.5 border-none cursor-pointer"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Photos & Video</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDineoutVenue(venue)}
-                      className="flex-1 py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition flex items-center justify-center gap-1.5 shadow-md border-none cursor-pointer"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>Book Table</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1426,46 +1706,53 @@ export const FoodDining: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-[#0A1128]">
-                        ₹{(selectedQuickViewItem.price || selectedQuickViewItem.afterDiscount || 199) * quickViewQty}
-                      </span>
-                      {selectedQuickViewItem.mrp > selectedQuickViewItem.price && (
-                        <span className="text-xs text-slate-400 line-through">
-                          ₹{Math.round(selectedQuickViewItem.mrp * quickViewQty)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                {(() => {
+                  const qvPrice = getDishPriceInfo(selectedQuickViewItem);
+                  return (
+                    <>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-[#0A1128]">
+                              ₹{qvPrice.price * quickViewQty}
+                            </span>
+                            {qvPrice.mrp > qvPrice.price && (
+                              <span className="text-xs text-slate-400 line-through">
+                                ₹{Math.round(qvPrice.mrp * quickViewQty)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                  {/* QTY COUNTER */}
-                  <div className="flex items-center bg-slate-100 rounded-xl p-1">
-                    <button
-                      onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
-                      className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="w-8 text-center font-black text-sm text-[#0A1128]">{quickViewQty}</span>
-                    <button
-                      onClick={() => setQuickViewQty((q) => q + 1)}
-                      className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                        {/* QTY COUNTER */}
+                        <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                          <button
+                            onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
+                            className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-8 text-center font-black text-sm text-[#0A1128]">{quickViewQty}</span>
+                          <button
+                            onClick={() => setQuickViewQty((q) => q + 1)}
+                            className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleAddToCart(selectedQuickViewItem, quickViewQty)}
-                  className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition duration-300 flex items-center justify-center gap-2 shadow-md border-none cursor-pointer"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Add {quickViewQty} to Order • ₹{(selectedQuickViewItem.price || 199) * quickViewQty}</span>
-                </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(selectedQuickViewItem, quickViewQty)}
+                        className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition duration-300 flex items-center justify-center gap-2 shadow-md border-none cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Add {quickViewQty} to Order • ₹{qvPrice.price * quickViewQty}</span>
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1596,88 +1883,295 @@ export const FoodDining: React.FC = () => {
         </div>
       )}
 
-      {/* TABLE BOOKING MODAL */}
+      {/* TABLE BOOKING MODAL (HIGH-CONVERSION LUXURY UI) */}
       {selectedDineoutVenue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative border border-slate-100 my-auto animate-in fade-in zoom-in-95 duration-200">
             <button
-              onClick={() => setSelectedDineoutVenue(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition border-none cursor-pointer"
+              onClick={() => {
+                setSelectedDineoutVenue(null);
+                setBookingSuccess(false);
+              }}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition border-none cursor-pointer z-10"
             >
               <X className="w-5 h-5" />
             </button>
 
             {bookingSuccess ? (
-              <div className="py-8 text-center space-y-3">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-10 h-10" />
-                </div>
-                <h3 className="text-xl font-black text-[#0A1128]">Table Reserved Successfully!</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Your table at <strong className="text-slate-800">{selectedDineoutVenue.name}</strong> is confirmed for {bookingGuests} guests on {bookingDate || 'today'} at {bookingTime}.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">ApexBee Table Reservation</span>
-                  <h3 className="text-xl font-black text-[#0A1128]">{selectedDineoutVenue.name}</h3>
-                  <p className="text-xs text-rose-600 font-bold mt-0.5">🎁 {selectedDineoutVenue.offer}</p>
+              <div className="py-6 text-center space-y-4">
+                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                  <CheckCircle className="w-12 h-12" />
                 </div>
 
-                <form onSubmit={handleBookTableSubmit} className="space-y-4 text-xs font-semibold">
-                  <div>
-                    <label className="block text-slate-700 mb-1">Select Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold"
-                    />
+                <div className="space-y-1">
+                  <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[11px] font-black uppercase tracking-wider">
+                    Instant Reservation Confirmed
+                  </span>
+                  <h3 className="text-2xl font-black text-[#0A1128]">Table Reserved Successfully!</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Your table at <strong className="text-slate-800">{selectedDineoutVenue.name}</strong> has been secured and sent directly to the restaurant partner operating dashboard.
+                  </p>
+                </div>
+
+                {/* RESERVATION PASS TICKET */}
+                <div className="bg-gradient-to-br from-slate-900 to-[#0A1128] text-white p-5 rounded-2xl text-left space-y-3 shadow-lg border border-slate-800">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-amber-400">Booking Pass Number</p>
+                      <p className="text-lg font-black font-mono tracking-wider">{confirmedBookingNum || '#TB-849201'}</p>
+                    </div>
+                    <span className="px-2.5 py-1 bg-amber-500 text-[#0A1128] rounded-xl text-[10px] font-black">
+                      {selectedDineoutVenue.offer || '25% OFF BILL'}
+                    </span>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Guest Name</p>
+                      <p className="font-bold text-white truncate">{bookingName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Contact Phone</p>
+                      <p className="font-bold text-white">{bookingPhone}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Date & Slot</p>
+                      <p className="font-bold text-amber-300">{bookingDate} @ {bookingTime}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Party & Seating</p>
+                      <p className="font-bold text-white">{bookingGuests} Guests • {bookingSeating}</p>
+                    </div>
+                  </div>
+
+                  {bookingOccasion && (
+                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-bold">Occasion:</span>
+                      <span className="font-bold text-rose-300">{bookingOccasion}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDineoutVenue(null);
+                      setBookingSuccess(false);
+                      navigate('/my-orders?view=tables');
+                    }}
+                    className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition border-none cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>🍷 View in My Orders (Reserved Tables) →</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDineoutVenue(null);
+                      setBookingSuccess(false);
+                    }}
+                    className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition border border-white/20 cursor-pointer"
+                  >
+                    Done & Return to Dineout
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* VENUE TOP HEADER */}
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-slate-200">
+                    <img
+                      src={selectedDineoutVenue.image}
+                      alt={selectedDineoutVenue.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">
+                      🍽️ ApexBee Table Reservation
+                    </span>
+                    <h3 className="text-lg font-black text-[#0A1128] leading-tight line-clamp-1">
+                      {selectedDineoutVenue.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      📍 {selectedDineoutVenue.locality} • <strong className="text-rose-600 font-bold">{selectedDineoutVenue.offer}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleBookTableSubmit} className="space-y-3.5 text-xs font-semibold">
+                  {/* SCHEDULE: DATE & TIME */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-700 mb-1">Time Slot</label>
+                      <label className="block text-slate-700 mb-1 font-bold">Booking Date</label>
+                      <input
+                        type="date"
+                        required
+                        min={new Date().toISOString().split('T')[0]}
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-bold">Preferred Time Slot</label>
                       <select
                         value={bookingTime}
                         onChange={(e) => setBookingTime(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800"
                       >
-                        <option value="12:30">12:30 PM (Lunch)</option>
-                        <option value="13:30">01:30 PM (Lunch)</option>
-                        <option value="19:00">07:00 PM (Dinner)</option>
-                        <option value="20:00">08:00 PM (Dinner)</option>
-                        <option value="21:00">09:00 PM (Dinner)</option>
+                        <optgroup label="🌞 Lunch Slots">
+                          <option value="12:30">12:30 PM (Lunch)</option>
+                          <option value="13:00">01:00 PM (Lunch)</option>
+                          <option value="13:30">01:30 PM (Lunch)</option>
+                          <option value="14:00">02:00 PM (Lunch)</option>
+                        </optgroup>
+                        <optgroup label="🌙 Dinner Slots">
+                          <option value="19:00">07:00 PM (Dinner)</option>
+                          <option value="19:30">07:30 PM (Dinner)</option>
+                          <option value="20:00">08:00 PM (Dinner)</option>
+                          <option value="20:30">08:30 PM (Dinner)</option>
+                          <option value="21:00">09:00 PM (Dinner)</option>
+                          <option value="21:30">09:30 PM (Dinner)</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* GUESTS & SEATING PREFERENCE */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-bold">Number of Diners</label>
+                      <select
+                        value={bookingGuests}
+                        onChange={(e) => setBookingGuests(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800"
+                      >
+                        <option value="1">1 Person (Solo Dining)</option>
+                        <option value="2">2 Guests (Couple Table)</option>
+                        <option value="4">4 Guests (Family Table)</option>
+                        <option value="6">6 Guests (Group Dining)</option>
+                        <option value="8">8 Guests (Large Group)</option>
+                        <option value="10">10+ Guests (Celebration Party)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-slate-700 mb-1">Guests</label>
+                      <label className="block text-slate-700 mb-1 font-bold">Seating Preference</label>
                       <select
-                        value={bookingGuests}
-                        onChange={(e) => setBookingGuests(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold"
+                        value={bookingSeating}
+                        onChange={(e) => setBookingSeating(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800"
                       >
-                        <option value="1">1 Person</option>
-                        <option value="2">2 Guests</option>
-                        <option value="4">4 Guests</option>
-                        <option value="6">6 Guests</option>
-                        <option value="8+">8+ Guests (Party)</option>
+                        <option value="Main Dining Hall">🍽️ Main Dining Hall</option>
+                        <option value="AC Family Lounge">❄️ AC Family Lounge</option>
+                        <option value="Outdoor Terrace">🌿 Outdoor / Garden</option>
+                        <option value="Window Side Booth">🪟 Window Side Booth</option>
+                        <option value="VIP Private Section">👑 VIP Private Section</option>
                       </select>
                     </div>
+                  </div>
+
+                  {/* OCCASION */}
+                  <div>
+                    <label className="block text-slate-700 mb-1 font-bold">Dining Occasion</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { label: 'Casual Dining', icon: '🍽️' },
+                        { label: 'Birthday 🎂', icon: '🎂' },
+                        { label: 'Anniversary 💖', icon: '💖' },
+                        { label: 'Business 💼', icon: '💼' },
+                        { label: 'Family 👨‍👩‍👧‍👦', icon: '👨‍👩‍👧‍👦' },
+                        { label: 'Candlelight 🕯️', icon: '🕯️' },
+                      ].map((occ) => (
+                        <button
+                          key={occ.label}
+                          type="button"
+                          onClick={() => setBookingOccasion(occ.label)}
+                          className={`py-1.5 px-2 rounded-xl text-[11px] font-bold border transition text-center cursor-pointer ${bookingOccasion === occ.label
+                            ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-sm'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                            }`}
+                        >
+                          {occ.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CUSTOMER CONTACT DETAILS */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-bold">
+                        Full Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Akhilesh Reddy"
+                        value={bookingName}
+                        onChange={(e) => setBookingName(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-bold">
+                        Mobile Number <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        maxLength={10}
+                        placeholder="10-digit mobile"
+                        value={bookingPhone}
+                        onChange={(e) => setBookingPhone(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-slate-800 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 mb-1 font-bold">Special Requests / Dietary Notes (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Baby high chair, quiet corner table, allergic to peanuts"
+                      value={bookingSpecialNotes}
+                      onChange={(e) => setBookingSpecialNotes(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 text-xs font-medium text-slate-800"
+                    />
+                  </div>
+
+                  {/* BENEFIT HIGHLIGHT */}
+                  <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-2.5 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span className="font-extrabold text-slate-800 text-[11px]">Zero Reservation Fee • Guaranteed Table</span>
+                    </div>
+                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Instant Confirmation
+                    </span>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-[#0A1128] font-black text-xs rounded-xl shadow-lg transition border-none cursor-pointer flex items-center justify-center gap-2 mt-2"
+                    disabled={bookingSubmitting}
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-[#0A1128] font-black text-xs rounded-2xl shadow-xl transition border-none cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                   >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Confirm Table Reservation</span>
+                    {bookingSubmitting ? (
+                      <span className="animate-pulse">Securing Table Reservation...</span>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Confirm Table Reservation ({selectedDineoutVenue.offer || '25% OFF'})</span>
+                      </>
+                    )}
                   </button>
                 </form>
-              </>
+              </div>
             )}
           </div>
         </div>

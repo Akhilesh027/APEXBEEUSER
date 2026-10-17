@@ -1,6 +1,6 @@
 // src/pages/MyOrders.tsx — Module 7: Enhanced Order Management
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -161,6 +162,11 @@ type Order = {
   deliveryType?: string;
   coupon?: { code?: string } | null;
   metadata?: { source?: string };
+  cancelReason?: string;
+  ratings?: {
+    store?: { rating?: number; comment?: string };
+    delivery?: { rating?: number; comment?: string };
+  };
 };
 
 type Review = {
@@ -559,6 +565,7 @@ const ReturnDialog = ({
 // ─────────────────────────────────────────────
 const MyOrders = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -589,12 +596,105 @@ const MyOrders = () => {
   }, [trackingOrder]);
 
   // Schedules, Subscriptions and Table Reservations State
-  const [viewMode, setViewMode] = useState<"orders" | "schedules" | "tables">("orders");
+  const [viewMode, setViewMode] = useState<"orders" | "schedules" | "tables">(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      const v = (p.get("view") || p.get("tab") || p.get("sub") || "").toLowerCase();
+      if (v.includes("table") || v.includes("dine") || v.includes("reservation")) return "tables";
+      if (v.includes("schedule") || v.includes("sub")) return "schedules";
+    }
+    return "orders";
+  });
+
+  useEffect(() => {
+    const v = (searchParams.get("view") || searchParams.get("tab") || searchParams.get("sub") || "").toLowerCase();
+    if (v.includes("table") || v.includes("dine") || v.includes("reservation")) {
+      setViewMode("tables");
+    } else if (v.includes("schedule") || v.includes("sub")) {
+      setViewMode("schedules");
+    } else if (v === "orders") {
+      setViewMode("orders");
+    }
+  }, [searchParams]);
+
+  const handleViewModeChange = (mode: "orders" | "schedules" | "tables") => {
+    setViewMode(mode);
+    if (mode === "tables") setSearchParams({ view: "tables" });
+    else if (mode === "schedules") setSearchParams({ view: "schedules" });
+    else setSearchParams({});
+  };
+
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
   const [tableBookings, setTableBookings] = useState<any[]>([]);
   const [loadingTables, setLoadingTables] = useState(false);
+
+  const handleCancelTableBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this table reservation?")) return;
+    try {
+      const { token } = getAuth();
+      const res = await fetch(`${API_BASE}/table-bookings/${bookingId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: "CANCELLED" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Table reservation cancelled successfully.");
+        fetchTableBookings();
+      } else {
+        alert(data.message || "Failed to cancel reservation");
+      }
+    } catch (err) {
+      console.error("Cancel reservation error:", err);
+      alert("Error cancelling reservation.");
+    }
+  };
+
+  // ── ORDER CANCELLATION STATE & HANDLERS ──
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [cancelReason, setCancelReason] = useState("Changed my mind");
+  const [cancelCustomReason, setCancelCustomReason] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+
+  const handleConfirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+    const finalReason = cancelReason === 'Other' ? cancelCustomReason.trim() || 'Customer requested cancellation' : cancelReason;
+    setCancelSubmitting(true);
+    try {
+      const { token } = getAuth();
+      const res = await fetch(`${API_BASE}/orders/${orderToCancel._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          orderStatus: 'cancelled',
+          cancelReason: finalReason
+        })
+      });
+      const data = await res.json();
+      if (res.ok || data.success) {
+        alert("✅ Order cancelled successfully.");
+        setCancelModalOpen(false);
+        setOrderToCancel(null);
+        fetchOrders();
+      } else {
+        alert(data.message || "Failed to cancel order");
+      }
+    } catch (err: any) {
+      console.error("Cancel order error:", err);
+      alert("Error cancelling order. Please contact support.");
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
 
   // Item Reviews
   const [reviewByProductId, setReviewByProductId] = useState<Record<string, Review>>({});
@@ -797,7 +897,7 @@ const MyOrders = () => {
       const { user, token } = getAuth();
       if (!user) return;
       const userId = user._id || user.id;
-      const phone = user.phone || "";
+      const phone = user.phone || user.mobile || user.phoneNumber || localStorage.getItem('userPhone') || "";
       const email = user.email || "";
 
       const res = await fetch(`${API_BASE}/table-bookings/customer?phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}&userId=${userId}`, {
@@ -1063,7 +1163,7 @@ const MyOrders = () => {
         <div className="w-full max-w-full overflow-x-auto scrollbar-none mb-5 -mx-1 px-1 sm:mx-0 sm:px-0">
           <div className="inline-flex gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 bg-slate-100/90 rounded-2xl min-w-max">
             <button
-              onClick={() => setViewMode("orders")}
+              onClick={() => handleViewModeChange("orders")}
               className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "orders"
                 ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
                 : "bg-transparent text-slate-600 hover:text-slate-900"
@@ -1072,7 +1172,7 @@ const MyOrders = () => {
               <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Standard Orders ({orders.length})
             </button>
             <button
-              onClick={() => setViewMode("schedules")}
+              onClick={() => handleViewModeChange("schedules")}
               className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "schedules"
                 ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
                 : "bg-transparent text-slate-600 hover:text-slate-900"
@@ -1081,7 +1181,7 @@ const MyOrders = () => {
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Subscription Schedules ({subscriptions.length})
             </button>
             <button
-              onClick={() => setViewMode("tables")}
+              onClick={() => handleViewModeChange("tables")}
               className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all border-none cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${viewMode === "tables"
                 ? "bg-[#0A1128] text-[#F3BA12] shadow-md"
                 : "bg-transparent text-slate-600 hover:text-slate-900"
@@ -1622,6 +1722,21 @@ const MyOrders = () => {
                               <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(order)}>
                                 <Printer className="w-4 h-4 mr-2" /> Download Invoice
                               </Button>
+                              {['placed', 'pending', 'confirmed', 'payment_pending', 'payment_verified', 'assigned', 'accepted'].includes((order.orderStatus?.currentStatus || '').toLowerCase()) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setOrderToCancel(order);
+                                    setCancelReason("Changed my mind");
+                                    setCancelCustomReason("");
+                                    setCancelModalOpen(true);
+                                  }}
+                                  className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold"
+                                >
+                                  <X className="w-4 h-4 mr-1.5" /> Cancel Order
+                                </Button>
+                              )}
                               <Button variant="outline" size="sm" asChild>
                                 <a href="https://wa.me/919999888777" target="_blank" rel="noreferrer">
                                   <MessageCircle className="w-4 h-4 mr-2" /> Chat Support
@@ -1797,7 +1912,7 @@ const MyOrders = () => {
                 <p className="text-xs text-slate-300">View table booking confirmations, arrival times, and guest counts.</p>
               </div>
               <button
-                onClick={() => navigate('/food')}
+                onClick={() => navigate('/food?sub=Dineout')}
                 className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition border-none cursor-pointer shrink-0"
               >
                 + Book New Table
@@ -1818,8 +1933,8 @@ const MyOrders = () => {
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   You haven't reserved any dining tables yet. Explore top restaurants, get up to 30% OFF bills, and book your table instantly!
                 </p>
-                <Button onClick={() => navigate('/food')} className="bg-[#0A1128] hover:bg-[#101F42] text-amber-400 font-black text-xs px-6 py-2.5 rounded-xl">
-                  Explore Dining Restaurants →
+                <Button onClick={() => navigate('/food?sub=Dineout')} className="bg-[#0A1128] hover:bg-[#101F42] text-amber-400 font-black text-xs px-6 py-2.5 rounded-xl">
+                  Explore Dineout Restaurants & Reserve Table →
                 </Button>
               </div>
             ) : (
@@ -1870,13 +1985,33 @@ const MyOrders = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                      <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 gap-2 text-xs">
                         <div className="text-slate-600">
                           <span className="font-bold">Guest:</span> {b.customerName || b.guestName} ({b.customerPhone || b.guestPhone})
                         </div>
-                        <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          FLAT 25% OFF
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {b.restaurantId?.phone && (
+                            <a
+                              href={`tel:${b.restaurantId.phone}`}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 transition no-underline"
+                            >
+                              <PhoneCall className="w-3 h-3 text-slate-500" />
+                              <span>Call</span>
+                            </a>
+                          )}
+                          {(bStatus === 'PENDING' || bStatus === 'CONFIRMED') && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelTableBooking(b._id)}
+                              className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] border border-rose-200 cursor-pointer transition"
+                            >
+                              Cancel Table
+                            </button>
+                          )}
+                          <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            FLAT 25% OFF
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2246,6 +2381,74 @@ const MyOrders = () => {
               <DialogFooter>
                 <Button className="w-full bg-navy text-white hover:bg-navy/90 font-bold text-xs" onClick={() => setTrackingOrder(null)}>
                   Close Tracker
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Cancel Order Dialog ── */}
+      <Dialog open={cancelModalOpen} onOpenChange={(v) => !v && setCancelModalOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600 font-black text-lg">
+              <AlertCircle className="w-5 h-5 text-rose-600" /> Cancel Order #{orderToCancel?.orderNumber}
+            </DialogTitle>
+          </DialogHeader>
+          {orderToCancel && (
+            <div className="space-y-4 text-left">
+              <p className="text-xs text-slate-600">
+                Are you sure you want to cancel this order? Please select a cancellation reason:
+              </p>
+
+              <div className="space-y-2">
+                {[
+                  "Changed my mind",
+                  "Ordered incorrect items / size",
+                  "Delivery time is too long",
+                  "Incorrect delivery address or contact",
+                  "Found a better deal / price elsewhere",
+                  "Other"
+                ].map((r) => (
+                  <label key={r} className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${cancelReason === r ? "border-[#0A1128] bg-slate-50 text-[#0A1128]" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}>
+                    <input
+                      type="radio"
+                      name="cancel-reason"
+                      value={r}
+                      checked={cancelReason === r}
+                      onChange={() => setCancelReason(r)}
+                      className="accent-[#0A1128]"
+                    />
+                    <span>{r}</span>
+                  </label>
+                ))}
+              </div>
+
+              {cancelReason === "Other" && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Please specify reason</label>
+                  <textarea
+                    value={cancelCustomReason}
+                    onChange={(e) => setCancelCustomReason(e.target.value)}
+                    placeholder="Tell us why you are cancelling..."
+                    className="w-full border rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                <Button variant="outline" onClick={() => setCancelModalOpen(false)} disabled={cancelSubmitting}>
+                  Keep Order
+                </Button>
+                <Button
+                  onClick={handleConfirmCancelOrder}
+                  disabled={cancelSubmitting}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+                >
+                  {cancelSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <X className="w-4 h-4 mr-1.5" />}
+                  Confirm Cancellation
                 </Button>
               </DialogFooter>
             </div>

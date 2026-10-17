@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Utensils,
   Star,
@@ -25,6 +25,9 @@ import {
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { getOutletType, isDineoutEnabled } from '../utils/outletHelper';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://server.apexbee.in/api';
 
 const formatRating = (val: any) => {
   if (!val) return '4.8';
@@ -35,6 +38,7 @@ const formatRating = (val: any) => {
 
 export const RestaurantDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [restaurant, setRestaurant] = useState<any | null>(null);
   const [menu, setMenu] = useState<any[]>([]);
@@ -50,10 +54,21 @@ export const RestaurantDetail: React.FC = () => {
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
   const [bookingTime, setBookingTime] = useState('19:30');
   const [bookingGuests, setBookingGuests] = useState('2');
-  const [custName, setCustName] = useState('');
-  const [custPhone, setCustPhone] = useState('');
+  const [custName, setCustName] = useState(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u).name || JSON.parse(u).fullName || '' : '';
+    } catch { return ''; }
+  });
+  const [custPhone, setCustPhone] = useState(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u).phone || JSON.parse(u).mobile || '' : '';
+    } catch { return ''; }
+  });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccessMsg, setBookingSuccessMsg] = useState('');
+  const [confirmedBookingNum, setConfirmedBookingNum] = useState('');
 
   const handleBookTable = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +79,10 @@ export const RestaurantDetail: React.FC = () => {
     setBookingLoading(true);
     try {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      const res = await axios.post('https://server.apexbee.in/api/food/dining/book', {
+      const res = await axios.post(`${API_BASE}/food/dining/book`, {
         restaurantId: restaurant?._id || id,
-        customerName: custName,
-        customerPhone: custPhone,
+        customerName: custName.trim(),
+        customerPhone: custPhone.trim(),
         customerEmail: user?.email || '',
         guestCount: Number(bookingGuests),
         bookingDate,
@@ -76,11 +91,9 @@ export const RestaurantDetail: React.FC = () => {
       });
 
       if (res.data && res.data.success) {
-        setBookingSuccessMsg(`🎉 Table Reserved! Confirmation #${res.data.booking?._id?.slice(-5) || 'OK'}`);
-        setTimeout(() => {
-          setShowTableModal(false);
-          setBookingSuccessMsg('');
-        }, 2000);
+        const bNum = res.data.bookingNumber || res.data.booking?.bookingNumber || `TB-${Math.floor(100000 + Math.random() * 900000)}`;
+        setConfirmedBookingNum(bNum);
+        setBookingSuccessMsg(`🎉 Table Reserved! Confirmation #${bNum}`);
       } else {
         alert(res.data?.message || 'Failed to book table');
       }
@@ -94,7 +107,7 @@ export const RestaurantDetail: React.FC = () => {
   const fetchRestaurantDetail = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`https://server.apexbee.in/api/food/restaurants/${id}`);
+      const res = await axios.get(`${API_BASE}/food/restaurants/${id}`);
       if (res.data) {
         setRestaurant(res.data.profile || res.data.restaurant || res.data);
         setMenu(res.data.menu || []);
@@ -123,6 +136,16 @@ export const RestaurantDetail: React.FC = () => {
     return false;
   }, [restaurant]);
 
+  // Classify outlet type (RESTAURANT, BAKERY, FAST_FOOD)
+  const outletType = useMemo(() => {
+    return getOutletType(restaurant);
+  }, [restaurant]);
+
+  // Determine if dineout table booking is actively supported and enabled
+  const isDineoutActive = useMemo(() => {
+    return isDineoutEnabled(restaurant);
+  }, [restaurant]);
+
   const closedReason = useMemo(() => {
     if (!restaurant) return '';
     if (restaurant.openReason) return restaurant.openReason;
@@ -144,8 +167,9 @@ export const RestaurantDetail: React.FC = () => {
     const userId = user?.id || user?._id;
     const token = localStorage.getItem('token');
 
-    const priceVal = Number(item.offerPrice || item.basePrice || 0);
-    const originalPriceVal = Number(item.basePrice || priceVal);
+    const rawOffer = item.offerPrice && Number(item.offerPrice) > 0 ? Number(item.offerPrice) : null;
+    const priceVal = Number(rawOffer ?? item.baseSellingPrice ?? item.sellingPrice ?? item.price ?? item.basePrice ?? 0);
+    const originalPriceVal = Number(item.baseMrp ?? item.mrp ?? (rawOffer && item.basePrice && item.basePrice > rawOffer ? item.basePrice : priceVal));
 
     const fullItemObj = {
       _id: item._id,
@@ -224,9 +248,21 @@ export const RestaurantDetail: React.FC = () => {
       <Navbar />
 
       {loading ? (
-        <div className="pt-32 text-center py-20 text-slate-500">Loading restaurant menu...</div>
+        <div className="pt-32 text-center py-20 text-slate-500">
+          <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          Loading restaurant menu...
+        </div>
       ) : !restaurant ? (
-        <div className="pt-32 text-center py-20 text-slate-500">Restaurant not found.</div>
+        <div className="pt-32 text-center py-20 text-slate-500 space-y-4">
+          <p className="text-base font-bold text-slate-700">Restaurant not found or server reconnecting.</p>
+          <button
+            type="button"
+            onClick={() => fetchRestaurantDetail()}
+            className="px-5 py-2.5 bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow cursor-pointer hover:bg-amber-300"
+          >
+            🔄 Try Again
+          </button>
+        </div>
       ) : (
         <div className="pb-16">
           {/* BANNER HEADER */}
@@ -278,6 +314,16 @@ export const RestaurantDetail: React.FC = () => {
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                       <span>FSSAI VERIFIED</span>
                     </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border flex items-center gap-1 ${outletType === 'BAKERY'
+                        ? 'bg-purple-50 text-purple-700 border-purple-300'
+                        : outletType === 'FAST_FOOD'
+                          ? 'bg-orange-50 text-orange-700 border-orange-300'
+                          : 'bg-cyan-50 text-cyan-700 border-cyan-300'
+                        }`}
+                    >
+                      <span>{outletType === 'BAKERY' ? '🥖 Bakery & Sweets' : outletType === 'FAST_FOOD' ? '🍔 Fast Food' : '🍽️ Restaurant'}</span>
+                    </span>
                   </div>
 
                   <p className="text-xs text-slate-500 font-medium">{restaurant.tagline || restaurant.description || 'Authentic Flavors & Culinary Excellence'}</p>
@@ -314,8 +360,8 @@ export const RestaurantDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* DINEOUT TABLE RESERVATION BANNER */}
-            {(restaurant?.diningEnabled !== false || restaurant?.tableReservationEnabled !== false) && (
+            {/* DINEOUT TABLE RESERVATION BANNER (ONLY SHOWN FOR RESTAURANTS WITH ACTIVE DINING) */}
+            {isDineoutActive && (
               <div className="bg-gradient-to-r from-[#0A1128] via-indigo-950 to-[#0A1128] text-white p-5 sm:p-6 rounded-3xl border border-indigo-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 font-sans text-left">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 shadow-md">
@@ -440,8 +486,8 @@ export const RestaurantDetail: React.FC = () => {
                           </div>
 
                           <div className="text-lg font-black text-amber-600 font-mono">
-                            ₹{item.offerPrice || item.basePrice}
-                            {item.offerPrice > 0 && item.offerPrice < item.basePrice && (
+                            ₹{item.offerPrice && item.offerPrice > 0 ? item.offerPrice : (item.basePrice || item.price || item.baseSellingPrice || 0)}
+                            {item.offerPrice > 0 && item.basePrice > item.offerPrice && (
                               <span className="text-xs text-slate-400 line-through ml-2 font-normal">₹{item.basePrice}</span>
                             )}
                           </div>
@@ -497,7 +543,7 @@ export const RestaurantDetail: React.FC = () => {
       )}
 
       {/* TABLE RESERVATION MODAL */}
-      {showTableModal && (
+      {showTableModal && isDineoutActive && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 font-sans text-left">
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
             {/* Header */}
@@ -521,12 +567,46 @@ export const RestaurantDetail: React.FC = () => {
             </div>
 
             {bookingSuccessMsg ? (
-              <div className="p-8 text-center space-y-3">
+              <div className="p-8 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-3xl font-black">
                   ✓
                 </div>
-                <h4 className="text-xl font-black text-slate-900">{bookingSuccessMsg}</h4>
-                <p className="text-xs text-slate-500 font-medium">We sent confirmation details to your contact number. Enjoy your dining experience!</p>
+                <div>
+                  <h4 className="text-xl font-black text-slate-900">{bookingSuccessMsg}</h4>
+                  <p className="text-xs text-slate-500 font-medium mt-1">We sent confirmation details to your contact number. Enjoy your dining experience!</p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-1 text-xs">
+                  <p className="text-slate-600"><strong className="text-slate-900">Venue:</strong> {restaurant?.restaurantName || restaurant?.name}</p>
+                  <p className="text-slate-600"><strong className="text-slate-900">Schedule:</strong> {bookingDate} at {bookingTime}</p>
+                  <p className="text-slate-600"><strong className="text-slate-900">Guests:</strong> {bookingGuests} {Number(bookingGuests) === 1 ? 'Guest' : 'Guests'}</p>
+                  <p className="text-slate-600"><strong className="text-slate-900">Contact:</strong> {custName} ({custPhone})</p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTableModal(false);
+                      setBookingSuccessMsg('');
+                      navigate('/my-orders?view=tables');
+                    }}
+                    className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition border-none cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>🍷 View in My Orders (Reserved Tables) →</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTableModal(false);
+                      setBookingSuccessMsg('');
+                    }}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 cursor-pointer"
+                  >
+                    Done & Return to Menu
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleBookTable} className="p-6 space-y-4">
