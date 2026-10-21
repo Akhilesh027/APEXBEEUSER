@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { buildReferralLink, sanitizeReferralLink } from "@/utils/url";
 
 // --- Referral Data Types ---
 interface ReferralStats {
@@ -51,8 +52,22 @@ const Profile = () => {
     const [addresses, setAddresses] = useState([]);
 
     // --- Referral States ---
-    const [referralCode, setReferralCode] = useState("");
-    const [referralLink, setReferralLink] = useState("");
+    const [referralCode, setReferralCode] = useState(() => {
+        try {
+            const u = JSON.parse(localStorage.getItem("user") || "null");
+            return u?.referralCode || "";
+        } catch {
+            return "";
+        }
+    });
+    const [referralLink, setReferralLink] = useState(() => {
+        try {
+            const u = JSON.parse(localStorage.getItem("user") || "null");
+            return u?.referralCode ? buildReferralLink(u.referralCode) : "";
+        } catch {
+            return "";
+        }
+    });
     const [referralStats, setReferralStats] = useState<ReferralStats>({
         totalReferrals: 0, completedReferrals: 0, pendingReferrals: 0,
         totalEarnings: 0, walletBalance: 0
@@ -292,7 +307,7 @@ const Profile = () => {
             ]);
 
             setReferralCode(codeData.referralCode);
-            setReferralLink(window.location.origin + "/register?ref=" + codeData.referralCode);
+            setReferralLink(sanitizeReferralLink(codeData.referralLink, codeData.referralCode));
             setReferralStats({
                 totalReferrals: (codeData.level1Count || 0) + (codeData.level2Count || 0) + (codeData.level3Count || 0),
                 completedReferrals: (codeData.level1Count || 0) + (codeData.level2Count || 0) + (codeData.level3Count || 0),
@@ -340,19 +355,20 @@ const Profile = () => {
     };
 
     const shareReferral = async () => {
+        const linkToShare = sanitizeReferralLink(referralLink, referralCode || (userData as any)?.referralCode);
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: 'Join me on this amazing platform!',
-                    text: `Use my referral code ${referralCode} to sign up and get benefits!`,
-                    url: referralLink,
+                    title: 'Join me on ApexBee!',
+                    text: `Use my referral code ${referralCode || (userData as any)?.referralCode || ''} to sign up and get exclusive benefits!`,
+                    url: linkToShare,
                 });
                 toast({ title: "Shared!", description: "Referral link shared successfully" });
             } catch (error) {
                 console.log('Share cancelled');
             }
         } else {
-            copyToClipboard(referralLink, 'link');
+            copyToClipboard(linkToShare, 'link');
         }
     };
 
@@ -1481,7 +1497,7 @@ const Profile = () => {
                                             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Direct Invite Link</label>
                                             <div className="flex gap-2">
                                                 <div className="flex-1 bg-white dark:bg-stone-900 rounded-xl p-2.5 text-xs text-slate-600 dark:text-slate-300 truncate border border-slate-200 dark:border-stone-700 font-mono">
-                                                    {referralLink || `${window.location.origin}/register?ref=${referralCode || userData?.referralCode || "AB7K9P2"}`}
+                                                    {referralLink || buildReferralLink(referralCode || (userData as any)?.referralCode || "AB7K9P2")}
                                                 </div>
                                                 <Button
                                                     onClick={shareReferral}

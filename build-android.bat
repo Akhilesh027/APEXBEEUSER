@@ -39,6 +39,13 @@ if %ERRORLEVEL% neq 0 (
     exit /b %ERRORLEVEL%
 )
 
+echo.
+echo [2.5/5] Ensuring Android App Icons & Splash Screens are up-to-date with ApexBee logo...
+call powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\generate-android-icons.ps1"
+if %ERRORLEVEL% neq 0 (
+    echo [WARNING] Icon generation reported non-zero code %ERRORLEVEL%. Continuing with build...
+)
+
 cd android
 
 echo.
@@ -52,7 +59,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo.
-echo [4/5] Building Signed Release AAB (bundleRelease)...
+echo [4/6] Building Signed Release AAB (bundleRelease)...
 call gradlew.bat bundleRelease
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Gradle bundleRelease failed with code %ERRORLEVEL%!
@@ -62,7 +69,11 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo.
-echo [5/5] Building Debug APK (assembleDebug)...
+echo [5/6] Building Signed Release APK (assembleRelease)...
+call gradlew.bat assembleRelease
+
+echo.
+echo [6/6] Building Debug APK (assembleDebug)...
 call gradlew.bat assembleDebug
 
 cd ..
@@ -75,7 +86,10 @@ echo.
 echo  YOUR FRESH SIGNED AAB (UPLOAD DIRECTLY TO GOOGLE PLAY CONSOLE):
 echo    %~dp0android\app\build\outputs\bundle\release\app-release.aab
 echo.
-echo  DEBUG APK (FOR DIRECT DEVICE TESTING):
+echo  SIGNED RELEASE APK (FOR DIRECT DEVICE TESTING / SIDE-LOADING):
+echo    %~dp0android\app\build\outputs\apk\release\app-release.apk
+echo.
+echo  DEBUG APK (FOR LOCAL DEVELOPMENT / TESTING):
 echo    %~dp0android\app\build\outputs\apk\debug\app-debug.apk
 echo.
 echo  CRITICAL:

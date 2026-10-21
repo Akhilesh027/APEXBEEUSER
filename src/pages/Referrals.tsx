@@ -69,6 +69,7 @@ import {
   Tooltip,
   Legend
 } from "recharts";
+import { buildReferralLink, sanitizeReferralLink } from "@/utils/url";
 
 interface ReferralStats {
   totalReferrals: number;
@@ -244,8 +245,22 @@ const formatINR = (val: number | string | undefined | null) =>
 const Referrals = () => {
   const { toast } = useToast();
 
-  const [referralCode, setReferralCode] = useState("");
-  const [referralLink, setReferralLink] = useState("");
+  const [referralCode, setReferralCode] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "null");
+      return u?.referralCode || "";
+    } catch {
+      return "";
+    }
+  });
+  const [referralLink, setReferralLink] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "null");
+      return u?.referralCode ? buildReferralLink(u.referralCode) : "";
+    } catch {
+      return "";
+    }
+  });
   const [showInviteQR, setShowInviteQR] = useState(false);
 
   // Stats State
@@ -1006,7 +1021,7 @@ const Referrals = () => {
           meData = await codeRes.json();
           if (meData?.referralCode) {
             setReferralCode(meData.referralCode);
-            setReferralLink(window.location.origin + "/register?ref=" + meData.referralCode);
+            setReferralLink(sanitizeReferralLink(meData.referralLink, meData.referralCode));
           }
         } else {
           console.warn("Could not fetch referral code: status", codeRes.status);
@@ -1529,7 +1544,8 @@ const Referrals = () => {
   };
 
   const shareReferral = () => {
-    const msg = `Join ApexBee using my code ${referralCode} to sign up and earn! Register here: ${referralLink}`;
+    const activeLink = sanitizeReferralLink(referralLink, referralCode);
+    const msg = `Join ApexBee using my code ${referralCode} to sign up and earn! Register here: ${activeLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
     toast({ title: "WhatsApp Opened", description: "Referral pitch shared via WhatsApp." });
   };
@@ -2232,7 +2248,7 @@ const Referrals = () => {
                 <Button className="h-auto bg-navy text-white hover:bg-navy/95 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm active:scale-95 transition" onClick={() => setShowInviteQR(true)}>
                   <span className="text-base sm:text-lg">📷</span> Invite QR Code
                 </Button>
-                <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => copyToClipboard(referralLink, "link")}>
+                <Button variant="outline" className="h-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => copyToClipboard(sanitizeReferralLink(referralLink, referralCode), "link")}>
                   <span className="text-base sm:text-lg">🔗</span> Copy Link
                 </Button>
                 <Button variant="outline" className="h-auto border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition" onClick={() => setShowVideoDialog(true)}>

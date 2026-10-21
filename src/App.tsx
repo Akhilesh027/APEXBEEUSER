@@ -51,7 +51,6 @@ import { FoodDining } from "./pages/FoodDining";
 import { RestaurantDetail } from "./pages/RestaurantDetail";
 import PublicPayInvoice from "./pages/PublicPayInvoice";
 import BottomNav from "./components/BottomNav";
-import InstallPwaBanner from "./components/InstallPwaBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -200,7 +199,6 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AbhiAssistant />
-        <InstallPwaBanner />
         <BottomNav />
       </BrowserRouter>
     </TooltipProvider>

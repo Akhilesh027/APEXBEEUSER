@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
+import { buildPublicShareUrl } from "@/utils/url";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -551,10 +552,12 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const prodId = product.id || (product as any)._id;
+    const shareUrl = prodId ? buildPublicShareUrl(`/product/${prodId}`) : buildPublicShareUrl('/');
     if (navigator.share) {
-      navigator.share({ title, url: window.location.href }).catch(() => { });
+      navigator.share({ title, url: shareUrl }).catch(() => { });
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
       toast({ title: "Link Copied! 🔗", description: "Product link copied to clipboard." });
     }
   };

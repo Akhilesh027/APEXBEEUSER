@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { buildPublicShareUrl } from "@/utils/url";
 
 // Helper function for currency formatting
 const formatCurrency = (amount: any) => {
@@ -481,8 +482,9 @@ const ProductDetail = () => {
 
   const referralCode = user?.referralCode || "";
 
-  const baseUrl = window.location.origin + window.location.pathname;
-  const shareUrl = referralCode ? `${baseUrl}?ref=${referralCode}` : baseUrl;
+  const shareUrl = referralCode
+    ? buildPublicShareUrl(window.location.pathname, { ref: referralCode })
+    : buildPublicShareUrl(window.location.pathname);
 
   const shareText = referralCode
     ? `Check out "${title}" on ApexBee for ₹${afterDiscount || baseSellingPrice}!\nUse my referral code *${referralCode}* to get ₹50 signup bonus! 🎁`

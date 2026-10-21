@@ -13,6 +13,7 @@
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
     "cap:run:android": "cap run android",
+    "generate:icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-android-icons.ps1",
     "build:apk": "vite build && cap sync android && cd android && gradlew.bat assembleDebug",
     "build:apk:fast": "cd android && gradlew.bat assembleDebug",
     "build:aab": "vite build && cap sync android && cd android && gradlew.bat clean bundleRelease",
