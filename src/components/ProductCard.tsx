@@ -736,7 +736,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
         {/* Top-Left Floating Badges (Clean, only PAN-INDIA / Delivery Scope / Pre-Order) */}
         <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-1 z-10">
           {isPreOrder && (
-            <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-sm flex items-center gap-1 uppercase tracking-wider animate-pulse border border-purple-300/40">
+            <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 text-slate-950 font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-1 uppercase tracking-wider border border-amber-300/80">
               <span>📅</span>
               <span>PRE-ORDER</span>
             </div>
@@ -1028,8 +1028,8 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
             >
               {isPreOrder ? (
                 <>
-                  <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span>Pre-Book</span>
+                  <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-amber-900">Pre-Book</span>
                 </>
               ) : (
                 <>
@@ -1045,7 +1045,7 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               disabled={isOutOfStock}
               className={`flex-1 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50 ${
                 isPreOrder
-                  ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/20"
+                  ? "bg-[#0A1128] hover:bg-[#070e24] text-amber-400 border border-amber-400/40 shadow-[#0A1128]/20"
                   : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950"
               }`}
             >

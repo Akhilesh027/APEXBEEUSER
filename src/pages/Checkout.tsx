@@ -2342,24 +2342,24 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* 📅 Pre-order banner */}
+        {/* 📅 Pre-order banner (ApexBee Navy & Gold) */}
         {preOrderInfo.hasPreOrder && (
-          <div className="mb-5 rounded-2xl border-2 border-purple-400 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 p-4 text-sm w-full shadow-sm">
+          <div className="mb-5 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-500/10 via-amber-50/70 to-orange-500/10 p-4 text-sm w-full shadow-sm">
             <div className="flex items-start gap-3">
-              <span className="text-xl bg-purple-600 text-white p-2 rounded-xl shrink-0 shadow-xs">📅</span>
+              <span className="text-xl bg-[#0A1128] text-amber-400 p-2 rounded-xl shrink-0 shadow-xs border border-amber-400/30">📅</span>
               <div className="space-y-1 flex-1">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="font-extrabold text-purple-950 text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="font-extrabold text-slate-950 text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1.5">
                     <span>Pre-Order Items in Your Cart</span>
-                    <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">ADVANCE BOOKING</span>
+                    <span className="bg-[#0A1128] text-amber-400 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-400/40">ADVANCE BOOKING</span>
                   </span>
                   {preOrderInfo.availableOnMax && (
-                    <span className="text-xs font-black text-purple-900 bg-purple-200/90 px-2.5 py-0.5 rounded-full border border-purple-300">
+                    <span className="text-xs font-black text-amber-950 bg-amber-200/90 px-2.5 py-0.5 rounded-full border border-amber-300">
                       Expected Shipping: {new Date(preOrderInfo.availableOnMax).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-purple-900 leading-relaxed font-medium">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Your order contains advance booking items. Payment confirms your reserved stock, and fulfillment will begin promptly on the vendor&apos;s release date.
                 </p>
               </div>
@@ -2378,7 +2378,7 @@ const Checkout = () => {
                   <span>Fulfillment Method</span>
                 </h2>
                 {preOrderInfo.hasPreOrder && (
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-300">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0A1128] text-amber-400 border border-amber-400/40">
                     Pre-Order Active
                   </span>
                 )}
@@ -2459,22 +2459,22 @@ const Checkout = () => {
                 </label>
               </div>
 
-              {/* 📅 PRE-ORDER IN-CHECKOUT SCHEDULER & CUSTOM INSTRUCTIONS (CAN UPDATE HERE) */}
+              {/* 📅 PRE-ORDER IN-CHECKOUT SCHEDULER & CUSTOM INSTRUCTIONS (ApexBee Gold/Navy) */}
               {preOrderInfo.hasPreOrder && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 via-indigo-50/50 to-purple-50/90 border-2 border-purple-300 shadow-xs mb-4 space-y-4">
-                  <div className="flex items-start justify-between gap-2 border-b border-purple-200/80 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl p-2 bg-purple-600 text-white rounded-xl shadow-xs">
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-50/60 to-orange-500/10 border-2 border-amber-400 shadow-xs mb-4 space-y-4">
+                  <div className="flex items-start justify-between gap-2 border-b border-amber-200/90 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl p-2 bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 rounded-xl shadow-xs">
                         🗓️
                       </span>
                       <div>
-                        <h4 className="font-extrabold text-sm text-purple-950 flex items-center gap-1.5">
+                        <h4 className="font-extrabold text-sm text-slate-950 flex items-center gap-1.5">
                           <span>Pre-Order Schedule &amp; Preferences</span>
-                          <span className="text-[10px] text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200 font-bold">
+                          <span className="text-[10px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300 font-bold">
                             Editable in Checkout
                           </span>
                         </h4>
-                        <p className="text-[11px] text-purple-800 font-medium">
+                        <p className="text-[11px] text-slate-700 font-medium">
                           You can review or adjust your requested delivery date, time slot, and special notes below.
                         </p>
                       </div>
@@ -2483,10 +2483,10 @@ const Checkout = () => {
 
                   {/* 1. Date Picker */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-purple-950 flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-950 flex items-center justify-between">
                       <span>🗓️ Desired Delivery / Pickup Date <span className="text-red-500">*</span></span>
                       {minCheckoutPreOrderDate && (
-                        <span className="text-[10.5px] text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200 font-semibold">
+                        <span className="text-[10.5px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300 font-semibold">
                           Earliest Available: {new Date(minCheckoutPreOrderDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </span>
                       )}
@@ -2496,12 +2496,12 @@ const Checkout = () => {
                       min={minCheckoutPreOrderDate}
                       value={checkoutPreOrderDate}
                       onChange={(e) => setCheckoutPreOrderDate(e.target.value)}
-                      className="w-full bg-white border-2 border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-purple-950 shadow-xs outline-none cursor-pointer"
+                      className="w-full bg-white border-2 border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-950 shadow-xs outline-none cursor-pointer"
                     />
                     {checkoutPreOrderDate && (
-                      <p className="text-[11px] text-purple-900 font-bold flex items-center gap-1.5 pl-1">
+                      <p className="text-[11px] text-slate-800 font-bold flex items-center gap-1.5 pl-1">
                         <span>✅ Scheduled For:</span>
-                        <strong className="text-purple-700 underline decoration-purple-300">
+                        <strong className="text-amber-800 underline decoration-amber-400">
                           {new Date(checkoutPreOrderDate).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                         </strong>
                       </p>
@@ -2510,7 +2510,7 @@ const Checkout = () => {
 
                   {/* 2. Slot Selection */}
                   <div className="space-y-1.5 pt-1">
-                    <label className="text-xs font-bold text-purple-950">
+                    <label className="text-xs font-bold text-slate-950">
                       ⏰ Preferred Delivery / Ready Slot
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2527,15 +2527,15 @@ const Checkout = () => {
                             onClick={() => setCheckoutPreOrderSlot(slot.id)}
                             className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
                               isSelected
-                                ? "bg-purple-700 text-white border-purple-700 shadow-sm"
-                                : "bg-white text-purple-950 border-purple-200 hover:border-purple-300"
+                                ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm"
+                                : "bg-white text-slate-800 border-amber-200 hover:border-amber-400"
                             }`}
                           >
                             <span className="flex items-center justify-between">
                               <span>{slot.label}</span>
-                              {isSelected && <span className="text-[10px]">✓</span>}
+                              {isSelected && <span className="text-[10px] text-amber-300">✓</span>}
                             </span>
-                            <span className={`text-[10px] ${isSelected ? "text-purple-200" : "text-muted-foreground"}`}>
+                            <span className={`text-[10px] ${isSelected ? "text-amber-200/90" : "text-muted-foreground"}`}>
                               {slot.time}
                             </span>
                           </button>
@@ -2547,10 +2547,10 @@ const Checkout = () => {
                   {/* 3. Custom Note / Instructions Input */}
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-purple-950">
+                      <label className="text-xs font-bold text-slate-950">
                         ✍️ Note / Special Instructions (e.g. Message on cake, gift note, cooking requests)
                       </label>
-                      <span className="text-[10px] text-purple-700 font-mono">
+                      <span className="text-[10px] text-amber-800 font-mono">
                         {(checkoutPreOrderNote || "").length}/100
                       </span>
                     </div>
@@ -2560,7 +2560,7 @@ const Checkout = () => {
                       value={checkoutPreOrderNote}
                       onChange={(e) => setCheckoutPreOrderNote(e.target.value)}
                       placeholder='e.g., "Happy 25th Birthday Rahul! 🎂" or special notes'
-                      className="w-full bg-white border border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-purple-300"
+                      className="w-full bg-white border border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -3327,29 +3327,29 @@ const Checkout = () => {
                             <div className="flex items-center gap-1.5 flex-wrap mb-1">
                               <h4 className="font-semibold text-sm line-clamp-2">{item.itemName || item.name}</h4>
                               {flags.isPreOrder && (
-                                <span className="bg-purple-100 text-purple-700 font-extrabold text-[9px] px-2 py-0.5 rounded-full border border-purple-300 uppercase tracking-wider shrink-0">
+                                <span className="bg-[#0A1128] text-amber-400 font-extrabold text-[9px] px-2 py-0.5 rounded-full border border-amber-400/40 uppercase tracking-wider shrink-0 shadow-2xs">
                                   📅 PRE-ORDER
                                 </span>
                               )}
                             </div>
 
                             {flags.isPreOrder && (
-                              <div className="bg-purple-50/80 border border-purple-200/90 rounded-xl p-2 my-1 text-[11px] space-y-0.5">
-                                <p className="text-purple-900 font-bold flex items-center gap-1.5">
+                              <div className="bg-gradient-to-r from-amber-500/10 via-amber-50/60 to-orange-500/5 border border-amber-300 rounded-xl p-2 my-1 text-[11px] space-y-0.5">
+                                <p className="text-slate-900 font-bold flex items-center gap-1.5">
                                   <span>🗓️ Scheduled Delivery:</span>
-                                  <strong className="text-purple-700">
+                                  <strong className="text-amber-800 underline decoration-amber-300">
                                     {(checkoutPreOrderDate || flags.preOrderDeliveryDate || flags.availableOn)
                                       ? new Date(checkoutPreOrderDate || flags.preOrderDeliveryDate || flags.availableOn).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
                                       : "Upon Stock Arrival"}
                                   </strong>
                                 </p>
                                 {(checkoutPreOrderSlot || flags.preOrderTimeSlot) && (
-                                  <p className="text-purple-800 font-medium">
-                                    ⏰ Slot: <strong>{checkoutPreOrderSlot || flags.preOrderTimeSlot}</strong>
+                                  <p className="text-slate-800 font-medium">
+                                    ⏰ Slot: <strong className="text-amber-900">{checkoutPreOrderSlot || flags.preOrderTimeSlot}</strong>
                                   </p>
                                 )}
                                 {(checkoutPreOrderNote || flags.preOrderCustomNote) && (
-                                  <p className="text-purple-800 italic font-medium">
+                                  <p className="text-amber-950 italic font-medium bg-white/70 px-2 py-0.5 rounded-md border border-amber-200">
                                     ✍️ Note / Request: &ldquo;{checkoutPreOrderNote || flags.preOrderCustomNote}&rdquo;
                                   </p>
                                 )}
@@ -3874,7 +3874,7 @@ const Checkout = () => {
         <DialogContent className="w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl p-4 sm:p-6 bg-white dark:bg-stone-900 border border-slate-200 dark:border-stone-800 shadow-2xl">
           <DialogHeader className="text-left pb-2 border-b border-slate-100 dark:border-stone-800">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-600 flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-sm">
                 <QrCode className="h-4 w-4" />
               </div>
               <div>
@@ -3892,7 +3892,7 @@ const Checkout = () => {
             {/* 1-Tap Mobile UPI Launcher */}
             <a
               href={`upi://pay?pa=${upiConfig.upiId}&pn=${encodeURIComponent(upiConfig.merchantName)}&am=${orderDetails.total.toFixed(2)}&cu=INR`}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-black shadow-md shadow-purple-500/20 transition-all text-center no-underline"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs sm:text-sm font-black shadow-md shadow-amber-500/20 transition-all text-center no-underline"
             >
               <span>⚡</span>
               <span>Open UPI App (GPay / PhonePe / Paytm)</span>

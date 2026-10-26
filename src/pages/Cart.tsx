@@ -797,28 +797,28 @@ const Cart = () => {
                                   {item.itemName || item.name}
                                 </h3>
                                 {isPreOrder && (
-                                  <span className="bg-purple-100 text-purple-700 font-extrabold text-[9.5px] px-2 py-0.5 rounded-full border border-purple-300 uppercase tracking-wider">
+                                  <span className="bg-[#0A1128] text-amber-400 font-extrabold text-[9.5px] px-2 py-0.5 rounded-full border border-amber-400/40 uppercase tracking-wider shadow-2xs">
                                     📅 PRE-ORDER
                                   </span>
                                 )}
                               </div>
                               {isPreOrder && (
-                                <div className="space-y-0.5 bg-purple-50/70 border border-purple-200/80 rounded-xl p-2 my-1 text-[11px]">
-                                  <p className="text-purple-900 font-bold flex items-center gap-1.5">
+                                <div className="space-y-0.5 bg-gradient-to-r from-amber-500/10 via-amber-50/60 to-orange-500/5 border border-amber-300 rounded-xl p-2 my-1 text-[11px]">
+                                  <p className="text-slate-900 font-bold flex items-center gap-1.5">
                                     <span>🗓️ Scheduled Delivery:</span>
-                                    <strong className="text-purple-700">
+                                    <strong className="text-amber-800 underline decoration-amber-300">
                                       {(preOrderDeliveryDate || availableOn)
                                         ? new Date(preOrderDeliveryDate || availableOn).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
                                         : "Upon Stock Arrival"}
                                     </strong>
                                   </p>
                                   {preOrderTimeSlot && (
-                                    <p className="text-purple-800 font-medium">
-                                      ⏰ Slot: <strong>{preOrderTimeSlot}</strong>
+                                    <p className="text-slate-800 font-medium">
+                                      ⏰ Slot: <strong className="text-amber-900">{preOrderTimeSlot}</strong>
                                     </p>
                                   )}
                                   {preOrderCustomNote && (
-                                    <p className="text-purple-800 italic font-medium">
+                                    <p className="text-amber-950 italic font-medium bg-white/70 px-2 py-0.5 rounded-md border border-amber-200">
                                       ✍️ Note: &ldquo;{preOrderCustomNote}&rdquo;
                                     </p>
                                   )}

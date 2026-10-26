@@ -1179,31 +1179,31 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* 📅 INTERACTIVE PRE-ORDER & SCHEDULING CARD */}
+            {/* 📅 INTERACTIVE PRE-ORDER & SCHEDULING CARD (ApexBee Navy & Gold Brand) */}
             {isPreOrder && (
-              <div className="mb-6 bg-gradient-to-br from-purple-50/90 via-indigo-50/60 to-purple-50/90 border-2 border-purple-400/90 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="mb-6 bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-orange-500/10 border-2 border-amber-400/90 rounded-2xl p-5 shadow-sm space-y-4">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-3 flex-wrap border-b border-purple-200/80 pb-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap border-b border-amber-200/90 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-2xl p-2 bg-purple-600 text-white rounded-xl shadow-xs">
+                    <span className="text-2xl p-2 bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 rounded-xl shadow-xs">
                       {dynamicIcon}
                     </span>
                     <div>
-                      <h4 className="font-extrabold text-purple-950 text-sm leading-tight flex items-center gap-1.5">
+                      <h4 className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
                         <span>Pre-Order &amp; Custom Scheduling</span>
-                        <span className="bg-purple-600 text-white text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                        <span className="bg-[#0A1128] text-amber-400 text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border border-amber-400/40 tracking-wider shadow-2xs">
                           {preOrderType === 'ADVANCE_NOTICE' ? (isCakeProduct ? 'Fresh Bake / Notice' : 'Advance Notice') : preOrderType === 'DAILY_CUTOFF' ? 'Daily Fresh Cutoff' : preOrderType === 'RELEASE_DATE' ? 'Launch Pre-Order' : 'Special Schedule'}
                         </span>
                       </h4>
-                      <p className="text-[11px] text-purple-800 font-medium">
-                        Requires at least <strong>{preOrderLeadTimeDays} day(s) advance preparation notice</strong>.
-                        {preOrderDailyCutoffTime && <span> (Daily cutoff: <strong>{preOrderDailyCutoffTime}</strong>)</span>}
+                      <p className="text-[11px] text-slate-700 font-medium">
+                        Requires at least <strong className="text-amber-800">{preOrderLeadTimeDays} day(s) advance preparation notice</strong>.
+                        {preOrderDailyCutoffTime && <span> (Daily cutoff: <strong className="text-amber-800">{preOrderDailyCutoffTime}</strong>)</span>}
                       </p>
                     </div>
                   </div>
 
                   {preOrderReleaseDate && (
-                    <span className="text-[11px] font-black text-purple-900 bg-purple-200/90 px-2.5 py-1 rounded-full border border-purple-300">
+                    <span className="text-[11px] font-black text-amber-950 bg-amber-200/90 px-2.5 py-1 rounded-full border border-amber-300">
                       Release: {new Date(preOrderReleaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </span>
                   )}
@@ -1211,7 +1211,7 @@ const ProductDetail = () => {
 
                 {/* Past cutoff notification banner */}
                 {isPastCutoffToday && (
-                  <div className="bg-amber-50 border border-amber-300 text-amber-900 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                  <div className="bg-amber-100 border border-amber-400 text-amber-950 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-2xs">
                     <span className="text-base">⏰</span>
                     <span>
                       Today&apos;s cut-off time ({preOrderDailyCutoffTime}) has passed. Earliest delivery date starts from tomorrow + notice period.
@@ -1221,10 +1221,10 @@ const ProductDetail = () => {
 
                 {/* Date Picker Section */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-purple-950 flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-slate-900 flex items-center justify-between">
                     <span>🗓️ Desired Delivery / Pickup Date <span className="text-red-500">*</span></span>
                     {minPreOrderDateStr && (
-                      <span className="text-[10.5px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded-md border border-purple-200">
+                      <span className="text-[10.5px] text-amber-900 font-bold bg-white px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs">
                         Earliest: {new Date(minPreOrderDateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </span>
                     )}
@@ -1234,12 +1234,12 @@ const ProductDetail = () => {
                     min={minPreOrderDateStr}
                     value={selectedPreOrderDate}
                     onChange={(e) => setSelectedPreOrderDate(e.target.value)}
-                    className="w-full bg-white border-2 border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-purple-950 shadow-xs outline-none transition-all cursor-pointer"
+                    className="w-full bg-white border-2 border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-950 shadow-xs outline-none transition-all cursor-pointer"
                   />
                   {selectedPreOrderDate && (
-                    <p className="text-[11px] text-purple-900 font-bold flex items-center gap-1.5 pl-1">
+                    <p className="text-[11px] text-slate-800 font-bold flex items-center gap-1.5 pl-1">
                       <span>✅ Scheduled For:</span>
-                      <strong className="text-purple-700 underline decoration-purple-300">
+                      <strong className="text-amber-800 underline decoration-amber-400">
                         {new Date(selectedPreOrderDate).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                       </strong>
                     </p>
@@ -1249,7 +1249,7 @@ const ProductDetail = () => {
                 {/* Preferred Time Slot (if enabled) */}
                 {preOrderAllowTimeSlot && (
                   <div className="space-y-1.5 pt-1">
-                    <label className="text-xs font-extrabold text-purple-950">
+                    <label className="text-xs font-extrabold text-slate-900">
                       ⏰ Preferred Delivery / Ready Slot
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1262,15 +1262,15 @@ const ProductDetail = () => {
                             onClick={() => setSelectedPreOrderTimeSlot(slot.id)}
                             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
                               isSelected
-                                ? "bg-purple-700 text-white border-purple-700 shadow-sm shadow-purple-500/20"
-                                : "bg-white text-purple-950 border-purple-200 hover:border-purple-400 hover:bg-purple-50/50"
+                                ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm shadow-amber-500/20"
+                                : "bg-white text-slate-800 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
                             }`}
                           >
                             <span className="flex items-center justify-between">
                               <span>{slot.label}</span>
-                              {isSelected && <span className="text-[10px]">✓</span>}
+                              {isSelected && <span className="text-[10px] text-amber-300">✓</span>}
                             </span>
-                            <span className={`text-[10px] ${isSelected ? "text-purple-200" : "text-muted-foreground"}`}>
+                            <span className={`text-[10px] ${isSelected ? "text-amber-200/90" : "text-muted-foreground"}`}>
                               {slot.time}
                             </span>
                           </button>
@@ -1284,12 +1284,12 @@ const ProductDetail = () => {
                 {preOrderAllowCustomMessage && (
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-extrabold text-purple-950 flex items-center gap-1.5">
+                      <label className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                         <span>{dynamicIcon}</span>
                         <span>{customMessageLabel}</span>
-                        <span className="text-[10px] text-purple-600 font-normal">(Optional)</span>
+                        <span className="text-[10px] text-amber-700 font-semibold">(Optional)</span>
                       </label>
-                      <span className="text-[10px] text-purple-700 font-mono">
+                      <span className="text-[10px] text-amber-800 font-mono">
                         {selectedCustomCakeNote.length}/100
                       </span>
                     </div>
@@ -1299,15 +1299,15 @@ const ProductDetail = () => {
                       value={selectedCustomCakeNote}
                       onChange={(e) => setSelectedCustomCakeNote(e.target.value)}
                       placeholder={customMessagePlaceholder}
-                      className="w-full bg-white border border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-purple-300"
+                      className="w-full bg-white border border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-slate-400"
                     />
                   </div>
                 )}
 
                 {/* Seller Note / Guidelines */}
                 {preOrderMessage && (
-                  <p className="text-[11px] text-purple-900 font-semibold italic bg-white/80 p-2.5 rounded-xl border border-purple-200 flex items-start gap-1.5">
-                    <span className="shrink-0 text-purple-600">ℹ️</span>
+                  <p className="text-[11px] text-amber-950 font-semibold italic bg-amber-50/80 p-2.5 rounded-xl border border-amber-300 flex items-start gap-1.5">
+                    <span className="shrink-0 text-amber-600">ℹ️</span>
                     <span>&ldquo;{preOrderMessage}&rdquo;</span>
                   </p>
                 )}
@@ -1318,8 +1318,8 @@ const ProductDetail = () => {
             <div className="mb-4 text-sm">
               {isPreOrder ? (
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-black uppercase tracking-wide border border-purple-300">
-                    <span className="w-2 h-2 rounded-full bg-purple-600 animate-ping"></span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wide border border-amber-300 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
                     Pre-Order Bookings Open
                   </span>
                   {preOrderLimit > 0 && (
@@ -1532,7 +1532,7 @@ const ProductDetail = () => {
                 onClick={() => handleAddToCart(true)}
                 className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
                   isPreOrder
-                    ? "bg-purple-700 hover:bg-purple-800 text-white"
+                    ? "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black shadow-amber-500/20"
                     : "bg-accent hover:bg-accent/90 text-white"
                 }`}
                 disabled={isOutOfStock}
@@ -1543,7 +1543,7 @@ const ProductDetail = () => {
                 onClick={handleBuyNow}
                 className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
                   isPreOrder
-                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/20"
+                    ? "bg-[#0A1128] hover:bg-[#060c20] text-amber-400 border border-amber-400/40 font-black shadow-md shadow-[#0A1128]/30"
                     : "bg-navy hover:bg-navy/90 text-white"
                 }`}
                 disabled={isOutOfStock}
@@ -1582,9 +1582,9 @@ const ProductDetail = () => {
                 )}
 
                 {isPreOrder && (
-                  <div className="p-2.5 bg-purple-50 rounded-xl border border-purple-200 flex justify-between">
-                    <span className="text-purple-800 font-bold">Fulfillment:</span>
-                    <span className="font-extrabold text-purple-900">
+                  <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-300 flex justify-between">
+                    <span className="text-amber-900 font-bold">Fulfillment:</span>
+                    <span className="font-extrabold text-amber-950">
                       Pre-Order {preOrderReleaseDate ? `(Ships ${new Date(preOrderReleaseDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}
                     </span>
                   </div>
