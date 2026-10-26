@@ -9,6 +9,7 @@ import {
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { buildPublicShareUrl } from "@/utils/url";
+import { openWhatsApp } from "@/utils/whatsapp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -298,15 +299,27 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
 
   const productRatingCount = Number(rawProdCount || 0);
 
-  const stock = product.stock ?? 1;
-  const isOutOfStock = stock <= 0;
+  const isPreOrder = Boolean(product.isPreOrder || product.preOrder || product.itemPreOrder);
+  const preOrderReleaseDate = product.preOrderReleaseDate || product.preOrderDate || product.availableOn || null;
+  const preOrderMessage = product.preOrderMessage || "";
+  const preOrderLimit = Number(product.preOrderLimit || 0);
+
+  const stock = product.stock ?? (isPreOrder ? 999 : 1);
+  const isOutOfStock = isPreOrder ? (preOrderLimit > 0 && stock <= 0) : stock <= 0;
 
   // Delivery Time Formatting
   let deliveryMins = "25–35 mins";
   const rawEstMins = Number(product.estimatedDeliveryMinutes || 0);
   const rawDistKm = Number(product.calculatedDistanceKm || 0);
 
-  if (rawEstMins > 0) {
+  if (isPreOrder) {
+    if (preOrderReleaseDate) {
+      const d = new Date(preOrderReleaseDate);
+      deliveryMins = `Pre-Order: Ships ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+    } else {
+      deliveryMins = "Pre-Order: Advance Booking";
+    }
+  } else if (rawEstMins > 0) {
     if (rawEstMins >= 1440) {
       const days = Math.round(rawEstMins / 1440);
       deliveryMins = `${days} ${days === 1 ? "day" : "days"}`;
@@ -565,6 +578,13 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // For pre-order items (such as custom cakes or advance booking), navigate directly to detail page to pick date & slot
+    if (isPreOrder) {
+      navigate(`/product/${productId}`);
+      return;
+    }
+
     const user = JSON.parse(localStorage.getItem("user") || "null");
     const userId = user?.id || user?._id;
     if (!userId) {
@@ -573,10 +593,13 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       try { list = JSON.parse(local || "[]"); } catch { list = []; }
       const idx = list.findIndex((x: any) => x.productId === productId);
       if (idx > -1) list[idx].quantity += 1;
-      else list.push({ productId, name: title, price: sellingPrice, image, quantity: 1 });
+      else list.push({ productId, name: title, price: sellingPrice, image, quantity: 1, isPreOrder, preOrderReleaseDate, preOrderMessage, availableOn: preOrderReleaseDate });
       localStorage.setItem("local_cart", JSON.stringify(list));
       window.dispatchEvent(new Event("storage"));
-      toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` });
+      toast({
+        title: "Added to Cart! 🛒",
+        description: `"${title}" added to your shopping cart.`
+      });
       return;
     }
 
@@ -588,14 +611,30 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       price: sellingPrice,
       image,
       quantity: 1,
+      isPreOrder,
+      preOrderReleaseDate,
+      preOrderMessage,
+      availableOn: preOrderReleaseDate,
     }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` }))
-      .catch(() => toast({ title: "Added to Cart! 🛒", description: `"${title}" added to your shopping cart.` }));
+      .then(() => toast({
+        title: "Added to Cart! 🛒",
+        description: `"${title}" added to your shopping cart.`
+      }))
+      .catch(() => toast({
+        title: "Added to Cart! 🛒",
+        description: `"${title}" added to your shopping cart.`
+      }));
   };
 
   const handleBuyNow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // For pre-order items, navigate directly to schedule selection
+    if (isPreOrder) {
+      navigate(`/product/${productId}`);
+      return;
+    }
 
     const user = JSON.parse(localStorage.getItem("user") || "null");
     const userId = user?.id || user?._id;
@@ -628,6 +667,10 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
       image: image,
       images: [image],
       quantity: 1,
+      isPreOrder: isPreOrder,
+      preOrderReleaseDate: preOrderReleaseDate,
+      preOrderMessage: preOrderMessage,
+      availableOn: preOrderReleaseDate,
       adminPricing: product.adminPricing,
       product: {
         ...product,
@@ -690,8 +733,14 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
           />
         </Link>
 
-        {/* Top-Left Floating Badges (Clean, only PAN-INDIA / Delivery Scope) */}
-        <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-0.5 z-10">
+        {/* Top-Left Floating Badges (Clean, only PAN-INDIA / Delivery Scope / Pre-Order) */}
+        <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-1 z-10">
+          {isPreOrder && (
+            <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-sm flex items-center gap-1 uppercase tracking-wider animate-pulse border border-purple-300/40">
+              <span>📅</span>
+              <span>PRE-ORDER</span>
+            </div>
+          )}
           {(product.isPanIndia || product.deliveryScope === "both" || product.deliveryScope === "pan_india") ? (
             <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-black text-[7.5px] px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-1 uppercase tracking-wider">
               <span>🇮🇳</span>
@@ -830,9 +879,10 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (storeWhatsapp) {
-                  const cleanNum = storeWhatsapp.replace(/[^0-9]/g, '');
-                  const waUrl = cleanNum.startsWith('91') ? `https://wa.me/${cleanNum}` : `https://wa.me/91${cleanNum}`;
-                  window.open(waUrl, '_blank');
+                  openWhatsApp({
+                    phone: storeWhatsapp,
+                    text: `Hello ${storeName}, I am inquiring about products on ApexBee.`
+                  });
                 } else {
                   toast({ title: "Chat with Store", description: `Opening inquiry with ${storeName}...` });
                 }
@@ -976,18 +1026,40 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               disabled={isOutOfStock}
               className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-extrabold border border-slate-300 py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50"
             >
-              <ShoppingCart className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-              <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+              {isPreOrder ? (
+                <>
+                  <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span>Pre-Book</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                  <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+                </>
+              )}
             </button>
 
             <button
               type="button"
               onClick={handleBuyNow}
               disabled={isOutOfStock}
-              className="flex-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50"
+              className={`flex-1 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50 ${
+                isPreOrder
+                  ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/20"
+                  : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950"
+              }`}
             >
-              <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950 shrink-0" />
-              <span>Buy Now</span>
+              {isPreOrder ? (
+                <>
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                  <span>Pre-Order Now</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950 shrink-0" />
+                  <span>Buy Now</span>
+                </>
+              )}
             </button>
           </div>
 

@@ -50,9 +50,12 @@ export const signInWithNativeGoogle = async (): Promise<string | null> => {
     return null;
   }
 
-  const clientId =
+  const webClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-    '185984914727-6aif53v76n329lp8a1dbu15nu0hcrf6k.apps.googleusercontent.com';
+    '716798071591-jrthopm7ggscqnfhl9tvb5teg9sbvg2r.apps.googleusercontent.com';
+  const androidClientId =
+    import.meta.env.VITE_GOOGLE_ANDROID_CLIENT_ID ||
+    '716798071591-888nf6hvugrcjg2vn9nu2lf3tpug7b4e.apps.googleusercontent.com';
 
   const plugins = cap.Plugins || {};
   let googleSignInPlugin: GoogleAuthPlugin | null = plugins.GoogleSignIn || null;
@@ -78,7 +81,10 @@ export const signInWithNativeGoogle = async (): Promise<string | null> => {
   if (googleSignInPlugin && typeof googleSignInPlugin.signIn === 'function') {
     try {
       if (typeof googleSignInPlugin.initialize === 'function') {
-        await googleSignInPlugin.initialize({ clientId });
+        await googleSignInPlugin.initialize({
+          clientId: androidClientId,
+          serverClientId: webClientId,
+        });
       }
       const res = await googleSignInPlugin.signIn();
       if (res?.idToken) return res.idToken;
@@ -100,7 +106,8 @@ export const signInWithNativeGoogle = async (): Promise<string | null> => {
     try {
       if (typeof googleAuthPlugin.initialize === 'function') {
         await googleAuthPlugin.initialize({
-          clientId,
+          clientId: androidClientId,
+          serverClientId: webClientId,
           scopes: ['profile', 'email'],
           grantOfflineAccess: false,
         });

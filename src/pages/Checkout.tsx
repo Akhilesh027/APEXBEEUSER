@@ -131,10 +131,37 @@ const readItemFlags = (item: any) => {
   const isPreOrder =
     Boolean(preOrder?.enabled) ||
     Boolean(item?.isPreOrder) ||
+    Boolean(item?.product?.isPreOrder) ||
+    Boolean(item?.productId?.isPreOrder) ||
     Boolean(item?.preOrder);
 
   const availableOn =
-    preOrder?.availableFrom || item?.availableOn || item?.preOrderDate || null;
+    preOrder?.availableFrom ||
+    item?.preOrderReleaseDate ||
+    item?.availableOn ||
+    item?.preOrderDate ||
+    item?.product?.preOrderReleaseDate ||
+    null;
+
+  const preOrderDeliveryDate =
+    item?.preOrderDeliveryDate ||
+    preOrder?.availableFrom ||
+    availableOn ||
+    null;
+
+  const preOrderTimeSlot =
+    item?.preOrderTimeSlot ||
+    null;
+
+  const preOrderCustomNote =
+    item?.preOrderCustomNote ||
+    null;
+
+  const preOrderMessage =
+    preOrder?.message ||
+    item?.preOrderMessage ||
+    item?.product?.preOrderMessage ||
+    "";
 
   const shopPincode =
     fulfillment?.pickupShopPincode ||
@@ -146,7 +173,16 @@ const readItemFlags = (item: any) => {
 
   const pincodeMatchOnly = fulfillment?.pickupRules?.pincodeMatchOnly ?? false;
 
-  return { allowPickup, isPreOrder, availableOn, shopPincode, pincodeMatchOnly };
+  return {
+    allowPickup,
+    isPreOrder,
+    availableOn,
+    preOrderDeliveryDate,
+    preOrderTimeSlot,
+    preOrderCustomNote,
+    shopPincode,
+    pincodeMatchOnly
+  };
 };
 
 /** ✅ Extract robust shipping/delivery fee per item */
@@ -224,12 +260,22 @@ export const getItemPlatformFee = (item: any): number => {
     0
   );
 
+  const isFoodItem = Boolean(
+    item.categoryName === 'Food & Dining' ||
+    item.category === 'Food Item' ||
+    item.restaurantId ||
+    item.foodType ||
+    item.foodMenuItemId ||
+    item.orderType === 'FOOD'
+  );
+
   const platformFeePct = Number(
     item.platformFeePercent ??
+    item.platformCommissionPercent ??
     item.adminPricing?.platformFeePercent ??
     item.product?.adminPricing?.platformFeePercent ??
     item.productId?.adminPricing?.platformFeePercent ??
-    0
+    (isFoodItem ? 5 : 0)
   );
 
   const directFee = Number(
@@ -271,6 +317,11 @@ export const getItemPlatformFee = (item: any): number => {
   );
   if ((distFrom === 'platform_fee' || distFrom === 'platform' || distFrom === 'both') && fixedFee > 0) {
     return fixedFee;
+  }
+
+  // Fallback for food item: 5% platform fee
+  if (isFoodItem && price > 0) {
+    return (price * 5) / 100;
   }
 
   return 0;
@@ -646,17 +697,80 @@ const Checkout = () => {
   const preOrderInfo = useMemo(() => {
     const preItems = orderDetails.items
       .map((it: any) => ({ ...it, ...readItemFlags(it) }))
-      .filter((it: any) => it.isPreOrder && it.availableOn);
+      .filter((it: any) => it.isPreOrder);
 
     if (preItems.length === 0)
-      return { hasPreOrder: false, availableOnMax: null as string | null };
+      return {
+        hasPreOrder: false,
+        availableOnMax: null as string | null,
+        preOrderDeliveryDate: null as string | null,
+        preOrderTimeSlot: null as string | null,
+        preOrderCustomNote: null as string | null,
+        preOrderItems: []
+      };
 
-    const maxDate = preItems
-      .map((it: any) => new Date(it.availableOn))
-      .reduce((a: Date, b: Date) => (a > b ? a : b));
+    const datedItems = preItems.filter((it: any) => it.preOrderDeliveryDate || it.availableOn);
+    const maxDate = datedItems.length > 0
+      ? datedItems
+          .map((it: any) => new Date(it.preOrderDeliveryDate || it.availableOn))
+          .reduce((a: Date, b: Date) => (a > b ? a : b))
+      : null;
 
-    return { hasPreOrder: true, availableOnMax: maxDate.toISOString() };
+    const firstScheduled = preItems.find((it: any) => it.preOrderDeliveryDate);
+
+    return {
+      hasPreOrder: true,
+      availableOnMax: maxDate ? maxDate.toISOString() : null,
+      preOrderDeliveryDate: firstScheduled?.preOrderDeliveryDate || location.state?.preOrderInfo?.preOrderDeliveryDate || (maxDate ? maxDate.toISOString() : null),
+      preOrderTimeSlot: firstScheduled?.preOrderTimeSlot || location.state?.preOrderInfo?.preOrderTimeSlot || null,
+      preOrderCustomNote: firstScheduled?.preOrderCustomNote || location.state?.preOrderInfo?.preOrderCustomNote || null,
+      preOrderItems: preItems
+    };
+  }, [orderDetails.items, location.state]);
+
+  // Pre-Order in-checkout scheduling states (allows customer to update fulfillment schedule right on checkout page)
+  const maxPreOrderLeadDays = useMemo(() => {
+    const preItems = orderDetails.items.filter((it: any) => readItemFlags(it).isPreOrder);
+    if (preItems.length === 0) return 1;
+    const leadTimes = preItems.map((it: any) => Number(it.preOrderLeadTimeDays || it.product?.preOrderLeadTimeDays || 2));
+    return Math.max(...leadTimes, 1);
   }, [orderDetails.items]);
+
+  const minCheckoutPreOrderDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + maxPreOrderLeadDays);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, [maxPreOrderLeadDays]);
+
+  const [checkoutPreOrderDate, setCheckoutPreOrderDate] = useState<string>(() => {
+    const raw = location.state?.preOrderInfo?.preOrderDeliveryDate || location.state?.preOrderInfo?.availableOnMax || '';
+    return raw ? raw.split('T')[0] : '';
+  });
+  const [checkoutPreOrderSlot, setCheckoutPreOrderSlot] = useState<string>(() => {
+    return location.state?.preOrderInfo?.preOrderTimeSlot || 'Morning (09:00 AM - 01:00 PM)';
+  });
+  const [checkoutPreOrderNote, setCheckoutPreOrderNote] = useState<string>(() => {
+    return location.state?.preOrderInfo?.preOrderCustomNote || '';
+  });
+
+  useEffect(() => {
+    if (preOrderInfo.hasPreOrder) {
+      if (!checkoutPreOrderDate) {
+        const raw = preOrderInfo.preOrderDeliveryDate || preOrderInfo.availableOnMax;
+        if (raw) setCheckoutPreOrderDate(raw.split('T')[0]);
+        else if (minCheckoutPreOrderDate) setCheckoutPreOrderDate(minCheckoutPreOrderDate);
+      }
+      if (preOrderInfo.preOrderTimeSlot && checkoutPreOrderSlot === 'Morning (09:00 AM - 01:00 PM)') {
+        setCheckoutPreOrderSlot(preOrderInfo.preOrderTimeSlot);
+      }
+      if (preOrderInfo.preOrderCustomNote && !checkoutPreOrderNote) {
+        setCheckoutPreOrderNote(preOrderInfo.preOrderCustomNote);
+      }
+    }
+  }, [preOrderInfo, minCheckoutPreOrderDate]);
 
   // First order
   const [isFirstOrder, setIsFirstOrder] = useState<boolean>(false);
@@ -1737,6 +1851,10 @@ const Checkout = () => {
           itemTotal: price * quantity,
           fulfillment: item.fulfillment || null,
           preOrder: item.preOrder || null,
+          isPreOrder: Boolean(item.isPreOrder || item.preOrder?.enabled || item.preOrder?.isPreOrder),
+          preOrderDeliveryDate: checkoutPreOrderDate || item.preOrderDeliveryDate || item.availableOn || null,
+          preOrderTimeSlot: checkoutPreOrderSlot || item.preOrderTimeSlot || null,
+          preOrderCustomNote: checkoutPreOrderNote !== undefined && checkoutPreOrderNote !== "" ? checkoutPreOrderNote : (item.preOrderCustomNote || null),
           deliveryFee: getItemShippingFee(item),
           shippingCharge: getItemShippingFee(item),
           packingCharge: getItemPackingFee(item),
@@ -1795,8 +1913,15 @@ const Checkout = () => {
 
         preOrder: {
           isPreOrder: preOrderInfo.hasPreOrder,
-          availableOn: preOrderInfo.availableOnMax,
+          availableOn: checkoutPreOrderDate || preOrderInfo.availableOnMax,
+          preOrderDeliveryDate: checkoutPreOrderDate || preOrderInfo.preOrderDeliveryDate,
+          preOrderTimeSlot: checkoutPreOrderSlot || preOrderInfo.preOrderTimeSlot,
+          preOrderCustomNote: checkoutPreOrderNote || preOrderInfo.preOrderCustomNote,
         },
+        isPreOrder: preOrderInfo.hasPreOrder,
+        preOrderDeliveryDate: checkoutPreOrderDate || preOrderInfo.preOrderDeliveryDate,
+        preOrderTimeSlot: checkoutPreOrderSlot || preOrderInfo.preOrderTimeSlot,
+        preOrderCustomNote: checkoutPreOrderNote || preOrderInfo.preOrderCustomNote,
 
         paymentDetails: {
           method: finalPaymentMethod,
@@ -2217,12 +2342,28 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* Pre-order banner */}
-        {preOrderInfo.hasPreOrder && preOrderInfo.availableOnMax && (
-          <div className="mb-4 rounded-lg border bg-amber-50 border-amber-200 p-3 text-sm w-full overflow-hidden">
-            ⏳ Pre-order items included. Ready on / after:{" "}
-            <strong>{new Date(preOrderInfo.availableOnMax).toDateString()}</strong>
-            <span className="ml-2 text-green-700 font-medium">• Shipping Free ✅</span>
+        {/* 📅 Pre-order banner */}
+        {preOrderInfo.hasPreOrder && (
+          <div className="mb-5 rounded-2xl border-2 border-purple-400 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 p-4 text-sm w-full shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-xl bg-purple-600 text-white p-2 rounded-xl shrink-0 shadow-xs">📅</span>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-extrabold text-purple-950 text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1.5">
+                    <span>Pre-Order Items in Your Cart</span>
+                    <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">ADVANCE BOOKING</span>
+                  </span>
+                  {preOrderInfo.availableOnMax && (
+                    <span className="text-xs font-black text-purple-900 bg-purple-200/90 px-2.5 py-0.5 rounded-full border border-purple-300">
+                      Expected Shipping: {new Date(preOrderInfo.availableOnMax).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-purple-900 leading-relaxed font-medium">
+                  Your order contains advance booking items. Payment confirms your reserved stock, and fulfillment will begin promptly on the vendor&apos;s release date.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2230,34 +2371,200 @@ const Checkout = () => {
           {/* Left */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full min-w-0">
             {/* Fulfillment */}
-            <div className={`bg-white rounded-lg border p-4 sm:p-6 ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
-              <h2 className="text-lg font-semibold mb-4">Fulfillment</h2>
+            <div className={`bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm ${mobileStep === 1 ? "block" : "hidden lg:block"}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base sm:text-lg font-bold text-navy flex items-center gap-2 font-heading">
+                  <span>📦</span>
+                  <span>Fulfillment Method</span>
+                </h2>
+                {preOrderInfo.hasPreOrder && (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-300">
+                    Pre-Order Active
+                  </span>
+                )}
+              </div>
 
-              <RadioGroup
-                value={fulfillmentType}
-                onValueChange={(v: any) => setFulfillmentType(v)}
-                className="space-y-3"
-              >
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="delivery" id="delivery" />
-                  <Label htmlFor="delivery" className="cursor-pointer">
-                    Home Delivery{" "}
-                    {preOrderInfo.hasPreOrder ? (
-                      <span className="text-xs text-green-700 font-medium">(Free for pre-order)</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">₹{orderDetails.shipping.toFixed(2)}</span>
+              {/* Simple Clean Radio Buttons for Fulfillment */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                {/* 🚚 Home Delivery Radio Card */}
+                <label
+                  onClick={() => setFulfillmentType("delivery")}
+                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
+                    fulfillmentType === "delivery"
+                      ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <div className="pt-0.5">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                      fulfillmentType === "delivery" ? "border-navy bg-white" : "border-slate-300"
+                    }`}>
+                      {fulfillmentType === "delivery" && <div className="w-2 h-2 rounded-full bg-navy" />}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-navy flex items-center gap-1.5">
+                        <span>🚚</span>
+                        <span>Home Delivery</span>
+                      </span>
+                      {preOrderInfo.hasPreOrder ? (
+                        <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          FREE
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-slate-700">
+                          {orderDetails.shipping === 0 ? "FREE" : `₹${orderDetails.shipping.toFixed(2)}`}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Delivered straight to your doorstep address
+                    </p>
+                  </div>
+                </label>
+
+                {/* 🏪 Self Pickup Radio Card */}
+                <label
+                  onClick={() => pickupPossible && setFulfillmentType("pickup")}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    !pickupPossible
+                      ? "opacity-60 bg-slate-100 border-slate-200 cursor-not-allowed"
+                      : fulfillmentType === "pickup"
+                        ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20 cursor-pointer"
+                        : "border-slate-200 hover:border-slate-300 bg-white cursor-pointer"
+                  } flex items-start gap-3.5`}
+                >
+                  <div className="pt-0.5">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                      fulfillmentType === "pickup" ? "border-navy bg-white" : "border-slate-300"
+                    }`}>
+                      {fulfillmentType === "pickup" && <div className="w-2 h-2 rounded-full bg-navy" />}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-navy flex items-center gap-1.5">
+                        <span>🏪</span>
+                        <span>Store Self Pickup</span>
+                      </span>
+                      <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        FREE
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {!pickupPossible ? (pickupDisabledReason || "Not available for this location") : "Pick up in person directly from the seller's store"}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* 📅 PRE-ORDER IN-CHECKOUT SCHEDULER & CUSTOM INSTRUCTIONS (CAN UPDATE HERE) */}
+              {preOrderInfo.hasPreOrder && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 via-indigo-50/50 to-purple-50/90 border-2 border-purple-300 shadow-xs mb-4 space-y-4">
+                  <div className="flex items-start justify-between gap-2 border-b border-purple-200/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl p-2 bg-purple-600 text-white rounded-xl shadow-xs">
+                        🗓️
+                      </span>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-purple-950 flex items-center gap-1.5">
+                          <span>Pre-Order Schedule &amp; Preferences</span>
+                          <span className="text-[10px] text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200 font-bold">
+                            Editable in Checkout
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-purple-800 font-medium">
+                          You can review or adjust your requested delivery date, time slot, and special notes below.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 1. Date Picker */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-purple-950 flex items-center justify-between">
+                      <span>🗓️ Desired Delivery / Pickup Date <span className="text-red-500">*</span></span>
+                      {minCheckoutPreOrderDate && (
+                        <span className="text-[10.5px] text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200 font-semibold">
+                          Earliest Available: {new Date(minCheckoutPreOrderDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="date"
+                      min={minCheckoutPreOrderDate}
+                      value={checkoutPreOrderDate}
+                      onChange={(e) => setCheckoutPreOrderDate(e.target.value)}
+                      className="w-full bg-white border-2 border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-purple-950 shadow-xs outline-none cursor-pointer"
+                    />
+                    {checkoutPreOrderDate && (
+                      <p className="text-[11px] text-purple-900 font-bold flex items-center gap-1.5 pl-1">
+                        <span>✅ Scheduled For:</span>
+                        <strong className="text-purple-700 underline decoration-purple-300">
+                          {new Date(checkoutPreOrderDate).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                        </strong>
+                      </p>
                     )}
-                  </Label>
-                </div>
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="pickup" id="pickup" disabled={!pickupPossible} />
-                  <Label htmlFor="pickup" className={`cursor-pointer ${!pickupPossible ? "text-muted-foreground" : ""}`}>
-                    Self Pickup (Free)
-                    {!pickupPossible && <span className="text-xs ml-2">({pickupDisabledReason || "Not available"})</span>}
-                  </Label>
+                  {/* 2. Slot Selection */}
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-bold text-purple-950">
+                      ⏰ Preferred Delivery / Ready Slot
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: "Morning (09:00 AM - 01:00 PM)", label: "🌅 Morning", time: "09:00 AM - 01:00 PM" },
+                        { id: "Afternoon (01:00 PM - 05:00 PM)", label: "☀️ Afternoon", time: "01:00 PM - 05:00 PM" },
+                        { id: "Evening (05:00 PM - 09:00 PM)", label: "🌙 Evening", time: "05:00 PM - 09:00 PM" }
+                      ].map((slot) => {
+                        const isSelected = checkoutPreOrderSlot === slot.id;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => setCheckoutPreOrderSlot(slot.id)}
+                            className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
+                              isSelected
+                                ? "bg-purple-700 text-white border-purple-700 shadow-sm"
+                                : "bg-white text-purple-950 border-purple-200 hover:border-purple-300"
+                            }`}
+                          >
+                            <span className="flex items-center justify-between">
+                              <span>{slot.label}</span>
+                              {isSelected && <span className="text-[10px]">✓</span>}
+                            </span>
+                            <span className={`text-[10px] ${isSelected ? "text-purple-200" : "text-muted-foreground"}`}>
+                              {slot.time}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. Custom Note / Instructions Input */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-purple-950">
+                        ✍️ Note / Special Instructions (e.g. Message on cake, gift note, cooking requests)
+                      </label>
+                      <span className="text-[10px] text-purple-700 font-mono">
+                        {(checkoutPreOrderNote || "").length}/100
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={checkoutPreOrderNote}
+                      onChange={(e) => setCheckoutPreOrderNote(e.target.value)}
+                      placeholder='e.g., "Happy 25th Birthday Rahul! 🎂" or special notes'
+                      className="w-full bg-white border border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-purple-300"
+                    />
+                  </div>
                 </div>
-              </RadioGroup>
+              )}
 
               {/* Pickup options */}
               {fulfillmentType === "pickup" && (
@@ -3017,12 +3324,36 @@ const Checkout = () => {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm mb-1 line-clamp-2">{item.itemName || item.name}</h4>
+                            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                              <h4 className="font-semibold text-sm line-clamp-2">{item.itemName || item.name}</h4>
+                              {flags.isPreOrder && (
+                                <span className="bg-purple-100 text-purple-700 font-extrabold text-[9px] px-2 py-0.5 rounded-full border border-purple-300 uppercase tracking-wider shrink-0">
+                                  📅 PRE-ORDER
+                                </span>
+                              )}
+                            </div>
 
-                            {flags.isPreOrder && flags.availableOn && (
-                              <p className="text-[11px] text-muted-foreground mb-1">
-                                Available on: <strong>{new Date(flags.availableOn).toDateString()}</strong>
-                              </p>
+                            {flags.isPreOrder && (
+                              <div className="bg-purple-50/80 border border-purple-200/90 rounded-xl p-2 my-1 text-[11px] space-y-0.5">
+                                <p className="text-purple-900 font-bold flex items-center gap-1.5">
+                                  <span>🗓️ Scheduled Delivery:</span>
+                                  <strong className="text-purple-700">
+                                    {(checkoutPreOrderDate || flags.preOrderDeliveryDate || flags.availableOn)
+                                      ? new Date(checkoutPreOrderDate || flags.preOrderDeliveryDate || flags.availableOn).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+                                      : "Upon Stock Arrival"}
+                                  </strong>
+                                </p>
+                                {(checkoutPreOrderSlot || flags.preOrderTimeSlot) && (
+                                  <p className="text-purple-800 font-medium">
+                                    ⏰ Slot: <strong>{checkoutPreOrderSlot || flags.preOrderTimeSlot}</strong>
+                                  </p>
+                                )}
+                                {(checkoutPreOrderNote || flags.preOrderCustomNote) && (
+                                  <p className="text-purple-800 italic font-medium">
+                                    ✍️ Note / Request: &ldquo;{checkoutPreOrderNote || flags.preOrderCustomNote}&rdquo;
+                                  </p>
+                                )}
+                              </div>
                             )}
 
                             <div className="flex flex-wrap gap-1 sm:gap-2 text-muted-foreground text-xs mb-1">

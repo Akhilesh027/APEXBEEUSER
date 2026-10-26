@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { MessageSquare, Bot, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
+import { openWhatsApp } from "@/utils/whatsapp";
 
 export const BottomNav = () => {
   const location = useLocation();
@@ -107,7 +108,10 @@ export const BottomNav = () => {
 
   const handleOpenWhatsApp = () => {
     setIsBeeMenuOpen(false);
-    window.open("https://wa.me/919999999999?text=Hello%20ApexBee%20Support!", "_blank");
+    openWhatsApp({
+      phone: "919999999999",
+      text: "Hello ApexBee Support!"
+    });
   };
 
   const handleOpenAbhiAssistant = () => {

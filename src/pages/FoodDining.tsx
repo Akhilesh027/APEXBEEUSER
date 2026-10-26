@@ -679,19 +679,47 @@ export const FoodDining: React.FC = () => {
       }
       const user = JSON.parse(userStr);
       const priceInfo = getDishPriceInfo(item);
+      const priceVal = priceInfo.price;
       const payload = {
         userId: user._id || user.id,
         productId: item._id || item.id,
         name: item.name || item.itemName,
-        price: priceInfo.price,
-        image: item.image || item.images?.[0],
+        itemName: item.name || item.itemName,
+        price: priceVal,
+        salesPrice: priceVal,
+        originalPrice: priceInfo.originalPrice || priceVal,
+        afterDiscount: priceVal,
+        image: item.image || item.images?.[0] || item.imageUrl || '',
+        imageUrl: item.image || item.images?.[0] || item.imageUrl || '',
         quantity: quantity,
         vendorId: item.vendorId || item.restaurantId || null,
+        restaurantId: item.restaurantId || item.vendorId || null,
+        categoryName: 'Food & Dining',
+        platformFeePercent: item.platformCommissionPercent || item.platformFeePercent || 5,
+        platformCommissionPercent: item.platformCommissionPercent || item.platformFeePercent || 5,
+        platformFeeAmount: item.platformShareAmount || item.platformFeeAmount || 0,
+        distributedFrom: item.distributedFrom || 'platform_fee',
+        vendorCommissionPercent: item.vendorCommissionPercent || 0,
+        packingCharge: item.packagingCharge || 0,
       };
 
       await axios.post(`${API_BASE}/cart/add`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // Sync with local_cart
+      try {
+        const local = JSON.parse(localStorage.getItem('local_cart') || '[]');
+        const existingIdx = local.findIndex((i: any) => i._id === (item._id || item.id) || i.productId === (item._id || item.id));
+        if (existingIdx > -1) {
+          local[existingIdx].quantity = (local[existingIdx].quantity || 0) + quantity;
+        } else {
+          local.push({ ...payload, _id: item._id || item.id });
+        }
+        localStorage.setItem('local_cart', JSON.stringify(local));
+      } catch (err) {
+        console.warn('local_cart sync warning:', err);
+      }
 
       alert(`✅ Added ${quantity}x "${item.name || item.itemName}" to your food cart!`);
       window.dispatchEvent(new Event('storage'));

@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { buildPublicShareUrl } from "@/utils/url";
+import { openWhatsApp } from "@/utils/whatsapp";
 
 // Helper function for currency formatting
 const formatCurrency = (amount: any) => {
@@ -361,9 +362,162 @@ const ProductDetail = () => {
   const userPrice = selectedVariant?.mrp ?? product.adminPricing?.mrp ?? product.baseMrp ?? product.userPrice ?? product.mrp ?? 0;
   const discount = product.discountPercent ?? product.discount ?? 0;
   const deliveryFee = shippingCharge;
+  const isPreOrder = Boolean(product?.isPreOrder || product?.preOrder || product?.itemPreOrder);
+  const preOrderReleaseDate = product?.preOrderReleaseDate || product?.preOrderDate || product?.availableOn || null;
+  const preOrderMessage = product?.preOrderMessage || "";
+  const preOrderLimit = Number(product?.preOrderLimit || 0);
+
+  // 🎂 Multi-type Pre-Order Configuration (e.g. Bakery cakes, advance orders, daily cutoff, release dates)
+  const preOrderType = (product?.preOrderType || (preOrderReleaseDate ? 'RELEASE_DATE' : 'ADVANCE_NOTICE')) as 'ADVANCE_NOTICE' | 'DAILY_CUTOFF' | 'RELEASE_DATE' | 'SPECIFIC_DAYS';
+  const preOrderLeadTimeDays = Math.max(1, Number(product?.preOrderLeadTimeDays ?? (preOrderType === 'DAILY_CUTOFF' ? 1 : 2)));
+  const preOrderDailyCutoffTime = product?.preOrderDailyCutoffTime || '18:00';
+  const preOrderAllowTimeSlot = product?.preOrderAllowTimeSlot ?? true;
+  const preOrderAllowCustomMessage = product?.preOrderAllowCustomMessage ?? (
+    product?.categoryName?.toLowerCase().includes('cake') ||
+    product?.categoryName?.toLowerCase().includes('bakery') ||
+    product?.categoryName?.toLowerCase().includes('gift') ||
+    product?.name?.toLowerCase().includes('cake') ||
+    false
+  );
+  const preOrderAvailableDays = Array.isArray(product?.preOrderAvailableDays) && product.preOrderAvailableDays.length > 0 ? product.preOrderAvailableDays : [0, 1, 2, 3, 4, 5, 6];
+
+  // 🏷️ Dynamic label, placeholder, and icon tailored specifically to product category & name
+  const { customMessageLabel, customMessagePlaceholder, isCakeProduct, dynamicIcon } = useMemo(() => {
+    const pName = (product?.name || product?.itemName || '').toLowerCase();
+    const cName = (product?.categoryName || product?.categoryId?.name || '').toLowerCase();
+    const combined = `${pName} ${cName}`;
+
+    // Explicit custom label if set by vendor and not the old generic combo string
+    const configuredLabel = product?.preOrderCustomMessageLabel;
+    if (configuredLabel && !configuredLabel.includes('Message on Cake / Custom') && !configuredLabel.includes('/ Custom')) {
+      return {
+        customMessageLabel: configuredLabel,
+        customMessagePlaceholder: `Enter ${configuredLabel.toLowerCase()}...`,
+        isCakeProduct: combined.includes('cake') || combined.includes('pastry'),
+        dynamicIcon: combined.includes('cake') ? '🎂' : '📝'
+      };
+    }
+
+    // 1. Cakes, Pastries & Bakery
+    if (combined.includes('cake') || combined.includes('pastry') || combined.includes('cupcake') || combined.includes('dessert') || combined.includes('bakery')) {
+      return {
+        customMessageLabel: 'Message on Cake',
+        customMessagePlaceholder: 'e.g. Happy 25th Birthday Rahul! 🎂',
+        isCakeProduct: true,
+        dynamicIcon: '🎂'
+      };
+    }
+
+    // 2. Flowers, Bouquets, Gifts & Hampers
+    if (combined.includes('flower') || combined.includes('bouquet') || combined.includes('gift') || combined.includes('hamper') || combined.includes('card')) {
+      return {
+        customMessageLabel: 'Gift Greeting Note',
+        customMessagePlaceholder: 'e.g. Wishing you a wonderful anniversary! 💐',
+        isCakeProduct: false,
+        dynamicIcon: '🎁'
+      };
+    }
+
+    // 3. Food, Biryani, Restaurant & Catering
+    if (combined.includes('food') || combined.includes('biryani') || combined.includes('catering') || combined.includes('curry') || product?.itemType === 'FOOD') {
+      return {
+        customMessageLabel: 'Cooking & Dietary Instructions',
+        customMessagePlaceholder: 'e.g. Less spicy, pack extra gravy separately',
+        isCakeProduct: false,
+        dynamicIcon: '🍽️'
+      };
+    }
+
+    // 4. Apparel, Engraving, Printing & Personalization
+    if (combined.includes('engrav') || combined.includes('tshirt') || combined.includes('shirt') || combined.includes('apparel') || combined.includes('custom') || combined.includes('print')) {
+      return {
+        customMessageLabel: 'Custom Inscription / Personalization',
+        customMessagePlaceholder: 'e.g. Name or initials to print or engrave',
+        isCakeProduct: false,
+        dynamicIcon: '✍️'
+      };
+    }
+
+    // 5. Default Marketplace Products (Books, Electronics, Gadgets, etc.)
+    return {
+      customMessageLabel: 'Order Note / Delivery Request',
+      customMessagePlaceholder: 'e.g. Special packing or delivery instructions',
+      isCakeProduct: false,
+      dynamicIcon: '📝'
+    };
+  }, [product]);
+
+  // 📅 Calculate earliest allowed delivery date based on lead time & daily cutoff
+  const { minPreOrderDateStr, isPastCutoffToday } = useMemo(() => {
+    if (!isPreOrder) return { minPreOrderDateStr: '', isPastCutoffToday: false };
+
+    const now = new Date();
+
+    if (preOrderType === 'RELEASE_DATE' && preOrderReleaseDate) {
+      const rel = new Date(preOrderReleaseDate);
+      if (!isNaN(rel.getTime())) {
+        const y = rel.getFullYear();
+        const m = String(rel.getMonth() + 1).padStart(2, '0');
+        const d = String(rel.getDate()).padStart(2, '0');
+        return { minPreOrderDateStr: `${y}-${m}-${d}`, isPastCutoffToday: false };
+      }
+    }
+
+    // Cutoff time calculation (e.g. 18:00)
+    let cutoffH = 18;
+    let cutoffM = 0;
+    if (preOrderDailyCutoffTime && preOrderDailyCutoffTime.includes(':')) {
+      const parts = preOrderDailyCutoffTime.split(':');
+      cutoffH = parseInt(parts[0], 10) || 18;
+      cutoffM = parseInt(parts[1], 10) || 0;
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setHours(cutoffH, cutoffM, 0, 0);
+
+    const pastCutoff = now.getTime() > cutoffDate.getTime();
+    const effectiveDays = preOrderLeadTimeDays + (pastCutoff ? 1 : 0);
+
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + effectiveDays);
+
+    // If SPECIFIC_DAYS configured, advance until a matching day of the week is hit
+    if (preOrderAvailableDays && preOrderAvailableDays.length > 0 && preOrderAvailableDays.length < 7) {
+      let attempts = 0;
+      while (!preOrderAvailableDays.includes(targetDate.getDay()) && attempts < 14) {
+        targetDate.setDate(targetDate.getDate() + 1);
+        attempts++;
+      }
+    }
+
+    const y = targetDate.getFullYear();
+    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const d = String(targetDate.getDate()).padStart(2, '0');
+    return { minPreOrderDateStr: `${y}-${m}-${d}`, isPastCutoffToday: pastCutoff };
+  }, [isPreOrder, preOrderType, preOrderReleaseDate, preOrderLeadTimeDays, preOrderDailyCutoffTime, preOrderAvailableDays]);
+
+  // Pre-Order user selections
+  const [selectedPreOrderDate, setSelectedPreOrderDate] = useState<string>('');
+  const [selectedPreOrderTimeSlot, setSelectedPreOrderTimeSlot] = useState<string>('Morning (09:00 AM - 01:00 PM)');
+  const [selectedCustomCakeNote, setSelectedCustomCakeNote] = useState<string>('');
+
+  // Auto-select minimum available date
+  useEffect(() => {
+    if (minPreOrderDateStr && !selectedPreOrderDate) {
+      setSelectedPreOrderDate(minPreOrderDateStr);
+    }
+  }, [minPreOrderDateStr]);
+
+  const PREORDER_TIME_SLOTS = [
+    { id: 'Morning (09:00 AM - 01:00 PM)', label: '🌅 Morning', time: '09:00 AM - 01:00 PM' },
+    { id: 'Afternoon (01:00 PM - 05:00 PM)', label: '☀️ Afternoon', time: '01:00 PM - 05:00 PM' },
+    { id: 'Evening (05:00 PM - 09:00 PM)', label: '🌙 Evening', time: '05:00 PM - 09:00 PM' },
+  ];
+
   const description = product.description || "";
-  const stock = selectedVariant ? selectedVariant.stock : (product.stock ?? 0);
-  const isOutOfStock = stock <= 0 || stock < moq;
+  const rawStock = selectedVariant ? selectedVariant.stock : (product.stock ?? 0);
+  const stock = isPreOrder ? (rawStock > 0 ? rawStock : 999) : rawStock;
+  const isOutOfStock = isPreOrder ? (preOrderLimit > 0 && rawStock <= 0) : (rawStock <= 0 || rawStock < moq);
 
   // ✅ Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -640,7 +794,11 @@ const ProductDetail = () => {
   };
 
   const whatsappShare = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareText + "\n" + shareUrl)}`);
+    openWhatsApp({
+      text: shareText,
+      url: shareUrl,
+      title: product.itemName || "Check out this product on ApexBee!"
+    });
   };
 
   const facebookShare = () => {
@@ -662,8 +820,28 @@ const ProductDetail = () => {
     return cat.includes('grocery') || cat.includes('milk') || cat.includes('dairy') || cat.includes('daily') || product.isGrocery === true;
   }, [product]);
 
-  // ✅ Add to Cart – now includes deliveryFee & MOQ check
+  // ✅ Add to Cart – now includes deliveryFee, MOQ check, and Pre-Order schedule details
   const handleAddToCart = async (showAlert = true) => {
+    // 📅 Pre-Order Date Validation
+    if (isPreOrder) {
+      if (!selectedPreOrderDate) {
+        toast({
+          title: "Select Delivery / Pickup Date 📅",
+          description: "Please choose your desired delivery or pickup date before adding this pre-order item.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      if (minPreOrderDateStr && selectedPreOrderDate < minPreOrderDateStr) {
+        toast({
+          title: "Earliest Date Restriction ⏰",
+          description: `This freshly prepared item requires at least ${preOrderLeadTimeDays} day(s) advance notice. Earliest available date is ${new Date(minPreOrderDateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.`,
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+
     const item = {
       productId: product._id,
       itemName: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
@@ -692,6 +870,13 @@ const ProductDetail = () => {
       commissionType: product.adminPricing?.commissionType ?? product.attributes?.commissionType ?? 'vendor',
       adminPricing: product.adminPricing,
       isSubscriptionAvailable: isSubscriptionAvailable,
+      isPreOrder: isPreOrder,
+      preOrderDeliveryDate: isPreOrder ? selectedPreOrderDate : null,
+      preOrderTimeSlot: (isPreOrder && preOrderAllowTimeSlot) ? selectedPreOrderTimeSlot : null,
+      preOrderCustomNote: (isPreOrder && preOrderAllowCustomMessage) ? selectedCustomCakeNote : null,
+      preOrderReleaseDate: selectedPreOrderDate || preOrderReleaseDate,
+      preOrderMessage: preOrderMessage,
+      availableOn: selectedPreOrderDate || preOrderReleaseDate,
       product: product
     };
 
@@ -706,14 +891,24 @@ const ProductDetail = () => {
       const existingIdx = list.findIndex((x) => x.productId === product._id);
       if (existingIdx > -1) {
         list[existingIdx].quantity += quantity;
+        if (isPreOrder) {
+          list[existingIdx].preOrderDeliveryDate = selectedPreOrderDate;
+          list[existingIdx].preOrderTimeSlot = selectedPreOrderTimeSlot;
+          list[existingIdx].preOrderCustomNote = selectedCustomCakeNote;
+        }
       } else {
         list.push(item);
       }
       localStorage.setItem("local_cart", JSON.stringify(list));
       localStorage.setItem("cart_updated", Date.now().toString());
       window.dispatchEvent(new Event("storage"));
-      if (showAlert) toast({ title: "Added to Cart! 🛒", description: "Item added to guest cart successfully." });
-      return;
+      if (showAlert) toast({
+        title: isPreOrder ? "Pre-Order Added! 📅" : "Added to Cart! 🛒",
+        description: isPreOrder
+          ? `Pre-booked for delivery on ${new Date(selectedPreOrderDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.`
+          : "Item added to guest cart successfully."
+      });
+      return true;
     }
 
     const userId = user?.id || user?._id;
@@ -732,13 +927,20 @@ const ProductDetail = () => {
       const data = await res.json();
       if (!res.ok) {
         if (showAlert) toast({ title: "Cart Error", description: data.error || "Failed to add to cart.", variant: "destructive" });
-        return;
+        return false;
       }
 
       window.dispatchEvent(new Event("storage"));
-      if (showAlert) toast({ title: "Added to Cart! 🛒", description: "Item added to cart successfully." });
+      if (showAlert) toast({
+        title: isPreOrder ? "Pre-Order Added! 📅" : "Added to Cart! 🛒",
+        description: isPreOrder
+          ? `Pre-booked for delivery on ${new Date(selectedPreOrderDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.`
+          : "Item added to cart successfully."
+      });
+      return true;
     } catch {
       if (showAlert) toast({ title: "Server Error", description: "Failed to connect to cart service.", variant: "destructive" });
+      return false;
     }
   };
 
@@ -751,7 +953,8 @@ const ProductDetail = () => {
       setQuantity(moq);
     }
 
-    await handleAddToCart(false);
+    const added = await handleAddToCart(false);
+    if (added === false) return;
     navigate("/cart");
   };
 
@@ -976,9 +1179,156 @@ const ProductDetail = () => {
               </div>
             )}
 
+            {/* 📅 INTERACTIVE PRE-ORDER & SCHEDULING CARD */}
+            {isPreOrder && (
+              <div className="mb-6 bg-gradient-to-br from-purple-50/90 via-indigo-50/60 to-purple-50/90 border-2 border-purple-400/90 rounded-2xl p-5 shadow-sm space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 flex-wrap border-b border-purple-200/80 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-2xl p-2 bg-purple-600 text-white rounded-xl shadow-xs">
+                      {dynamicIcon}
+                    </span>
+                    <div>
+                      <h4 className="font-extrabold text-purple-950 text-sm leading-tight flex items-center gap-1.5">
+                        <span>Pre-Order &amp; Custom Scheduling</span>
+                        <span className="bg-purple-600 text-white text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                          {preOrderType === 'ADVANCE_NOTICE' ? (isCakeProduct ? 'Fresh Bake / Notice' : 'Advance Notice') : preOrderType === 'DAILY_CUTOFF' ? 'Daily Fresh Cutoff' : preOrderType === 'RELEASE_DATE' ? 'Launch Pre-Order' : 'Special Schedule'}
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-purple-800 font-medium">
+                        Requires at least <strong>{preOrderLeadTimeDays} day(s) advance preparation notice</strong>.
+                        {preOrderDailyCutoffTime && <span> (Daily cutoff: <strong>{preOrderDailyCutoffTime}</strong>)</span>}
+                      </p>
+                    </div>
+                  </div>
+
+                  {preOrderReleaseDate && (
+                    <span className="text-[11px] font-black text-purple-900 bg-purple-200/90 px-2.5 py-1 rounded-full border border-purple-300">
+                      Release: {new Date(preOrderReleaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  )}
+                </div>
+
+                {/* Past cutoff notification banner */}
+                {isPastCutoffToday && (
+                  <div className="bg-amber-50 border border-amber-300 text-amber-900 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <span className="text-base">⏰</span>
+                    <span>
+                      Today&apos;s cut-off time ({preOrderDailyCutoffTime}) has passed. Earliest delivery date starts from tomorrow + notice period.
+                    </span>
+                  </div>
+                )}
+
+                {/* Date Picker Section */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-extrabold text-purple-950 flex items-center justify-between">
+                    <span>🗓️ Desired Delivery / Pickup Date <span className="text-red-500">*</span></span>
+                    {minPreOrderDateStr && (
+                      <span className="text-[10.5px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded-md border border-purple-200">
+                        Earliest: {new Date(minPreOrderDateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="date"
+                    min={minPreOrderDateStr}
+                    value={selectedPreOrderDate}
+                    onChange={(e) => setSelectedPreOrderDate(e.target.value)}
+                    className="w-full bg-white border-2 border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-purple-950 shadow-xs outline-none transition-all cursor-pointer"
+                  />
+                  {selectedPreOrderDate && (
+                    <p className="text-[11px] text-purple-900 font-bold flex items-center gap-1.5 pl-1">
+                      <span>✅ Scheduled For:</span>
+                      <strong className="text-purple-700 underline decoration-purple-300">
+                        {new Date(selectedPreOrderDate).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                      </strong>
+                    </p>
+                  )}
+                </div>
+
+                {/* Preferred Time Slot (if enabled) */}
+                {preOrderAllowTimeSlot && (
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-extrabold text-purple-950">
+                      ⏰ Preferred Delivery / Ready Slot
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {PREORDER_TIME_SLOTS.map((slot) => {
+                        const isSelected = selectedPreOrderTimeSlot === slot.id;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => setSelectedPreOrderTimeSlot(slot.id)}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
+                              isSelected
+                                ? "bg-purple-700 text-white border-purple-700 shadow-sm shadow-purple-500/20"
+                                : "bg-white text-purple-950 border-purple-200 hover:border-purple-400 hover:bg-purple-50/50"
+                            }`}
+                          >
+                            <span className="flex items-center justify-between">
+                              <span>{slot.label}</span>
+                              {isSelected && <span className="text-[10px]">✓</span>}
+                            </span>
+                            <span className={`text-[10px] ${isSelected ? "text-purple-200" : "text-muted-foreground"}`}>
+                              {slot.time}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Message / Product-specific Instructions */}
+                {preOrderAllowCustomMessage && (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-extrabold text-purple-950 flex items-center gap-1.5">
+                        <span>{dynamicIcon}</span>
+                        <span>{customMessageLabel}</span>
+                        <span className="text-[10px] text-purple-600 font-normal">(Optional)</span>
+                      </label>
+                      <span className="text-[10px] text-purple-700 font-mono">
+                        {selectedCustomCakeNote.length}/100
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={selectedCustomCakeNote}
+                      onChange={(e) => setSelectedCustomCakeNote(e.target.value)}
+                      placeholder={customMessagePlaceholder}
+                      className="w-full bg-white border border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 shadow-xs outline-none placeholder:text-purple-300"
+                    />
+                  </div>
+                )}
+
+                {/* Seller Note / Guidelines */}
+                {preOrderMessage && (
+                  <p className="text-[11px] text-purple-900 font-semibold italic bg-white/80 p-2.5 rounded-xl border border-purple-200 flex items-start gap-1.5">
+                    <span className="shrink-0 text-purple-600">ℹ️</span>
+                    <span>&ldquo;{preOrderMessage}&rdquo;</span>
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Stock status indicator */}
             <div className="mb-4 text-sm">
-              {isOutOfStock ? (
+              {isPreOrder ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-black uppercase tracking-wide border border-purple-300">
+                    <span className="w-2 h-2 rounded-full bg-purple-600 animate-ping"></span>
+                    Pre-Order Bookings Open
+                  </span>
+                  {preOrderLimit > 0 && (
+                    <span className="text-xs text-muted-foreground font-semibold">
+                      (Limit: {stock} units max)
+                    </span>
+                  )}
+                </div>
+              ) : isOutOfStock ? (
                 <span className="text-red-500 font-bold">
                   Out of Stock {stock > 0 ? `(Stock ${stock} is below MOQ requirement of ${moq} units)` : ""}
                 </span>
@@ -1178,11 +1528,27 @@ const ProductDetail = () => {
 
             {/* ACTION BUTTONS */}
             <div className="flex gap-4">
-              <Button onClick={handleAddToCart} className="flex-1 bg-accent hover:bg-accent/90 text-white font-bold h-12 rounded-xl shadow-md cursor-pointer" disabled={isOutOfStock}>
-                Add to Cart
+              <Button
+                onClick={() => handleAddToCart(true)}
+                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
+                  isPreOrder
+                    ? "bg-purple-700 hover:bg-purple-800 text-white"
+                    : "bg-accent hover:bg-accent/90 text-white"
+                }`}
+                disabled={isOutOfStock}
+              >
+                {isPreOrder ? "📅 Pre-Book (Add to Cart)" : "Add to Cart"}
               </Button>
-              <Button onClick={handleBuyNow} className="flex-1 bg-navy hover:bg-navy/90 text-white font-bold h-12 rounded-xl shadow-md cursor-pointer" disabled={isOutOfStock}>
-                Buy Now
+              <Button
+                onClick={handleBuyNow}
+                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
+                  isPreOrder
+                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/20"
+                    : "bg-navy hover:bg-navy/90 text-white"
+                }`}
+                disabled={isOutOfStock}
+              >
+                {isPreOrder ? "🚀 Pre-Order Now" : "Buy Now"}
               </Button>
             </div>
 
@@ -1212,6 +1578,15 @@ const ProductDetail = () => {
                   <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">
                     <span className="text-muted-foreground font-medium">SKU Code:</span>
                     <span className="font-mono text-indigo-600 font-bold">{selectedVariant?.sku || product.sku}</span>
+                  </div>
+                )}
+
+                {isPreOrder && (
+                  <div className="p-2.5 bg-purple-50 rounded-xl border border-purple-200 flex justify-between">
+                    <span className="text-purple-800 font-bold">Fulfillment:</span>
+                    <span className="font-extrabold text-purple-900">
+                      Pre-Order {preOrderReleaseDate ? `(Ships ${new Date(preOrderReleaseDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}
+                    </span>
                   </div>
                 )}
 

@@ -91,12 +91,22 @@ export const getItemPlatformFee = (item: any): number => {
     0
   );
 
+  const isFoodItem = Boolean(
+    item.categoryName === 'Food & Dining' ||
+    item.category === 'Food Item' ||
+    item.restaurantId ||
+    item.foodType ||
+    item.foodMenuItemId ||
+    item.orderType === 'FOOD'
+  );
+
   const platformFeePct = Number(
     item.platformFeePercent ??
+    item.platformCommissionPercent ??
     item.adminPricing?.platformFeePercent ??
     item.product?.adminPricing?.platformFeePercent ??
     item.productId?.adminPricing?.platformFeePercent ??
-    0
+    (isFoodItem ? 5 : 0)
   );
 
   const directFee = Number(
@@ -140,6 +150,11 @@ export const getItemPlatformFee = (item: any): number => {
     return fixedFee;
   }
 
+  // Fallback for food item: 5% platform fee
+  if (isFoodItem && price > 0) {
+    return (price * 5) / 100;
+  }
+
   return 0;
 };
 
@@ -181,9 +196,13 @@ const renderVariantDetails = (item: any) => {
 // Read pickup/preorder flags safely
 const readItemFlags = (item: any) => {
   const allowPickup = Boolean(item?.allowPickup ?? item?.pickupAvailable ?? false);
-  const isPreOrder = Boolean(item?.isPreOrder ?? item?.preOrder ?? false);
-  const availableOn = item?.availableOn || item?.preOrderDate || null;
-  return { allowPickup, isPreOrder, availableOn };
+  const isPreOrder = Boolean(item?.isPreOrder ?? item?.preOrder ?? item?.product?.isPreOrder ?? item?.productId?.isPreOrder ?? false);
+  const availableOn = item?.availableOn || item?.preOrderReleaseDate || item?.preOrderDate || item?.product?.preOrderReleaseDate || null;
+  const preOrderDeliveryDate = item?.preOrderDeliveryDate || availableOn;
+  const preOrderTimeSlot = item?.preOrderTimeSlot || null;
+  const preOrderCustomNote = item?.preOrderCustomNote || null;
+  const preOrderMessage = item?.preOrderMessage || item?.product?.preOrderMessage || "";
+  return { allowPickup, isPreOrder, availableOn, preOrderDeliveryDate, preOrderTimeSlot, preOrderCustomNote, preOrderMessage };
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
@@ -564,19 +583,40 @@ const Cart = () => {
 
   const total = taxableAmount + gstTax;
 
-  // Pre-order: compute max availableOn
+  // Pre-order: compute max availableOn and preserve customer scheduled date, slot, and cake note
   const preOrderInfo = useMemo(() => {
     const preItems = cartItems
       .map((it) => ({ ...it, ...readItemFlags(it) }))
-      .filter((it) => it.isPreOrder && it.availableOn);
+      .filter((it) => it.isPreOrder);
 
-    if (preItems.length === 0) return { hasPreOrder: false, availableOnMax: null };
+    if (preItems.length === 0) {
+      return {
+        hasPreOrder: false,
+        availableOnMax: null,
+        preOrderDeliveryDate: null,
+        preOrderTimeSlot: null,
+        preOrderCustomNote: null,
+        preOrderItems: []
+      };
+    }
 
-    const maxDate = preItems
-      .map((it) => new Date(it.availableOn))
-      .reduce((a, b) => (a > b ? a : b));
+    const datedItems = preItems.filter((it) => it.preOrderDeliveryDate || it.availableOn);
+    const maxDate = datedItems.length > 0
+      ? datedItems
+          .map((it) => new Date(it.preOrderDeliveryDate || it.availableOn))
+          .reduce((a, b) => (a > b ? a : b))
+      : null;
 
-    return { hasPreOrder: true, availableOnMax: maxDate.toISOString() };
+    const firstScheduled = preItems.find((it) => it.preOrderDeliveryDate);
+
+    return {
+      hasPreOrder: true,
+      availableOnMax: maxDate ? maxDate.toISOString() : null,
+      preOrderDeliveryDate: firstScheduled?.preOrderDeliveryDate || (maxDate ? maxDate.toISOString() : null),
+      preOrderTimeSlot: firstScheduled?.preOrderTimeSlot || null,
+      preOrderCustomNote: firstScheduled?.preOrderCustomNote || null,
+      preOrderItems: preItems
+    };
   }, [cartItems]);
 
   const pickupPossible = useMemo(() => {
@@ -586,7 +626,7 @@ const Cart = () => {
   const handleCheckout = () => {
     if (cartItems.length === 0) return alert("Your cart is empty!");
 
-    const outOfStockItems = cartItems.filter(item => item.stock !== undefined && item.stock !== null && item.stock <= 0);
+    const outOfStockItems = cartItems.filter(item => !readItemFlags(item).isPreOrder && item.stock !== undefined && item.stock !== null && item.stock <= 0);
     if (outOfStockItems.length > 0) {
       alert(`The following items are out of stock: ${outOfStockItems.map(i => i.itemName || i.name).join(", ")}. Please remove them to proceed.`);
       return;
@@ -614,12 +654,12 @@ const Cart = () => {
   };
 
   const handleCheckoutSingleItem = (item: any) => {
-    if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
+    const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
+
+    if (!isPreOrder && item.stock !== undefined && item.stock !== null && item.stock <= 0) {
       alert(`This item (${item.itemName || item.name}) is out of stock.`);
       return;
     }
-
-    const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
     const itemSubtotal = (item.sellingPrice || item.afterDiscount || item.price || 0) * (item.quantity || 1);
     const itemOriginalTotal = (item.originalPrice || item.salesPrice || item.mrp || item.price || 0) * (item.quantity || 1);
     const itemDiscount = Math.max(0, itemOriginalTotal - itemSubtotal);
@@ -634,8 +674,11 @@ const Cart = () => {
     const itemTotal = itemTaxable + itemGstTax;
 
     const singlePreOrderInfo = {
-      hasPreOrder: isPreOrder && Boolean(availableOn),
-      availableOnMax: availableOn ? new Date(availableOn).toISOString() : null,
+      hasPreOrder: isPreOrder && Boolean(availableOn || item.preOrderDeliveryDate),
+      availableOnMax: (item.preOrderDeliveryDate || availableOn) ? new Date(item.preOrderDeliveryDate || availableOn).toISOString() : null,
+      preOrderDeliveryDate: item.preOrderDeliveryDate || availableOn || null,
+      preOrderTimeSlot: item.preOrderTimeSlot || null,
+      preOrderCustomNote: item.preOrderCustomNote || null,
     };
 
     if (!userId) {
@@ -737,7 +780,7 @@ const Cart = () => {
 
                   <div className="divide-y divide-slate-100 space-y-4">
                     {group.items.map((item: any) => {
-                      const { allowPickup, isPreOrder, availableOn } = readItemFlags(item);
+                      const { allowPickup, isPreOrder, availableOn, preOrderDeliveryDate, preOrderTimeSlot, preOrderCustomNote } = readItemFlags(item);
 
                       return (
                         <div key={item._id || item.productId} className="pt-4 flex flex-col sm:flex-row items-start justify-between gap-4">
@@ -749,9 +792,38 @@ const Cart = () => {
                             />
 
                             <div className="space-y-1">
-                              <h3 className="font-extrabold text-slate-900 text-base leading-snug font-heading">
-                                {item.itemName || item.name}
-                              </h3>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-slate-900 text-base leading-snug font-heading">
+                                  {item.itemName || item.name}
+                                </h3>
+                                {isPreOrder && (
+                                  <span className="bg-purple-100 text-purple-700 font-extrabold text-[9.5px] px-2 py-0.5 rounded-full border border-purple-300 uppercase tracking-wider">
+                                    📅 PRE-ORDER
+                                  </span>
+                                )}
+                              </div>
+                              {isPreOrder && (
+                                <div className="space-y-0.5 bg-purple-50/70 border border-purple-200/80 rounded-xl p-2 my-1 text-[11px]">
+                                  <p className="text-purple-900 font-bold flex items-center gap-1.5">
+                                    <span>🗓️ Scheduled Delivery:</span>
+                                    <strong className="text-purple-700">
+                                      {(preOrderDeliveryDate || availableOn)
+                                        ? new Date(preOrderDeliveryDate || availableOn).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+                                        : "Upon Stock Arrival"}
+                                    </strong>
+                                  </p>
+                                  {preOrderTimeSlot && (
+                                    <p className="text-purple-800 font-medium">
+                                      ⏰ Slot: <strong>{preOrderTimeSlot}</strong>
+                                    </p>
+                                  )}
+                                  {preOrderCustomNote && (
+                                    <p className="text-purple-800 italic font-medium">
+                                      ✍️ Note: &ldquo;{preOrderCustomNote}&rdquo;
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                               <p className="text-xs text-slate-500 font-medium">
                                 Category: <span className="font-bold text-slate-700">{item.categoryName || "Marketplace"}</span>
                               </p>

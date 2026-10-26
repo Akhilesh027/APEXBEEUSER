@@ -189,6 +189,13 @@ export const RestaurantDetail: React.FC = () => {
       restaurantName: restaurant?.restaurantName || restaurant?.name || 'Restaurant',
       vendorName: restaurant?.restaurantName || restaurant?.name || 'Restaurant',
       vendorId: restaurant?.vendorId || restaurant?._id || id,
+      categoryName: 'Food & Dining',
+      packingCharge: item.packagingCharge || 0,
+      platformFeePercent: item.platformCommissionPercent || item.platformFeePercent || 5,
+      platformCommissionPercent: item.platformCommissionPercent || item.platformFeePercent || 5,
+      platformFeeAmount: item.platformShareAmount || item.platformFeeAmount || 0,
+      distributedFrom: item.distributedFrom || 'platform_fee',
+      vendorCommissionPercent: item.vendorCommissionPercent || 0,
     };
 
     if (userId) {
