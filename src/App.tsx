@@ -51,6 +51,7 @@ import { FoodDining } from "./pages/FoodDining";
 import { RestaurantDetail } from "./pages/RestaurantDetail";
 import PublicPayInvoice from "./pages/PublicPayInvoice";
 import BottomNav from "./components/BottomNav";
+import DownloadAppPopup from "./components/DownloadAppPopup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -200,6 +201,7 @@ const App = () => (
         </Routes>
         <AbhiAssistant />
         <BottomNav />
+        <DownloadAppPopup />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

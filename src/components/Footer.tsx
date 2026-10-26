@@ -336,25 +336,39 @@ export const Footer: React.FC = () => {
             <div className="pt-1">
               <h4 className="font-bold text-sm text-white tracking-wide uppercase mb-2">Get the ApexBee App</h4>
               <div className="space-y-2">
-                <button
-                  onClick={() => handleAppDownload("Android")}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-800 hover:border-amber-400 transition text-xs font-semibold text-stone-200 cursor-pointer"
+                <a
+                  href="https://play.google.com/store/apps/details?id=in.apexbee.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-800 hover:border-amber-400 hover:bg-stone-850 transition text-xs font-semibold text-stone-200 cursor-pointer group"
                 >
                   <span className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-emerald-400" /> Download Android APK / Play Store
+                    <img src="/icon.png" alt="ApexBee App" className="w-4 h-4 rounded-xs object-contain shrink-0 group-hover:scale-110 transition-transform" />
+                    <span>Download App</span>
                   </span>
-                  <span className="text-[10px] text-stone-400">Free</span>
-                </button>
+                  <span className="text-[10px] bg-[#F3BA12]/20 text-[#F3BA12] font-bold px-2 py-0.5 rounded-md border border-[#F3BA12]/30">
+                    Google Play
+                  </span>
+                </a>
                 <button
-                  onClick={() => handleAppDownload("iOS")}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-800 hover:border-amber-400 transition text-xs font-semibold text-stone-200 cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    toast({
+                      title: "iOS App Coming Soon! 🍏",
+                      description: "The ApexBee iOS app is currently under development and will be available on the Apple App Store soon.",
+                    });
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-800 hover:border-amber-400/50 transition text-xs font-semibold text-stone-300 cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <Apple className="w-4 h-4 text-stone-300" /> Download iOS App Store
+                    <Apple className="w-4 h-4 text-stone-400" /> iOS App
                   </span>
-                  <span className="text-[10px] text-stone-400">iOS 14+</span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-md">
+                    Coming Soon
+                  </span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowQrModal(true)}
                   className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition text-xs font-bold text-amber-400 cursor-pointer"
                 >
@@ -496,9 +510,20 @@ export const Footer: React.FC = () => {
             </svg>
           </div>
 
-          <p className="text-[11px] text-muted-foreground">
-            Compatible with Android 8.0+ & iOS 14.0+
-          </p>
+          <div className="pt-1 space-y-2">
+            <a
+              href="https://play.google.com/store/apps/details?id=in.apexbee.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F3BA12] via-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] hover:to-[#F59E0B] text-slate-950 font-black text-xs transition shadow-md border border-[#F3BA12]/40"
+            >
+              <img src="/icon.png" alt="ApexBee App" className="w-4 h-4 rounded-xs object-contain shrink-0" />
+              <span>Download on Google Play</span>
+            </a>
+            <p className="text-[11px] text-muted-foreground">
+              Official ApexBee Android App • iOS Version Coming Soon
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
     </footer>

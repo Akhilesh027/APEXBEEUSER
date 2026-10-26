@@ -50,7 +50,11 @@ export interface OpenWhatsAppOptions {
 export const openWhatsApp = async (options: OpenWhatsAppOptions): Promise<boolean> => {
   const { phone, text = '', url = '', title = 'ApexBee Referral' } = options;
 
-  const fullText = url ? (text ? `${text}\n${url}` : url) : text;
+  const cleanUrl = (url || '').trim();
+  const cleanText = (text || '').trim();
+  const fullText = cleanUrl && !cleanText.includes(cleanUrl)
+    ? (cleanText ? `${cleanText}\n${cleanUrl}` : cleanUrl)
+    : (cleanText || cleanUrl);
   const encodedText = encodeURIComponent(fullText);
   const formattedPhone = formatWhatsAppPhone(phone);
   const isNative = isCapacitorApp();
