@@ -150,27 +150,26 @@ export const FoodDining: React.FC = () => {
 
   const subParamRaw = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || searchParams.get('type') || '';
 
-  // Parse incoming category parameters from URL (e.g. /food?sub=Bakeries or /food?sub=Restaurants)
+  // Parse incoming category parameters from URL (e.g. /food?tab=restaurants or /food?sub=Biryani)
   useEffect(() => {
-    const subParam = searchParams.get('sub') || searchParams.get('cat') || searchParams.get('tab') || searchParams.get('type');
-    if (subParam) {
-      const lower = subParam.toLowerCase();
-      if (lower.includes('bakery') || lower.includes('bakeries') || lower.includes('sweet') || lower.includes('cake')) {
-        setActiveMainTab('restaurants');
-        setSelectedOutletType('BAKERY');
-      } else if (lower.includes('fast') || lower.includes('burger') || lower.includes('pizza') || lower.includes('cafe') || lower.includes('snack')) {
-        setActiveMainTab('restaurants');
-        setSelectedOutletType('FAST_FOOD');
-      } else if (lower.includes('restaurant') || lower === 'restaurants') {
-        setActiveMainTab('restaurants');
-        setSelectedOutletType('RESTAURANT');
-      } else if (lower.includes('dine') || lower.includes('booking') || lower === 'dineout') {
+    const tabParam = searchParams.get('tab') || searchParams.get('type') || '';
+    const subParam = searchParams.get('sub') || searchParams.get('cat') || '';
+
+    // Only switch tabs if explicit tab or type param is present in the URL
+    if (tabParam) {
+      const lowerTab = tabParam.toLowerCase();
+      if (lowerTab.includes('dine') || lowerTab.includes('booking') || lowerTab === 'dineout') {
         setActiveMainTab('dineout');
-      } else {
+      } else if (lowerTab.includes('restaurant') || lowerTab === 'restaurants' || lowerTab === 'outlets') {
+        setActiveMainTab('restaurants');
+        setSelectedOutletType('ALL');
+      } else if (lowerTab.includes('item') || lowerTab === 'dishes' || lowerTab === 'food') {
         setActiveMainTab('items');
-        setSelectedItemCat(subParam);
-        setSearchQuery(subParam);
       }
+    }
+
+    if (subParam) {
+      setSelectedItemCat(subParam);
     } else {
       setSelectedItemCat('ALL');
     }
@@ -178,35 +177,42 @@ export const FoodDining: React.FC = () => {
 
   const handleMainTabChange = (tab: 'items' | 'restaurants' | 'dineout') => {
     setActiveMainTab(tab);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', tab);
     if (tab === 'restaurants') {
-      setSearchParams({ sub: 'Restaurants' });
+      setSelectedOutletType('ALL');
+      nextParams.delete('sub');
     } else if (tab === 'dineout') {
-      setSearchParams({ sub: 'Dineout' });
+      nextParams.delete('sub');
     } else {
       if (selectedItemCat && selectedItemCat !== 'ALL') {
-        setSearchParams({ sub: selectedItemCat });
+        nextParams.set('sub', selectedItemCat);
       } else {
-        setSearchParams({});
+        nextParams.delete('sub');
       }
     }
+    setSearchParams(nextParams);
   };
 
   const handleCategoryChipClick = (cat: string) => {
+    setActiveMainTab('items');
     setSelectedItemCat(cat);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', 'items');
     if (cat === 'ALL') {
-      setSearchParams({});
-      setSearchQuery('');
+      nextParams.delete('sub');
     } else {
-      setSearchParams({ sub: cat });
-      setSearchQuery(cat);
+      nextParams.set('sub', cat);
     }
+    setSearchParams(nextParams);
   };
 
   const handleClearSubcategoryFilter = () => {
-    setSearchParams({});
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('sub');
+    setSearchParams(nextParams);
     setActiveMainTab('items');
     setSelectedItemCat('ALL');
-    setSearchQuery('');
   };
   const [activeBanner, setActiveBanner] = useState(0);
   const [dineoutVenues, setDineoutVenues] = useState<any[]>([]);
@@ -346,6 +352,144 @@ export const FoodDining: React.FC = () => {
     return combined;
   }, [restaurants, dineoutVenues]);
 
+  // Helper to extract a clean, human-readable category name from an item
+  const getItemCategoryName = (item: any): string => {
+    let cat = (
+      (item.categoryId && typeof item.categoryId === 'object' ? item.categoryId.name : '') ||
+      item.categoryName ||
+      item.category ||
+      item.subCategory ||
+      item.cuisine ||
+      ''
+    ).toString().trim();
+
+    const lower = cat.toLowerCase();
+    // If empty or generic placeholder, infer category from dish name or cuisine
+    if (!cat || lower === 'food item' || lower === 'food & dining' || lower === 'food' || lower === 'dining' || lower === 'general') {
+      const dishName = (item.name || item.itemName || '').toLowerCase();
+      if (item.cuisine && item.cuisine.trim()) return item.cuisine.trim();
+      if (dishName.includes('biryani') || dishName.includes('pulao') || dishName.includes('rice')) return 'Biryani & Rice';
+      if (dishName.includes('thali') || dishName.includes('meal')) return 'Thali & Meals';
+      if (dishName.includes('pizza')) return 'Pizza';
+      if (dishName.includes('burger')) return 'Burgers';
+      if (dishName.includes('dosa') || dishName.includes('idli') || dishName.includes('vada') || dishName.includes('tiffin') || dishName.includes('upma') || dishName.includes('poori')) return 'South Tiffins';
+      if (dishName.includes('dessert') || dishName.includes('cake') || dishName.includes('sweet') || dishName.includes('ice cream') || dishName.includes('pastry') || dishName.includes('halwa')) return 'Desserts & Sweets';
+      if (dishName.includes('shake') || dishName.includes('juice') || dishName.includes('beverage') || dishName.includes('tea') || dishName.includes('coffee') || dishName.includes('drink') || dishName.includes('soda') || dishName.includes('lassi')) return 'Beverages';
+      if (dishName.includes('noodle') || dishName.includes('manchurian') || dishName.includes('chinese') || dishName.includes('chowmein')) return 'Chinese';
+      if (dishName.includes('curry') || dishName.includes('gravy') || dishName.includes('paneer') || dishName.includes('masala') || dishName.includes('dal')) return 'Curries & Gravy';
+      if (dishName.includes('starter') || dishName.includes('tikka') || dishName.includes('kebab') || dishName.includes('fry') || dishName.includes('65')) return 'Starters & Appetizers';
+      if (dishName.includes('sandwich') || dishName.includes('wrap') || dishName.includes('roll') || dishName.includes('shawarma')) return 'Sandwiches & Wraps';
+      if (dishName.includes('roti') || dishName.includes('naan') || dishName.includes('paratha') || dishName.includes('bread')) return 'Breads & Roti';
+      return cat || 'Special Dishes';
+    }
+
+    return cat;
+  };
+
+  const getCategoryIcon = (categoryName: string): string => {
+    const n = categoryName.toLowerCase();
+    if (n.includes('biryani') || n.includes('rice') || n.includes('pulao')) return '🍚';
+    if (n.includes('thali') || n.includes('meal')) return '🍱';
+    if (n.includes('pizza')) return '🍕';
+    if (n.includes('burger')) return '🍔';
+    if (n.includes('tiffin') || n.includes('dosa') || n.includes('idli') || n.includes('vada') || n.includes('south')) return '🫓';
+    if (n.includes('dessert') || n.includes('sweet') || n.includes('cake') || n.includes('pastry') || n.includes('ice cream') || n.includes('halwa')) return '🍰';
+    if (n.includes('beverage') || n.includes('drink') || n.includes('shake') || n.includes('juice') || n.includes('coffee') || n.includes('tea') || n.includes('soda') || n.includes('lassi')) return '🥤';
+    if (n.includes('chinese') || n.includes('noodle') || n.includes('manchurian') || n.includes('chow')) return '🥢';
+    if (n.includes('chicken') || n.includes('mutton') || n.includes('meat') || n.includes('kebab') || n.includes('tikka') || n.includes('tandoori')) return '🍗';
+    if (n.includes('curry') || n.includes('gravy') || n.includes('dal') || n.includes('paneer') || n.includes('sabzi') || n.includes('masala')) return '🍲';
+    if (n.includes('starter') || n.includes('snack') || n.includes('fry') || n.includes('appetizer') || n.includes('samosa') || n.includes('chaat')) return '🥟';
+    if (n.includes('sandwich') || n.includes('wrap') || n.includes('roll') || n.includes('shawarma')) return '🥪';
+    if (n.includes('salad') || n.includes('healthy') || n.includes('soup')) return '🥗';
+    if (n.includes('bakery') || n.includes('bread') || n.includes('bun') || n.includes('croissant') || n.includes('roti') || n.includes('naan')) return '🥐';
+    if (n.includes('breakfast') || n.includes('egg') || n.includes('omelette')) return '🍳';
+    if (n.includes('fast food') || n.includes('fries')) return '🍟';
+    if (n.includes('pasta') || n.includes('italian')) return '🍝';
+    if (n.includes('seafood') || n.includes('fish') || n.includes('prawn')) return '🦐';
+    return '🍽️';
+  };
+
+  // Dynamically extract dish categories strictly based on the items that are added
+  const itemCategories = useMemo(() => {
+    const categoryMap = new Map<string, { count: number; displayName: string }>();
+
+    foodProducts.forEach((item: any) => {
+      const catName = getItemCategoryName(item);
+      if (!catName) return;
+
+      const key = catName.trim().toLowerCase();
+      const existing = categoryMap.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        categoryMap.set(key, { count: 1, displayName: catName.trim() });
+      }
+    });
+
+    const list: { name: string; value: string; icon: string; count?: number }[] = [
+      { name: 'All Dishes', value: 'ALL', icon: '🍽️', count: foodProducts.length }
+    ];
+
+    const sortedCategories = Array.from(categoryMap.values()).sort((a, b) => b.count - a.count);
+
+    sortedCategories.forEach(({ displayName, count }) => {
+      list.push({
+        name: displayName,
+        value: displayName,
+        icon: getCategoryIcon(displayName),
+        count,
+      });
+    });
+
+    return list;
+  }, [foodProducts]);
+
+  // Dynamically extract restaurant categories based on the items that are added
+  const cuisinesList = useMemo(() => {
+    const list: { name: string; value: string; icon: string; count?: number }[] = [
+      { name: 'All Cuisines', value: 'ALL', icon: '🍽️', count: restaurants.length }
+    ];
+
+    const addedKeys = new Set<string>();
+
+    itemCategories.forEach((cat) => {
+      if (cat.value === 'ALL') return;
+      const target = cat.value.toLowerCase().trim();
+      if (addedKeys.has(target)) return;
+      addedKeys.add(target);
+
+      const matchingCount = restaurants.filter((rest: any) => {
+        const restId = (rest._id || rest.id || '').toString();
+        const rName = (rest.restaurantName || rest.name || '').toLowerCase();
+        const rCuisines = (Array.isArray(rest.cuisines) ? rest.cuisines.join(' ') : rest.cuisines || '').toLowerCase();
+
+        const directMatch = rCuisines.includes(target) || target.includes(rCuisines) || rName.includes(target);
+        const itemMatch = foodProducts.some((item: any) => {
+          const itemRestId = (item.restaurantId || item.vendorId || '').toString();
+          const itemRestName = (item.restaurantName || '').toLowerCase();
+          const isSameRest = (itemRestId && itemRestId === restId) || (rName && itemRestName && (rName === itemRestName || itemRestName.includes(rName) || rName.includes(itemRestName)));
+          if (!isSameRest) return false;
+
+          const itemCat = getItemCategoryName(item).toLowerCase().trim();
+          const rawCat = (item.category || item.categoryName || '').toLowerCase().trim();
+          const dishName = (item.itemName || item.name || '').toLowerCase().trim();
+          return itemCat === target || itemCat.includes(target) || rawCat.includes(target) || dishName.includes(target);
+        });
+
+        return directMatch || itemMatch;
+      }).length;
+
+      list.push({
+        name: cat.name,
+        value: cat.value,
+        icon: cat.icon,
+        count: matchingCount,
+      });
+    });
+
+    return list;
+  }, [itemCategories, restaurants, foodProducts]);
+
   // Strict Pincode, Mandal (Tamsi) & District (Adilabad) Filtered Restaurants
   const filteredRestaurants = useMemo(() => {
     const loc = getActiveUserLocation();
@@ -386,10 +530,27 @@ export const FoodDining: React.FC = () => {
         }
       }
 
-      // 2. Cuisine Filter
+      // 2. Cuisine / Dish Category Filter based on items that are added
       if (selectedCuisine !== 'ALL') {
-        const cuisinesStr = Array.isArray(rest.cuisines) ? rest.cuisines.join(' ') : rest.cuisines || '';
-        if (!cuisinesStr.toLowerCase().includes(selectedCuisine.toLowerCase())) {
+        const target = selectedCuisine.toLowerCase().trim();
+        const cuisinesStr = (Array.isArray(rest.cuisines) ? rest.cuisines.join(' ') : rest.cuisines || '').toLowerCase();
+        const rName = (rest.restaurantName || rest.name || '').toLowerCase();
+        const restId = (rest._id || rest.id || '').toString();
+
+        const directMatch = cuisinesStr.includes(target) || target.includes(cuisinesStr) || rName.includes(target);
+        const itemMatch = foodProducts.some((item: any) => {
+          const itemRestId = (item.restaurantId || item.vendorId || '').toString();
+          const itemRestName = (item.restaurantName || '').toLowerCase();
+          const isSameRest = (itemRestId && itemRestId === restId) || (rName && itemRestName && (rName === itemRestName || itemRestName.includes(rName) || rName.includes(itemRestName)));
+          if (!isSameRest) return false;
+
+          const itemCat = getItemCategoryName(item).toLowerCase().trim();
+          const rawCat = (item.category || item.categoryName || '').toLowerCase().trim();
+          const dishName = (item.itemName || item.name || '').toLowerCase().trim();
+          return itemCat === target || itemCat.includes(target) || rawCat.includes(target) || dishName.includes(target);
+        });
+
+        if (!directMatch && !itemMatch) {
           return false;
         }
       }
@@ -413,7 +574,7 @@ export const FoodDining: React.FC = () => {
 
       return true;
     });
-  }, [restaurants, selectedOutletType, selectedCuisine, searchQuery]);
+  }, [restaurants, selectedOutletType, selectedCuisine, searchQuery, foodProducts]);
 
   // Dynamic counts of outlets in user location
   const outletCounts = useMemo(() => {
@@ -450,28 +611,6 @@ export const FoodDining: React.FC = () => {
     };
   }, [restaurants]);
 
-  const cuisinesList = [
-    { name: 'All Cuisines', value: 'ALL', icon: '🍽️' },
-    { name: 'Hyderabadi', value: 'Hyderabadi', icon: '🍲' },
-    { name: 'Biryani', value: 'Biryani', icon: '🍚' },
-    { name: 'South Indian', value: 'South Indian', icon: '🫓' },
-    { name: 'North Indian', value: 'North Indian', icon: '🥘' },
-    { name: 'Chinese', value: 'Chinese', icon: '🥢' },
-    { name: 'Fast Food', value: 'Fast Food', icon: '🍔' },
-    { name: 'Italian', value: 'Italian', icon: '🍕' },
-    { name: 'Desserts', value: 'Desserts', icon: '🍰' },
-  ];
-
-  const itemCategories = [
-    { name: 'All Dishes', value: 'ALL', icon: '🍽️' },
-    { name: 'Biryani & Rice', value: 'Biryani', icon: '🍚' },
-    { name: 'Thali & Meals', value: 'Thali', icon: '🍱' },
-    { name: 'Pizza', value: 'Pizza', icon: '🍕' },
-    { name: 'Burgers', value: 'Burgers', icon: '🍔' },
-    { name: 'South Tiffins', value: 'Tiffins', icon: '🫓' },
-    { name: 'Desserts & Sweets', value: 'Desserts', icon: '🍰' },
-    { name: 'Beverages', value: 'Beverages', icon: '🥤' },
-  ];
 
   // Auto-advance hero banner carousel every 4.5 seconds
   useEffect(() => {
@@ -567,14 +706,16 @@ export const FoodDining: React.FC = () => {
         setDineoutVenues(diningRes.data.venues);
       }
 
-      if (foodItemsRes?.data?.items && foodItemsRes.data.items.length > 0) {
-        setFoodProducts(foodItemsRes.data.items);
-      } else if (prodRes?.data) {
+      const allFoodItems: any[] = [];
+      if (foodItemsRes?.data?.items && Array.isArray(foodItemsRes.data.items)) {
+        allFoodItems.push(...foodItemsRes.data.items);
+      }
+      if (prodRes?.data) {
         const rawProds = Array.isArray(prodRes.data)
           ? prodRes.data
           : prodRes.data.products || prodRes.data.items || [];
         const foodOnly = rawProds.filter((p: any) => {
-          const cName = (p.categoryName || p.category || '').toString().toLowerCase();
+          const cName = (p.categoryName || p.category || (p.categoryId && typeof p.categoryId === 'object' ? p.categoryId.name : '') || '').toString().toLowerCase();
           const pName = (p.itemName || p.name || '').toString().toLowerCase();
           return (
             cName.includes('food') ||
@@ -583,18 +724,30 @@ export const FoodDining: React.FC = () => {
             cName.includes('biryani') ||
             cName.includes('pizza') ||
             cName.includes('burger') ||
+            cName.includes('bakery') ||
+            cName.includes('beverage') ||
+            cName.includes('dessert') ||
+            cName.includes('tiffin') ||
+            cName.includes('snack') ||
             pName.includes('biryani') ||
             pName.includes('dosa') ||
             pName.includes('pizza') ||
             pName.includes('burger') ||
-            pName.includes('thali')
+            pName.includes('thali') ||
+            pName.includes('chicken') ||
+            pName.includes('paneer')
           );
         });
 
-        setFoodProducts(foodOnly);
-      } else {
-        setFoodProducts([]);
+        foodOnly.forEach((prod: any) => {
+          const prodId = prod._id || prod.id;
+          if (!allFoodItems.some((it) => (it._id || it.id) === prodId)) {
+            allFoodItems.push(prod);
+          }
+        });
       }
+
+      setFoodProducts(allFoodItems);
     } catch (err) {
       console.error('Failed to fetch food listings:', err);
       setFoodProducts([]);
@@ -643,17 +796,36 @@ export const FoodDining: React.FC = () => {
         (item) =>
           (item.itemName || item.name || '').toLowerCase().includes(q) ||
           (item.restaurantName || item.brand || '').toLowerCase().includes(q) ||
-          (item.category || '').toLowerCase().includes(q)
+          (item.category || item.categoryName || '').toLowerCase().includes(q)
       );
     }
 
     // 3. Subcategory Filter
     if (selectedItemCat !== 'ALL') {
-      const cat = selectedItemCat.toLowerCase();
+      const target = selectedItemCat.toLowerCase().trim();
       list = list.filter((item) => {
-        const c = (item.category || item.categoryName || '').toLowerCase();
-        const n = (item.itemName || item.name || '').toLowerCase();
-        return c.includes(cat) || n.includes(cat);
+        const itemCat = getItemCategoryName(item).toLowerCase().trim();
+        const rawCat = (
+          (item.categoryId && typeof item.categoryId === 'object' ? item.categoryId.name : '') ||
+          item.categoryName ||
+          item.category ||
+          item.subCategory ||
+          item.cuisine ||
+          ''
+        ).toLowerCase().trim();
+        const dishName = (item.itemName || item.name || '').toLowerCase().trim();
+
+        if (itemCat === target || rawCat === target) return true;
+        if (itemCat && (itemCat.includes(target) || target.includes(itemCat))) return true;
+        if (rawCat && (rawCat.includes(target) || target.includes(rawCat))) return true;
+        if (dishName && (dishName.includes(target) || target.includes(dishName))) return true;
+
+        const tokens = target.split(/[\s,&/]+/).filter((t) => t.length > 2);
+        if (tokens.length > 0 && tokens.some((tok) => itemCat.includes(tok) || rawCat.includes(tok) || dishName.includes(tok))) {
+          return true;
+        }
+
+        return false;
       });
     }
 
@@ -996,20 +1168,32 @@ export const FoodDining: React.FC = () => {
           <div className="space-y-4 sm:space-y-6">
             {/* ITEM CATEGORIES SCROLL BAR */}
             <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
-              {itemCategories.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => handleCategoryChipClick(cat.value)}
-                  className={`px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition duration-300 flex items-center space-x-1.5 cursor-pointer shrink-0 border ${selectedItemCat === cat.value
-                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <span className="text-sm sm:text-base">{cat.icon}</span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
+              {itemCategories.map((cat) => {
+                const isSelected = selectedItemCat.toLowerCase() === cat.value.toLowerCase();
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => handleCategoryChipClick(cat.value)}
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition duration-300 flex items-center space-x-1.5 cursor-pointer shrink-0 border ${isSelected
+                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md ring-2 ring-amber-400/20'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                  >
+                    <span className="text-sm sm:text-base">{cat.icon}</span>
+                    <span>{cat.name}</span>
+                    {typeof cat.count === 'number' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                        isSelected
+                          ? 'bg-amber-400/25 text-amber-300'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {cat.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* FOOD ITEMS GRID - 2 COLUMNS ON MOBILE */}
@@ -1154,105 +1338,34 @@ export const FoodDining: React.FC = () => {
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeMainTab === 'restaurants' && (
           <div className="space-y-6">
-            {/* 3 PRIMARY OUTLET CATEGORIES (BAKERIES, FAST FOOD, RESTAURANTS) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedOutletType('ALL')}
-                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'ALL'
-                  ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-amber-400/30'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span className="text-xl sm:text-2xl">🌟</span>
-                  <div>
-                    <div className="text-xs sm:text-sm font-extrabold font-heading">All Places</div>
-                    <div className="text-[10px] text-slate-400 font-medium">All local food outlets</div>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-500">
-                  {outletCounts.all}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedOutletType('RESTAURANT')}
-                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'RESTAURANT'
-                  ? 'bg-[#0A1128] text-cyan-300 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-cyan-400/30'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span className="text-xl sm:text-2xl">🍽️</span>
-                  <div>
-                    <div className="text-xs sm:text-sm font-extrabold font-heading">Restaurants</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Meals, Biryani &amp; Dining</div>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-cyan-400/20 text-cyan-600">
-                  {outletCounts.restaurants}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedOutletType('BAKERY')}
-                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'BAKERY'
-                  ? 'bg-[#0A1128] text-purple-300 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-purple-400/30'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span className="text-xl sm:text-2xl">🥖</span>
-                  <div>
-                    <div className="text-xs sm:text-sm font-extrabold font-heading">Bakeries &amp; Sweets</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Cakes, Bakes &amp; Sweets</div>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-purple-400/20 text-purple-600">
-                  {outletCounts.bakeries}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedOutletType('FAST_FOOD')}
-                className={`p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer ${selectedOutletType === 'FAST_FOOD'
-                  ? 'bg-[#0A1128] text-orange-400 border-[#0A1128] shadow-lg shadow-[#0A1128]/20 ring-2 ring-orange-400/30'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span className="text-xl sm:text-2xl">🍔</span>
-                  <div>
-                    <div className="text-xs sm:text-sm font-extrabold font-heading">Fast Food &amp; Cafes</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Burgers, Pizzas &amp; Snacks</div>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg bg-orange-400/20 text-orange-600">
-                  {outletCounts.fastFood}
-                </span>
-              </button>
-            </div>
-
             {/* CUISINE FILTER SLIDER */}
-            <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-none">
-              {cuisinesList.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setSelectedCuisine(c.value)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition duration-300 flex items-center space-x-2 cursor-pointer shrink-0 border ${selectedCuisine === c.value
-                    ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md scale-105'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                >
-                  <span className="text-base">{c.icon}</span>
-                  <span>{c.name}</span>
-                </button>
-              ))}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+              {cuisinesList.map((c) => {
+                const isSelected = selectedCuisine.toLowerCase() === c.value.toLowerCase();
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setSelectedCuisine(c.value)}
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition duration-300 flex items-center space-x-1.5 cursor-pointer shrink-0 border ${isSelected
+                      ? 'bg-[#0A1128] text-amber-400 border-[#0A1128] shadow-md ring-2 ring-amber-400/20'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                  >
+                    <span className="text-sm sm:text-base">{c.icon}</span>
+                    <span>{c.name}</span>
+                    {typeof c.count === 'number' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                        isSelected
+                          ? 'bg-amber-400/25 text-amber-300'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {c.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* RESTAURANTS LISTING GRID */}

@@ -109,67 +109,69 @@ const StorePage = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
-  // Subcategory Chips based on store category and product tags
+  // Subcategory Chips based ONLY on currently listed items (no hardcoded defaults)
   const vendorSubcategories = useMemo(() => {
-    const catName = (store?.category || (store?.categories && store?.categories[0]) || "").toLowerCase();
+    const isFood = (store?.category || (store?.categories && store?.categories[0]) || "").toLowerCase().includes("food") ||
+                   (store?.category || "").toLowerCase().includes("restaurant");
 
-    const productSubcats = new Set<string>();
+    // Map of category/subcategory name -> count
+    const countsMap = new Map<string, number>();
+
     for (const p of products) {
-      if (p.subcategory && p.subcategory.trim()) productSubcats.add(p.subcategory.trim());
-      if ((p as any).subCategory?.name) productSubcats.add((p as any).subCategory.name);
-      if ((p as any).childCategory?.name) productSubcats.add((p as any).childCategory.name);
-    }
+      const subName = (p.subcategory || (p as any).subCategory?.name || (p as any).childCategory?.name || "").trim();
+      const catName = (p.category?.name && p.category.name !== "Category" && p.category.name !== "Food & Dining") ? p.category.name.trim() : "";
 
-    let presetChips: { id: string; label: string; icon: string }[] = [];
-    if (catName.includes("food") || catName.includes("restaurant")) {
-      presetChips = [
-        { id: "ALL", label: "All Menu Items", icon: "🍽️" },
-        { id: "Biryani", label: "Dum Biryani & Rice", icon: "🍲" },
-        { id: "Starter", label: "Starters & Appetizers", icon: "🥗" },
-        { id: "Main Course", label: "Main Course & Gravies", icon: "🍛" },
-        { id: "Bread", label: "Tandoori Breads", icon: "🥖" },
-        { id: "Dessert", label: "Desserts & Sweets", icon: "🍰" },
-        { id: "Beverage", label: "Beverages & Shakes", icon: "☕" }
-      ];
-    } else if (catName.includes("grocery") || catName.includes("daily")) {
-      presetChips = [
-        { id: "ALL", label: "All Grocery Items", icon: "🛒" },
-        { id: "Dairy", label: "Dairy, Milk & Bakery", icon: "🥛" },
-        { id: "Vegetable", label: "Fresh Fruits & Veggies", icon: "🥬" },
-        { id: "Staples", label: "Rice, Atta & Oils", icon: "🌾" },
-        { id: "Snack", label: "Snacks & Munchies", icon: "🍫" },
-        { id: "Cleaning", label: "Cleaning & Hygiene", icon: "🧼" }
-      ];
-    } else if (catName.includes("fashion") || catName.includes("apparel")) {
-      presetChips = [
-        { id: "ALL", label: "All Fashion Items", icon: "👗" },
-        { id: "Ethnic", label: "Women Ethnic & Sarees", icon: "🥻" },
-        { id: "Men", label: "Men Formal & Casuals", icon: "👔" },
-        { id: "Kids", label: "Kids & Baby Wear", icon: "🧸" },
-        { id: "Footwear", label: "Footwear & Shoes", icon: "👠" },
-        { id: "Jewelry", label: "Jewelry & Ornaments", icon: "💎" }
-      ];
-    } else if (catName.includes("service") || catName.includes("repair")) {
-      presetChips = [
-        { id: "ALL", label: "All Service Packages", icon: "🛠️" },
-        { id: "Electrician", label: "Electrical & Plumbing", icon: "⚡" },
-        { id: "Appliance", label: "AC & Appliance Repair", icon: "❄️" },
-        { id: "Cleaning", label: "Deep Home Cleaning", icon: "🧹" },
-        { id: "Salon", label: "Salon & Beauty at Home", icon: "💄" }
-      ];
-    } else {
-      presetChips = [
-        { id: "ALL", label: "All Store Items", icon: "🛍️" }
-      ];
-    }
-
-    productSubcats.forEach(sub => {
-      if (!presetChips.some(c => c.id.toLowerCase() === sub.toLowerCase() || c.label.toLowerCase().includes(sub.toLowerCase()))) {
-        presetChips.push({ id: sub, label: sub, icon: "🏷️" });
+      const primaryGroup = subName || catName;
+      if (primaryGroup) {
+        countsMap.set(primaryGroup, (countsMap.get(primaryGroup) || 0) + 1);
+      } else if (p.category?.name) {
+        countsMap.set(p.category.name.trim(), (countsMap.get(p.category.name.trim()) || 0) + 1);
       }
+    }
+
+    const getIconForCategory = (name: string): string => {
+      const lower = name.toLowerCase();
+      if (lower.includes("biryani") || lower.includes("rice")) return "🍚";
+      if (lower.includes("thali") || lower.includes("meal")) return "🍱";
+      if (lower.includes("starter") || lower.includes("appetizer") || lower.includes("salad")) return "🥗";
+      if (lower.includes("curry") || lower.includes("gravy") || lower.includes("main")) return "🍛";
+      if (lower.includes("bread") || lower.includes("roti") || lower.includes("naan")) return "🥖";
+      if (lower.includes("dosa") || lower.includes("idli") || lower.includes("tiffin") || lower.includes("south")) return "🫓";
+      if (lower.includes("pizza")) return "🍕";
+      if (lower.includes("burger") || lower.includes("sandwich")) return "🍔";
+      if (lower.includes("dessert") || lower.includes("sweet") || lower.includes("cake") || lower.includes("pastry") || lower.includes("ice cream")) return "🍰";
+      if (lower.includes("beverage") || lower.includes("drink") || lower.includes("shake") || lower.includes("juice") || lower.includes("tea") || lower.includes("coffee")) return "🥤";
+      if (lower.includes("snack") || lower.includes("chaat") || lower.includes("fast")) return "🍟";
+      if (lower.includes("special") || lower.includes("chef")) return "⭐";
+      if (lower.includes("veg") && !lower.includes("non")) return "🥬";
+      if (lower.includes("non-veg") || lower.includes("chicken") || lower.includes("mutton") || lower.includes("meat") || lower.includes("fish") || lower.includes("prawn") || lower.includes("seafood")) return "🍗";
+      if (lower.includes("grocery") || lower.includes("staple") || lower.includes("atta") || lower.includes("oil")) return "🌾";
+      if (lower.includes("dairy") || lower.includes("milk")) return "🥛";
+      if (lower.includes("fashion") || lower.includes("wear") || lower.includes("clothing") || lower.includes("saree") || lower.includes("shirt")) return "👗";
+      if (lower.includes("service") || lower.includes("repair")) return "🛠️";
+      if (lower.includes("clean")) return "🧹";
+      return "🏷️";
+    };
+
+    const chips: { id: string; label: string; icon: string; count?: number }[] = [
+      {
+        id: "ALL",
+        label: isFood ? `All Menu Items (${products.length})` : `All Items (${products.length})`,
+        icon: isFood ? "🍽️" : "🛍️",
+        count: products.length
+      }
+    ];
+
+    countsMap.forEach((count, name) => {
+      chips.push({
+        id: name,
+        label: `${name} (${count})`,
+        icon: getIconForCategory(name),
+        count
+      });
     });
 
-    return presetChips;
+    return chips;
   }, [store, products]);
 
   // Admin moderation states
@@ -375,22 +377,155 @@ const StorePage = () => {
     })();
   }, [id]);
 
-  // ✅ Fetch vendor products
+  // ✅ Fetch vendor products and food items strictly for this store
   useEffect(() => {
-    if (!store?.vendorId) return;
+    const targetVendorId = store?.vendorId || id;
+    if (!targetVendorId) return;
 
     (async () => {
       try {
         setLoadingProducts(true);
 
-        const res = await fetch(`${API_BASE}/products/vendor/${store.vendorId}`);
-        const json = await res.json();
-
-        if (!res.ok || !json?.success) {
-          throw new Error(json?.message || "Failed to load products");
+        // 1. Fetch vendor products from products API
+        let items: any[] = [];
+        try {
+          const res = await fetch(`${API_BASE}/products/vendor/${targetVendorId}`);
+          const json = await res.json();
+          if (res.ok && json?.success && Array.isArray(json.data)) {
+            items = json.data;
+          }
+        } catch (e) {
+          console.warn("Failed to fetch products/vendor:", e);
         }
 
-        setProducts(Array.isArray(json.data) ? json.data : []);
+        // If items are empty and store has a distinct userId, check if products were saved under userId
+        if (items.length === 0 && store?.userId && store.userId !== targetVendorId) {
+          try {
+            const userRes = await fetch(`${API_BASE}/products/vendor/${store.userId}`);
+            const userJson = await userRes.json();
+            if (userRes.ok && userJson?.success && Array.isArray(userJson.data) && userJson.data.length > 0) {
+              items = userJson.data;
+            }
+          } catch (e) {
+            console.warn("Failed to fetch products by store.userId:", e);
+          }
+        }
+
+        // 2. If it's a food & dining / restaurant store, check food items strictly belonging to this store/restaurant
+        const catStr = String(
+          store?.storeType ||
+          store?.primaryCategory ||
+          store?.category ||
+          (Array.isArray(store?.categories) ? store?.categories[0] : "") ||
+          ""
+        ).toLowerCase();
+
+        const isFood = catStr.includes("food") || catStr.includes("restaurant") || catStr.includes("dining") || catStr.includes("cafe") || catStr.includes("bakery");
+
+        if (isFood) {
+          try {
+            // Fetch food items from food API
+            const foodRes = await fetch(`${API_BASE}/food/items`);
+            const foodJson = await foodRes.json();
+
+            if (foodJson?.success && Array.isArray(foodJson.items)) {
+              // Match items strictly for this restaurant/vendor only:
+              // Must match by restaurantId, or EXACT matching restaurantName
+              const matchedFoodItems = foodJson.items.filter((fi: any) => {
+                const restId = (fi.restaurantId?._id || fi.restaurantId || "").toString().trim();
+                const restName = (fi.restaurantName || "").toLowerCase().trim();
+                const storeName = (store?.businessName || "").toLowerCase().trim();
+                const targetId = (targetVendorId || "").toString().trim();
+                const storeId = (store?._id || "").toString().trim();
+                const restProfileId = (store?.restaurantProfileId || (store as any)?.restaurantId || "").toString().trim();
+
+                const isDirectMatch =
+                  (restId && (restId === targetId || restId === storeId || restId === restProfileId)) ||
+                  (storeName && restName && restName === storeName);
+
+                return isDirectMatch;
+              });
+
+              // Strictly use ONLY items that belong to this store - NO cross-store leakage
+              const formattedFood = matchedFoodItems
+                .filter((fi: any) => !items.some((existing) => existing._id === fi._id || existing.itemName === fi.name))
+                .map((fi: any) => {
+                  const effectivePrice = fi.offerPrice && fi.offerPrice > 0 ? fi.offerPrice : (fi.price || fi.basePrice || 0);
+                  const mrp = fi.mrp || fi.basePrice || effectivePrice;
+                  const itemImg = fi.image || fi.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+
+                  // Clean subcategory
+                  let subcat = fi.categoryName || fi.category || "";
+                  if (!subcat || subcat === "Food Item" || subcat === "Food & Dining") {
+                    const lowerName = fi.name.toLowerCase();
+                    if (lowerName.includes("cake")) subcat = "Cakes & Desserts";
+                    else if (lowerName.includes("bread") || lowerName.includes("bun") || lowerName.includes("toast")) subcat = "Breads & Bakes";
+                    else if (lowerName.includes("biryani") || lowerName.includes("rice")) subcat = "Biryani & Rice";
+                    else if (lowerName.includes("tea") || lowerName.includes("coffee") || lowerName.includes("chai")) subcat = "Beverages & Tea";
+                    else subcat = store?.subCategory || "Bakery Specials";
+                  }
+
+                  return {
+                    _id: fi._id,
+                    vendorId: targetVendorId,
+                    itemName: fi.name,
+                    name: fi.name,
+                    images: [itemImg],
+                    thumbnail: itemImg,
+                    afterDiscount: effectivePrice,
+                    userPrice: mrp,
+                    baseSellingPrice: effectivePrice,
+                    baseMrp: mrp,
+                    category: {
+                      _id: "food-cat",
+                      name: "Food & Dining"
+                    },
+                    subcategory: subcat,
+                    status: "Live",
+                    isSubscriptionAvailable: false,
+                    isPreOrder: !!fi.isPreOrder,
+                    brand: store?.businessName || fi.restaurantName || "Fresh & Hot",
+                    deliveryFee: fi.packagingCharge || 0,
+                    ratings: fi.rating || 4.8,
+                    rating: fi.rating || 4.8,
+                    foodType: fi.foodType || (fi.isVeg ? "VEG" : "NON_VEG"),
+                    isVeg: fi.isVeg ?? (fi.foodType === "VEG"),
+                    description: fi.description || ""
+                  };
+                });
+
+              items = [...items, ...formattedFood];
+            }
+          } catch (err) {
+            console.warn("Failed to fetch food items:", err);
+          }
+        }
+
+        // Clean up any items with blank subcategory & assign store brand
+        items = items.map((p) => {
+          let sub = p.subcategory || (p as any).subCategory?.name || "";
+          if (!sub || sub.trim() === "" || sub === "Food & Dining") {
+            const nameLower = (p.itemName || p.name || "").toLowerCase();
+            if (nameLower.includes("cake")) sub = "Cakes & Desserts";
+            else if (nameLower.includes("bread")) sub = "Breads & Bakes";
+            else if (nameLower.includes("biryani")) sub = "Biryani & Rice";
+            else if (nameLower.includes("pizza")) sub = "Pizza";
+            else if (nameLower.includes("burger")) sub = "Burgers";
+            else if (nameLower.includes("tea") || nameLower.includes("chai") || nameLower.includes("coffee")) sub = "Beverages";
+            else sub = store?.subCategory || "Bakery Specials";
+          }
+          let brand = p.brand;
+          if (!brand || brand === "Fresh & Local" || brand === "Generic") {
+            brand = store?.businessName || brand;
+          }
+          return {
+            ...p,
+            subcategory: sub,
+            brand: brand
+          };
+        });
+
+        setProducts(items);
       } catch (e: any) {
         setProducts([]);
         setError(e?.message || "Failed to load products");
@@ -398,7 +533,7 @@ const StorePage = () => {
         setLoadingProducts(false);
       }
     })();
-  }, [store?.vendorId]);
+  }, [store?.vendorId, store?.businessName, store?.userId, id]);
 
   const isRestaurantStore = useMemo(() => {
     if (!store) return false;
@@ -437,19 +572,20 @@ const StorePage = () => {
     }
     if (selectedSubcategory !== "ALL") {
       const q = selectedSubcategory.toLowerCase();
-      list = list.filter((p) =>
-        p.subcategory?.toLowerCase().includes(q) ||
-        p.category?.name?.toLowerCase().includes(q) ||
-        p.itemName.toLowerCase().includes(q) ||
-        (p as any).subCategory?.name?.toLowerCase().includes(q)
-      );
+      list = list.filter((p) => {
+        const sub = (p.subcategory || "").toLowerCase();
+        const cat = (p.category?.name || "").toLowerCase();
+        const childCat = ((p as any).subCategory?.name || (p as any).childCategory?.name || "").toLowerCase();
+        return sub === q || cat === q || childCat === q || sub.includes(q) || cat.includes(q) || childCat.includes(q);
+      });
     }
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) =>
-        p.itemName.toLowerCase().includes(q) ||
-        p.brand?.toLowerCase().includes(q) ||
-        p.subcategory?.toLowerCase().includes(q)
+        (p.itemName || (p as any).name || "").toLowerCase().includes(q) ||
+        (p.brand || "").toLowerCase().includes(q) ||
+        (p.subcategory || "").toLowerCase().includes(q) ||
+        (p.category?.name || "").toLowerCase().includes(q)
       );
     }
     return list;
@@ -462,7 +598,14 @@ const StorePage = () => {
   // Reset page when search or category changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategoryId, searchQuery]);
+  }, [selectedCategoryId, selectedSubcategory, searchQuery]);
+
+  // Reset subcategory selection if the selected subcategory is not present in the current items
+  useEffect(() => {
+    if (selectedSubcategory !== "ALL" && !vendorSubcategories.some((c) => c.id === selectedSubcategory)) {
+      setSelectedSubcategory("ALL");
+    }
+  }, [vendorSubcategories, selectedSubcategory]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
 
@@ -800,9 +943,24 @@ const StorePage = () => {
                         Verified
                       </span>
                     )}
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-semibold shadow-sm ${getStatusDisplay(store.computedAvailability || "closed").classes}`}>
-                      ● {getStatusDisplay(store.computedAvailability || "closed").label}
-                    </span>
+                    {(() => {
+                      const isStoreOpen =
+                        store.computedAvailability === "open" ||
+                        store.computedAvailability === "closing_soon" ||
+                        store.liveStatus === "open" ||
+                        store.isOpen === true ||
+                        (store.isOpen !== false && store.liveStatus !== "closed" && store.computedAvailability !== "closed");
+
+                      const statusInfo = isStoreOpen
+                        ? { label: "Accepting Orders", classes: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" }
+                        : getStatusDisplay(store.computedAvailability || store.liveStatus || "closed");
+
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-semibold shadow-sm ${statusInfo.classes}`}>
+                          ● {statusInfo.label}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Category-Specific Capabilities & Operational Tags */}
