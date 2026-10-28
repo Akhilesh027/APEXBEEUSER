@@ -465,6 +465,9 @@ const StorePage = () => {
                     else subcat = store?.subCategory || "Bakery Specials";
                   }
 
+                  const packCharge = fi.packagingCharge ?? fi.packingCharge ?? 0;
+                  const shipCharge = fi.shippingCharge ?? fi.deliveryFee ?? 0;
+
                   return {
                     _id: fi._id,
                     vendorId: targetVendorId,
@@ -476,6 +479,23 @@ const StorePage = () => {
                     userPrice: mrp,
                     baseSellingPrice: effectivePrice,
                     baseMrp: mrp,
+                    adminPricing: {
+                      ...(fi.adminPricing || {}),
+                      shippingCharge: shipCharge,
+                      packingCharge: packCharge,
+                      mrp: mrp,
+                      sellingPrice: effectivePrice,
+                      commissionShares: fi.adminPricing?.commissionShares || fi.commissionShares || [],
+                      referralCommission: fi.adminPricing?.referralCommission || fi.referralCommission,
+                      referralEarnings: fi.adminPricing?.referralEarnings || fi.referralEarnings,
+                      estimatedEarning: fi.adminPricing?.estimatedEarning || fi.estimatedEarning,
+                    },
+                    commissionShares: fi.adminPricing?.commissionShares || fi.commissionShares || [],
+                    referralCommission: fi.adminPricing?.referralCommission || fi.referralCommission,
+                    shippingCharge: shipCharge,
+                    packingCharge: packCharge,
+                    deliveryFee: shipCharge,
+                    packagingCharge: packCharge,
                     category: {
                       _id: "food-cat",
                       name: "Food & Dining"
@@ -485,7 +505,6 @@ const StorePage = () => {
                     isSubscriptionAvailable: false,
                     isPreOrder: !!fi.isPreOrder,
                     brand: store?.businessName || fi.restaurantName || "Fresh & Hot",
-                    deliveryFee: fi.packagingCharge || 0,
                     ratings: fi.rating || 4.8,
                     rating: fi.rating || 4.8,
                     foodType: fi.foodType || (fi.isVeg ? "VEG" : "NON_VEG"),
@@ -501,7 +520,7 @@ const StorePage = () => {
           }
         }
 
-        // Clean up any items with blank subcategory & assign store brand
+        // Clean up any items with blank subcategory & assign store brand and shipping/packing fees
         items = items.map((p) => {
           let sub = p.subcategory || (p as any).subCategory?.name || "";
           if (!sub || sub.trim() === "" || sub === "Food & Dining") {
@@ -518,10 +537,26 @@ const StorePage = () => {
           if (!brand || brand === "Fresh & Local" || brand === "Generic") {
             brand = store?.businessName || brand;
           }
+          const shipCharge = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? p.deliveryFee ?? 0;
+          const packCharge = p.adminPricing?.packingCharge ?? p.packingCharge ?? p.packagingCharge ?? 0;
           return {
             ...p,
             subcategory: sub,
-            brand: brand
+            brand: brand,
+            shippingCharge: shipCharge,
+            packingCharge: packCharge,
+            deliveryFee: shipCharge,
+            packagingCharge: packCharge,
+            adminPricing: p.adminPricing ? {
+              ...p.adminPricing,
+              shippingCharge: shipCharge,
+              packingCharge: packCharge
+            } : {
+              shippingCharge: shipCharge,
+              packingCharge: packCharge,
+              mrp: p.userPrice || p.baseMrp || 0,
+              sellingPrice: p.afterDiscount || p.baseSellingPrice || 0
+            }
           };
         });
 
