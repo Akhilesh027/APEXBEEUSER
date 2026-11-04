@@ -271,17 +271,17 @@ export const AbhiAssistant = () => {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-slate-950/30 backdrop-blur-[1px] z-40 transition-opacity"
+          className="fixed inset-0 bg-slate-950/30 backdrop-blur-[1px] z-[80] transition-opacity"
         />
       )}
 
-      <div ref={containerRef} className="fixed bottom-[68px] lg:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end max-w-[calc(100vw-2rem)]">
+      <div ref={containerRef} className="fixed bottom-[68px] lg:bottom-6 right-4 sm:right-6 z-[90] flex flex-col items-end max-w-[calc(100vw-2rem)]">
         {/* Expanded Dialog Box */}
         {isOpen && (
-          <div className="bg-white w-[calc(100vw-2rem)] sm:w-[420px] max-w-[420px] h-[82vh] max-h-[620px] rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-4 transition-all duration-300 transform translate-y-0 opacity-100 font-sans">
+          <div className="bg-white w-[calc(100vw-2rem)] sm:w-[420px] max-w-[420px] h-[82dvh] max-h-[min(620px,calc(100dvh-100px-env(safe-area-inset-top,0px)))] lg:max-h-[min(620px,calc(100dvh-56px-env(safe-area-inset-top,0px)))] rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-4 transition-all duration-300 transform translate-y-0 opacity-100 font-sans">
 
             {/* Header */}
-            <div className="bg-[#0A1128] p-4 text-white flex items-center justify-between shadow-md">
+            <div className="shrink-0 bg-[#0A1128] p-4 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-2.5">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center text-xl shadow-inner font-extrabold animate-bounce">
@@ -313,6 +313,7 @@ export const AbhiAssistant = () => {
                   {mode === "hub" ? "💬 Chat AI" : "🐝 Show Hub"}
                 </button>
                 <button
+                  aria-label="Close assistant"
                   onClick={() => setIsOpen(false)}
                   className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors border-none cursor-pointer"
                 >

@@ -301,7 +301,7 @@ export const RestaurantDetail: React.FC = () => {
           {/* RESTAURANT INFO CARD */}
           <div className="max-w-7xl mx-auto px-4 sm:px-8 -mt-20 relative z-20 space-y-6">
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start space-x-4">
+              <div className="flex min-w-0 flex-col sm:flex-row items-start gap-4">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden shrink-0 shadow-md">
                   {restaurant.logo ? (
                     <img src={restaurant.logo} alt="Logo" className="w-full h-full object-cover" />
@@ -312,9 +312,9 @@ export const RestaurantDetail: React.FC = () => {
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-xl sm:text-3xl font-black text-[#0A1128] font-heading">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="w-full break-words text-xl sm:text-3xl font-black text-[#0A1128] font-heading">
                       {restaurant.restaurantName || restaurant.name}
                     </h1>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-300 flex items-center space-x-1">
@@ -335,7 +335,7 @@ export const RestaurantDetail: React.FC = () => {
 
                   <p className="text-xs text-slate-500 font-medium">{restaurant.tagline || restaurant.description || 'Authentic Flavors & Culinary Excellence'}</p>
 
-                  <div className="flex items-center space-x-3 text-xs text-slate-600 font-bold pt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 font-bold pt-1">
                     <span className="text-amber-600">
                       {Array.isArray(restaurant.cuisines) ? restaurant.cuisines.join(', ') : restaurant.cuisines || 'Multi-Cuisine'}
                     </span>

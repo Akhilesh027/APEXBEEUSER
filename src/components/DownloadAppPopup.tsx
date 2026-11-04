@@ -59,7 +59,7 @@ export const DownloadAppPopup: React.FC = () => {
     <div
       role="dialog"
       aria-labelledby="app-download-title"
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-50 max-w-sm animate-in fade-in slide-in-from-bottom-5 duration-300"
+      className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-4 right-4 md:left-auto md:right-6 lg:bottom-6 z-[70] max-w-sm max-h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] overflow-y-auto animate-in fade-in slide-in-from-bottom-5 duration-300"
     >
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#070D1E] via-[#0F1B3B] to-[#080E22] text-white p-4 sm:p-5 shadow-[0_16px_50px_rgba(0,0,0,0.6)] border border-[#F3BA12]/40 backdrop-blur-xl">
         {/* Decorative Golden Honey Glows matching ApexBee Logo */}

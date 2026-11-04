@@ -449,8 +449,8 @@ const Register = () => {
             {/* Right side - registration form */}
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
               <div className="p-6 md:p-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-navy">{isBusiness ? "Business Partner Signup" : "Customer Signup"}</h2>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="min-w-0 text-xl font-semibold text-navy">{isBusiness ? "Business Partner Signup" : "Customer Signup"}</h2>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
                     {isBusiness ? "Business Partner" : "Customer"}
                   </span>
@@ -590,44 +590,39 @@ const Register = () => {
                     </div>
                     <Input type="text" name="referralCode" placeholder="Referral code (optional)" value={formData.referralCode} onChange={handleInputChange} />
 
-                    {/* Account Type Tabs (Guest, Customer, Business Partner) - Rendered directly after Referral Code input */}
-                    <div className="pt-2">
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select Account Type</label>
-                      <div className="grid grid-cols-3 gap-1.5 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
-                        <button
-                          type="button"
-                          onClick={handleGuestContinue}
-                          className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-semibold text-xs text-gray-700 hover:bg-white hover:shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                        >
-                          <ShoppingBag className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                          <span>Guest</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setAccountType("customer")}
-                          className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "customer"
-                            ? "bg-accent text-white shadow-md"
-                            : "text-gray-700 hover:bg-white hover:shadow-xs"
-                            }`}
-                        >
-                          <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Customer</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setAccountType("business")}
-                          className={`flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${accountType === "business"
-                            ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md"
-                            : "text-gray-700 hover:bg-white hover:shadow-xs"
-                            }`}
-                        >
-                          <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Business Partner</span>
-                        </button>
+                    <fieldset className="mt-5 min-w-0" disabled={loading || googleLoading || otpLoading}>
+                      <legend className="mb-2 text-sm font-semibold text-gray-700">Select Account Type</legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {([
+                          { value: "customer", label: "Customer", description: "Shop products and book services", Icon: Users },
+                          { value: "business", label: "Business Partner", description: "Explore earning and business opportunities", Icon: Briefcase },
+                        ] as const).map(({ value, label, description, Icon }) => (
+                          <label key={value} className={`min-w-0 flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${accountType === value ? "border-amber-500 bg-amber-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}>
+                            <input
+                              type="radio"
+                              name="accountType"
+                              value={value}
+                              checked={accountType === value}
+                              onChange={() => setAccountType(value)}
+                              className="mt-1 h-4 w-4 shrink-0 accent-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                            />
+                            <span className="min-w-0">
+                              <span className="flex items-center gap-1.5 text-sm font-bold text-navy">
+                                <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                                <span>{label}</span>
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-gray-600">{description}</span>
+                            </span>
+                          </label>
+                        ))}
                       </div>
-                    </div>
+                    </fieldset>
+
+                    <button type="button" onClick={handleGuestContinue} disabled={loading || googleLoading || otpLoading} className="mt-3 min-h-11 w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-50">
+                      <ShoppingBag aria-hidden="true" className="h-4 w-4 shrink-0" />
+                      Continue as Guest
+                    </button>
+
                   </div>
                   <Button type="submit" className="w-full mt-5 bg-accent hover:bg-accent/90 text-white" disabled={loading}>
                     {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...</> : (isBusiness ? "🚀 Start Free (Register Now)" : "Register as Customer")}

@@ -12,6 +12,7 @@ import ProductCustomizerModal from "@/components/ProductCustomizerModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api";
 
@@ -1256,7 +1257,7 @@ const StorePage = () => {
             {/* PRODUCTS GRID */}
             <section className="container mx-auto px-4 pb-16">
               {loadingProducts ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="rounded-2xl sm:rounded-3xl border bg-white p-3 sm:p-4 space-y-3 shadow-sm animate-pulse">
                       <Skeleton className="h-36 sm:h-48 w-full rounded-xl sm:rounded-2xl bg-slate-100" />
@@ -1284,7 +1285,7 @@ const StorePage = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
                     {paginatedProducts.map((p) => {
                       const subAvailable =
                         p.isSubscriptionAvailable === true &&
@@ -1305,18 +1306,18 @@ const StorePage = () => {
                       return (
                         <div
                           key={p._id}
-                          className="group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all duration-300 relative text-left"
+                          className="group min-w-0 flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all duration-300 relative text-left"
                         >
-                          <div>
+                          <div className="grid grid-cols-[38%_minmax(0,1fr)] sm:block">
                             {/* Product Image Stage */}
                             <div
-                              className="h-40 sm:h-52 bg-slate-50 relative overflow-hidden flex items-center justify-center p-3 border-b border-slate-100 cursor-pointer"
+                              className="h-full sm:h-auto min-h-36 sm:min-h-0 sm:aspect-[4/3] w-full bg-slate-50 relative overflow-hidden border-r sm:border-r-0 sm:border-b border-slate-100 cursor-pointer"
                               onClick={() => setQuickViewProduct(p)}
                             >
                               <img
                                 src={img}
                                 alt={title}
-                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                                className="absolute inset-0 h-full w-full p-2 sm:p-3 object-contain group-hover:scale-105 transition-transform duration-500"
                                 loading="lazy"
                               />
 
@@ -1344,23 +1345,23 @@ const StorePage = () => {
                             </div>
 
                             {/* Product Content Details */}
-                            <div className="p-3.5 sm:p-5 space-y-2">
-                              <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                <span className="truncate max-w-[70%]">🏪 {brandName}</span>
-                                <span className="text-emerald-600 font-extrabold flex items-center gap-0.5">
-                                  <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified
+                            <div className="p-3 sm:p-4 space-y-2">
+                              <div className="flex min-w-0 items-center justify-between gap-2 text-[10px] font-semibold text-slate-500">
+                                <span className="min-w-0 flex-1 truncate">{brandName}</span>
+                                <span className="shrink-0 text-emerald-600 font-bold flex items-center gap-1" title="Verified merchant">
+                                  <ShieldCheck className="w-3.5 h-3.5" /><span className="sr-only sm:not-sr-only">Verified</span>
                                 </span>
                               </div>
 
                               <h3
                                 onClick={() => setQuickViewProduct(p)}
-                                className="font-extrabold text-[#0A1128] line-clamp-2 min-h-[36px] leading-tight text-xs sm:text-base hover:text-amber-600 transition cursor-pointer font-heading"
+                                className="font-bold text-[#0A1128] line-clamp-2 sm:min-h-10 leading-5 text-sm sm:text-base hover:text-amber-600 transition cursor-pointer font-heading"
                               >
                                 {title}
                               </h3>
 
                               {/* Price & Savings */}
-                              <div className="pt-1 flex flex-wrap items-baseline gap-2">
+                              <div className="pt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                                 <span className="text-base sm:text-xl font-black text-[#0A1128]">
                                   {formatPrice(sellingPrice)}
                                 </span>
@@ -1370,39 +1371,40 @@ const StorePage = () => {
                                   </span>
                                 )}
                                 {mrp > sellingPrice && (
-                                  <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  <span className="hidden sm:inline-flex text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
                                     Save {formatPrice(mrp - sellingPrice)}
                                   </span>
                                 )}
                               </div>
 
                               {/* Shipping & Packing Charges Badges */}
-                              <div className="space-y-1 bg-slate-50 rounded-xl p-2 text-[10px] text-slate-600 font-bold border border-slate-100">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-amber-600 font-extrabold flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-amber-500" /> Fast Delivery (15-30m)
-                                  </span>
+                              <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px] leading-4 text-slate-600">
+                                <div className="flex items-start gap-1.5">
+                                  <Clock className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                                  <span>15–30 min delivery</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[9px] text-slate-500 pt-1 border-t border-slate-200/60">
-                                  <span>🚚 Shipping: <strong className="text-emerald-600">{shippingFee > 0 ? formatPrice(shippingFee) : 'FREE'}</strong></span>
-                                  <span>📦 Packing: <strong className="text-slate-700">{packingFee > 0 ? formatPrice(packingFee) : '₹0'}</strong></span>
-                                </div>
+                                {shippingFee > 0 || packingFee > 0 ? (
+                                  <div className="space-y-1">
+                                    <div className="flex flex-wrap justify-between gap-x-1"><span>Shipping</span><strong>{shippingFee > 0 ? formatPrice(shippingFee) : 'FREE'}</strong></div>
+                                    <div className="flex flex-wrap justify-between gap-x-1"><span>Packing</span><strong>{packingFee > 0 ? formatPrice(packingFee) : '₹0'}</strong></div>
+                                  </div>
+                                ) : <p className="font-semibold text-emerald-700">Free delivery &amp; packing</p>}
                               </div>
                             </div>
                           </div>
 
                           {/* Actions */}
-                          <div className="px-3.5 pb-3.5 sm:px-5 sm:pb-5 pt-0 space-y-2">
+                          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-3 sm:pt-0 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <Button
                                 variant="outline"
-                                className="w-full border-slate-200 hover:bg-slate-100 text-slate-800 font-bold rounded-xl py-1.5 text-[10px] sm:text-xs cursor-pointer"
+                                className="h-11 w-full min-w-0 px-2 border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl text-xs cursor-pointer"
                                 onClick={() => setQuickViewProduct(p)}
                               >
                                 View Detail
                               </Button>
                               <Button
-                                className="w-full bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black rounded-xl py-1.5 flex items-center justify-center gap-1 transition shadow-sm text-[10px] sm:text-xs cursor-pointer border-none"
+                                className="h-11 w-full min-w-0 px-2 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm text-xs cursor-pointer border-none"
                                 disabled={cartAddingId === p._id}
                                 onClick={(e) => handleOpenCustomizer(p, e)}
                               >
@@ -2071,76 +2073,68 @@ const StorePage = () => {
 
       {/* Table Booking Modal */}
       {tableBookingOpen && store && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
-          onClick={() => setTableBookingOpen(false)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-left border border-slate-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b pb-3">
+        <Dialog open onOpenChange={setTableBookingOpen}>
+          <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-md rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
+          <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 text-left">
+            <div className="flex items-center justify-between border-b pb-3 pr-10">
               <div>
-                <h3 className="text-base font-extrabold text-navy flex items-center gap-2">
+                <DialogTitle className="text-base font-extrabold text-navy break-words">
                   🍽️ Reserve Table at {store.businessName}
-                </h3>
+                </DialogTitle>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Confirm your guest slot for dining & takeaway
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setTableBookingOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleBookTableSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-navy block mb-1">Guest Name *</label>
+                <label htmlFor="store-booking-name" className="font-bold text-navy block mb-1">Guest Name *</label>
                 <input
+                  id="store-booking-name"
                   type="text"
                   required
                   placeholder="Enter your full name"
                   value={bookingGuestName}
                   onChange={(e) => setBookingGuestName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-navy block mb-1">Phone Number *</label>
+                <label htmlFor="store-booking-phone" className="font-bold text-navy block mb-1">Phone Number *</label>
                 <input
+                  id="store-booking-phone"
                   type="tel"
                   required
                   placeholder="10-digit mobile number"
                   value={bookingGuestPhone}
                   onChange={(e) => setBookingGuestPhone(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-navy block mb-1">Date *</label>
+                  <label htmlFor="store-booking-date" className="font-bold text-navy block mb-1">Date *</label>
                   <input
+                    id="store-booking-date"
                     type="date"
                     required
                     value={bookingDate}
                     onChange={(e) => setBookingDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                    className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-navy block mb-1">Time Slot *</label>
+                  <label htmlFor="store-booking-time" className="font-bold text-navy block mb-1">Time Slot *</label>
                   <select
+                    id="store-booking-time"
                     value={bookingTimeSlot}
                     onChange={(e) => setBookingTimeSlot(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                    className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
                   >
                     <option value="12:30 PM">12:30 PM (Lunch)</option>
                     <option value="01:30 PM">01:30 PM (Lunch)</option>
@@ -2153,11 +2147,12 @@ const StorePage = () => {
               </div>
 
               <div>
-                <label className="font-bold text-navy block mb-1">Number of Guests</label>
+                <label htmlFor="store-booking-guests" className="font-bold text-navy block mb-1">Number of Guests</label>
                 <select
+                  id="store-booking-guests"
                   value={bookingGuestCount}
                   onChange={(e) => setBookingGuestCount(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
                 >
                   <option value={1}>1 Guest</option>
                   <option value={2}>2 Guests</option>
@@ -2168,21 +2163,22 @@ const StorePage = () => {
               </div>
 
               <div>
-                <label className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
+                <label htmlFor="store-booking-requests" className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
                 <input
+                  id="store-booking-requests"
                   type="text"
                   placeholder="e.g. Quiet corner table, AC seating"
                   value={bookingRequests}
                   onChange={(e) => setBookingRequests(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
                 />
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex-1 rounded-xl text-xs"
+                  className="min-h-11 flex-1 rounded-xl text-xs"
                   onClick={() => setTableBookingOpen(false)}
                 >
                   Cancel
@@ -2190,30 +2186,24 @@ const StorePage = () => {
                 <Button
                   type="submit"
                   disabled={bookingSubmitting}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
+                  className="min-h-11 flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
                 >
                   {bookingSubmitting ? 'Submitting...' : 'Confirm Table Booking'}
                 </Button>
               </div>
             </form>
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════
           PRODUCT QUICK VIEW MODAL
          ═══════════════════════════════════════════════════════ */}
       {quickViewProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 relative shadow-2xl space-y-5 text-left border border-slate-100 max-h-[90vh] overflow-y-auto">
-            {/* CLOSE BUTTON */}
-            <button
-              onClick={() => setQuickViewProduct(null)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition border-none cursor-pointer z-10"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
+        <Dialog open onOpenChange={(open) => { if (!open) setQuickViewProduct(null); }}>
+          <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-2xl rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
+          <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 text-left">
             {(() => {
               const p = quickViewProduct;
               const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
@@ -2229,7 +2219,7 @@ const StorePage = () => {
               const subAvailable = p.isSubscriptionAvailable === true && (p.status === 'Live' || p.status === undefined);
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start min-w-0 break-words">
                   {/* LEFT IMAGE GALLERY */}
                   <div className="space-y-3">
                     <div className="h-64 sm:h-72 bg-slate-50 rounded-2xl p-4 flex items-center justify-center border border-slate-100 relative overflow-hidden">
@@ -2243,7 +2233,7 @@ const StorePage = () => {
                   </div>
 
                   {/* RIGHT PRODUCT INFO */}
-                  <div className="space-y-4">
+                  <div className="min-w-0 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="bg-amber-100 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
@@ -2253,9 +2243,9 @@ const StorePage = () => {
                           <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified Merchant
                         </span>
                       </div>
-                      <h2 className="text-lg sm:text-xl font-black text-[#0A1128] font-heading leading-snug">
+                      <DialogTitle className="text-lg sm:text-xl font-black text-[#0A1128] font-heading leading-snug">
                         {title}
-                      </h2>
+                      </DialogTitle>
                       <div className="flex items-center space-x-2 mt-2">
                         <div className="flex items-center space-x-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 font-bold text-xs">
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -2345,7 +2335,8 @@ const StorePage = () => {
               );
             })()}
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

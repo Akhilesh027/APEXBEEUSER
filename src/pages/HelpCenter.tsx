@@ -195,9 +195,9 @@ export const HelpCenter: React.FC = () => {
 
       {/* Main FAQ Section */}
       <section className="container mx-auto px-4 py-14 max-w-5xl">
-        <div className="grid lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Categories Sidebar */}
-          <div className="lg:col-span-4 space-y-2">
+          <div className="min-w-0 lg:col-span-4 space-y-2">
             <h3 className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-3 px-1">
               Browse by Category
             </h3>
@@ -212,7 +212,7 @@ export const HelpCenter: React.FC = () => {
                       setActiveCategory(cat.id);
                       setExpandedIndex(0);
                     }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition text-left whitespace-nowrap cursor-pointer ${
+                    className={`flex shrink-0 items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition text-left whitespace-nowrap cursor-pointer ${
                       isActive
                         ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
                         : "bg-card border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -239,8 +239,8 @@ export const HelpCenter: React.FC = () => {
           </div>
 
           {/* Accordion Questions List */}
-          <div className="lg:col-span-8 space-y-3">
-            <div className="flex items-center justify-between mb-4">
+          <div className="min-w-0 break-words lg:col-span-8 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-bold">Frequently Asked Questions ({filteredFaqs.length})</h2>
               {searchQuery && (
                 <button

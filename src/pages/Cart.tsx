@@ -750,7 +750,7 @@ const Cart = () => {
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Explore thousands of fresh products, fashion, groceries, and delicious restaurant meals on ApexBee.
                 </p>
-                <div className="flex items-center justify-center space-x-3 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
                   <Button
                     onClick={() => navigate("/products")}
                     className="bg-[#0A1128] hover:bg-slate-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-2xl shadow-md"

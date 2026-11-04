@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent } from "./ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import {
   getDeviceCoordinates,
@@ -444,7 +444,7 @@ const LocationModal = ({ open, onOpenChange, onConfirm }: LocationModalProps) =>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black tracking-tight">Select Delivery Location</h3>
+                <DialogTitle className="text-sm sm:text-base font-black tracking-tight">Select Delivery Location</DialogTitle>
                 {!hasExistingLocation && (
                   <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
                     Required

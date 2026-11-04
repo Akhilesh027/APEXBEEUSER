@@ -33,7 +33,6 @@ import {
   Mic,
   Camera,
   ScanLine,
-  Clock,
   Flame,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -118,6 +117,7 @@ const Navbar = () => {
   const portalRef = useRef<HTMLDivElement | null>(null);
   const langRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchRef = useRef<HTMLDivElement | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null);
 
   const [portalDropdownOpen, setPortalDropdownOpen] = useState(false);
@@ -142,9 +142,6 @@ const Navbar = () => {
 
   // Search focus state
   const [searchFocused, setSearchFocused] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("recent_searches") || "[]"); } catch { return []; }
-  });
   const trendingSearches = ["Groceries", "Organic Ghee", "Aromatherapy", "Electrician", "Tuitions"];
   const nearbyStoresMock = ["Nellore Supermarket", "Buchireddypalem Agro Mill", "Apex Pharmacy"];
 
@@ -641,9 +638,6 @@ const Navbar = () => {
 
         setTimeout(() => {
           setSearchQuery(resultText);
-          const updated = [resultText, ...recentSearches.filter((s) => s !== resultText)].slice(0, 5);
-          setRecentSearches(updated);
-          localStorage.setItem("recent_searches", JSON.stringify(updated));
           setShowVoiceModal(false);
           navigate(`/products?q=${encodeURIComponent(resultText)}`);
         }, 1200);
@@ -673,9 +667,6 @@ const Navbar = () => {
         playBeep();
         const q = "Organic Honey";
         setSearchQuery(q);
-        const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-        setRecentSearches(updated);
-        localStorage.setItem("recent_searches", JSON.stringify(updated));
         setShowVoiceModal(false);
         navigate(`/products?q=${encodeURIComponent(q)}`);
       }, 3000);
@@ -717,9 +708,6 @@ const Navbar = () => {
           setTimeout(() => {
             const q = "Milk";
             setSearchQuery(q);
-            const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-            setRecentSearches(updated);
-            localStorage.setItem("recent_searches", JSON.stringify(updated));
             setShowBarcodeModal(false);
             navigate(`/products?q=${encodeURIComponent(q)}`);
           }, 1500);
@@ -742,9 +730,6 @@ const Navbar = () => {
           setTimeout(() => {
             const q = "Milk";
             setSearchQuery(q);
-            const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-            setRecentSearches(updated);
-            localStorage.setItem("recent_searches", JSON.stringify(updated));
             setShowBarcodeModal(false);
             navigate(`/products?q=${encodeURIComponent(q)}`);
           }, 1500);
@@ -865,7 +850,7 @@ const Navbar = () => {
       if (earnDropdownOpen && earnRef.current && !earnRef.current.contains(t)) setEarnDropdownOpen(false);
       if (portalDropdownOpen && portalRef.current && !portalRef.current.contains(t)) setPortalDropdownOpen(false);
       if (langOpen && langRef.current && !langRef.current.contains(t)) setLangOpen(false);
-      if (searchFocused && searchRef.current && !searchRef.current.contains(t)) setSearchFocused(false);
+      if (searchFocused && !searchRef.current?.contains(t) && !mobileSearchRef.current?.contains(t)) setSearchFocused(false);
     };
 
     const onEsc = (e: KeyboardEvent) => {
@@ -1131,9 +1116,9 @@ const Navbar = () => {
           📱 MOBILE SEARCH BAR & HORIZONTAL CATEGORY ACTION STRIP (Row 2)
           ======================================================== */}
       {location.pathname !== "/checkout" && (
-        <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full overflow-hidden">
+        <div className="lg:hidden px-3 pt-2 pb-2 bg-[#0A1128] space-y-2 border-b border-white/5 w-full max-w-full">
           {/* Mobile Search Input */}
-          <div className="relative" ref={searchRef}>
+          <div className="relative" ref={mobileSearchRef}>
             <div className="relative flex items-center bg-white rounded-xl shadow-xs px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400 transition-all">
               <Search className="h-4 w-4 text-slate-400 mr-2 shrink-0" />
               <Input
@@ -1147,9 +1132,6 @@ const Navbar = () => {
                   if (e.key === "Enter") {
                     const q = searchQuery.trim();
                     if (q) {
-                      const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-                      setRecentSearches(updated);
-                      localStorage.setItem("recent_searches", JSON.stringify(updated));
                       setSearchFocused(false);
                       navigate(`/products?q=${encodeURIComponent(q)}`);
                     }
@@ -1190,41 +1172,6 @@ const Navbar = () => {
             {/* Autocomplete / Suggestions Popover on Mobile */}
             {searchFocused && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-3.5 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
-                {recentSearches.length > 0 && (
-                  <div className="mb-3">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-slate-400" />
-                        Recent Searches
-                      </p>
-                      <button
-                        className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
-                        onClick={() => {
-                          setRecentSearches([]);
-                          localStorage.removeItem("recent_searches");
-                        }}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {recentSearches.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => {
-                            setSearchQuery(s);
-                            setSearchFocused(false);
-                            navigate(`/products?q=${encodeURIComponent(s)}`);
-                          }}
-                          className="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <Clock className="h-2.5 w-2.5 text-slate-400" />
-                          <span>{s}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="mb-3">
                   <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
@@ -1483,9 +1430,6 @@ const Navbar = () => {
               if (e.key === "Enter") {
                 const q = searchQuery.trim();
                 if (q) {
-                  const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-                  setRecentSearches(updated);
-                  localStorage.setItem("recent_searches", JSON.stringify(updated));
                   setSearchFocused(false);
                   navigate(`/products?q=${encodeURIComponent(q)}`);
                 }
@@ -1526,9 +1470,6 @@ const Navbar = () => {
               onClick={() => {
                 const q = searchQuery.trim();
                 if (q) {
-                  const updated = [q, ...recentSearches.filter((s) => s !== q)].slice(0, 5);
-                  setRecentSearches(updated);
-                  localStorage.setItem("recent_searches", JSON.stringify(updated));
                   setSearchFocused(false);
                   navigate(`/products?q=${encodeURIComponent(q)}`);
                 }
@@ -1542,41 +1483,6 @@ const Navbar = () => {
 
           {searchFocused && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white text-black border border-slate-100 shadow-2xl rounded-2xl p-4 z-50 text-left">
-              {recentSearches.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-slate-400" />
-                      Recent Searches
-                    </p>
-                    <button
-                      className="text-[9px] text-rose-500 hover:underline font-bold border-none bg-transparent cursor-pointer"
-                      onClick={() => {
-                        setRecentSearches([]);
-                        localStorage.removeItem("recent_searches");
-                      }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {recentSearches.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          setSearchQuery(s);
-                          setSearchFocused(false);
-                          navigate(`/products?q=${encodeURIComponent(s)}`);
-                        }}
-                        className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Clock className="h-3 w-3 text-slate-400" />
-                        <span>{s}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="mb-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">

@@ -34,6 +34,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { DynamicHeroBanner } from '../components/DynamicHeroBanner';
+import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://server.apexbee.in/api';
 
@@ -1788,20 +1789,14 @@ export const FoodDining: React.FC = () => {
       {/* FOOD ITEM QUICK VIEW MODAL */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {selectedQuickViewItem && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setSelectedQuickViewItem(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition border-none cursor-pointer z-10"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex flex-col sm:flex-row gap-5">
-              <div className="w-full sm:w-1/2 h-56 sm:h-auto bg-slate-100 rounded-2xl overflow-hidden relative shrink-0">
+        <Dialog open onOpenChange={(open) => { if (!open) setSelectedQuickViewItem(null); }}>
+          <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-xl rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
+            <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6">
+            <div className="flex min-w-0 flex-col sm:flex-row gap-5">
+              <div className="w-full sm:w-1/2 h-48 sm:h-64 bg-slate-100 rounded-2xl overflow-hidden relative shrink-0">
                 <img
                   src={selectedQuickViewItem.image || selectedQuickViewItem.images?.[0]}
-                  alt={selectedQuickViewItem.name}
+                  alt={selectedQuickViewItem.name || selectedQuickViewItem.itemName || 'Food item'}
                   className="w-full h-full object-cover"
                 />
                 <span className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-lg text-xs font-black border ${selectedQuickViewItem.isVeg ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'
@@ -1810,19 +1805,19 @@ export const FoodDining: React.FC = () => {
                 </span>
               </div>
 
-              <div className="flex-1 space-y-3">
+              <div className="min-w-0 flex-1 break-words space-y-3">
                 <p className="text-xs font-bold text-amber-600">
                   🏪 {selectedQuickViewItem.restaurantName || selectedQuickViewItem.brand || 'Gourmet Outlet'}
                 </p>
 
-                <h3 className="text-xl font-black text-[#0A1128] leading-tight">
+                <DialogTitle className="text-xl font-black text-[#0A1128] leading-tight">
                   {selectedQuickViewItem.name || selectedQuickViewItem.itemName}
-                </h3>
+                </DialogTitle>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-lg text-xs font-black">
                     <Star className="w-3.5 h-3.5 fill-[#0A1128]" />
-                    <span>{selectedQuickViewItem.rating || '4.8'}</span>
+                    <span>{formatRating(selectedQuickViewItem.rating)}</span>
                   </div>
                   <span className="text-xs text-slate-500 font-semibold">⚡ {selectedQuickViewItem.prepTime || '20 mins'}</span>
                   {selectedQuickViewItem.serves && (
@@ -1851,7 +1846,7 @@ export const FoodDining: React.FC = () => {
                   const qvPrice = getDishPriceInfo(selectedQuickViewItem);
                   return (
                     <>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
                         <div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-black text-[#0A1128]">
@@ -1868,15 +1863,20 @@ export const FoodDining: React.FC = () => {
                         {/* QTY COUNTER */}
                         <div className="flex items-center bg-slate-100 rounded-xl p-1">
                           <button
+                            type="button"
+                            aria-label="Decrease quantity"
                             onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
-                            className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
+                            disabled={quickViewQty <= 1}
+                            className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs disabled:opacity-40"
                           >
                             <Minus className="w-3.5 h-3.5" />
                           </button>
                           <span className="w-8 text-center font-black text-sm text-[#0A1128]">{quickViewQty}</span>
                           <button
+                            type="button"
+                            aria-label="Increase quantity"
                             onClick={() => setQuickViewQty((q) => q + 1)}
-                            className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
+                            className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
@@ -1896,8 +1896,9 @@ export const FoodDining: React.FC = () => {
                 })()}
               </div>
             </div>
-          </div>
-        </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}

@@ -747,7 +747,7 @@ const ProductsPage = () => {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* ── Desktop Filters ── */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
@@ -756,7 +756,7 @@ const ProductsPage = () => {
           </aside>
 
           {/* ── Mobile Filter Button ── */}
-          <div className="lg:hidden flex items-center justify-between mb-1 gap-3">
+          <div className="lg:hidden min-w-0 flex flex-wrap items-center justify-between mb-1 gap-3">
             <Sheet>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 relative bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm cursor-pointer hover:border-amber-300 transition">
@@ -768,20 +768,20 @@ const ProductsPage = () => {
                   )}
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[320px] sm:w-[380px] overflow-auto">
+              <SheetContent side="left" className="w-[320px] max-w-full sm:w-[380px] overflow-auto">
                 <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
                 <div className="mt-4"><FiltersUI /></div>
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               {/* View mode toggle (mobile) */}
               <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <button onClick={() => setViewMode("grid")}
+                <button aria-label="Grid view" onClick={() => setViewMode("grid")}
                   className={`p-2.5 border-none cursor-pointer transition ${viewMode === "grid" ? "bg-[#0A1128] text-amber-400" : "bg-white text-slate-400 hover:bg-slate-50"}`}>
                   <LayoutGrid className="h-4 w-4" />
                 </button>
-                <button onClick={() => setViewMode("list")}
+                <button aria-label="List view" onClick={() => setViewMode("list")}
                   className={`p-2.5 border-none cursor-pointer transition ${viewMode === "list" ? "bg-[#0A1128] text-amber-400" : "bg-white text-slate-400 hover:bg-slate-50"}`}>
                   <List className="h-4 w-4" />
                 </button>
@@ -789,7 +789,7 @@ const ProductsPage = () => {
 
               {/* Sort (mobile) */}
               <div className="relative">
-                <select value={sort} onChange={(e) => setSort(e.target.value)}
+                <select aria-label="Sort products" value={sort} onChange={(e) => setSort(e.target.value)}
                   className="appearance-none border border-slate-200 rounded-xl px-3 py-2.5 pr-8 bg-white text-xs font-bold text-slate-700 shadow-sm cursor-pointer">
                   <option value="popularity">Popularity</option>
                   <option value="newest">Newest</option>
@@ -803,7 +803,7 @@ const ProductsPage = () => {
           </div>
 
           {/* ── Products Section ── */}
-          <main className="lg:col-span-9">
+          <main className="min-w-0 lg:col-span-9">
             {/* Desktop toolbar */}
             <div className="hidden lg:flex items-center justify-between mb-5 pb-4 border-b border-slate-200/80">
               <div className="flex items-center gap-3">
