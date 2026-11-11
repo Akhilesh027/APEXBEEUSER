@@ -48,12 +48,13 @@ const TrackOrder = () => {
           let step = 0;
           const s = (t.status || "").toLowerCase().trim();
           if (s === "delivered" || s === "completed") step = 3;
-          else if (["out_for_delivery", "shipped", "accepted", "assigned", "reached vendor", "picked up", "reached customer"].includes(s)) step = 2;
-          else if (["preparing", "packed", "processing", "confirmed"].includes(s)) step = 1;
+          else if (["out_for_delivery", "out for delivery", "shipped", "picked up", "reached customer"].includes(s)) step = 2;
+          else if (["preparing", "packed", "processing", "confirmed", "accepted", "assigned", "reached vendor"].includes(s)) step = 1;
+          else step = 0;
           setActiveStep(step);
 
           // Calculate visual SVG bike coords
-          const progress = t.progressPercentage || 0;
+          const progress = t.progressPercentage || (step === 3 ? 100 : step === 2 ? 65 : step === 1 ? 35 : 10);
           const bikeX = 20 + (60 * (progress / 100));
           const bikeY = 75 - (40 * (progress / 100));
           setBikePosition({ x: bikeX, y: bikeY });
@@ -83,10 +84,10 @@ const TrackOrder = () => {
   }, [etaMins, etaSecs]);
 
   const steps = [
-    { label: "Order Confirmed", desc: "Merchant accepted your order", time: "03:15 PM" },
-    { label: "Food / Grocery Prepared", desc: "Packed & sealed for hygiene", time: "03:22 PM" },
-    { label: "Out for Delivery", desc: tracking?.deliveryPartnerName ? `Partner ${tracking.deliveryPartnerName} has left the store` : "Waiting for delivery partner assignment", time: "03:26 PM" },
-    { label: "Delivered & Verified", desc: "OTP verification complete", time: "Pending" }
+    { label: "Order Placed", desc: "Order received and confirmed", time: tracking?.placedTime || "Confirmed" },
+    { label: "Packed & Sealed", desc: "Merchant prepared package for pickup", time: tracking?.packedTime || "In Progress" },
+    { label: "Out for Delivery", desc: tracking?.deliveryPartnerName ? `Partner ${tracking.deliveryPartnerName} on the way` : "Delivery partner assigned", time: tracking?.outForDeliveryTime || "Dispatched" },
+    { label: "Delivered & Verified", desc: "Doorstep OTP verification complete", time: tracking?.deliveredTime || "Pending" }
   ];
 
   return (

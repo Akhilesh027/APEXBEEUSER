@@ -1,7 +1,11 @@
+import { subscriptionTomorrow } from '@/lib/subscriptionPlan';
 // src/pages/MyOrders.tsx — Module 7: Enhanced Order Management
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { SubscriptionDeliveryCode } from '@/components/SubscriptionDeliveryCode';
+import { SubscriptionStatements } from '@/components/SubscriptionStatements';
+import { DairyReviewForm } from '@/components/DairyReviewForm';
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,10 +131,12 @@ type Order = {
     grandTotal?: number;
     itemsCount?: number;
   };
-  orderStatus?: {
+  orderStatus?: any;
+  orderStatusObj?: {
     currentStatus?: string;
     timeline?: TimelineEntry[];
   };
+  timeline?: any[];
   shippingAddress?: {
     name?: string;
     phone?: string;
@@ -208,6 +214,90 @@ const getItemName = (item: any) => {
   return item.name || item.itemName || item.productName || item.productId?.name || item.productId?.itemName || "Product";
 };
 
+export function getOrderItemVariantDetails(it: any): { label: string; value: string }[] {
+  const details: { label: string; value: string }[] = [];
+  if (!it) return details;
+
+  const prod = typeof it.productId === "object" && it.productId ? it.productId : null;
+  const matchedVariant =
+    (prod?.variants && Array.isArray(prod.variants) && it.variantId
+      ? prod.variants.find((v: any) => String(v._id || v.id) === String(it.variantId))
+      : null) ||
+    (prod?.variants && Array.isArray(prod.variants) && it.sku
+      ? prod.variants.find((v: any) => String(v.sku).toLowerCase() === String(it.sku).toLowerCase())
+      : null);
+
+  // 1. Variant name / title
+  const varName =
+    it.variantName ||
+    it.selectedVariant?.name ||
+    it.selectedVariant?.title ||
+    matchedVariant?.name ||
+    matchedVariant?.title;
+  if (varName && !["default", "standard", "regular", "base"].includes(String(varName).toLowerCase())) {
+    details.push({ label: "Variant", value: String(varName) });
+  }
+
+  // 2. Size and Color
+  const color = it.color || it.selectedColor || matchedVariant?.attributes?.color;
+  if (color && !["default", "none", "n/a"].includes(String(color).toLowerCase())) {
+    details.push({ label: "Color", value: String(color) });
+  }
+
+  const size = it.size || it.selectedSize || matchedVariant?.attributes?.size;
+  if (size && !["default", "none", "n/a", "one size"].includes(String(size).toLowerCase())) {
+    details.push({ label: "Size", value: String(size) });
+  }
+
+  // 3. Attributes / Specifications (e.g., volume, milk_type, weight, pack, flavor, etc.)
+  const rawAttrs = it.selectedAttributes || it.attributes || matchedVariant?.attributes || prod?.attributes;
+  if (rawAttrs && typeof rawAttrs === "object") {
+    Object.entries(rawAttrs).forEach(([k, v]) => {
+      if (v === null || v === undefined) return;
+      const keyLower = k.toLowerCase().trim();
+      if (["color", "size", "default", "distributedfrom", "commissiontype", "commissionpercent"].includes(keyLower)) return;
+      let valStr = Array.isArray(v) ? v.join(", ") : String(v);
+      if (!valStr || valStr === "default" || valStr === "none") return;
+
+      const cleanLabel = k
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+      if (!details.some((d) => d.value.toLowerCase() === valStr.toLowerCase())) {
+        details.push({ label: cleanLabel, value: valStr });
+      }
+    });
+  }
+
+  // 4. Water returnable details
+  if (it.waterDetails) {
+    if (it.waterDetails.volumeLitres) {
+      details.push({ label: "Capacity", value: `${it.waterDetails.volumeLitres} Litres` });
+    }
+    if (it.waterDetails.returnable) {
+      details.push({ label: "Container", value: "Returnable Jar" });
+    }
+  }
+
+  // 5. Pre-order schedule
+  if (it.isPreOrder) {
+    if (it.preOrderDeliveryDate) {
+      details.push({
+        label: "📅 Pre-Order",
+        value: new Date(it.preOrderDeliveryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      });
+    }
+    if (it.preOrderTimeSlot) {
+      details.push({ label: "⏰ Slot", value: it.preOrderTimeSlot });
+    }
+    if (it.preOrderCustomNote) {
+      details.push({ label: "✍️ Note", value: `"${it.preOrderCustomNote}"` });
+    }
+  }
+
+  return details;
+}
+
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
@@ -278,43 +368,68 @@ const normalizeId = (v: any): string => {
   return String(v._id || v.id || "");
 };
 
-const getStatusConfig = (status?: string) => {
-  const map: Record<string, { icon: any; color: string; label: string; bgColor: string; borderColor: string }> = {
-    pending: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-    placed: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-    Placed: { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-    confirmed: { icon: CheckCircle, color: "text-emerald-600", label: "Order Confirmed", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
-    Confirmed: { icon: CheckCircle, color: "text-emerald-600", label: "Order Confirmed", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
-    processing: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    packed: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    Packed: { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    shipped: { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
-    Shipped: { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
-    'Out for Delivery': { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
-    delivered: { icon: CheckCircle, color: "text-green-600", label: "Delivered", bgColor: "bg-green-50", borderColor: "border-green-200" },
-    Delivered: { icon: CheckCircle, color: "text-green-600", label: "Delivered", bgColor: "bg-green-50", borderColor: "border-green-200" },
-    cancelled: { icon: AlertCircle, color: "text-red-500", label: "Cancelled", bgColor: "bg-red-50", borderColor: "border-red-200" },
-    Cancelled: { icon: AlertCircle, color: "text-red-500", label: "Cancelled", bgColor: "bg-red-50", borderColor: "border-red-200" },
-    refunded: { icon: RotateCcw, color: "text-gray-500", label: "Refunded", bgColor: "bg-gray-50", borderColor: "border-gray-200" },
-    returned: { icon: RotateCcw, color: "text-purple-500", label: "Returned", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    payment_pending: { icon: Clock, color: "text-amber-600", label: "Payment Pending", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-    payment_verified: { icon: CheckCircle, color: "text-emerald-600", label: "Payment Verified", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
-    payment_failed: { icon: AlertCircle, color: "text-red-500", label: "Payment Failed", bgColor: "bg-red-50", borderColor: "border-red-200" },
-    accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-    Accepted: { icon: Truck, color: "text-amber-600", label: "Rider Accepted 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-    assigned: { icon: Truck, color: "text-amber-600", label: "Rider Assigned 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-    Assigned: { icon: Truck, color: "text-amber-600", label: "Rider Assigned 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-    'Reached Vendor': { icon: Store, color: "text-purple-600", label: "Rider at Store 🏬", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-    'Picked Up': { icon: Package, color: "text-indigo-600", label: "Picked Up 📦", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
-    'Reached Customer': { icon: MapPin, color: "text-sky-600", label: "Rider Arrived 📍", bgColor: "bg-sky-50", borderColor: "border-sky-200" },
-  };
-  return map[status || ""] || { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" };
+export const getOrderCurrentStatus = (order: any): string => {
+  if (!order) return 'Placed';
+  if (typeof order.orderStatus === 'string' && order.orderStatus.trim()) {
+    return order.orderStatus.trim();
+  }
+  if (order.orderStatusObj?.currentStatus) {
+    return String(order.orderStatusObj.currentStatus).trim();
+  }
+  if (typeof order.orderStatus === 'object' && order.orderStatus?.currentStatus) {
+    return String(order.orderStatus.currentStatus).trim();
+  }
+  return 'Placed';
 };
 
-// Active = not delivered / not cancelled / not returned / not refunded
+const getStatusConfig = (rawStatus?: string) => {
+  const s = (rawStatus || '').toLowerCase().trim();
+  if (['delivered', 'completed'].includes(s)) {
+    return { icon: CheckCircle, color: "text-green-600", label: "Delivered", bgColor: "bg-green-50", borderColor: "border-green-200" };
+  }
+  if (['out for delivery', 'out_for_delivery', 'shipped'].includes(s)) {
+    return { icon: Truck, color: "text-indigo-600", label: "Out for Delivery", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" };
+  }
+  if (s === 'reached customer') {
+    return { icon: MapPin, color: "text-sky-600", label: "Rider at Doorstep 📍", bgColor: "bg-sky-50", borderColor: "border-sky-200" };
+  }
+  if (s === 'picked up' || s === 'picked_up') {
+    return { icon: Package, color: "text-indigo-600", label: "Picked Up 📦", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" };
+  }
+  if (s === 'reached vendor') {
+    return { icon: Store, color: "text-purple-600", label: "Rider at Store 🏬", bgColor: "bg-purple-50", borderColor: "border-purple-200" };
+  }
+  if (['accepted', 'assigned'].includes(s)) {
+    return { icon: Truck, color: "text-amber-600", label: "Rider Assigned 🛵", bgColor: "bg-amber-50", borderColor: "border-amber-200" };
+  }
+  if (['ready_for_pickup', 'ready for pickup', 'ready'].includes(s)) {
+    return { icon: Store, color: "text-amber-700", label: "Ready for Pickup 🏪", bgColor: "bg-amber-50", borderColor: "border-amber-200" };
+  }
+  if (['packed', 'processing', 'preparing'].includes(s)) {
+    return { icon: Package, color: "text-purple-600", label: "Packed & Ready", bgColor: "bg-purple-50", borderColor: "border-purple-200" };
+  }
+  if (['confirmed', 'payment verified', 'payment_verified', 'approved'].includes(s)) {
+    return { icon: CheckCircle, color: "text-emerald-600", label: "Order Confirmed", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" };
+  }
+  if (['cancelled', 'rejected'].includes(s)) {
+    return { icon: AlertCircle, color: "text-red-500", label: "Cancelled", bgColor: "bg-red-50", borderColor: "border-red-200" };
+  }
+  if (['returned', 'refunded'].includes(s)) {
+    return { icon: RotateCcw, color: "text-purple-500", label: "Returned", bgColor: "bg-purple-50", borderColor: "border-purple-200" };
+  }
+  if (['failed to deliver', 'failed_to_deliver', 'failed', 'delivery failed'].includes(s)) {
+    return { icon: AlertCircle, color: "text-rose-700", label: "Failed to Deliver", bgColor: "bg-rose-50", borderColor: "border-rose-300" };
+  }
+  if (s === 'payment_pending' || s === 'pending payment') {
+    return { icon: Clock, color: "text-amber-600", label: "Payment Pending", bgColor: "bg-amber-50", borderColor: "border-amber-200" };
+  }
+  return { icon: Package, color: "text-blue-600", label: "Order Placed", bgColor: "bg-blue-50", borderColor: "border-blue-200" };
+};
+
+// Active = not delivered / not cancelled / not returned / not refunded / not failed
 const isActiveOrder = (o: Order) => {
-  const s = (o.orderStatus?.currentStatus || "").toLowerCase();
-  return !["delivered", "cancelled", "returned", "refunded"].includes(s);
+  const s = getOrderCurrentStatus(o).toLowerCase();
+  return !["delivered", "cancelled", "returned", "refunded", "rejected", "completed", "failed to deliver", "failed_to_deliver", "failed", "delivery failed"].includes(s);
 };
 
 // ─────────────────────────────────────────────
@@ -341,18 +456,24 @@ const getTrackingStepIndex = (status?: string, isPickup: boolean = false): numbe
 const TrackingTimeline = ({ order }: { order: Order }) => {
   const isPickup = order.fulfillment?.type === "pickup" || order.deliveryType === "pickup";
   const steps = isPickup ? PICKUP_TRACKING_STEPS : TRACKING_STEPS;
-  const currentStatus = order.orderStatus?.currentStatus || "pending";
+  const currentStatus = getOrderCurrentStatus(order);
   const currentIdx = getTrackingStepIndex(currentStatus, isPickup);
 
   // Deduplicate consecutive identical timeline logs
-  const rawTimeline = order.orderStatus?.timeline || [];
-  const deduplicatedTimeline = rawTimeline.reduce<TimelineEntry[]>((acc, item) => {
+  const rawTimeline = (order as any).timeline || order.orderStatusObj?.timeline || (typeof order.orderStatus === 'object' ? (order.orderStatus as any)?.timeline : []) || [];
+  const deduplicatedTimeline = rawTimeline.reduce<TimelineEntry[]>((acc: any[], item: any) => {
     const last = acc[acc.length - 1];
+    const itemStatus = item.status || item.currentStatus || 'Update';
+    const itemDesc = item.description || item.note || '';
     const isDup = last &&
-      last.status.toLowerCase().trim() === item.status.toLowerCase().trim() &&
-      (last.description || "").trim() === (item.description || "").trim();
+      String(last.status || '').toLowerCase().trim() === String(itemStatus).toLowerCase().trim() &&
+      String(last.description || last.note || '').trim() === String(itemDesc).trim();
     if (!isDup) {
-      acc.push(item);
+      acc.push({
+        status: itemStatus,
+        timestamp: item.timestamp || item.date || new Date().toISOString(),
+        description: itemDesc
+      });
     }
     return acc;
   }, []);
@@ -625,6 +746,9 @@ const MyOrders = () => {
   };
 
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [vacation, setVacation] = useState<{ id: string; from: string; to: string } | null>(null);
+  const [subscriptionAction, setSubscriptionAction] = useState<string | null>(null);
+  const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ id: string; message: string; error?: boolean } | null>(null);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
   const [tableBookings, setTableBookings] = useState<any[]>([]);
@@ -864,31 +988,25 @@ const MyOrders = () => {
     }
   };
 
-  const handleSkipNextDelivery = async (subId: string) => {
+  const changeSubscription = async (id: string, change: { autoRenew: boolean } | { fromDate: string; toDate: string }) => {
+    const { token } = getAuth();
+    const skipping = 'fromDate' in change;
+    setSubscriptionAction(id);
+    setSubscriptionFeedback(null);
     try {
-      const { token } = getAuth();
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dateStr = tomorrow.toISOString().split('T')[0];
-
-      const res = await fetch(`${API_BASE}/local-shop/subscriptions/${subId}/skip`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ date: dateStr })
+      const response = await fetch(`${API_BASE}/local-shop/subscriptions/${id}${skipping ? '/skip' : ''}`, {
+        method: skipping ? 'POST' : 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(change),
       });
-      if (res.ok) {
-        alert(`Successfully skipped delivery for tomorrow (${dateStr})`);
-        fetchSubscriptions();
-      } else {
-        const data = await res.json();
-        alert(data.message || "Failed to skip delivery");
-      }
-    } catch (err) {
-      console.error("skip date error:", err);
-    }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Unable to update the subscription.');
+      setSubscriptionFeedback({ id, message: skipping ? result.message : change.autoRenew ? 'Auto-renewal enabled.' : 'Auto-renewal disabled for the next cycle.' });
+      if (skipping) setVacation(null);
+      await fetchSubscriptions();
+    } catch (error) {
+      setSubscriptionFeedback({ id, message: error instanceof Error ? error.message : 'Unable to update the subscription.', error: true });
+    } finally { setSubscriptionAction(null); }
   };
 
   const fetchTableBookings = useCallback(async () => {
@@ -1068,11 +1186,11 @@ const MyOrders = () => {
 
   // ── Filter orders by tab ───────────────────────────────────────────────
   const filteredOrders = orders.filter((o) => {
-    const s = (o.orderStatus?.currentStatus || "").toLowerCase();
+    const s = getOrderCurrentStatus(o).toLowerCase();
     if (activeTab === "all") return true;
     if (activeTab === "active") return isActiveOrder(o);
-    if (activeTab === "delivered") return s === "delivered";
-    if (activeTab === "cancelled") return s === "cancelled";
+    if (activeTab === "delivered") return s === "delivered" || s === "completed";
+    if (activeTab === "cancelled") return s === "cancelled" || s === "rejected";
     if (activeTab === "returned") return s === "returned" || s === "refunded";
     return true;
   });
@@ -1080,9 +1198,9 @@ const MyOrders = () => {
   const tabCounts: Record<string, number> = {
     all: orders.length,
     active: orders.filter(isActiveOrder).length,
-    delivered: orders.filter((o) => (o.orderStatus?.currentStatus || "") === "delivered").length,
-    cancelled: orders.filter((o) => (o.orderStatus?.currentStatus || "") === "cancelled").length,
-    returned: orders.filter((o) => ["returned", "refunded"].includes(o.orderStatus?.currentStatus || "")).length,
+    delivered: orders.filter((o) => ["delivered", "completed"].includes(getOrderCurrentStatus(o).toLowerCase())).length,
+    cancelled: orders.filter((o) => ["cancelled", "rejected"].includes(getOrderCurrentStatus(o).toLowerCase())).length,
+    returned: orders.filter((o) => ["returned", "refunded"].includes(getOrderCurrentStatus(o).toLowerCase())).length,
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
@@ -1136,6 +1254,7 @@ const MyOrders = () => {
                 <Package className="w-3.5 h-3.5" /> Order History & Live Tracking
               </div>
               <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white">My Orders & Subscriptions</h1>
+              <button className="mt-2 text-sm underline text-amber-300" onClick={() => navigate('/my-requests')}>My quotes, custom orders and booking requests</button>
               <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
                 Track your active shipments, download invoices, request returns, or manage recurring schedules.
               </p>
@@ -1236,11 +1355,12 @@ const MyOrders = () => {
             ) : (
               <div className="space-y-4">
                 {filteredOrders.map((order) => {
-                  const statusConfig = getStatusConfig(order.orderStatus?.currentStatus);
+                  const rawStatus = getOrderCurrentStatus(order);
+                  const statusConfig = getStatusConfig(rawStatus);
                   const StatusIcon = statusConfig.icon;
                   const isExpanded = expandedOrder === order._id;
-                  const isDelivered = order.orderStatus?.currentStatus === "delivered";
-                  const isCancelled = order.orderStatus?.currentStatus === "cancelled";
+                  const isDelivered = rawStatus.toLowerCase() === "delivered" || rawStatus.toLowerCase() === "completed";
+                  const isCancelled = rawStatus.toLowerCase() === "cancelled" || rawStatus.toLowerCase() === "rejected";
 
                   // Find return for this order (if any)
                   const orderReturn = returns.find((r) => r.orderId === order._id);
@@ -1289,6 +1409,26 @@ const MyOrders = () => {
                           </button>
                         </div>
                       </div>
+
+                      {/* Notice Banner if Failed to Deliver or Time Extended */}
+                      {['failed to deliver', 'failed_to_deliver', 'failed'].includes(rawStatus.toLowerCase()) && (
+                        <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 text-xs text-rose-900 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>
+                            {(order as any).isScheduledSubscription ? (
+                              <><strong>Delivery Slot Passed:</strong> Subscription delivery could not be completed within the scheduled window and was marked as missed.</>
+                            ) : (
+                              <><strong>Delivery Unsuccessful:</strong> Delivery could not be completed. Please contact store partner or customer support.</>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {(order as any).slotExtended && !isDelivered && !['failed to deliver', 'failed_to_deliver', 'failed'].includes(rawStatus.toLowerCase()) && (
+                        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span><strong>Store Notice:</strong> Delivery window extended{(order as any).slotExtendedUntil ? ` until ${new Date((order as any).slotExtendedUntil).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}` : ''}. {(order as any).slotExtensionReason ? `Notice: ${(order as any).slotExtensionReason}` : ''}</span>
+                        </div>
+                      )}
 
                       {/* Quick Preview (collapsed) */}
                       {!isExpanded && (
@@ -1369,16 +1509,31 @@ const MyOrders = () => {
                                         <p className="text-xs text-muted-foreground">{sub.subOrderId}</p>
                                       </div>
                                       <div className="space-y-2">
-                                        {sub.items.map((item, i) => (
-                                          <div key={i} className="flex gap-3 items-center">
-                                            <img src={getItemImage(item)} alt={getItemName(item)} className="w-10 h-10 object-contain rounded-md border border-slate-200 p-0.5 bg-white" />
-                                            <div className="flex-1 text-sm">
-                                              <p className="font-semibold text-navy truncate">{getItemName(item)}</p>
-                                              <p className="text-xs text-muted-foreground font-medium">Qty: {item.quantity}</p>
+                                        {sub.items.map((item, i) => {
+                                          const itemVariants = getOrderItemVariantDetails(item);
+                                          return (
+                                            <div key={i} className="flex gap-3 items-start">
+                                              <img src={getItemImage(item)} alt={getItemName(item)} className="w-11 h-11 object-contain rounded-md border border-slate-200 p-0.5 bg-white shrink-0 mt-0.5" />
+                                              <div className="flex-1 text-sm min-w-0">
+                                                <p className="font-semibold text-navy truncate">{getItemName(item)}</p>
+                                                {itemVariants.length > 0 && (
+                                                  <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                                                    {itemVariants.map((vd, vIdx) => (
+                                                      <span
+                                                        key={vIdx}
+                                                        className="inline-flex items-center text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded"
+                                                      >
+                                                        <span className="text-amber-600 font-semibold mr-1">{vd.label}:</span> {vd.value}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                                <p className="text-xs text-muted-foreground font-medium">Qty: {item.quantity}</p>
+                                              </div>
+                                              <p className="text-sm font-bold text-navy shrink-0">{formatCurrency((item.price || 0) * item.quantity)}</p>
                                             </div>
-                                            <p className="text-sm font-bold text-navy">{formatCurrency((item.price || 0) * item.quantity)}</p>
-                                          </div>
-                                        ))}
+                                          );
+                                        })}
                                       </div>
                                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
@@ -1399,6 +1554,7 @@ const MyOrders = () => {
                                     const pid = normalizeId(item.productId);
                                     const reviewed = !!reviewByProductId[pid];
                                     const existingReturn = returns.find((r) => r.orderId === order._id && r.productId === pid);
+                                    const itemVariants = getOrderItemVariantDetails(item);
 
                                     return (
                                       <div key={item._id || `${order._id}-${idx}`} className="flex gap-3 p-3 border rounded-xl bg-slate-50/50">
@@ -1407,10 +1563,21 @@ const MyOrders = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <h4 className="font-bold text-sm text-navy truncate">{getItemName(item)}</h4>
-                                          <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-muted-foreground">
+                                          {itemVariants.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                              {itemVariants.map((vd, vIdx) => (
+                                                <span
+                                                  key={vIdx}
+                                                  className="inline-flex items-center text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded"
+                                                >
+                                                  <span className="text-amber-600 font-semibold mr-1">{vd.label}:</span> {vd.value}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
                                             <span>Qty: {item.quantity}</span>
-                                            {item.color && item.color !== "default" && <span>Color: {item.color}</span>}
-                                            {item.size && item.size !== "One Size" && <span>Size: {item.size}</span>}
+                                            {(item as any).sku && <span>SKU: {(item as any).sku}</span>}
                                           </div>
                                           <div className="flex items-center gap-2 mt-1">
                                             <span className="font-semibold text-sm">{formatCurrency(item.price)}</span>
@@ -1585,6 +1752,8 @@ const MyOrders = () => {
                               const walletDeduction = order.orderSummary?.walletDeduction || 0;
                               const rewardsDeduction = order.orderSummary?.rewardsDeduction || order.orderSummary?.rewardPointsUsed || 0;
                               const taxAmt = order.orderSummary?.tax || 0;
+                              const cgstAmt = order.orderSummary?.cgst ?? (taxAmt > 0 ? Math.round((taxAmt / 2) * 100) / 100 : 0);
+                              const sgstAmt = order.orderSummary?.sgst ?? (taxAmt > 0 ? Math.round((taxAmt / 2) * 100) / 100 : 0);
                               const grandTotalVal = order.orderSummary?.grandTotal || order.orderSummary?.total || order.paymentDetails?.amount || 0;
 
                               const totalSavings = mrpDiscount + couponDisc + (shippingFee === 0 ? 40 : 0) + walletDeduction + rewardsDeduction;
@@ -1660,12 +1829,23 @@ const MyOrders = () => {
                                       </div>
                                     )}
 
-                                    {taxAmt > 0 && (
+                                    {(cgstAmt > 0 || sgstAmt > 0) ? (
+                                      <>
+                                        <div className="flex justify-between text-slate-500">
+                                          <span>🏛️ Central GST (CGST)</span>
+                                          <span>{formatCurrency(cgstAmt)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-slate-500">
+                                          <span>🏢 State GST (SGST)</span>
+                                          <span>{formatCurrency(sgstAmt)}</span>
+                                        </div>
+                                      </>
+                                    ) : taxAmt > 0 ? (
                                       <div className="flex justify-between text-slate-500">
-                                        <span>Government Tax &amp; GST (5%)</span>
+                                        <span>Government Tax &amp; GST</span>
                                         <span>{formatCurrency(taxAmt)}</span>
                                       </div>
-                                    )}
+                                    ) : null}
 
                                     {totalSavings > 0 && (
                                       <div className="bg-emerald-100/70 text-emerald-900 font-extrabold text-xs px-3 py-2 rounded-xl flex items-center justify-between border border-emerald-300/50 mt-1">
@@ -1793,6 +1973,7 @@ const MyOrders = () => {
                 {subscriptions.map((sub) => {
                   const subTotal = (sub.unitPrice || 0) * (sub.quantity || 1);
                   const isActive = sub.status === 'active';
+                  const ended = ['cancelled', 'expired'].includes(sub.status);
 
                   return (
                     <Card key={sub._id} className="border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -1806,18 +1987,74 @@ const MyOrders = () => {
                           <span className="text-xs text-muted-foreground block text-right">START DATE</span>
                           <p className="text-sm font-semibold text-navy">{formatDate(sub.startDate)}</p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                           <Badge className={isActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-orange-100 text-orange-700 hover:bg-orange-100"}>
                             {sub.status.toUpperCase()}
                           </Badge>
+                          {sub.todayDelivery?.statusLabel && (
+                            <Badge className={
+                              sub.todayDelivery.status === 'delivered'
+                                ? "bg-emerald-600 text-white"
+                                : sub.todayDelivery.status === 'out_for_delivery'
+                                  ? "bg-sky-600 text-white animate-pulse"
+                                  : "bg-amber-100 text-amber-900 border-amber-300"
+                            }>
+                              Today: {sub.todayDelivery.statusLabel}
+                            </Badge>
+                          )}
                           <Badge variant="outline" className="border-gray-300">
                             {sub.frequency.toUpperCase()}
                           </Badge>
+                          {sub.billingCycle && <Badge variant="outline">{sub.billingCycle.toUpperCase()} BILLING</Badge>}
                         </div>
                       </div>
 
                       {/* Subscription Core Details */}
                       <CardContent className="p-6">
+                        {/* Live Delivery Status Banner */}
+                        {sub.todayDelivery && (
+                          <div className={`mb-4 p-3.5 rounded-2xl flex items-center justify-between gap-3 border ${sub.todayDelivery.status === 'delivered'
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                            : sub.todayDelivery.status === 'failed'
+                              ? 'bg-rose-50 border-rose-300 text-rose-950'
+                              : sub.todayDelivery.status === 'extended'
+                                ? 'bg-amber-50 border-amber-300 text-amber-950'
+                                : sub.todayDelivery.status === 'out_for_delivery'
+                                  ? 'bg-sky-50 border-sky-300 text-sky-950'
+                                  : sub.todayDelivery.status === 'assigned'
+                                    ? 'bg-indigo-50 border-indigo-300 text-indigo-950'
+                                    : 'bg-amber-50/70 border-amber-300 text-amber-950'
+                            }`}>
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-xl">
+                                {sub.todayDelivery.status === 'delivered' ? '✅' : sub.todayDelivery.status === 'failed' ? '❌' : sub.todayDelivery.status === 'extended' ? '⏳' : sub.todayDelivery.status === 'out_for_delivery' ? '🚚' : sub.todayDelivery.status === 'assigned' ? '🚴' : '📦'}
+                              </span>
+                              <div>
+                                <span className="font-extrabold text-xs block">
+                                  Today&apos;s Run: {sub.todayDelivery.statusLabel}
+                                </span>
+                                <p className="text-[11px] opacity-80 mt-0.5">
+                                  Time Slot: <strong>{sub.todayDelivery.deliverySlot || sub.deliverySlot || "Morning Shift"}</strong>
+                                  {sub.todayDelivery.status === 'delivered' && sub.todayDelivery.confirmedAt && ` · Verified at ${new Date(sub.todayDelivery.confirmedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                                  {sub.todayDelivery.extensionReason && ` · Notice: ${sub.todayDelivery.extensionReason}`}
+                                  {sub.todayDelivery.failedReason && ` · Notice: ${sub.todayDelivery.failedReason}`}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${sub.todayDelivery.status === 'delivered'
+                              ? 'bg-emerald-200 text-emerald-900'
+                              : sub.todayDelivery.status === 'failed'
+                                ? 'bg-rose-200 text-rose-900 font-bold'
+                                : sub.todayDelivery.status === 'extended'
+                                  ? 'bg-amber-200 text-amber-900 font-bold'
+                                  : sub.todayDelivery.status === 'out_for_delivery'
+                                    ? 'bg-sky-200 text-sky-900 animate-pulse'
+                                    : 'bg-white text-slate-800 border border-slate-200 shadow-2xs'
+                              }`}>
+                              {sub.todayDelivery.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                           <div className="flex gap-4">
                             <div className="w-20 h-20 border rounded-lg bg-muted flex-shrink-0 overflow-hidden">
@@ -1848,6 +2085,9 @@ const MyOrders = () => {
                           </div>
                         </div>
 
+                        {isActive && <SubscriptionDeliveryCode subscriptionId={sub._id} />}
+                        <SubscriptionStatements subscriptionId={sub._id} />
+                        <DairyReviewForm subscriptionId={sub._id} />
                         {/* Skipped logs & Calendar logs view */}
                         {sub.skippedDates && sub.skippedDates.length > 0 && (
                           <div className="mt-6 p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
@@ -1862,18 +2102,21 @@ const MyOrders = () => {
                           </div>
                         )}
 
+                        {sub.currentPeriodEnd && <p className="mt-4 text-sm text-muted-foreground">Current cycle ends {formatDate(sub.currentPeriodEnd)}.</p>}
+                        {subscriptionFeedback?.id === sub._id && <p role={subscriptionFeedback.error ? 'alert' : 'status'} className={`mt-3 text-sm ${subscriptionFeedback.error ? 'text-red-700' : 'text-emerald-700'}`}>{subscriptionFeedback.message}</p>}
                         {/* Interactive Buttons */}
                         <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t">
-                          <Button
+                          {!ended && <Button
                             onClick={() => handleToggleSubscriptionStatus(sub._id, sub.status)}
                             className={isActive ? "bg-orange-600 hover:bg-orange-700 text-white font-bold" : "bg-green-600 hover:bg-green-700 text-white font-bold"}
                           >
-                            {isActive ? "⏸️ Pause Delivery" : "▶️ Resume Delivery"}
-                          </Button>
+                            {isActive ? "Pause delivery" : "Resume delivery"}
+                          </Button>}
 
                           {isActive && (
                             <Button
-                              onClick={() => handleSkipNextDelivery(sub._id)}
+                              disabled={subscriptionAction !== null}
+                              onClick={() => { const tomorrow = subscriptionTomorrow(); void changeSubscription(sub._id, { fromDate: tomorrow, toDate: tomorrow }); }}
                               variant="outline"
                               className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold"
                             >
@@ -1881,16 +2124,25 @@ const MyOrders = () => {
                             </Button>
                           )}
 
-                          <Button
-                            variant="outline"
-                            asChild
-                            className="ml-auto border-gray-300 text-navy font-bold"
-                          >
-                            <a href="https://wa.me/919999888777" target="_blank" rel="noreferrer">
-                              💬 Modify Schedule on WhatsApp
-                            </a>
-                          </Button>
+                          {!ended && <Button type="button" variant="outline" disabled={subscriptionAction !== null} onClick={() => {
+                            const tomorrow = subscriptionTomorrow();
+                            setVacation({ id: sub._id, from: tomorrow, to: tomorrow });
+                          }}>Skip date range</Button>}
+                          {!ended && (sub.portalType === 'dairy' || sub.currentPeriodEnd) && <label className="inline-flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={sub.autoRenew !== false} disabled={subscriptionAction !== null}
+                              onChange={event => void changeSubscription(sub._id, { autoRenew: event.target.checked })} />
+                            Auto-renew after this billing cycle
+                          </label>}
                         </div>
+                        {vacation?.id === sub._id && !ended && <form className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border p-4" onSubmit={event => {
+                          event.preventDefault();
+                          void changeSubscription(sub._id, { fromDate: vacation.from, toDate: vacation.to });
+                        }}>
+                          <label className="text-sm">First day to skip<input className="mt-1 block rounded-lg border p-2" type="date" required min={subscriptionTomorrow()} value={vacation.from} onChange={event => setVacation({ ...vacation, from: event.target.value, to: event.target.value > vacation.to ? event.target.value : vacation.to })} /></label>
+                          <label className="text-sm">Last day to skip<input className="mt-1 block rounded-lg border p-2" type="date" required min={vacation.from} value={vacation.to} onChange={event => setVacation({ ...vacation, to: event.target.value })} /></label>
+                          <Button type="submit" disabled={subscriptionAction !== null}>Save vacation dates</Button>
+                          <Button type="button" variant="outline" disabled={subscriptionAction !== null} onClick={() => setVacation(null)}>Cancel</Button>
+                        </form>}
                       </CardContent>
                     </Card>
                   );

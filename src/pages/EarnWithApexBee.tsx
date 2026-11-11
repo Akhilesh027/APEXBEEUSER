@@ -2,6 +2,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { VendorCategorySteps, vendorApplicationCategories, categoryParentId } from "@/components/VendorCategorySteps";
+import { VendorBusinessFields, emptyVendorBusiness, vendorBusinessError } from '@/components/VendorBusinessFields';
+import { VendorApplicationHeader } from '@/components/VendorApplicationHeader';
+import '@/components/vendor-application.css';
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -101,6 +105,21 @@ type Opportunity = {
 
 type Application = {
   _id: string;
+  businessName?: string; ownerName?: string; mobile?: string; panNumber?: string; gstNumber?: string; aadhaarNumber?: string;
+  subcategoryDecisions?: Array<{ subcategoryName: string; status: string; reason?: string }>;
+  approvedSubcategories?: string[];
+  experience?: string; remarks?: string; correctionStage?: 'application' | 'documents'; correctionReason?: string;
+  businessInformation?: any; bankDetails?: any; location?: { coordinates: number[] }; businessDetails?: any; fssaiNumber?: string;
+  applicationType?: string;
+  roleId?: string;
+  address?: string;
+  location?: string;
+  state?: string;
+  district?: string;
+  mandal?: string;
+  pincode?: string;
+  categories?: string[];
+  requestedSubcategories?: string[];
   role: string;
   status: string;
   createdAt: string;
@@ -190,7 +209,7 @@ const OPPORTUNITIES: Opportunity[] = [
       "Packaging & hygiene compliance guide"
     ],
     faqs: [
-      { q: "What food business types are supported?", a: "Restaurants, Street Food, Cafés, Bakery & Beverages, Sweets & Desserts." },
+      { q: "What food business types are supported?", a: "Dine-In Restaurants, Street Food, Fast Food & Snacks, Tiffins & Meals, Cafés, Bakery & Beverages, Sweets & Desserts, Biryani & Cloud Kitchens." },
       { q: "Do I need FSSAI registration?", a: "Yes, FSSAI registration/license is required for food safety compliance." },
       { q: "How do I receive live order alerts?", a: "Through the dedicated ApexBee Food Partner Portal on tablet, phone, or laptop with audio chime alerts." }
     ],
@@ -347,6 +366,7 @@ const SUCCESS_STORIES: SuccessStory[] = [
 ];
 
 const APPLICATION_STATUS: Record<string, { label: string; color: string }> = {
+  changes_requested: { label: 'Corrections required', color: 'bg-orange-100 text-orange-900 border-orange-300' },
   pending_approval: { label: "Pending Admin Review ⏳", color: "bg-amber-100 text-amber-800 border-amber-300" },
   pending: { label: "Pending Admin Review ⏳", color: "bg-amber-100 text-amber-800 border-amber-300" },
   pre_approved: { label: "Pre-Approved! Submit KYC 📄", color: "bg-blue-100 text-blue-800 border-blue-300" },
@@ -392,7 +412,7 @@ const getRequiredDocs = (roleId: string): KycDocRequirement[] => {
 };
 
 const KycUploadSection = ({ application, onSuccess }: { application: Application; onSuccess: () => void }) => {
-  const docsList = getRequiredDocs(application.role);
+  const docsList = [...getRequiredDocs(application.role), ...(application.requestedSubcategories?.includes('Milk and Dairy') ? [{ key: 'license', label: 'FSSAI licence or dairy registration if applicable', optional: true }] : [])];
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
   const [submitting, setSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -442,6 +462,10 @@ const KycUploadSection = ({ application, onSuccess }: { application: Application
     e.preventDefault();
     const { token } = getAuth();
     if (!token) return;
+
+    if (application.status === 'changes_requested' && application.correctionStage === 'documents' && !Object.keys(selectedFiles).length) {
+      setIsError(true); setStatusMsg('Choose at least one corrected document to resubmit.'); return;
+    }
 
     const missingDocs = docsList.filter(d => !d.optional && !application.documents?.[d.key] && !selectedFiles[d.key]);
     if (missingDocs.length > 0) {
@@ -633,7 +657,16 @@ const EarnWithApexBee = () => {
   const [formPincode, setFormPincode] = useState("");
   const [formExperience, setFormExperience] = useState("");
   const [formRemarks, setFormRemarks] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [applicationStep, setApplicationStep] = useState<'categories' | 'subcategories' | 'details' | 'review'>('categories');
+  const [businessInformation, setBusinessInformation] = useState({ ...emptyVendorBusiness });
+  const [businessUploading, setBusinessUploading] = useState(false);
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState('');
+  const [dairyDetails, setDairyDetails] = useState({ businessType: '', morningDelivery: '', eveningDelivery: '', weeklyHoliday: 'None', orderMode: 'both', registrationNumber: '' });
 
   // Role-specific form states
   const [primaryCategory, setPrimaryCategory] = useState("Devotional & Puja");
@@ -659,7 +692,7 @@ const EarnWithApexBee = () => {
   const [vehicleType, setVehicleType] = useState("Two-Wheeler");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
-  const [foodBusinessType, setFoodBusinessType] = useState("RESTAURANT");
+  const [foodBusinessType, setFoodBusinessType] = useState("Restaurants");
   const [fssaiNumber, setFssaiNumber] = useState("");
   const [cuisines, setCuisines] = useState("");
   const [foodPreference, setFoodPreference] = useState("Both");
@@ -791,39 +824,31 @@ const EarnWithApexBee = () => {
     };
 
     fetchTerritories();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get("ref") || urlParams.get("referralCode") || localStorage.getItem("apexbee_ref_code") || "";
+    if (refParam) {
+      setReferralCode(refParam.trim().toUpperCase());
+    }
   }, []);
 
-  useEffect(() => {
-    const fetchDbCategories = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/categories`);
-        const data = await res.json();
-        const catList = Array.isArray(data) ? data : (data?.categories || data?.data || []);
-        if (catList.length > 0) {
-          setDbCategories(catList);
-        }
-      } catch (err) {
-        console.error("Error fetching DB categories:", err);
-      }
-    };
-
-    fetchDbCategories();
+  const fetchDbCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    setCategoriesError('');
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      if (!res.ok) throw new Error('Unable to load business categories. Please try again.');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data?.categories || data?.data || []);
+      if (!Array.isArray(list) || !list.length) throw new Error('No business categories are available. Please contact support.');
+      setDbCategories(list);
+    } catch (error) {
+      setCategoriesError(error instanceof Error ? error.message : 'Unable to load categories.');
+    } finally { setCategoriesLoading(false); }
   }, []);
+  useEffect(() => { fetchDbCategories(); }, [fetchDbCategories]);
 
-  const parentCategoryList = useMemo(() => {
-    const level1 = dbCategories.filter((c: any) => c.level === 1 || !c.parentId);
-    if (level1.length > 0) return level1;
-
-    return [
-      { _id: "devotional", name: "Devotional & Puja" },
-      { _id: "food", name: "Food & Restaurant" },
-      { _id: "daily_needs", name: "Daily Needs & Grocery" },
-      { _id: "fashion", name: "Fashion & Apparel" },
-      { _id: "services", name: "Home Services & Repair" },
-      { _id: "electronics", name: "Electronics & Mobiles" },
-      { _id: "retail", name: "General Retail" },
-    ];
-  }, [dbCategories]);
+  const parentCategoryList = useMemo(() => vendorApplicationCategories(dbCategories), [dbCategories]);
 
   const selectedParentCategories = useMemo(() => {
     const list = selectedCategories.length > 0 ? selectedCategories : (primaryCategory ? [primaryCategory] : []);
@@ -847,6 +872,56 @@ const EarnWithApexBee = () => {
       return parentIdStrs.includes(String(pId));
     });
   }, [selectedParentCategories, dbCategories]);
+
+  // Food portal subcategories (dynamically loaded from DB Food & Dining parent + standard food taxonomy)
+  const foodSubcategoriesList = useMemo(() => {
+    const defaultList = [
+      { name: 'Restaurants', label: 'Dine-In Restaurant / Fine Dining', icon: '🍷', desc: 'Family Dining, North & South Indian Meals, Multi-Cuisine' },
+      { name: 'Street Food', label: 'Street Food & Chaat', icon: '🥘', desc: 'Fast Food Stall, Panipuri, Chaat, Bajji, Samosa, Local Specials' },
+      { name: 'Fast Food & Snacks', label: 'Fast Food & Snacks', icon: '🍔', desc: 'Burgers, Pizzas, Rolls, Sandwiches, Fries & QSR' },
+      { name: 'Tiffins & Meals', label: 'Tiffins & Meals', icon: '🫓', desc: 'South Indian Breakfast, Idli, Dosa, Meals, Poori, Upma' },
+      { name: 'Cafés, Bakery & Beverages', label: 'Cafés, Bakery & Beverages', icon: '☕', desc: 'Café, Custom Cakes, Pastries, Coffee, Tea & Shakes' },
+      { name: 'Sweets & Desserts', label: 'Sweets & Desserts', icon: '🍨', desc: 'Mithai, Laddu, Ice Cream, Falooda & Desserts' },
+      { name: 'Biryani & Cloud Kitchen', label: 'Biryani & Cloud Kitchen', icon: '🍲', desc: 'Dum Biryani, Bulk Family Handis, Delivery Only Kitchen' },
+      { name: 'Fresh Meat & Seafood', label: 'Fresh Meat & Seafood Counter', icon: '🥩', desc: 'Clean Cut Chicken, Mutton, Fish & Seafood' },
+    ];
+
+    const foodParent = dbCategories.find((c: any) =>
+      c.level === 1 && (
+        c.name?.toLowerCase().includes("food") ||
+        c.slug?.toLowerCase().includes("food") ||
+        c.slug?.toLowerCase().includes("dining")
+      )
+    );
+
+    const fromDb = dbCategories.filter((c: any) => {
+      if (c.level !== 2) return false;
+      const pId = typeof c.parentId === 'object' ? c.parentId?._id : c.parentId;
+      const pName = typeof c.parentId === 'object' ? c.parentId?.name : '';
+      const pSlug = typeof c.parentId === 'object' ? c.parentId?.slug : '';
+      if (foodParent && String(pId) === String(foodParent._id)) return true;
+      if (pName && (pName.toLowerCase().includes("food") || pName.toLowerCase().includes("dining"))) return true;
+      if (pSlug && (pSlug.toLowerCase().includes("food") || pSlug.toLowerCase().includes("dining"))) return true;
+      return false;
+    });
+
+    const list = [...defaultList];
+    const existing = new Set(list.map(item => item.name.toLowerCase()));
+
+    fromDb.forEach((cat: any) => {
+      if (!existing.has(cat.name.toLowerCase())) {
+        list.push({
+          name: cat.name,
+          label: cat.name,
+          icon: '🍽️',
+          desc: cat.description || `${cat.name} food portal subcategory`
+        });
+        existing.add(cat.name.toLowerCase());
+      }
+    });
+
+    return list;
+  }, [dbCategories]);
 
   // Auto-fill State, District & Mandal when vendor enters 6-digit PIN code
   useEffect(() => {
@@ -1016,6 +1091,8 @@ const EarnWithApexBee = () => {
   const openDetail = (opp: Opportunity) => { setSelectedOpp(opp); setActiveView("detail"); };
 
   const openApply = (opp: Opportunity) => {
+    setEditingApplicationId(null);
+    setBusinessInformation({ ...emptyVendorBusiness, shopPhotos: [] });
     const { user } = getAuth();
     setSelectedOpp(opp);
     setFormName(user?.name || "");
@@ -1025,9 +1102,16 @@ const EarnWithApexBee = () => {
     setFormPincode(user?.pincode ? String(user.pincode).trim() : "");
     setFormExperience("");
     setFormRemarks("");
-    const defaultCat = parentCategoryList[0]?.name || "Devotional & Puja";
-    setPrimaryCategory(defaultCat);
-    setSelectedCategories([defaultCat]);
+    if (opp.id === 'vendor') {
+      setApplicationStep('categories');
+    } else if (opp.id === 'food_partner') {
+      setApplicationStep('subcategories');
+    } else {
+      setApplicationStep('details');
+    }
+    setDairyDetails({ businessType: '', morningDelivery: '', eveningDelivery: '', weeklyHoliday: 'None', orderMode: 'both', registrationNumber: '' });
+    setPrimaryCategory('');
+    setSelectedCategories([]);
     setSubCategory("");
     setSelectedSubcategories([]);
     setBusinessName("");
@@ -1041,7 +1125,13 @@ const EarnWithApexBee = () => {
     setVehicleType("Two-Wheeler");
     setLicenseNumber("");
     setRestaurantName("");
-    setFoodBusinessType("RESTAURANT");
+    setFoodBusinessType("Restaurants");
+    if (opp.id === "food_partner") {
+      setPrimaryCategory("Food & Dining");
+      setSelectedCategories(["Food & Dining"]);
+      setSubCategory("Restaurants");
+      setSelectedSubcategories(["Restaurants"]);
+    }
     setFssaiNumber("");
     setCuisines("");
     setFoodPreference("Both");
@@ -1049,6 +1139,28 @@ const EarnWithApexBee = () => {
     setSelectedState("");
     setSelectedDistrict("");
     setSelectedMandal("");
+  };
+
+  const editRequestedApplication = (application: Application) => {
+    const opportunity = OPPORTUNITIES.find(item => item.id === 'vendor');
+    if (!opportunity) return;
+    openApply(opportunity);
+    setEditingApplicationId(application._id);
+    setFormName(application.ownerName || ''); setFormMobile(application.mobile || ''); setFormEmail(application.email || '');
+    setFormLocation(application.address || ''); setFormPincode(application.pincode || ''); setBusinessName(application.businessName || '');
+    setGstNumber(application.gstNumber || ''); setPanNumber(application.panNumber || ''); setAadhaarNumber(application.aadhaarNumber || '');
+    setFormExperience(application.experience || ''); setFormRemarks(application.remarks || '');
+    setSelectedState(application.state || ''); setSelectedDistrict(application.district || ''); setSelectedMandal(application.mandal || '');
+    setSelectedCategories(application.categories || []); setPrimaryCategory(application.categories?.[0] || '');
+    setSelectedSubcategories(application.requestedSubcategories || []); setSubCategory(application.requestedSubcategories?.[0] || '');
+    if (application.businessDetails?.dairy) setDairyDetails(application.businessDetails.dairy);
+    const info = application.businessInformation || {};
+    setBusinessInformation({
+      ...emptyVendorBusiness, ...info,
+      serviceRadiusKm: String(info.serviceRadiusKm || 5), shopPhotos: info.shopPhotos || [], fssaiNumber: application.fssaiNumber || ''
+    });
+    setApplicationStep('details');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmitApplication = async () => {
@@ -1100,6 +1212,15 @@ const EarnWithApexBee = () => {
       }
     }
 
+    if (type === 'vendor') {
+      const businessError = vendorBusinessError(businessInformation);
+      if (businessUploading || businessError) { alert(businessUploading ? 'Please wait for image uploads to finish.' : businessError); setApplicationStep('details'); return; }
+      const valid = selectedParentCategories.length === selectedCategories.length && selectedCategories.length > 0 && selectedParentCategories.every(parent => currentSubCategoriesList.some(child => categoryParentId(child) === String(parent._id) && child.isActive !== false && selectedSubcategories.includes(child.name)));
+      if (!valid) { alert('Select at least one subcategory under every selected category.'); setApplicationStep('subcategories'); return; }
+      if (selectedSubcategories.includes('Milk and Dairy') && (!dairyDetails.businessType || (!dairyDetails.morningDelivery && !dairyDetails.eveningDelivery))) {
+        alert('Choose your dairy business type and at least one delivery timing.'); setApplicationStep('details'); return;
+      }
+    }
     if (type === "vendor" || type === "wholesaler" || type === "manufacturer") {
       if (!businessName.trim() || (selectedCategories.length === 0 && !primaryCategory.trim()) || !panNumber.trim()) {
         alert("Please fill in Business Name, select at least one Business Category, and PAN Number.");
@@ -1254,7 +1375,9 @@ const EarnWithApexBee = () => {
                     aadhaarNumber,
                     gstNumber: gstNumber ? gstNumber.trim().toUpperCase() : "",
                     paymentMode: franchisePaymentMode,
+                    baseAmount: baseFeeAmount,
                     amountPaid: orderData.amount,
+                    referralCode: referralCode ? referralCode.trim().toUpperCase() : undefined,
                   },
                 }),
               });
@@ -1278,7 +1401,19 @@ const EarnWithApexBee = () => {
                   });
                 }
 
-                setBookingSuccessModal(verifyData.receipt || verifyData.territory);
+                const receiptData = verifyData.receipt || verifyData.territory || {
+                  ftid: verifyData.territory?.ftid || "APX-TER-001",
+                  territoryName: [selectedMandal, selectedDistrict, selectedState].filter(Boolean).join(", "),
+                  name: [selectedMandal, selectedDistrict, selectedState].filter(Boolean).join(", "),
+                  amountPaid: orderData.amount,
+                  paymentStatus: franchisePaymentMode === "FULL" ? "PAID_FULL" : "PARTIAL_ADVANCE",
+                  paymentId: response.razorpay_payment_id,
+                  portalUrl: "https://franchser.apexbee.in/"
+                };
+
+                // Immediately switch to applications dashboard view so user is not stuck on the form
+                setActiveView("applications");
+                setBookingSuccessModal(receiptData);
                 fetchApplications(formEmail.trim(), formMobile.trim());
               } else {
                 alert(verifyData.message || "Payment verification failed");
@@ -1330,6 +1465,12 @@ const EarnWithApexBee = () => {
       }
     }
 
+    if ((type === 'vendor' || type === 'food_partner') && applicationStep === 'details') {
+      setApplicationStep('review');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { user, token } = getAuth();
@@ -1345,11 +1486,11 @@ const EarnWithApexBee = () => {
           : (serviceType || primaryCategory || selectedOpp?.role || "General");
 
       const assignedSubCategory = isFood
-        ? (foodBusinessType || "RESTAURANT")
+        ? (foodBusinessType || subCategory || "Restaurants")
         : (subCategory || activeSubs[0] || "");
 
       const assignedApprovedSubcategories = isFood
-        ? [foodBusinessType || "RESTAURANT"]
+        ? [foodBusinessType || subCategory || "Restaurants"]
         : activeSubs;
 
       const payload = {
@@ -1360,12 +1501,12 @@ const EarnWithApexBee = () => {
         name: formName,
         mobile: formMobile,
         email: formEmail,
-        location: formLocation,
+        ...(type !== 'vendor' ? { location: formLocation } : {}),
         experience: formExperience,
         remarks: formRemarks,
         businessName: isFood ? (restaurantName || businessName || formName + " Kitchen") : (businessName || formName + " Business"),
         restaurantName: isFood ? (restaurantName || businessName || formName + " Kitchen") : "",
-        foodBusinessType: isFood ? (foodBusinessType || "RESTAURANT") : "",
+        foodBusinessType: isFood ? (foodBusinessType || subCategory || "Restaurants") : "",
         fssaiNumber: isFood ? fssaiNumber : "",
         cuisines: isFood && cuisines ? cuisines.split(",").map(c => c.trim()).filter(Boolean) : [],
         foodPreference: isFood ? foodPreference : "Both",
@@ -1377,10 +1518,20 @@ const EarnWithApexBee = () => {
         mandal: selectedMandal,
         primaryCategory: assignedCategory,
         category: assignedCategory,
-        categories: selectedCategories.length > 0 ? selectedCategories : [assignedCategory],
+        categories: isFood ? ["Food & Dining"] : (selectedCategories.length > 0 ? selectedCategories : [assignedCategory]),
         subCategory: assignedSubCategory,
         subCategories: assignedApprovedSubcategories,
-        approvedSubcategories: assignedApprovedSubcategories,
+        requestedSubcategories: assignedApprovedSubcategories,
+        ...(type === 'vendor' ? {
+          onboardingVersion: 2,
+          categorySelections: selectedParentCategories.map(parent => ({
+            categoryId: String(parent._id),
+            subcategoryIds: currentSubCategoriesList.filter(child => categoryParentId(child) === String(parent._id) && selectedSubcategories.includes(child.name)).map(child => String(child._id)),
+          })),
+          businessDetails: selectedSubcategories.includes('Milk and Dairy') ? { dairy: dairyDetails } : {},
+          businessInformation: { openingTime: businessInformation.openingTime, closingTime: businessInformation.closingTime, serviceRadiusKm: Number(businessInformation.serviceRadiusKm), acceptsOrders: businessInformation.acceptsOrders, logoUrl: businessInformation.logoUrl, shopPhotos: businessInformation.shopPhotos },
+          fssaiNumber: businessInformation.fssaiNumber,
+        } : {}),
         gstNumber: gstNumber ? gstNumber.trim().toUpperCase() : "",
         panNumber: panNumber ? panNumber.trim().toUpperCase() : "",
         aadhaarNumber,
@@ -1391,8 +1542,8 @@ const EarnWithApexBee = () => {
         vehicleType,
         licenseNumber,
       };
-      const res = await fetch(`${API_BASE}/business-applications`, {
-        method: "POST",
+      const res = await fetch(`${API_BASE}/business-applications${editingApplicationId ? `/${editingApplicationId}/resubmit` : ''}`, {
+        method: editingApplicationId ? 'PATCH' : 'POST',
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
@@ -1404,7 +1555,7 @@ const EarnWithApexBee = () => {
       }
 
       await fetchApplications();
-      alert("✅ Application submitted successfully! We'll review it within 48 hours.");
+      alert(editingApplicationId ? 'Application resubmitted for admin review.' : 'Application submitted for admin review.');
       setActiveView("applications");
     } catch {
       alert("Failed to submit. Please try again.");
@@ -1921,10 +2072,10 @@ const EarnWithApexBee = () => {
           <CardContent className="p-6">
             <div className="space-y-4 text-xs font-semibold text-slate-700">
               {[
-                { step: "1. Basic Application", desc: "Submit KYC docs (PAN, GST / License)." },
-                { step: "2. Documents Audit", desc: "Our team verifies credentials within 48 hours." },
-                { step: "3. Onboarding & Training", desc: "Watch training guides & configure catalog / slot." },
-                { step: "4. Business Launch!", desc: "Start receiving leads and splits to wallet." }
+                { step: "1. Business Application", desc: "Choose categories and subcategories, enter business details, and submit for review." },
+                { step: "2. Admin Review", desc: "Admin reviews the application and may request corrections before initial approval." },
+                { step: "3. Document Verification", desc: "Upload required documents after initial approval and resubmit corrections if requested." },
+                { step: "4. Portal Activation", desc: "Final verification activates approved business access. Complete catalog setup in your portal." }
               ].map((timeline, idx) => (
                 <div key={idx} className="flex gap-3">
                   <span className="w-5 h-5 rounded-full bg-navy text-white flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -2093,7 +2244,7 @@ const EarnWithApexBee = () => {
             (app) => app.role === opp.id || app.applicationType === opp.id || app.roleId === opp.id
           );
 
-          const isPending = matchingApp && (matchingApp.status === "pending" || matchingApp.status === "under_review");
+          const isPending = matchingApp && ['pending', 'pending_approval', 'under_review', 'pre_approved', 'kyc_submitted', 'changes_requested'].includes(matchingApp.status);
 
           return (
             <div className="flex justify-center gap-4 pt-2">
@@ -2119,6 +2270,7 @@ const EarnWithApexBee = () => {
                   Apply Now <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               )}
+              {isApproved && opp.id === 'vendor' && <Button size="lg" variant="outline" className="rounded-xl font-bold text-xs h-10" onClick={() => openApply(opp)}>Apply for Another Category</Button>}
               <Button size="lg" variant="outline" className="rounded-xl font-bold text-xs h-10" onClick={() => setActiveView("home")}>Back</Button>
             </div>
           );
@@ -2127,28 +2279,377 @@ const EarnWithApexBee = () => {
     );
   };
 
+  function FoodPartnerApplicationHeader({ step }: { step: number }) {
+    const steps = ['Food Business Type', 'Restaurant Details', 'Review & Submit'];
+    return (
+      <header className="space-y-6 text-left">
+        <div className="flex gap-4 items-center">
+          <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-3.5 text-white shadow-md text-2xl flex items-center justify-center">
+            🍳
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-[.2em] font-bold text-amber-700 mb-1">
+              ApexBee Food & Dining Partner Network
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-navy">
+              Apply as Food & Restaurant Partner
+            </h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Step {step} of 3. Choose your food format, provide restaurant details and submit for verification.
+            </p>
+          </div>
+        </div>
+        <ol aria-label="Application progress" className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          {steps.map((label, index) => {
+            const isCurrent = step === index + 1;
+            const isPassed = step > index + 1;
+            return (
+              <li
+                key={label}
+                aria-current={isCurrent ? 'step' : undefined}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition-all ${isCurrent
+                    ? 'bg-navy text-white shadow-sm ring-2 ring-navy/20'
+                    : isPassed
+                      ? 'text-navy bg-amber-50 border border-amber-200'
+                      : 'text-slate-400 bg-slate-50/50'
+                  }`}
+              >
+                <span
+                  className={`h-5 w-5 shrink-0 rounded-full grid place-items-center text-[10px] font-black ${isCurrent
+                      ? 'bg-amber-400 text-navy'
+                      : isPassed
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                >
+                  {isPassed ? <Check size={12} strokeWidth={3} /> : index + 1}
+                </span>
+                <span className="truncate">{label}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </header>
+    );
+  }
+
   // ─── APPLICATION FORM ─────────────────────────────────────────────
   const renderApplyForm = () => {
     if (!selectedOpp) return null;
+    const isVendorWizard = selectedOpp.id === 'vendor';
+    const isFoodWizard = selectedOpp.id === 'food_partner';
+    const stepNames = ['categories', 'subcategories', 'details', 'review'];
+    if (isVendorWizard && (applicationStep === 'categories' || applicationStep === 'subcategories')) {
+      return <div className="vendor-application max-w-4xl mx-auto space-y-6">
+        <VendorApplicationHeader step={stepNames.indexOf(applicationStep) + 1} />
+        <VendorCategorySteps step={applicationStep} categories={dbCategories} selectedCategories={selectedCategories} selectedSubcategories={selectedSubcategories}
+          onCategoriesChange={names => { setSelectedCategories(names); setPrimaryCategory(names[0] || ''); }}
+          onSubcategoriesChange={names => { setSelectedSubcategories(names); setSubCategory(names[0] || ''); }}
+          onNext={() => { setApplicationStep(applicationStep === 'categories' ? 'subcategories' : 'details'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onBack={() => applicationStep === 'subcategories' ? setApplicationStep('categories') : setActiveView('home')}
+          onRetry={fetchDbCategories} loading={categoriesLoading} error={categoriesError} />
+      </div>;
+    }
+    if (isVendorWizard && applicationStep === 'review') {
+      return <div className="vendor-application max-w-4xl mx-auto space-y-6"><VendorApplicationHeader step={4} /><section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-left shadow-sm">
+        <h2 className="text-2xl font-bold text-navy">Review your application</h2>
+        <p className="text-sm text-slate-600">Step 4 of 4. Check your details before submitting for admin review. Document verification follows initial approval.</p>
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 space-y-3">{selectedParentCategories.map(parent => <div key={parent._id}><h3 className="font-bold text-navy">{parent.name}</h3><p className="text-sm mt-1">{currentSubCategoriesList.filter(child => categoryParentId(child) === String(parent._id) && selectedSubcategories.includes(child.name)).map(child => child.name).join(' · ')}</p></div>)}</div>
+        <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">{[['Business', businessName], ['Owner', formName], ['Mobile', formMobile], ['Email', formEmail], ['Address', formLocation], ['PIN code', formPincode], ['Territory', [selectedState, selectedDistrict, selectedMandal].filter(Boolean).join(', ')], ['PAN', panNumber], ['GST', gstNumber || 'Not provided'], ['Remarks', formRemarks || 'None']].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500 mb-1">{label}</dt><dd className="break-words font-medium text-navy">{value}</dd></div>)}</dl>
+        {selectedSubcategories.includes('Milk and Dairy') && <div className="text-sm"><h3 className="font-bold">Dairy business</h3><p>{dairyDetails.businessType}</p><p>Morning: {dairyDetails.morningDelivery || 'Not offered'} · Evening: {dairyDetails.eveningDelivery || 'Not offered'}</p><p>Weekly holiday: {dairyDetails.weeklyHoliday} · Orders: {dairyDetails.orderMode}</p><p>Registration: {dairyDetails.registrationNumber || 'Not provided'}</p></div>}
+        <div className="application-section bg-slate-50 text-sm space-y-2"><h3 className="font-bold text-navy">Business operations</h3>
+          <p>Business hours: {businessInformation.openingTime} to {businessInformation.closingTime} · Service radius: {businessInformation.serviceRadiusKm} km</p>
+          <p>Orders after activation: {businessInformation.acceptsOrders ? 'Accepted' : 'Not accepted'}</p>
+          <p>Logo: {businessInformation.logoUrl ? 'Uploaded' : 'Not provided'} · Shop photos: {businessInformation.shopPhotos.length}</p>
+        </div>
+        <div className="application-footer flex flex-wrap justify-between gap-3"><Button className="h-11 rounded-xl" variant="outline" disabled={submitting} onClick={() => setApplicationStep('details')}>Edit details</Button><Button className="bg-navy hover:bg-navy/90 text-white h-11 rounded-xl px-6" disabled={submitting} onClick={handleSubmitApplication}>{submitting ? 'Submitting…' : 'Submit Application'}</Button></div>
+      </section></div>;
+    }
+
+    // Step 1 for Food Partner: Choose Food Business Type / Subcategory
+    if (isFoodWizard && (applicationStep === 'categories' || applicationStep === 'subcategories')) {
+      const selectedItem = foodSubcategoriesList.find(s => s.name === foodBusinessType) || foodSubcategoriesList[0];
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <FoodPartnerApplicationHeader step={1} />
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-left shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-extrabold text-navy flex items-center gap-2">
+                  <span>🍽️</span> Step 1: Select Your Food Business Format
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Choose the Food Portal subcategory that best represents your establishment. This sets your operating parameters and menu structure.
+                </p>
+              </div>
+              {foodBusinessType && (
+                <div className="shrink-0 bg-amber-50 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                  <span>Selected:</span>
+                  <span className="text-navy font-black">{selectedItem?.icon} {foodBusinessType}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Subcategories Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {foodSubcategoriesList.map((item) => {
+                const isSelected = foodBusinessType === item.name || subCategory === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => {
+                      setFoodBusinessType(item.name);
+                      setSubCategory(item.name);
+                      setSelectedSubcategories([item.name]);
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group ${isSelected
+                        ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-[1.02]"
+                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                      }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-2xl p-2 bg-white rounded-xl shadow-2xs border border-slate-100 group-hover:scale-110 transition-transform">
+                          {item.icon}
+                        </span>
+                        {isSelected ? (
+                          <span className="text-[10px] font-black text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full">
+                            ✓ SELECTED
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-slate-400 group-hover:text-slate-600">
+                            Select
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-sm font-extrabold leading-snug ${isSelected ? "text-navy" : "text-slate-800"}`}>
+                        {item.name}
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                      {item.desc}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Summary & Next Action Bar */}
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto rounded-xl font-bold text-xs h-11 px-5"
+                onClick={() => setActiveView('home')}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" /> Back to Opportunities
+              </Button>
+
+              <Button
+                className="w-full sm:w-auto bg-navy hover:bg-navy/90 text-white font-extrabold text-xs h-11 px-7 rounded-xl shadow-sm"
+                onClick={() => {
+                  if (!foodBusinessType) {
+                    setFoodBusinessType("Restaurants");
+                    setSubCategory("Restaurants");
+                    setSelectedSubcategories(["Restaurants"]);
+                  }
+                  setApplicationStep('details');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                Continue to Restaurant Details <ChevronRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    // Step 3 for Food Partner: Review Application
+    if (isFoodWizard && applicationStep === 'review') {
+      const selectedItem = foodSubcategoriesList.find(s => s.name === foodBusinessType) || foodSubcategoriesList[0];
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <FoodPartnerApplicationHeader step={3} />
+
+          <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-left shadow-sm">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-2xl font-bold text-navy flex items-center gap-2">
+                <span>📋</span> Review Your Food Partner Application
+              </h2>
+              <p className="text-sm text-slate-600 mt-1">
+                Step 3 of 3. Verify your restaurant details before submitting for admin review.
+              </p>
+            </div>
+
+            {/* Highlighted Selected Food Format */}
+            <div className="rounded-2xl bg-amber-500/10 border border-amber-300 p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex items-center gap-3.5">
+                <span className="text-3xl p-2 bg-white rounded-2xl shadow-xs border border-amber-200">
+                  {selectedItem?.icon || '🍽️'}
+                </span>
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider font-extrabold text-amber-800">
+                    Food Business Format / Subcategory
+                  </div>
+                  <div className="text-lg font-black text-navy">
+                    {foodBusinessType || 'Restaurants'}
+                  </div>
+                  <div className="text-xs text-slate-600 mt-0.5">
+                    Parent Category: <strong>Food & Dining</strong> · {selectedItem?.desc}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-300 text-amber-900 bg-white hover:bg-amber-100 rounded-xl font-bold text-xs"
+                onClick={() => { setApplicationStep('subcategories'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              >
+                Change Format
+              </Button>
+            </div>
+
+            {/* Restaurant & Food Operation Details */}
+            <div className="space-y-3">
+              <h3 className="font-extrabold text-navy text-sm flex items-center gap-2">
+                <span>🍳</span> Restaurant & Kitchen Details
+              </h3>
+              <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+                <div>
+                  <dt className="text-xs text-slate-500 mb-0.5">Restaurant / Kitchen Name</dt>
+                  <dd className="font-bold text-navy">{restaurantName || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500 mb-0.5">Food Preference</dt>
+                  <dd className="font-bold text-navy">{foodPreference}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500 mb-0.5">FSSAI License / Registration No.</dt>
+                  <dd className="font-mono font-bold text-navy">{fssaiNumber || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500 mb-0.5">Cuisines Offered</dt>
+                  <dd className="font-medium text-navy">{cuisines || 'Not provided'}</dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Owner & Contact Details */}
+            <div className="space-y-3">
+              <h3 className="font-extrabold text-navy text-sm flex items-center gap-2">
+                <span>👤</span> Applicant & Location Details
+              </h3>
+              <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+                {[
+                  ['Owner Name', formName],
+                  ['Mobile Number', formMobile],
+                  ['Email Address', formEmail],
+                  ['Kitchen Address', formLocation],
+                  ['PIN Code', formPincode],
+                  ['Territory', [selectedState, selectedDistrict, selectedMandal].filter(Boolean).join(', ') || 'Not specified'],
+                  ['GSTIN', gstNumber || 'Not provided (Optional)'],
+                  ['PAN Number', panNumber || 'Not provided (Optional)'],
+                  ['Experience', formExperience || 'None stated'],
+                  ['Remarks', formRemarks || 'None'],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-xs text-slate-500 mb-0.5">{label}</dt>
+                    <dd className="break-words font-medium text-navy">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex flex-wrap justify-between gap-3">
+              <Button
+                className="h-11 rounded-xl font-bold text-xs"
+                variant="outline"
+                disabled={submitting}
+                onClick={() => { setApplicationStep('details'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" /> Edit Details
+              </Button>
+              <Button
+                className="bg-navy hover:bg-navy/90 text-white h-11 rounded-xl px-7 font-bold text-xs shadow-sm"
+                disabled={submitting}
+                onClick={handleSubmitApplication}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting Application...
+                  </>
+                ) : (
+                  <>Submit Food Partner Application 🚀</>
+                )}
+              </Button>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <button onClick={() => setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline bg-transparent border-none cursor-pointer">
-          <ChevronLeft className="w-4 h-4" /> Back
+      <div className={`${isVendorWizard || isFoodWizard ? 'vendor-application max-w-4xl' : 'max-w-2xl'} mx-auto space-y-6`}>
+        <button onClick={() => isFoodWizard ? setApplicationStep('subcategories') : setActiveView("home")} className="flex items-center gap-1 text-sm text-navy font-medium hover:underline bg-transparent border-none cursor-pointer">
+          <ChevronLeft className="w-4 h-4" /> {isFoodWizard ? 'Back to Business Types' : 'Back'}
         </button>
 
-        <div className={`rounded-xl bg-gradient-to-r ${selectedOpp.gradient} text-white p-5 flex items-center gap-3`}>
-          <span className="text-3xl">{selectedOpp.emoji}</span>
-          <div>
-            <h2 className="text-xl font-bold">Apply: {selectedOpp.role}</h2>
-            <p className="text-sm opacity-80">{selectedOpp.incomePotential}</p>
+        {isVendorWizard ? (
+          <VendorApplicationHeader step={3} />
+        ) : isFoodWizard ? (
+          <FoodPartnerApplicationHeader step={2} />
+        ) : (
+          <div className={`rounded-xl bg-gradient-to-r ${selectedOpp.gradient} text-white p-5 flex items-center gap-3`}>
+            <span className="text-3xl">{selectedOpp.emoji}</span>
+            <div>
+              <h2 className="text-xl font-bold">Apply: {selectedOpp.role}</h2>
+              <p className="text-sm opacity-80">{selectedOpp.incomePotential}</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="font-bold text-navy text-lg text-left">Application Form</h3>
+        <Card className={isVendorWizard || isFoodWizard ? 'application-form-card' : ''}>
+          <CardContent className="p-5 sm:p-8 space-y-6">
+            <h3 className="font-bold text-navy text-xl text-left">
+              {isVendorWizard ? 'Tell us about your business' : isFoodWizard ? 'Restaurant & Contact Details' : 'Application Form'}
+            </h3>
+            {isVendorWizard && <Button variant="outline" onClick={() => setApplicationStep('subcategories')}>Back to subcategories</Button>}
+            {isFoodWizard && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-left">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl p-2 bg-white rounded-xl shadow-2xs border border-amber-200">
+                    {foodSubcategoriesList.find(s => s.name === foodBusinessType)?.icon || '🍽️'}
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                      Selected Food Business Format (Step 1)
+                    </span>
+                    <div className="text-base font-extrabold text-navy">
+                      {foodBusinessType || 'Restaurants'}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {foodSubcategoriesList.find(s => s.name === foodBusinessType)?.desc}
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 text-amber-900 bg-white hover:bg-amber-100 rounded-xl font-bold text-xs cursor-pointer"
+                  onClick={() => {
+                    setApplicationStep('subcategories');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  Change Format
+                </Button>
+              </div>
+            )}
 
-            {[
+            <div className={isVendorWizard ? 'application-contact-grid' : 'space-y-4'}>{[
               { label: "Full Name *", value: formName, set: setFormName, placeholder: "Enter your full name", type: "text" },
               { label: "Mobile Number *", value: formMobile, set: setFormMobile, placeholder: "+91 XXXXX XXXXX", type: "tel" },
               { label: "Email Address *", value: formEmail, set: setFormEmail, placeholder: "you@email.com", type: "email" },
@@ -2165,7 +2666,7 @@ const EarnWithApexBee = () => {
             ].map((field, i) => (
               <div key={i} className="text-left">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-slate-600 block">{field.label}</label>
+                  <label htmlFor={`application-contact-${i}`} className="text-xs font-bold text-slate-600 block">{field.label}</label>
                   {field.label === "PIN Code *" && formPincode && formPincode.length < 6 && (
                     <span className="text-[10px] text-amber-600 font-semibold">{formPincode.length}/6 digits</span>
                   )}
@@ -2174,6 +2675,7 @@ const EarnWithApexBee = () => {
                   )}
                 </div>
                 <input
+                  id={`application-contact-${i}`}
                   type={field.type}
                   value={field.value}
                   onChange={(e) => field.set(e.target.value)}
@@ -2197,13 +2699,16 @@ const EarnWithApexBee = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))}</div>
 
             {/* Role-Specific Inputs Section */}
             {selectedOpp.id === "vendor" || selectedOpp.id === "wholesaler" || selectedOpp.id === "manufacturer" ? (
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Business Information</h4>
-                <div>
+                {isVendorWizard ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm space-y-2">
+                  <p className="font-semibold">{selectedCategories.join(' · ')}</p><p>{selectedSubcategories.join(' · ')}</p>
+                  <Button variant="outline" size="sm" onClick={() => setApplicationStep('categories')}>Change categories</Button>
+                </div> : <>                <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold text-slate-600 block">
                       Business Categories * (Select Multiple)
@@ -2263,77 +2768,87 @@ const EarnWithApexBee = () => {
                   )}
                 </div>
 
-                {selectedCategories.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories (Optional)</label>
-                      <span className="text-[10px] text-emerald-600 font-bold">
-                        (Optional: Click chips to select specific subcategories, or leave blank)
-                      </span>
-                    </div>
+                  {selectedCategories.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-slate-600 block">Select Target Subcategories (Optional)</label>
+                        <span className="text-[10px] text-emerald-600 font-bold">
+                          (Optional: Click chips to select specific subcategories, or leave blank)
+                        </span>
+                      </div>
 
-                    {currentSubCategoriesList.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {currentSubCategoriesList.map((sub: any) => {
-                          const isSubSelected = selectedSubcategories.includes(sub.name) || subCategory === sub.name;
-                          return (
-                            <button
-                              key={sub._id}
-                              type="button"
-                              onClick={() => {
-                                if (isSubSelected) {
-                                  const updated = selectedSubcategories.filter((s: string) => s !== sub.name);
+                      {currentSubCategoriesList.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {currentSubCategoriesList.map((sub: any) => {
+                            const isSubSelected = selectedSubcategories.includes(sub.name) || subCategory === sub.name;
+                            return (
+                              <button
+                                key={sub._id}
+                                type="button"
+                                onClick={() => {
+                                  if (isSubSelected) {
+                                    const updated = selectedSubcategories.filter((s: string) => s !== sub.name);
+                                    setSelectedSubcategories(updated);
+                                    setSubCategory(updated[0] || "");
+                                  } else {
+                                    const updated = [...selectedSubcategories, sub.name];
+                                    setSelectedSubcategories(updated);
+                                    setSubCategory(updated[0] || sub.name);
+                                  }
+                                }}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${isSubSelected
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
+                                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                                  }`}
+                              >
+                                <span>{isSubSelected ? "✓" : "+"}</span>
+                                <span>{sub.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                          No DB subcategories found for {selectedCategories.join(", ")}. You can proceed or contact admin.
+                        </div>
+                      )}
+
+                      {selectedSubcategories.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                          <span className="text-[10px] font-bold text-emerald-800 mr-1">
+                            Selected Subcategories ({selectedSubcategories.length}):
+                          </span>
+                          {selectedSubcategories.map((sub, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white border border-emerald-300 text-emerald-700 font-bold text-[10px] rounded-lg shadow-sm">
+                              <span>{sub}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = selectedSubcategories.filter((_, i) => i !== idx);
                                   setSelectedSubcategories(updated);
                                   setSubCategory(updated[0] || "");
-                                } else {
-                                  const updated = [...selectedSubcategories, sub.name];
-                                  setSelectedSubcategories(updated);
-                                  setSubCategory(updated[0] || sub.name);
-                                }
-                              }}
-                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${isSubSelected
-                                ? "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
-                                : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-                                }`}
-                            >
-                              <span>{isSubSelected ? "✓" : "+"}</span>
-                              <span>{sub.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                        No DB subcategories found for {selectedCategories.join(", ")}. You can proceed or contact admin.
-                      </div>
-                    )}
+                                }}
+                                className="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    {selectedSubcategories.length > 0 && (
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] font-bold text-emerald-800 mr-1">
-                          Selected Subcategories ({selectedSubcategories.length}):
-                        </span>
-                        {selectedSubcategories.map((sub, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white border border-emerald-300 text-emerald-700 font-bold text-[10px] rounded-lg shadow-sm">
-                            <span>{sub}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = selectedSubcategories.filter((_, i) => i !== idx);
-                                setSelectedSubcategories(updated);
-                                setSubCategory(updated[0] || "");
-                              }}
-                              className="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
+                </>}
+                {isVendorWizard && <VendorBusinessFields value={businessInformation} onChange={setBusinessInformation} apiBase={API_BASE} onUploadingChange={setBusinessUploading} />}
+                {isVendorWizard && selectedSubcategories.includes('Milk and Dairy') && <fieldset className="application-section space-y-4">
+                  <legend className="font-bold text-navy">Milk and Dairy details</legend>
+                  <label className="block text-sm">Business type *<select value={dairyDetails.businessType} onChange={event => setDairyDetails({ ...dairyDetails, businessType: event.target.value })} className="block w-full border rounded-lg p-2 mt-1"><option value="">Choose business type</option>{['Local Milk Vendor', 'Dairy Farm', 'Milk Booth', 'Organic Dairy', 'Dairy Distributor', 'Milk Collection Center'].map(type => <option key={type}>{type}</option>)}</select></label>
+                  <p className="text-xs text-slate-600">Provide at least one delivery timing, for example 6 AM to 8 AM.</p>
+                  {([['morningDelivery', 'Morning delivery timing'], ['eveningDelivery', 'Evening delivery timing'], ['registrationNumber', 'Dairy registration number if applicable']] as const).map(([key, label]) => <label key={key} className="block text-sm">{label}<input value={dairyDetails[key]} onChange={event => setDairyDetails({ ...dairyDetails, [key]: event.target.value })} className="block w-full border rounded-lg p-2 mt-1" /></label>)}
+                  <label className="block text-sm">Weekly holiday<select value={dairyDetails.weeklyHoliday} onChange={event => setDairyDetails({ ...dairyDetails, weeklyHoliday: event.target.value })} className="block w-full border rounded-lg p-2 mt-1">{['None', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => <option key={day}>{day}</option>)}</select></label>
+                  <label className="block text-sm">Order availability<select value={dairyDetails.orderMode} onChange={event => setDairyDetails({ ...dairyDetails, orderMode: event.target.value })} className="block w-full border rounded-lg p-2 mt-1"><option value="both">One-time orders and subscriptions</option><option value="one_time">One-time orders</option><option value="subscription">Subscriptions</option></select></label>
+                </fieldset>}
                 <div>
                   <label className="text-xs font-bold text-slate-600 block mb-1">Business Name *</label>
                   <input
@@ -2488,29 +3003,16 @@ const EarnWithApexBee = () => {
             {selectedOpp.id === "food_partner" ? (
               <div className="space-y-4 pt-2 border-t border-gray-100 text-left">
                 <h4 className="text-sm font-semibold text-navy">Food & Dining Partner Details</h4>
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Restaurant / Kitchen Name *</label>
-                  <input
-                    type="text"
-                    value={restaurantName}
-                    onChange={(e) => setRestaurantName(e.target.value)}
-                    placeholder="e.g. Hyderabad Spice Kitchen"
-                    className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-medium"
-                  />
-                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Food Business Type *</label>
-                    <select
-                      value={foodBusinessType}
-                      onChange={(e) => setFoodBusinessType(e.target.value)}
-                      className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white font-semibold text-slate-700 h-9"
-                    >
-                      <option value="RESTAURANT">Restaurant / Fine Dining</option>
-                      <option value="STREET_FOOD">Street Food / Fast Food Stall</option>
-                      <option value="CAFE_BAKERY_BEVERAGES">Café, Bakery & Beverages</option>
-                      <option value="SWEETS_DESSERTS">Sweets & Desserts Shop</option>
-                    </select>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Restaurant / Kitchen Name *</label>
+                    <input
+                      type="text"
+                      value={restaurantName}
+                      onChange={(e) => setRestaurantName(e.target.value)}
+                      placeholder="e.g. Hyderabad Spice Kitchen"
+                      className="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30 h-9 bg-white text-slate-700 font-medium"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">Food Preference *</label>
@@ -2525,6 +3027,7 @@ const EarnWithApexBee = () => {
                     </select>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">FSSAI License / Registration No. *</label>
@@ -2953,49 +3456,72 @@ const EarnWithApexBee = () => {
               />
             </div>
 
-            <Button
-              className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-60"
-              onClick={handleSubmitApplication}
-              disabled={submitting || (selectedOpp?.id === "franchise" && checkingTerritory)}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Processing Application...
-                </>
-              ) : selectedOpp?.id === "franchise" ? (
-                !isTerritoryFullySelected ? (
+            {isFoodWizard ? (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl h-11 font-bold text-xs"
+                  onClick={() => {
+                    setApplicationStep('subcategories');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Back to Business Types
+                </Button>
+                <Button
+                  className="flex-1 bg-navy hover:bg-navy/95 text-white font-bold h-11 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                  onClick={handleSubmitApplication}
+                  disabled={submitting}
+                >
+                  Continue to Review Application <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                className="w-full bg-navy hover:bg-navy/95 text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-60"
+                onClick={handleSubmitApplication}
+                disabled={submitting || businessUploading || (selectedOpp?.id === "franchise" && checkingTerritory)}
+              >
+                {submitting ? (
                   <>
-                    <MapPin className="w-4 h-4 text-amber-400" />
-                    Select Territory to Proceed
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Processing Application...
                   </>
-                ) : checkingTerritory ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-400 mr-2" />
-                    Verifying Territory Availability...
-                  </>
-                ) : territoryAvailability?.isAvailable === false ? (
-                  <>
-                    <FileText className="w-4 h-4 text-amber-300" />
-                    Submit Profile for Next Opportunity / Waitlist
-                  </>
+                ) : selectedOpp?.id === "franchise" ? (
+                  !isTerritoryFullySelected ? (
+                    <>
+                      <MapPin className="w-4 h-4 text-amber-400" />
+                      Select Territory to Proceed
+                    </>
+                  ) : checkingTerritory ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400 mr-2" />
+                      Verifying Territory Availability...
+                    </>
+                  ) : territoryAvailability?.isAvailable === false ? (
+                    <>
+                      <FileText className="w-4 h-4 text-amber-300" />
+                      Submit Profile for Next Opportunity / Waitlist
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 text-amber-400" />
+                      {(() => {
+                        const baseAmt = franchisePaymentMode === "ADVANCE"
+                          ? Number(territoryAvailability?.minBookingAdvance || 20000)
+                          : Number(territoryAvailability?.annualFranchiseFee || 60000);
+                        const gstAmt = Math.round((baseAmt * 18) / 100);
+                        const totalAmt = baseAmt + gstAmt;
+                        return `Pay ₹${totalAmt.toLocaleString("en-IN")} (Incl. 18% GST) via Razorpay & Lock Territory`;
+                      })()}
+                    </>
+                  )
                 ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 text-amber-400" />
-                    {(() => {
-                      const baseAmt = franchisePaymentMode === "ADVANCE"
-                        ? Number(territoryAvailability?.minBookingAdvance || 20000)
-                        : Number(territoryAvailability?.annualFranchiseFee || 60000);
-                      const gstAmt = Math.round((baseAmt * 18) / 100);
-                      const totalAmt = baseAmt + gstAmt;
-                      return `Pay ₹${totalAmt.toLocaleString("en-IN")} (Incl. 18% GST) via Razorpay & Lock Territory`;
-                    })()}
-                  </>
-                )
-              ) : (
-                "Submit Business Application"
-              )}
-            </Button>
+                  isVendorWizard ? "Review Application" : "Submit Business Application"
+                )}
+              </Button>
+            )}
 
             {selectedOpp?.id === "franchise" && isTerritoryFullySelected && territoryAvailability?.isAvailable === true && (
               <p className="text-[11px] text-center text-slate-500 font-medium flex items-center justify-center gap-1.5 pt-1">
@@ -3140,6 +3666,28 @@ const EarnWithApexBee = () => {
                 </div>
 
                 {/* Plain display of applicant address and pincode */}
+                {!!app.requestedSubcategories?.length && <div className="text-sm text-slate-700 space-y-1">
+                  <p className="font-semibold">Requested business access</p>
+                  <p>{app.requestedSubcategories.join(' · ')}</p>
+                  <div className="grid sm:grid-cols-2 gap-2 pt-2">{app.requestedSubcategories.map(name => {
+                    const decision = app.subcategoryDecisions?.find(item => item.subcategoryName === name);
+                    const status = decision?.status || (app.approvedSubcategories?.includes(name) ? 'approved' : 'pending');
+                    const activated = ['verified', 'approved'].includes(app.status);
+                    const label = app.status === 'rejected' ? 'Application rejected' : status === 'approved' ? (activated ? 'Active' : 'Approved for verification') : status === 'changes_requested' ? 'Changes requested' : status === 'rejected' ? 'Rejected' : 'Pending review';
+                    return <div key={name} className="rounded-xl border border-slate-200 bg-slate-50 p-3 min-w-0"><p className="font-semibold text-navy">{name}</p><span className={`inline-block rounded-full px-2 py-1 mt-2 text-xs ${status === 'approved' ? 'bg-emerald-100 text-emerald-800' : status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}`}>{label}</span>{decision?.reason && <p className="text-xs mt-2 whitespace-pre-wrap break-words">{decision.reason}</p>}</div>;
+                  })}</div>
+                  {['pending', 'pending_approval', 'pre_approved'].includes(app.status) && app.subcategoryDecisions?.some(item => item.status === 'changes_requested') && <div className="pt-2 space-y-2"><p className="text-xs text-amber-800">You can correct and resubmit this application before documents are submitted. Editing common details returns all selections to review.</p><Button onClick={() => editRequestedApplication(app)} variant="outline">Correct and Resubmit</Button></div>}
+                </div>}
+                {/* Food Partner Subcategory Badge */}
+                {(appRoleKey === "food_partner" || app.applicationType === "food_partner") && (app.foodBusinessType || app.subCategory) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 flex items-center justify-between">
+                    <span className="font-semibold">🍽️ Food Portal Subcategory:</span>
+                    <span className="font-bold bg-white px-2.5 py-0.5 rounded border border-amber-300 text-navy">
+                      {app.foodBusinessType || app.subCategory}
+                    </span>
+                  </div>
+                )}
+
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <span className="text-slate-400 font-medium">📍 Address:</span>
@@ -3171,6 +3719,9 @@ const EarnWithApexBee = () => {
                           {isVendorRole && (app as any).subCategory && (
                             <span>Subcategory: <strong>{(app as any).subCategory}</strong></span>
                           )}
+                          {(appRoleKey === "food_partner" || app.applicationType === "food_partner") && ((app as any).foodBusinessType || (app as any).subCategory) && (
+                            <span>Food Business Format: <strong>{(app as any).foodBusinessType || (app as any).subCategory}</strong></span>
+                          )}
                           <span>Portal URL: <a href={portalUrl} target="_blank" rel="noreferrer" className="text-primary underline font-bold">{portalUrl}</a></span>
                         </div>
                       </div>
@@ -3180,6 +3731,12 @@ const EarnWithApexBee = () => {
                       >
                         <ExternalLink className="w-4 h-4" /> Enter {portalLabel}
                       </Button>
+                    </div>
+                  ) : app.status === 'changes_requested' ? (
+                    <div className="space-y-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm">
+                      <h4 className="font-bold text-orange-900">{app.correctionStage === 'documents' ? 'Document resubmission required' : 'Application corrections required'}</h4>
+                      <p className="text-orange-900 whitespace-pre-wrap">{app.correctionReason || 'Please review your application details.'}</p>
+                      {app.correctionStage === 'documents' ? <KycUploadSection application={app} onSuccess={fetchApplications} /> : <Button onClick={() => editRequestedApplication(app)} className="bg-navy text-white">Edit and Resubmit Application</Button>}
                     </div>
                   ) : app.status === "pre_approved" ? (
                     <div className="space-y-3">
@@ -3205,7 +3762,7 @@ const EarnWithApexBee = () => {
                           🔍 KYC Documents Submitted for Verification
                         </p>
                         <p className="text-[11px] text-purple-700 font-medium">
-                          Your uploaded Aadhaar, PAN, and Bank details are being verified by Admin. Once verified, your portal login details will unlock here.
+                          Your uploaded documents are being verified by Admin. Once verified, your portal access will unlock here. Bank details can be added later in the vendor portal.
                         </p>
                       </div>
                     </div>
@@ -3300,6 +3857,12 @@ const EarnWithApexBee = () => {
           )}
 
           <div className="flex flex-col gap-2 pt-2">
+            <a
+              href="https://franchser.apexbee.in/"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-center transition-colors cursor-pointer"
+            >
+              <ExternalLink className="w-4 h-4" /> Enter Franchise Partner Portal (franchser.apexbee.in)
+            </a>
             <Button
               onClick={() => {
                 setBookingSuccessModal(null);

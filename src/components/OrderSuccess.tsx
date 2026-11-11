@@ -135,6 +135,90 @@ const getImageUrl = (img?: string) => {
   return `${API_ORIGIN}${img.startsWith("/") ? "" : "/"}${img}`;
 };
 
+export function getOrderItemVariantDetails(it: any): { label: string; value: string }[] {
+  const details: { label: string; value: string }[] = [];
+  if (!it) return details;
+
+  const prod = typeof it.productId === "object" && it.productId ? it.productId : null;
+  const matchedVariant =
+    (prod?.variants && Array.isArray(prod.variants) && it.variantId
+      ? prod.variants.find((v: any) => String(v._id || v.id) === String(it.variantId))
+      : null) ||
+    (prod?.variants && Array.isArray(prod.variants) && it.sku
+      ? prod.variants.find((v: any) => String(v.sku).toLowerCase() === String(it.sku).toLowerCase())
+      : null);
+
+  // 1. Variant name / title
+  const varName =
+    it.variantName ||
+    it.selectedVariant?.name ||
+    it.selectedVariant?.title ||
+    matchedVariant?.name ||
+    matchedVariant?.title;
+  if (varName && !["default", "standard", "regular", "base"].includes(String(varName).toLowerCase())) {
+    details.push({ label: "Variant", value: String(varName) });
+  }
+
+  // 2. Size and Color
+  const color = it.color || it.selectedColor || matchedVariant?.attributes?.color;
+  if (color && !["default", "none", "n/a"].includes(String(color).toLowerCase())) {
+    details.push({ label: "Color", value: String(color) });
+  }
+
+  const size = it.size || it.selectedSize || matchedVariant?.attributes?.size;
+  if (size && !["default", "none", "n/a", "one size"].includes(String(size).toLowerCase())) {
+    details.push({ label: "Size", value: String(size) });
+  }
+
+  // 3. Attributes / Specifications (e.g., volume, milk_type, weight, pack, flavor, etc.)
+  const rawAttrs = it.selectedAttributes || it.attributes || matchedVariant?.attributes || prod?.attributes;
+  if (rawAttrs && typeof rawAttrs === "object") {
+    Object.entries(rawAttrs).forEach(([k, v]) => {
+      if (v === null || v === undefined) return;
+      const keyLower = k.toLowerCase().trim();
+      if (["color", "size", "default", "distributedfrom", "commissiontype", "commissionpercent"].includes(keyLower)) return;
+      let valStr = Array.isArray(v) ? v.join(", ") : String(v);
+      if (!valStr || valStr === "default" || valStr === "none") return;
+
+      const cleanLabel = k
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+      if (!details.some((d) => d.value.toLowerCase() === valStr.toLowerCase())) {
+        details.push({ label: cleanLabel, value: valStr });
+      }
+    });
+  }
+
+  // 4. Water returnable details
+  if (it.waterDetails) {
+    if (it.waterDetails.volumeLitres) {
+      details.push({ label: "Capacity", value: `${it.waterDetails.volumeLitres} Litres` });
+    }
+    if (it.waterDetails.returnable) {
+      details.push({ label: "Container", value: "Returnable Jar" });
+    }
+  }
+
+  // 5. Pre-order schedule
+  if (it.isPreOrder) {
+    if (it.preOrderDeliveryDate) {
+      details.push({
+        label: "📅 Pre-Order",
+        value: new Date(it.preOrderDeliveryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      });
+    }
+    if (it.preOrderTimeSlot) {
+      details.push({ label: "⏰ Slot", value: it.preOrderTimeSlot });
+    }
+    if (it.preOrderCustomNote) {
+      details.push({ label: "✍️ Note", value: `"${it.preOrderCustomNote}"` });
+    }
+  }
+
+  return details;
+}
+
 const paymentLabel: Record<string, string> = {
   cod: "Cash on Delivery",
   upi: "UPI",
@@ -219,14 +303,21 @@ const OrderSuccess = () => {
 
     const itemRows = (order?.orderItems || [])
       .map(
-        (item, i) => `
+        (item, i) => {
+          const vDetails = getOrderItemVariantDetails(item);
+          const variantDesc = vDetails.length > 0 ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">${vDetails.map(v => `${v.label}: ${v.value}`).join(" | ")}</div>` : "";
+          return `
         <tr style="border-bottom:1px solid #e5e7eb;">
           <td style="padding:8px 4px;">${i + 1}</td>
-          <td style="padding:8px 4px;">${item.name || "—"}</td>
+          <td style="padding:8px 4px;">
+            <div style="font-weight:600;">${item.name || "—"}</div>
+            ${variantDesc}
+          </td>
           <td style="padding:8px 4px;">${item.quantity || 1}</td>
           <td style="padding:8px 4px;text-align:right;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
           <td style="padding:8px 4px;text-align:right;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
-        </tr>`
+        </tr>`;
+        }
       )
       .join("");
 
@@ -450,30 +541,44 @@ const OrderSuccess = () => {
 
                   {/* Items */}
                   <div className="space-y-3">
-                    {sub.items.map((item, i) => (
-                      <div key={i} className="flex gap-3 items-start">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                          <img
-                            src={getImageUrl(item.image)}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-navy truncate">{item.name}</p>
-                          <div className="text-sm text-muted-foreground flex flex-wrap gap-2 mt-0.5">
-                            {item.color && item.color !== "default" && <span>Color: {item.color}</span>}
-                            {item.size && item.size !== "One Size" && <span>Size: {item.size}</span>}
-                            <span>Qty: {item.quantity || 1}</span>
+                    {sub.items.map((item, i) => {
+                      const vDetails = getOrderItemVariantDetails(item);
+                      return (
+                        <div key={i} className="flex gap-3 items-start">
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={getImageUrl(item.image)}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-navy truncate">{item.name}</p>
+                            {vDetails.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                                {vDetails.map((vd, vIdx) => (
+                                  <span
+                                    key={vIdx}
+                                    className="inline-flex items-center text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded"
+                                  >
+                                    <span className="text-amber-600 font-semibold mr-1">{vd.label}:</span> {vd.value}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
+                              <span>Qty: {item.quantity || 1}</span>
+                              {(item as any).sku && <span>SKU: {(item as any).sku}</span>}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-semibold text-navy">{formatCurrency((item.price || 0) * (item.quantity || 1))}</p>
+                            <p className="text-xs text-muted-foreground">{formatCurrency(item.price)} × {item.quantity || 1}</p>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="font-semibold text-navy">{formatCurrency((item.price || 0) * (item.quantity || 1))}</p>
-                          <p className="text-xs text-muted-foreground">{formatCurrency(item.price)} × {item.quantity || 1}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Sub-order mini total */}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { buildPublicShareUrl } from "@/utils/url";
 import { openWhatsApp } from "@/utils/whatsapp";
+import { WaterProductNote } from '@/components/WaterProductNote';
 
 // Helper function for currency formatting
 const formatCurrency = (amount: any) => {
@@ -353,14 +354,16 @@ const ProductDetail = () => {
     0
   );
 
-  const baseSellingPrice = selectedVariant
-    ? (selectedVariant.sellingPrice ?? selectedVariant.price ?? 0)
-    : (product.adminPricing?.customerSellingAmount ?? product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? 0);
+  const baseSellingPrice = (selectedVariant && Number(selectedVariant.sellingPrice || selectedVariant.price || 0) > 0)
+    ? Number(selectedVariant.sellingPrice || selectedVariant.price)
+    : Number(product.adminPricing?.customerSellingAmount ?? product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? product.sellingPrice ?? product.price ?? product.afterDiscount ?? 0);
 
   const afterDiscount = baseSellingPrice;
 
-  const userPrice = selectedVariant?.mrp ?? product.adminPricing?.mrp ?? product.baseMrp ?? product.userPrice ?? product.mrp ?? 0;
-  const discount = product.discountPercent ?? product.discount ?? 0;
+  const userPrice = (selectedVariant && Number(selectedVariant.mrp || 0) > 0)
+    ? Number(selectedVariant.mrp)
+    : Number(product.adminPricing?.mrp ?? product.baseMrp ?? product.userPrice ?? product.mrp ?? baseSellingPrice);
+  const discount = product.discountPercent ?? product.discount ?? (userPrice > baseSellingPrice ? Math.round(((userPrice - baseSellingPrice) / userPrice) * 100) : 0);
   const deliveryFee = shippingCharge;
   const isPreOrder = Boolean(product?.isPreOrder || product?.preOrder || product?.itemPreOrder);
   const preOrderReleaseDate = product?.preOrderReleaseDate || product?.preOrderDate || product?.availableOn || null;
@@ -845,11 +848,14 @@ const ProductDetail = () => {
     const item = {
       productId: product._id,
       itemName: title + (selectedVariant ? ` (${Object.values(selectedAttrs).join(", ")})` : ""),
+      variantId: selectedVariant?._id || selectedVariant?.id || null,
+      variantName: selectedVariant?.name || selectedVariant?.title || (selectedVariant ? Object.values(selectedAttrs).join(", ") : ""),
+      selectedVariant: selectedVariant || null,
       price: afterDiscount,
       originalPrice: userPrice,
-      sellingPrice: selectedVariant
-        ? selectedVariant.sellingPrice
-        : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? 0),
+      sellingPrice: (selectedVariant && Number(selectedVariant.sellingPrice || selectedVariant.price || 0) > 0)
+        ? (selectedVariant.sellingPrice || selectedVariant.price)
+        : (product.adminPricing?.sellingPrice ?? product.baseSellingPrice ?? afterDiscount ?? 0),
       image: images[mainImageIndex] || images[0],
       images: images,
       quantity,
@@ -877,6 +883,11 @@ const ProductDetail = () => {
       preOrderReleaseDate: selectedPreOrderDate || preOrderReleaseDate,
       preOrderMessage: preOrderMessage,
       availableOn: selectedPreOrderDate || preOrderReleaseDate,
+      isSelfPickup: Boolean(product.isSelfPickup || product.sellerId?.isSelfPickup || (product as any).vendor?.isSelfPickup || product.allowPickup || product.pickupAvailable),
+      allowPickup: Boolean(product.isSelfPickup || product.sellerId?.isSelfPickup || (product as any).vendor?.isSelfPickup || product.allowPickup || product.pickupAvailable),
+      pickupAvailable: Boolean(product.isSelfPickup || product.sellerId?.isSelfPickup || (product as any).vendor?.isSelfPickup || product.allowPickup || product.pickupAvailable),
+      gstRate: product.gstRate,
+      gstPricingMode: product.gstPricingMode,
       product: product
     };
 
@@ -1145,6 +1156,35 @@ const ProductDetail = () => {
                   {formatCurrency(userPrice)}
                 </span>
               )}
+              {/* Product GST display with CGST & SGST Split (Req 02) */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                {product.gstRate !== undefined && Number(product.gstRate) > 0 ? (
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${product.gstPricingMode === 'exclusive'
+                      ? 'bg-amber-50 text-amber-900 border-amber-300'
+                      : 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                    }`}>
+                    {product.gstPricingMode === 'exclusive' ? (
+                      <>
+                        <span>+ {product.gstRate}% GST at checkout</span>
+                        <span className="text-[10px] text-amber-700 font-semibold">
+                          (CGST {(Number(product.gstRate) / 2).toFixed(1)}% + SGST {(Number(product.gstRate) / 2).toFixed(1)}%)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Includes {product.gstRate}% GST</span>
+                        <span className="text-[10px] text-emerald-700 font-semibold">
+                          (CGST {(Number(product.gstRate) / 2).toFixed(1)}% + SGST {(Number(product.gstRate) / 2).toFixed(1)}%)
+                        </span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-xs text-slate-500 font-medium">
+                    (Tax Inclusive / 0% GST)
+                  </span>
+                )}
+              </div>
             </div>
 
 
@@ -1260,11 +1300,10 @@ const ProductDetail = () => {
                             key={slot.id}
                             type="button"
                             onClick={() => setSelectedPreOrderTimeSlot(slot.id)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
-                              isSelected
+                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${isSelected
                                 ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm shadow-amber-500/20"
                                 : "bg-white text-slate-800 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
-                            }`}
+                              }`}
                           >
                             <span className="flex items-center justify-between">
                               <span>{slot.label}</span>
@@ -1510,6 +1549,7 @@ const ProductDetail = () => {
               )}
             </div>
 
+            <WaterProductNote details={product.waterDetails} />
             {/* 🔄 SUBSCRIPTION AVAILABILITY STATUS BADGE */}
             {isSubscriptionAvailable && (
               <div className="mb-4 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 via-amber-50 to-amber-100/60 border border-amber-300/80 rounded-2xl p-3.5 shadow-2xs">
@@ -1530,22 +1570,20 @@ const ProductDetail = () => {
             <div className="flex gap-4">
               <Button
                 onClick={() => handleAddToCart(true)}
-                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
-                  isPreOrder
+                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${isPreOrder
                     ? "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black shadow-amber-500/20"
                     : "bg-accent hover:bg-accent/90 text-white"
-                }`}
+                  }`}
                 disabled={isOutOfStock}
               >
                 {isPreOrder ? "📅 Pre-Book (Add to Cart)" : "Add to Cart"}
               </Button>
               <Button
                 onClick={handleBuyNow}
-                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${
-                  isPreOrder
+                className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${isPreOrder
                     ? "bg-[#0A1128] hover:bg-[#060c20] text-amber-400 border border-amber-400/40 font-black shadow-md shadow-[#0A1128]/30"
                     : "bg-navy hover:bg-navy/90 text-white"
-                }`}
+                  }`}
                 disabled={isOutOfStock}
               >
                 {isPreOrder ? "🚀 Pre-Order Now" : "Buy Now"}
@@ -1594,6 +1632,13 @@ const ProductDetail = () => {
                   <span className="text-muted-foreground font-medium">Shipping Scope:</span>
                   <span className="font-bold text-emerald-600">{deliveryReachText.badge}</span>
                 </div>
+
+                {Boolean(product.isSelfPickup || product.sellerId?.isSelfPickup) && (
+                  <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between">
+                    <span className="text-emerald-900 font-bold">Store Self Pickup:</span>
+                    <span className="font-extrabold text-emerald-800">🏪 Available at Store</span>
+                  </div>
+                )}
 
                 {stock > 0 && (
                   <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex justify-between">

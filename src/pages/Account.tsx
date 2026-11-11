@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Package, Lock, Gift, Home, Briefcase, CreditCard, User, Star, UserX } from "lucide-react";
+import { Package, Lock, Gift, Home, Briefcase, CreditCard, User, Star, UserX, Droplets, Store, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -211,18 +211,98 @@ const Account = () => {
             </div>
           </div>
 
-          {user?.role === "admin" && (
-            <div className="bg-white border border-gray-150 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left" onClick={() => navigate("/admin/reviews")}>
+          {(user?.role === "vendor" || user?.role === "admin" || user?.isVendor || (Array.isArray(user?.roles) && user.roles.some((r: string) => r.toLowerCase().includes("vendor")))) && (
+            <>
+              <div className="bg-white border border-[#0A1128]/20 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left bg-gradient-to-r from-white to-amber-50/20" onClick={() => navigate("/vendor/portal")}>
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#0A1128] p-3.5 rounded-xl shrink-0 text-[#F3BA12] shadow-sm">
+                    <Store className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-navy text-base">Vendor Business Portal</h3>
+                      <span className="text-[10px] font-extrabold bg-amber-400 text-navy px-2 py-0.5 rounded-full">Dashboard</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-normal">Live store status, subscriptions, dairy demand, produce batches & catalog</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-blue-200/80 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left" onClick={() => navigate("/vendor/workspace/water")}>
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-50 p-3.5 rounded-xl shrink-0">
+                    <Droplets className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-navy text-base">Water Can & Container Ledger</h3>
+                      <span className="text-[10px] font-extrabold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Water Operations</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-normal">Track unreturned empty cans, customer balances & security deposits</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {(user?.role === "delivery_partner" || user?.role === "delivery_agent" || user?.isDeliveryPartner || user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.some((r: string) => r.toLowerCase().includes("delivery")))) && (
+            <div className="bg-white border border-emerald-500/20 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left bg-gradient-to-r from-white to-emerald-50/20" onClick={() => navigate("/delivery/portal")}>
               <div className="flex items-center gap-4">
-                <div className="bg-[#FFF9E6] p-3.5 rounded-xl shrink-0">
-                  <Star className="h-6 w-6 text-[#0A1128]" />
+                <div className="bg-[#0A1128] p-3.5 rounded-xl shrink-0 text-emerald-400 shadow-sm">
+                  <Truck className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-navy text-base">Review Moderation</h3>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-normal">Edit or delete customer product reviews</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-navy text-base">Delivery Partner Portal</h3>
+                    <span className="text-[10px] font-extrabold bg-emerald-400 text-navy px-2 py-0.5 rounded-full">Rider Hub</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-normal">Active assignments, broadcast offers, delivery slots, OTP confirmation & earnings</p>
                 </div>
               </div>
             </div>
+          )}
+
+          {user?.role === "admin" && (
+            <>
+              <div className="bg-white border border-[#0A1128]/20 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left bg-gradient-to-r from-white to-sky-50/30" onClick={() => navigate("/admin/orders")}>
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#0A1128] p-3.5 rounded-xl shrink-0 text-sky-400 shadow-sm">
+                    <Package className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-navy text-base">Admin Order Management</h3>
+                      <span className="text-[10px] font-extrabold bg-sky-500 text-white px-2 py-0.5 rounded-full">All Orders</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-normal">Universal order tracking, full tax calculations, delivery logistics and status controls</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-150 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left" onClick={() => navigate("/admin/transactions")}>
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#FFF9E6] p-3.5 rounded-xl shrink-0">
+                    <CreditCard className="h-6 w-6 text-[#0A1128]" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-navy text-base">Admin Transactions</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-normal">Audit, edit, and reconcile platform wallet transactions</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-150 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left" onClick={() => navigate("/admin/reviews")}>
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#FFF9E6] p-3.5 rounded-xl shrink-0">
+                    <Star className="h-6 w-6 text-[#0A1128]" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-navy text-base">Review Moderation</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-normal">Edit or delete customer product reviews</p>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

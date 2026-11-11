@@ -161,20 +161,29 @@ export const getItemPlatformFee = (item: any): number => {
 const renderVariantDetails = (item: any) => {
   const details: string[] = [];
 
+  const varName = item.variantName || item.selectedVariant?.name || item.selectedVariant?.title;
+  if (varName && !["default", "standard", "regular", "base"].includes(String(varName).toLowerCase())) {
+    details.push(`Variant: ${varName}`);
+  }
+
   if (item.selectedAttributes && typeof item.selectedAttributes === "object") {
     Object.entries(item.selectedAttributes).forEach(([key, val]) => {
-      if (val && val !== "default") {
-        const label = key.charAt(0).toUpperCase() + key.slice(1);
-        details.push(`${label}: ${val}`);
+      if (val && val !== "default" && val !== "none") {
+        const cleanKey = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        if (!details.some((d) => d.toLowerCase().includes(String(val).toLowerCase()))) {
+          details.push(`${cleanKey}: ${val}`);
+        }
       }
     });
   }
 
-  if (details.length === 0) {
-    const color = item.selectedColor || item.color;
-    const size = item.selectedSize || item.size;
-    if (color && color !== "default") details.push(`Color: ${color}`);
-    if (size && size !== "default") details.push(`Size: ${size}`);
+  const color = item.selectedColor || item.color;
+  const size = item.selectedSize || item.size;
+  if (color && color !== "default" && !details.some((d) => d.toLowerCase().includes(String(color).toLowerCase()))) {
+    details.push(`Color: ${color}`);
+  }
+  if (size && size !== "default" && !details.some((d) => d.toLowerCase().includes(String(size).toLowerCase()))) {
+    details.push(`Size: ${size}`);
   }
 
   if (details.length === 0) return null;
@@ -195,7 +204,26 @@ const renderVariantDetails = (item: any) => {
 
 // Read pickup/preorder flags safely
 const readItemFlags = (item: any) => {
-  const allowPickup = Boolean(item?.allowPickup ?? item?.pickupAvailable ?? false);
+  const allowPickup = Boolean(
+    item?.allowPickup ||
+    item?.pickupAvailable ||
+    item?.isSelfPickup ||
+    item?.storePickup ||
+    item?.product?.isSelfPickup ||
+    item?.product?.allowPickup ||
+    item?.product?.pickupAvailable ||
+    item?.product?.storePickup ||
+    item?.productId?.isSelfPickup ||
+    item?.productId?.allowPickup ||
+    item?.productId?.pickupAvailable ||
+    item?.sellerId?.isSelfPickup ||
+    item?.vendor?.isSelfPickup ||
+    item?.product?.sellerId?.isSelfPickup ||
+    item?.fulfillment?.pickupEnabled ||
+    item?.fulfillment?.mode === 'pickup_only' ||
+    item?.fulfillment?.mode === 'both' ||
+    item?.fulfillment?.mode === 'pickup'
+  );
   const isPreOrder = Boolean(item?.isPreOrder ?? item?.preOrder ?? item?.product?.isPreOrder ?? item?.productId?.isPreOrder ?? false);
   const availableOn = item?.availableOn || item?.preOrderReleaseDate || item?.preOrderDate || item?.product?.preOrderReleaseDate || null;
   const preOrderDeliveryDate = item?.preOrderDeliveryDate || availableOn;
@@ -577,11 +605,51 @@ const Cart = () => {
   // platform fee (if commission type is platform or platform fee applies)
   const totalPlatformFee = cartItems.reduce((sum, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
 
-  // GST Tax 5%
-  const taxableAmount = subtotal + totalPackingFee + totalDeliveryFee + totalPlatformFee;
-  const gstTax = Math.round(taxableAmount * 0.05);
+  // GST calculation based on each product's saved GST settings (Req 02)
+  const gstBreakdown = useMemo(() => {
+    let inclusiveCgstTotal = 0;
+    let inclusiveSgstTotal = 0;
+    let exclusiveCgstTotal = 0;
+    let exclusiveSgstTotal = 0;
 
-  const total = taxableAmount + gstTax;
+    cartItems.forEach((item: any) => {
+      const qty = item.quantity || 1;
+      const price = item.sellingPrice || item.afterDiscount || item.price || 0;
+      const lineTotal = price * qty;
+      const rate = Number(item.gstRate ?? item.product?.gstRate ?? item.productId?.gstRate ?? 0);
+      const mode = (item.gstPricingMode || item.product?.gstPricingMode || item.productId?.gstPricingMode || 'inclusive');
+
+      if (rate > 0) {
+        if (mode === 'exclusive') {
+          const itemTax = (lineTotal * rate) / 100;
+          const half = Math.round((itemTax / 2) * 100) / 100;
+          exclusiveCgstTotal += half;
+          exclusiveSgstTotal += half;
+        } else {
+          const base = lineTotal / (1 + rate / 100);
+          const itemTax = lineTotal - base;
+          const half = Math.round((itemTax / 2) * 100) / 100;
+          inclusiveCgstTotal += half;
+          inclusiveSgstTotal += half;
+        }
+      }
+    });
+
+    const exclusiveGst = exclusiveCgstTotal + exclusiveSgstTotal;
+    const inclusiveGst = inclusiveCgstTotal + inclusiveSgstTotal;
+
+    return {
+      inclusiveGst,
+      inclusiveCgst: inclusiveCgstTotal,
+      inclusiveSgst: inclusiveSgstTotal,
+      exclusiveGst,
+      cgst: exclusiveCgstTotal,
+      sgst: exclusiveSgstTotal,
+      totalGst: inclusiveGst + exclusiveGst,
+    };
+  }, [cartItems]);
+
+  const total = subtotal + totalPackingFee + totalDeliveryFee + totalPlatformFee + gstBreakdown.exclusiveGst;
 
   // Pre-order: compute max availableOn and preserve customer scheduled date, slot, and cake note
   const preOrderInfo = useMemo(() => {
@@ -603,8 +671,8 @@ const Cart = () => {
     const datedItems = preItems.filter((it) => it.preOrderDeliveryDate || it.availableOn);
     const maxDate = datedItems.length > 0
       ? datedItems
-          .map((it) => new Date(it.preOrderDeliveryDate || it.availableOn))
-          .reduce((a, b) => (a > b ? a : b))
+        .map((it) => new Date(it.preOrderDeliveryDate || it.availableOn))
+        .reduce((a, b) => (a > b ? a : b))
       : null;
 
     const firstScheduled = preItems.find((it) => it.preOrderDeliveryDate);
@@ -645,7 +713,8 @@ const Cart = () => {
         deliveryFee: totalDeliveryFee,
         packingFee: totalPackingFee,
         platformFee: totalPlatformFee,
-        tax: gstTax,
+        tax: gstBreakdown.exclusiveGst,
+        gstBreakdown,
         total,
         pickupPossible,
         preOrderInfo,
@@ -696,6 +765,15 @@ const Cart = () => {
         packingFee: itemPackingFee,
         platformFee: itemPlatformFee,
         tax: itemGstTax,
+        gstBreakdown: {
+          inclusiveGst: 0,
+          inclusiveCgst: 0,
+          inclusiveSgst: 0,
+          exclusiveGst: itemGstTax,
+          cgst: itemGstTax / 2,
+          sgst: itemGstTax / 2,
+          totalGst: itemGstTax,
+        },
         total: itemTotal,
         pickupPossible: allowPickup,
         preOrderInfo: singlePreOrderInfo,
@@ -974,10 +1052,31 @@ const Cart = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between text-slate-600">
-                  <span>Estimated GST Tax (5%)</span>
-                  <span className="font-bold text-slate-900 font-mono">{formatCurrency(gstTax)}</span>
-                </div>
+                {gstBreakdown.exclusiveGst > 0 && (
+                  <>
+                    <div className="flex justify-between text-slate-600">
+                      <span>CGST (Central Tax)</span>
+                      <span className="font-bold text-slate-900 font-mono">+{formatCurrency(gstBreakdown.cgst)}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>SGST (State Tax)</span>
+                      <span className="font-bold text-slate-900 font-mono">+{formatCurrency(gstBreakdown.sgst)}</span>
+                    </div>
+                  </>
+                )}
+
+                {gstBreakdown.inclusiveGst > 0 && (
+                  <div className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <div className="flex justify-between font-medium">
+                      <span>GST Included in Item Price:</span>
+                      <span className="font-bold text-slate-700 font-mono">{formatCurrency(gstBreakdown.inclusiveGst)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Breakdown:</span>
+                      <span>CGST: {formatCurrency(gstBreakdown.inclusiveCgst)} + SGST: {formatCurrency(gstBreakdown.inclusiveSgst)}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border-t border-slate-200 pt-3 flex justify-between text-base font-black text-[#0A1128]">
                   <span>Total Payable</span>

@@ -1184,11 +1184,10 @@ export const FoodDining: React.FC = () => {
                     <span className="text-sm sm:text-base">{cat.icon}</span>
                     <span>{cat.name}</span>
                     {typeof cat.count === 'number' && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                        isSelected
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected
                           ? 'bg-amber-400/25 text-amber-300'
                           : 'bg-slate-100 text-slate-500'
-                      }`}>
+                        }`}>
                         {cat.count}
                       </span>
                     )}
@@ -1356,11 +1355,10 @@ export const FoodDining: React.FC = () => {
                     <span className="text-sm sm:text-base">{c.icon}</span>
                     <span>{c.name}</span>
                     {typeof c.count === 'number' && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                        isSelected
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected
                           ? 'bg-amber-400/25 text-amber-300'
                           : 'bg-slate-100 text-slate-500'
-                      }`}>
+                        }`}>
                         {c.count}
                       </span>
                     )}
@@ -1792,110 +1790,110 @@ export const FoodDining: React.FC = () => {
         <Dialog open onOpenChange={(open) => { if (!open) setSelectedQuickViewItem(null); }}>
           <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-xl rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
             <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6">
-            <div className="flex min-w-0 flex-col sm:flex-row gap-5">
-              <div className="w-full sm:w-1/2 h-48 sm:h-64 bg-slate-100 rounded-2xl overflow-hidden relative shrink-0">
-                <img
-                  src={selectedQuickViewItem.image || selectedQuickViewItem.images?.[0]}
-                  alt={selectedQuickViewItem.name || selectedQuickViewItem.itemName || 'Food item'}
-                  className="w-full h-full object-cover"
-                />
-                <span className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-lg text-xs font-black border ${selectedQuickViewItem.isVeg ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'
-                  }`}>
-                  {selectedQuickViewItem.isVeg ? '🌱 VEG' : '🍖 NON-VEG'}
-                </span>
-              </div>
-
-              <div className="min-w-0 flex-1 break-words space-y-3">
-                <p className="text-xs font-bold text-amber-600">
-                  🏪 {selectedQuickViewItem.restaurantName || selectedQuickViewItem.brand || 'Gourmet Outlet'}
-                </p>
-
-                <DialogTitle className="text-xl font-black text-[#0A1128] leading-tight">
-                  {selectedQuickViewItem.name || selectedQuickViewItem.itemName}
-                </DialogTitle>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-lg text-xs font-black">
-                    <Star className="w-3.5 h-3.5 fill-[#0A1128]" />
-                    <span>{formatRating(selectedQuickViewItem.rating)}</span>
-                  </div>
-                  <span className="text-xs text-slate-500 font-semibold">⚡ {selectedQuickViewItem.prepTime || '20 mins'}</span>
-                  {selectedQuickViewItem.serves && (
-                    <span className="text-xs text-slate-500 font-bold">👥 {selectedQuickViewItem.serves}</span>
-                  )}
+              <div className="flex min-w-0 flex-col sm:flex-row gap-5">
+                <div className="w-full sm:w-1/2 h-48 sm:h-64 bg-slate-100 rounded-2xl overflow-hidden relative shrink-0">
+                  <img
+                    src={selectedQuickViewItem.image || selectedQuickViewItem.images?.[0]}
+                    alt={selectedQuickViewItem.name || selectedQuickViewItem.itemName || 'Food item'}
+                    className="w-full h-full object-cover"
+                  />
+                  <span className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-lg text-xs font-black border ${selectedQuickViewItem.isVeg ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'
+                    }`}>
+                    {selectedQuickViewItem.isVeg ? '🌱 VEG' : '🍖 NON-VEG'}
+                  </span>
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  {selectedQuickViewItem.description || 'Delicious gourmet food prepared fresh using pure ingredients and traditional authentic cooking techniques.'}
-                </p>
+                <div className="min-w-0 flex-1 break-words space-y-3">
+                  <p className="text-xs font-bold text-amber-600">
+                    🏪 {selectedQuickViewItem.restaurantName || selectedQuickViewItem.brand || 'Gourmet Outlet'}
+                  </p>
 
-                {selectedQuickViewItem.ingredients && (
-                  <div>
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Ingredients</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedQuickViewItem.ingredients.map((ing: string) => (
-                        <span key={ing} className="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-700">
-                          {ing}
-                        </span>
-                      ))}
+                  <DialogTitle className="text-xl font-black text-[#0A1128] leading-tight">
+                    {selectedQuickViewItem.name || selectedQuickViewItem.itemName}
+                  </DialogTitle>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1 bg-amber-400 text-[#0A1128] px-2 py-0.5 rounded-lg text-xs font-black">
+                      <Star className="w-3.5 h-3.5 fill-[#0A1128]" />
+                      <span>{formatRating(selectedQuickViewItem.rating)}</span>
                     </div>
+                    <span className="text-xs text-slate-500 font-semibold">⚡ {selectedQuickViewItem.prepTime || '20 mins'}</span>
+                    {selectedQuickViewItem.serves && (
+                      <span className="text-xs text-slate-500 font-bold">👥 {selectedQuickViewItem.serves}</span>
+                    )}
                   </div>
-                )}
 
-                {(() => {
-                  const qvPrice = getDishPriceInfo(selectedQuickViewItem);
-                  return (
-                    <>
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                        <div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-[#0A1128]">
-                              ₹{qvPrice.price * quickViewQty}
-                            </span>
-                            {qvPrice.mrp > qvPrice.price && (
-                              <span className="text-xs text-slate-400 line-through">
-                                ₹{Math.round(qvPrice.mrp * quickViewQty)}
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    {selectedQuickViewItem.description || 'Delicious gourmet food prepared fresh using pure ingredients and traditional authentic cooking techniques.'}
+                  </p>
+
+                  {selectedQuickViewItem.ingredients && (
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Ingredients</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedQuickViewItem.ingredients.map((ing: string) => (
+                          <span key={ing} className="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-700">
+                            {ing}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const qvPrice = getDishPriceInfo(selectedQuickViewItem);
+                    return (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                          <div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-xl font-black text-[#0A1128]">
+                                ₹{qvPrice.price * quickViewQty}
                               </span>
-                            )}
+                              {qvPrice.mrp > qvPrice.price && (
+                                <span className="text-xs text-slate-400 line-through">
+                                  ₹{Math.round(qvPrice.mrp * quickViewQty)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* QTY COUNTER */}
+                          <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                            <button
+                              type="button"
+                              aria-label="Decrease quantity"
+                              onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
+                              disabled={quickViewQty <= 1}
+                              className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs disabled:opacity-40"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="w-8 text-center font-black text-sm text-[#0A1128]">{quickViewQty}</span>
+                            <button
+                              type="button"
+                              aria-label="Increase quantity"
+                              onClick={() => setQuickViewQty((q) => q + 1)}
+                              className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
-                        {/* QTY COUNTER */}
-                        <div className="flex items-center bg-slate-100 rounded-xl p-1">
-                          <button
-                            type="button"
-                            aria-label="Decrease quantity"
-                            onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
-                            disabled={quickViewQty <= 1}
-                            className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs disabled:opacity-40"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-8 text-center font-black text-sm text-[#0A1128]">{quickViewQty}</span>
-                          <button
-                            type="button"
-                            aria-label="Increase quantity"
-                            onClick={() => setQuickViewQty((q) => q + 1)}
-                            className="w-11 h-11 rounded-lg bg-white flex items-center justify-center text-slate-700 font-bold border-none cursor-pointer shadow-xs"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAddToCart(selectedQuickViewItem, quickViewQty)}
-                        className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition duration-300 flex items-center justify-center gap-2 shadow-md border-none cursor-pointer"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Add {quickViewQty} to Order • ₹{qvPrice.price * quickViewQty}</span>
-                      </button>
-                    </>
-                  );
-                })()}
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(selectedQuickViewItem, quickViewQty)}
+                          className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs rounded-2xl transition duration-300 flex items-center justify-center gap-2 shadow-md border-none cursor-pointer"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Add {quickViewQty} to Order • ₹{qvPrice.price * quickViewQty}</span>
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
             </div>
           </DialogContent>
         </Dialog>

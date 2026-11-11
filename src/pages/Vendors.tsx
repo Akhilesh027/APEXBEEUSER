@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   MapPin, Store, Filter, Loader2, Star, Phone, ShieldCheck, Tag, ShoppingBag,
   Clock, Percent, Calendar, Heart, ArrowLeft, Plus, Minus, Check, CalendarDays,
-  Sparkles, CheckCircle2, ChevronRight, ChevronLeft, X, AlertCircle, Truck
+  Sparkles, CheckCircle2, ChevronRight, ChevronLeft, X, AlertCircle, Truck,
+  LayoutGrid, List
 } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCustomizerModal from "@/components/ProductCustomizerModal";
+import { BusinessInquiryButton } from '@/components/BusinessInquiryButton';
+import { WaterProductNote, type WaterProductDetails } from '@/components/WaterProductNote';
+import { estimateSubscriptionDeliveries, subscriptionToday, subscriptionTomorrow } from '@/lib/subscriptionPlan';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -87,6 +92,8 @@ type Product = {
   subcategory?: string;
   status?: string;
   isSubscriptionAvailable?: boolean;
+  dairyDetails?: { dairyType?: string } | null;
+  waterDetails?: WaterProductDetails | null;
   brand?: string;
   deliveryFee?: number;
 };
@@ -104,6 +111,7 @@ const StorePage = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "ALL">("ALL");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState<'products' | 'about' | 'gallery' | 'policies' | 'hours' | 'reviews'>('products');
   const [quickViewProduct, setQuickViewProduct] = useState<any | null>(null);
 
@@ -113,7 +121,7 @@ const StorePage = () => {
   // Subcategory Chips based ONLY on currently listed items (no hardcoded defaults)
   const vendorSubcategories = useMemo(() => {
     const isFood = (store?.category || (store?.categories && store?.categories[0]) || "").toLowerCase().includes("food") ||
-                   (store?.category || "").toLowerCase().includes("restaurant");
+      (store?.category || "").toLowerCase().includes("restaurant");
 
     // Map of category/subcategory name -> count
     const countsMap = new Map<string, number>();
@@ -258,9 +266,33 @@ const StorePage = () => {
 
   // Cart / Subscriptions modal states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const isDairySubscription = !!selectedProduct?.dairyDetails?.dairyType
+    || /^daily needs$/i.test(selectedProduct?.category?.name ?? '') && /^(milk and dairy|milk & dairy|milk|dairy)$/i.test(selectedProduct?.subcategory ?? '');
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  useEffect(() => {
+    if (!isSubModalOpen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"][aria-label="Configure Subscription"]');
+    dialog?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setIsSubModalOpen(false); }
+      if (event.key !== 'Tab' || !dialog) return;
+      const controls = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]')).filter(element => element.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', handleKey); previousFocus?.focus(); };
+  }, [isSubModalOpen]);
+
   const [subQuantity, setSubQuantity] = useState(1);
-  const [subFrequency, setSubFrequency] = useState<"daily" | "alternate" | "weekly" | "monthly" | "custom">("daily");
+  const [subFrequency, setSubFrequency] = useState<"daily" | "alternate" | "custom" | "weekly" | "monthly">("daily");
+  const [subAutoRenew, setSubAutoRenew] = useState(true);
+  const [subBillingCycle, setSubBillingCycle] = useState<'weekly' | 'monthly'>('monthly');
+  const [subStartDate, setSubStartDate] = useState(subscriptionTomorrow);
   const [subCustomDays, setSubCustomDays] = useState<string[]>(["Mon", "Wed", "Fri"]);
   const [subSlot, setSubSlot] = useState("06:00 AM - 07:00 AM");
   const [subCustomerName, setSubCustomerName] = useState("");
@@ -753,6 +785,7 @@ const StorePage = () => {
     setSelectedProduct(product);
     setSubQuantity(1);
     setSubFrequency("daily");
+    setSubBillingCycle('monthly'); setSubStartDate(subscriptionTomorrow()); setSubAutoRenew(true);
     setSubSuccess(false);
 
     let storedName = "";
@@ -788,6 +821,7 @@ const StorePage = () => {
   // Submit subscription
   const handleConfirmSubscription = async () => {
     if (!selectedProduct) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(subStartDate) || subStartDate < subscriptionToday()) { alert('Choose a start date of today or later.'); return; }
     if (!subCustomerName.trim() || !subCustomerPhone.trim() || !subDeliveryAddress.trim()) {
       alert("Please fill in all delivery contact and address details.");
       return;
@@ -813,9 +847,10 @@ const StorePage = () => {
       quantity: subQuantity,
       unitPrice: selectedProduct.afterDiscount || 0,
       frequency: subFrequency,
+      scheduleVersion: 2, billingCycle: subBillingCycle, startDate: subStartDate,
       customDays: subFrequency === "custom" ? subCustomDays : undefined,
       deliverySlot: subSlot,
-      autoRenew: true,
+      autoRenew: subAutoRenew,
       customerName: subCustomerName.trim(),
       customerPhone: subCustomerPhone.trim(),
       address: subDeliveryAddress.trim(),
@@ -826,7 +861,7 @@ const StorePage = () => {
     try {
       const res = await fetch(`${API_BASE}/local-shop/subscriptions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
         body: JSON.stringify(subscriptionPayload),
       });
       const json = await res.json();
@@ -856,20 +891,13 @@ const StorePage = () => {
     }
   };
 
-  const estimatedMonthlyDeliveries = useMemo(() => {
-    if (subFrequency === "daily") return 30;
-    if (subFrequency === "alternate") return 15;
-    if (subFrequency === "weekly") return 4;
-    if (subFrequency === "monthly") return 1;
-    if (subFrequency === "custom") return subCustomDays.length * 4;
-    return 30;
-  }, [subFrequency, subCustomDays]);
+  const estimatedCycleDeliveries = useMemo(() => estimateSubscriptionDeliveries(subFrequency, subCustomDays, subStartDate, subBillingCycle), [subFrequency, subCustomDays, subStartDate, subBillingCycle]);
 
   const estimatedCost = useMemo(() => {
     if (!selectedProduct) return 0;
     const price = selectedProduct.afterDiscount || 0;
-    return price * subQuantity * estimatedMonthlyDeliveries;
-  }, [selectedProduct, subQuantity, estimatedMonthlyDeliveries]);
+    return price * subQuantity * estimatedCycleDeliveries;
+  }, [selectedProduct, subQuantity, estimatedCycleDeliveries]);
 
   const formatPrice = (n?: number) =>
     typeof n === "number" ? `₹${n.toFixed(0)}` : "₹0";
@@ -937,7 +965,7 @@ const StorePage = () => {
 
         {/* ✅ STORE BANNER */}
         <section className="container mx-auto px-4 pt-4">
-          <div className="relative overflow-hidden rounded-3xl border border-navy/10 bg-slate-950 text-white shadow-xl min-h-[220px] flex items-end">
+          <div className="relative overflow-hidden rounded-3xl border border-navy/10 bg-slate-950 text-white shadow-xl min-h-[160px] sm:min-h-[220px] flex items-end">
             {/* Banner Background Image */}
             {store.storeDesign?.bannerUrl ? (
               <div className="absolute inset-0 z-0">
@@ -953,10 +981,10 @@ const StorePage = () => {
               </div>
             )}
 
-            <div className="relative z-10 p-6 sm:p-8 w-full flex flex-col md:flex-row gap-6 md:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-6 sm:items-center">
+            <div className="relative z-10 p-4 sm:p-8 w-full flex flex-col md:flex-row gap-3 sm:gap-6 md:items-center justify-between">
+              <div className="flex flex-row gap-3 sm:gap-6 sm:items-center">
                 {/* Logo Avatar */}
-                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-white border border-white/20 overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
+                <div className="h-14 w-14 sm:h-24 sm:w-24 rounded-2xl bg-white border border-white/20 overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
                   {store.storeDesign?.logoUrl || store.logo ? (
                     <img src={store.storeDesign?.logoUrl || store.logo} alt={store.businessName} className="h-full w-full object-cover" />
                   ) : (
@@ -1014,8 +1042,8 @@ const StorePage = () => {
                     if (catName.includes("grocery") || catName.includes("daily")) {
                       return (
                         <div className="flex flex-wrap items-center gap-2 my-2">
-                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">⚡ 10-Min Supermarket Express</span>
-                          <span className="px-2.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">🌅 Morning Milk & Produce Slot</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">Local delivery available</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">Choose a delivery slot</span>
                         </div>
                       );
                     }
@@ -1042,7 +1070,7 @@ const StorePage = () => {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-300">
                     <div className="inline-flex items-center gap-1">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      <span className="font-bold text-white">{store.rating?.average || 5.0}</span>
+                      <span className="font-bold text-white">{store.rating?.totalReviews ? store.rating.average : "New store"}</span>
                       <span className="text-slate-400">({store.rating?.totalReviews || 0} reviews)</span>
                     </div>
 
@@ -1132,34 +1160,7 @@ const StorePage = () => {
                   </div>
                 </div>
               ))
-            ) : (
-              <>
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-orange-500/20 text-orange-800">
-                  <div className="p-3 rounded-xl bg-accent text-white shadow-md">
-                    <Percent className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-accent">Daily essentials special</p>
-                    <h3 className="text-sm font-extrabold text-navy">Subscribe & Save 10% on monthly bill</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Applies automatically on checkout of subscriptions</p>
-                  </div>
-                  <div className="px-3 py-1 rounded-lg border border-dashed border-orange-400 bg-orange-500/5 text-xs font-mono font-bold tracking-wider">
-                    APEXDAILY
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-blue-800">
-                  <div className="p-3 rounded-xl bg-indigo-600 text-white shadow-md">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 font-bold">First time discount</p>
-                    <h3 className="text-sm font-extrabold text-navy">Free Delivery on items above ₹150</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">For one-time purchase or instant orders</p>
-                  </div>
-                </div>
-              </>
-            )}
+            ) : null}
           </div>
         </section>
 
@@ -1231,6 +1232,34 @@ const StorePage = () => {
                       Clear
                     </Button>
                   )}
+
+                  {/* Grid / List View Toggle */}
+                  <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      title="Grid View"
+                      className={`p-1.5 rounded-lg transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "grid"
+                          ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                        }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span className="text-[10px] font-bold hidden sm:inline">Grid</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      title="List View"
+                      className={`p-1.5 rounded-lg transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "list"
+                          ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                        }`}
+                    >
+                      <List className="w-4 h-4" />
+                      <span className="text-[10px] font-bold hidden sm:inline">List</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1285,153 +1314,311 @@ const StorePage = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-                    {paginatedProducts.map((p) => {
-                      const subAvailable =
-                        p.isSubscriptionAvailable === true &&
-                        (p.status === 'Live' || p.status === undefined) &&
-                        p.isStoreProduct !== false;
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+                      {paginatedProducts.map((p) => {
+                        const subAvailable =
+                          p.isSubscriptionAvailable === true &&
+                          (p.status === 'Live' || p.status === undefined) &&
+                          p.isStoreProduct !== false;
 
-                      const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
-                      const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
-                      const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
-                      const rating = p.ratings || p.rating || 4.8;
-                      const reviewCount = p.numberOfRatings || p.reviews || 0;
-                      const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
-                      const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
-                      const title = p.itemName || p.name || "Product";
-                      const img = p.images?.[0] || p.thumbnail || "/placeholder-product.png";
-                      const brandName = p.brand || store?.businessName || "Verified Store";
+                        const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
+                        const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
+                        const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+                        const rating = p.ratings || p.rating || 0;
+                        const reviewCount = p.numberOfRatings || p.reviews || 0;
+                        const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
+                        const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
+                        const title = p.itemName || p.name || "Product";
+                        const img = p.thumbnail || p.images?.[0] || "/placeholder-product.svg";
+                        const brandName = p.brand || store?.businessName || "Verified Store";
 
-                      return (
-                        <div
-                          key={p._id}
-                          className="group min-w-0 flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all duration-300 relative text-left"
-                        >
-                          <div className="grid grid-cols-[38%_minmax(0,1fr)] sm:block">
-                            {/* Product Image Stage */}
-                            <div
-                              className="h-full sm:h-auto min-h-36 sm:min-h-0 sm:aspect-[4/3] w-full bg-slate-50 relative overflow-hidden border-r sm:border-r-0 sm:border-b border-slate-100 cursor-pointer"
-                              onClick={() => setQuickViewProduct(p)}
-                            >
-                              <img
-                                src={img}
-                                alt={title}
-                                className="absolute inset-0 h-full w-full p-2 sm:p-3 object-contain group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
+                        return (
+                          <div
+                            key={p._id}
+                            className="group min-w-0 flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all duration-300 relative text-left"
+                          >
+                            <div className="grid grid-cols-[38%_minmax(0,1fr)] sm:block">
+                              {/* Product Image Stage */}
+                              <div
+                                className="h-full sm:h-auto min-h-36 sm:min-h-0 sm:aspect-[4/3] w-full bg-slate-50 relative overflow-hidden border-r sm:border-r-0 sm:border-b border-slate-100 cursor-pointer"
+                                onClick={() => setQuickViewProduct(p)}
+                              >
+                                <img
+                                  src={img}
+                                  onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = "/placeholder-product.svg"; }}
+                                  alt={title}
+                                  className="absolute inset-0 h-full w-full p-2 sm:p-3 object-contain group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                />
 
-                              {/* Badges */}
-                              <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
-                                {percentOff > 0 && (
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black uppercase shadow-sm">
-                                    {percentOff}% OFF
-                                  </span>
-                                )}
-                                {subAvailable && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[9px] sm:text-[10px] font-extrabold uppercase shadow-sm">
-                                    <Sparkles className="h-2.5 w-2.5 fill-white" />
-                                    Subscribe
-                                  </span>
-                                )}
+                                {/* Badges */}
+                                <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+                                  {percentOff > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black uppercase shadow-sm">
+                                      {percentOff}% OFF
+                                    </span>
+                                  )}
+                                  {subAvailable && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[9px] sm:text-[10px] font-extrabold uppercase shadow-sm">
+                                      <Sparkles className="h-2.5 w-2.5 fill-white" />
+                                      Subscribe
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Rating Badge */}
+                                {reviewCount > 0 && <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-xl text-[10px] font-black text-amber-600 flex items-center space-x-1 shadow-sm border border-amber-200 z-10">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span>{rating}</span>
+                                  {reviewCount > 0 && <span className="text-[9px] text-slate-400 font-medium">({reviewCount})</span>}
+                                </div>}
                               </div>
 
-                              {/* Rating Badge */}
-                              <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-xl text-[10px] font-black text-amber-600 flex items-center space-x-1 shadow-sm border border-amber-200 z-10">
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                <span>{rating}</span>
-                                {reviewCount > 0 && <span className="text-[9px] text-slate-400 font-medium">({reviewCount})</span>}
+                              {/* Product Content Details */}
+                              <div className="p-3 sm:p-4 space-y-2">
+                                <div className="flex min-w-0 items-center justify-between gap-2 text-[10px] font-semibold text-slate-500">
+                                  <span className="min-w-0 flex-1 truncate">{brandName}</span>
+                                  {store.verifiedBadge && <span className="shrink-0 text-emerald-600 font-bold flex items-center gap-1" title="Verified merchant">
+                                    <ShieldCheck className="w-3.5 h-3.5" /><span className="sr-only sm:not-sr-only">Verified</span>
+                                  </span>}
+                                </div>
+
+                                <h3
+                                  onClick={() => setQuickViewProduct(p)}
+                                  className="font-bold text-[#0A1128] line-clamp-2 sm:min-h-10 leading-5 text-sm sm:text-base hover:text-amber-600 transition cursor-pointer font-heading"
+                                >
+                                  {title}
+                                </h3>
+
+                                {p.dairyDetails && <p className="text-xs text-slate-600">{p.dairyDetails.dairyType} · {p.dairyDetails.packSize} {p.dairyDetails.packUnit}{p.dairyDetails.fatPercentage != null ? ` · ${p.dairyDetails.fatPercentage}% fat` : ""}</p>}
+                                {/* Price & Savings */}
+                                <div className="pt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+                                  <span className="text-base sm:text-xl font-black text-[#0A1128]">
+                                    {formatPrice(sellingPrice)}
+                                  </span>
+                                  {mrp > sellingPrice && (
+                                    <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                                      {formatPrice(mrp)}
+                                    </span>
+                                  )}
+                                  {mrp > sellingPrice && (
+                                    <span className="hidden sm:inline-flex text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                      Save {formatPrice(mrp - sellingPrice)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Shipping & Packing Charges Badges */}
+                                <WaterProductNote details={p.waterDetails} />
+                                <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px] leading-4 text-slate-600">
+                                  <div className="flex items-start gap-1.5">
+                                    <Clock className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                                    <span>{p.isSubscriptionAvailable ? "Scheduled delivery" : "Delivery time shown at checkout"}</span>
+                                  </div>
+                                  {shippingFee > 0 || packingFee > 0 ? (
+                                    <div className="space-y-1">
+                                      <div className="flex flex-wrap justify-between gap-x-1"><span>Shipping</span><strong>{shippingFee > 0 ? formatPrice(shippingFee) : 'FREE'}</strong></div>
+                                      <div className="flex flex-wrap justify-between gap-x-1"><span>Packing</span><strong>{packingFee > 0 ? formatPrice(packingFee) : '₹0'}</strong></div>
+                                    </div>
+                                  ) : <p className="font-semibold text-emerald-700">Free delivery &amp; packing</p>}
+                                </div>
                               </div>
                             </div>
 
-                            {/* Product Content Details */}
-                            <div className="p-3 sm:p-4 space-y-2">
-                              <div className="flex min-w-0 items-center justify-between gap-2 text-[10px] font-semibold text-slate-500">
-                                <span className="min-w-0 flex-1 truncate">{brandName}</span>
-                                <span className="shrink-0 text-emerald-600 font-bold flex items-center gap-1" title="Verified merchant">
-                                  <ShieldCheck className="w-3.5 h-3.5" /><span className="sr-only sm:not-sr-only">Verified</span>
-                                </span>
+                            {/* Actions */}
+                            <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-3 sm:pt-0 space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  className="h-11 w-full min-w-0 px-2 border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl text-xs cursor-pointer"
+                                  onClick={() => setQuickViewProduct(p)}
+                                >
+                                  View Detail
+                                </Button>
+                                <Button
+                                  className="h-11 w-full min-w-0 px-2 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm text-xs cursor-pointer border-none"
+                                  disabled={cartAddingId === p._id}
+                                  onClick={(e) => handleOpenCustomizer(p, e)}
+                                >
+                                  {cartAddingId === p._id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <ShoppingBag className="h-3 w-3" />
+                                  )}
+                                  Buy Now
+                                </Button>
                               </div>
 
-                              <h3
-                                onClick={() => setQuickViewProduct(p)}
-                                className="font-bold text-[#0A1128] line-clamp-2 sm:min-h-10 leading-5 text-sm sm:text-base hover:text-amber-600 transition cursor-pointer font-heading"
-                              >
-                                {title}
-                              </h3>
+                              <BusinessInquiryButton product={p} />
+                              {subAvailable && (
+                                <Button
+                                  variant="outline"
+                                  className="w-full border-orange-500/30 bg-orange-50/30 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl py-1.5 font-extrabold transition text-[10px] sm:text-xs border flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                                  onClick={(e) => openSubscribeModal(p, e)}
+                                >
+                                  <CalendarDays className="h-3 w-3" />
+                                  Subscribe
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {paginatedProducts.map((p) => {
+                        const subAvailable =
+                          p.isSubscriptionAvailable === true &&
+                          (p.status === 'Live' || p.status === undefined) &&
+                          p.isStoreProduct !== false;
 
-                              {/* Price & Savings */}
-                              <div className="pt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
-                                <span className="text-base sm:text-xl font-black text-[#0A1128]">
-                                  {formatPrice(sellingPrice)}
-                                </span>
-                                {mrp > sellingPrice && (
-                                  <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
-                                    {formatPrice(mrp)}
+                        const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
+                        const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
+                        const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+                        const rating = p.ratings || p.rating || 0;
+                        const reviewCount = p.numberOfRatings || p.reviews || 0;
+                        const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
+                        const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
+                        const title = p.itemName || p.name || "Product";
+                        const img = p.thumbnail || p.images?.[0] || "/placeholder-product.svg";
+                        const brandName = p.brand || store?.businessName || "Verified Store";
+
+                        return (
+                          <div
+                            key={p._id}
+                            className="group flex flex-col md:flex-row items-stretch justify-between rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-lg hover:border-amber-400 transition-all duration-200 p-3 sm:p-4 gap-4 text-left"
+                          >
+                            {/* Left: Product Image & Badges */}
+                            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                              <div
+                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-slate-50 relative overflow-hidden shrink-0 border border-slate-100 cursor-pointer"
+                                onClick={() => setQuickViewProduct(p)}
+                              >
+                                <img
+                                  src={img}
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/placeholder-product.svg"; }}
+                                  alt={title}
+                                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                                  loading="lazy"
+                                />
+                                {percentOff > 0 && (
+                                  <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[8px] font-black uppercase shadow-xs">
+                                    {percentOff}% OFF
                                   </span>
                                 )}
+                              </div>
+
+                              {/* Middle: Details */}
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
+                                  <span className="truncate">{brandName}</span>
+                                  {store?.verifiedBadge && (
+                                    <span className="shrink-0 text-emerald-600 font-bold flex items-center gap-0.5" title="Verified merchant">
+                                      <ShieldCheck className="w-3.5 h-3.5" />
+                                      <span className="text-[9px]">Verified</span>
+                                    </span>
+                                  )}
+                                  {subAvailable && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[9px] font-extrabold uppercase">
+                                      <Sparkles className="h-2.5 w-2.5" /> Subscribe
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h3
+                                  onClick={() => setQuickViewProduct(p)}
+                                  className="font-bold text-[#0A1128] text-sm sm:text-base hover:text-amber-600 transition cursor-pointer line-clamp-1 font-heading"
+                                >
+                                  {title}
+                                </h3>
+
+                                {p.dairyDetails && (
+                                  <p className="text-xs text-slate-600">
+                                    {p.dairyDetails.dairyType} · {p.dairyDetails.packSize} {p.dairyDetails.packUnit}
+                                    {p.dairyDetails.fatPercentage != null ? ` · ${p.dairyDetails.fatPercentage}% fat` : ""}
+                                  </p>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-0.5">
+                                  {reviewCount > 0 ? (
+                                    <div className="inline-flex items-center gap-1 text-amber-600 font-bold">
+                                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                      <span>{rating}</span>
+                                      <span className="text-slate-400 font-normal">({reviewCount})</span>
+                                    </div>
+                                  ) : null}
+
+                                  <div className="inline-flex items-center gap-1 text-slate-600">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    <span>{p.isSubscriptionAvailable ? "Scheduled delivery" : "Fast delivery"}</span>
+                                  </div>
+
+                                  <span className="text-emerald-700 font-semibold">
+                                    {shippingFee > 0 ? `Delivery: ${formatPrice(shippingFee)}` : "Free Delivery"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: Pricing & CTAs */}
+                            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                              <div className="text-left md:text-right">
+                                <div className="flex items-baseline md:justify-end gap-1.5">
+                                  <span className="text-base sm:text-xl font-black text-[#0A1128]">
+                                    {formatPrice(sellingPrice)}
+                                  </span>
+                                  {mrp > sellingPrice && (
+                                    <span className="text-xs text-slate-400 line-through font-semibold">
+                                      {formatPrice(mrp)}
+                                    </span>
+                                  )}
+                                </div>
                                 {mrp > sellingPrice && (
-                                  <span className="hidden sm:inline-flex text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
                                     Save {formatPrice(mrp - sellingPrice)}
                                   </span>
                                 )}
                               </div>
 
-                              {/* Shipping & Packing Charges Badges */}
-                              <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px] leading-4 text-slate-600">
-                                <div className="flex items-start gap-1.5">
-                                  <Clock className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
-                                  <span>15–30 min delivery</span>
-                                </div>
-                                {shippingFee > 0 || packingFee > 0 ? (
-                                  <div className="space-y-1">
-                                    <div className="flex flex-wrap justify-between gap-x-1"><span>Shipping</span><strong>{shippingFee > 0 ? formatPrice(shippingFee) : 'FREE'}</strong></div>
-                                    <div className="flex flex-wrap justify-between gap-x-1"><span>Packing</span><strong>{packingFee > 0 ? formatPrice(packingFee) : '₹0'}</strong></div>
-                                  </div>
-                                ) : <p className="font-semibold text-emerald-700">Free delivery &amp; packing</p>}
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  className="h-9 px-3 border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl text-xs cursor-pointer"
+                                  onClick={() => setQuickViewProduct(p)}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  className="h-9 px-4 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm text-xs cursor-pointer border-none"
+                                  disabled={cartAddingId === p._id}
+                                  onClick={(e) => handleOpenCustomizer(p, e)}
+                                >
+                                  {cartAddingId === p._id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <ShoppingBag className="h-3 w-3" />
+                                  )}
+                                  Buy Now
+                                </Button>
+                                {subAvailable && (
+                                  <Button
+                                    variant="outline"
+                                    className="h-9 px-3 border-orange-500/30 bg-orange-50/30 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl font-extrabold transition text-xs border flex items-center gap-1 cursor-pointer"
+                                    onClick={(e) => openSubscribeModal(p, e)}
+                                  >
+                                    <CalendarDays className="h-3 w-3" />
+                                    Subscribe
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
-
-                          {/* Actions */}
-                          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-3 sm:pt-0 space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button
-                                variant="outline"
-                                className="h-11 w-full min-w-0 px-2 border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl text-xs cursor-pointer"
-                                onClick={() => setQuickViewProduct(p)}
-                              >
-                                View Detail
-                              </Button>
-                              <Button
-                                className="h-11 w-full min-w-0 px-2 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm text-xs cursor-pointer border-none"
-                                disabled={cartAddingId === p._id}
-                                onClick={(e) => handleOpenCustomizer(p, e)}
-                              >
-                                {cartAddingId === p._id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <ShoppingBag className="h-3 w-3" />
-                                )}
-                                Buy Now
-                              </Button>
-                            </div>
-
-                            {subAvailable && (
-                              <Button
-                                variant="outline"
-                                className="w-full border-orange-500/30 bg-orange-50/30 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl py-1.5 font-extrabold transition text-[10px] sm:text-xs border flex items-center justify-center gap-1 shadow-sm cursor-pointer"
-                                onClick={(e) => openSubscribeModal(p, e)}
-                              >
-                                <CalendarDays className="h-3 w-3" />
-                                Subscribe
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* ✅ Pagination Controls Bar for 200+ products */}
                   {totalPages > 1 && (
@@ -1814,8 +2001,8 @@ const StorePage = () => {
       <Footer />
 
       {/* ✅ SUBSCRIPTION SETUP MODAL */}
-      {isSubModalOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isSubModalOpen && selectedProduct && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-navy/60 backdrop-blur-sm transition-opacity"
@@ -1823,9 +2010,10 @@ const StorePage = () => {
           />
 
           {/* Dialog Content */}
-          <div className="relative bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div role="dialog" tabIndex={-1} aria-modal="true" aria-label="Configure Subscription" className="relative bg-white rounded-3xl max-w-xl w-full p-4 sm:p-6 md:p-8 shadow-2xl border border-slate-100 max-h-[92dvh] overflow-y-auto">
             {/* Close Button */}
             <button
+              aria-label="Close subscription form"
               onClick={() => setIsSubModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-navy hover:bg-slate-100 transition"
             >
@@ -1863,6 +2051,7 @@ const StorePage = () => {
                   </div>
                 </div>
 
+                <WaterProductNote details={selectedProduct.waterDetails} />
                 {/* Quantity Selector */}
                 <div className="mt-6">
                   <label className="text-sm font-extrabold text-navy block mb-2">Quantity per Delivery</label>
@@ -1887,13 +2076,13 @@ const StorePage = () => {
                 {/* Frequency Settings */}
                 <div className="mt-6">
                   <label className="text-sm font-extrabold text-navy block mb-2">Delivery Schedule</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {[
                       { key: "daily", label: "Daily" },
                       { key: "alternate", label: "Alternate" },
-                      { key: "weekly", label: "Weekly" },
-                      { key: "monthly", label: "Monthly" },
                       { key: "custom", label: "Custom" },
+                      { key: "weekly", label: "Once a week" },
+                      { key: "monthly", label: "Once a month" },
                     ].map((f) => (
                       <button
                         key={f.key}
@@ -1935,6 +2124,12 @@ const StorePage = () => {
                   )}
                 </div>
 
+                <div className="mt-6 grid sm:grid-cols-2 gap-4">
+                  <label className="text-sm font-extrabold text-navy">Billing cycle<select value={subBillingCycle} onChange={event => setSubBillingCycle(event.target.value as 'weekly' | 'monthly')} className="mt-2 block w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"><option value="weekly">Weekly billing summary</option><option value="monthly">Monthly billing summary</option></select></label>
+                  <label className="text-sm font-extrabold text-navy">Delivery start date<input type="date" value={subStartDate} min={subscriptionToday()} onChange={event => setSubStartDate(event.target.value)} className="mt-2 block w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" /></label>
+                  {isDairySubscription && <label className="col-span-full flex items-center gap-2 text-sm font-semibold text-navy"><input type="checkbox" checked={subAutoRenew} onChange={event => setSubAutoRenew(event.target.checked)} />Renew automatically after this billing cycle</label>}
+                  <p className="sm:col-span-2 text-xs text-slate-500">Your billing cycle groups delivery charges. Set the delivery frequency separately above. Weekly cycles run for seven days from your start date. Monthly cycles follow the calendar month.</p>
+                </div>
                 {/* Delivery Slot Selection */}
                 <div className="mt-6">
                   <label className="text-sm font-extrabold text-navy block mb-2">Preferred Delivery Time Slot</label>
@@ -2017,7 +2212,7 @@ const StorePage = () => {
                   </div>
                   <div className="flex justify-between items-center text-xs font-bold text-navy mt-1.5">
                     <span>Delivery frequency:</span>
-                    <span className="capitalize">{subFrequency} ({estimatedMonthlyDeliveries} days/month)</span>
+                    <span className="capitalize">{subFrequency} · {estimatedCycleDeliveries} deliveries in first cycle</span>
                   </div>
                   <div className="flex justify-between items-center text-xs font-bold text-emerald-600 mt-1.5">
                     <span>Delivery Fee:</span>
@@ -2025,11 +2220,11 @@ const StorePage = () => {
                   </div>
                   <div className="h-px bg-slate-200 my-2.5" />
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-extrabold text-navy">Est. Monthly Cost:</span>
+                    <span className="text-sm font-extrabold text-navy">Est. {subBillingCycle === 'weekly' ? 'Weekly' : 'Monthly'} Cycle Cost:</span>
                     <span className="text-lg font-black text-navy">{formatPrice(estimatedCost)}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5 leading-normal">
-                    *Estimated monthly cost assumes standard 30-day month. Actual billing is dynamic based on exact deliveries. You will only be billed when the order is packed and dispatched.
+                    Estimate covers your selected start date through the first billing cycle. Pauses, skips and holidays can reduce deliveries. Keep your wallet funded for scheduled deliveries; the billing summary does not charge the cycle amount upfront.
                   </p>
                 </div>
 
@@ -2060,7 +2255,7 @@ const StorePage = () => {
             )}
           </div>
         </div>
-      )}
+        , document.body)}
 
       {/* Product Customizer Modal for variants & options */}
       <ProductCustomizerModal
@@ -2075,124 +2270,124 @@ const StorePage = () => {
       {tableBookingOpen && store && (
         <Dialog open onOpenChange={setTableBookingOpen}>
           <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-md rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
-          <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 text-left">
-            <div className="flex items-center justify-between border-b pb-3 pr-10">
-              <div>
-                <DialogTitle className="text-base font-extrabold text-navy break-words">
-                  🍽️ Reserve Table at {store.businessName}
-                </DialogTitle>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Confirm your guest slot for dining & takeaway
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleBookTableSubmit} className="space-y-3 text-xs">
-              <div>
-                <label htmlFor="store-booking-name" className="font-bold text-navy block mb-1">Guest Name *</label>
-                <input
-                  id="store-booking-name"
-                  type="text"
-                  required
-                  placeholder="Enter your full name"
-                  value={bookingGuestName}
-                  onChange={(e) => setBookingGuestName(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="store-booking-phone" className="font-bold text-navy block mb-1">Phone Number *</label>
-                <input
-                  id="store-booking-phone"
-                  type="tel"
-                  required
-                  placeholder="10-digit mobile number"
-                  value={bookingGuestPhone}
-                  onChange={(e) => setBookingGuestPhone(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 text-left">
+              <div className="flex items-center justify-between border-b pb-3 pr-10">
                 <div>
-                  <label htmlFor="store-booking-date" className="font-bold text-navy block mb-1">Date *</label>
+                  <DialogTitle className="text-base font-extrabold text-navy break-words">
+                    🍽️ Reserve Table at {store.businessName}
+                  </DialogTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Confirm your guest slot for dining & takeaway
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleBookTableSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label htmlFor="store-booking-name" className="font-bold text-navy block mb-1">Guest Name *</label>
                   <input
-                    id="store-booking-date"
-                    type="date"
+                    id="store-booking-name"
+                    type="text"
                     required
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    placeholder="Enter your full name"
+                    value={bookingGuestName}
+                    onChange={(e) => setBookingGuestName(e.target.value)}
                     className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="store-booking-time" className="font-bold text-navy block mb-1">Time Slot *</label>
+                  <label htmlFor="store-booking-phone" className="font-bold text-navy block mb-1">Phone Number *</label>
+                  <input
+                    id="store-booking-phone"
+                    type="tel"
+                    required
+                    placeholder="10-digit mobile number"
+                    value={bookingGuestPhone}
+                    onChange={(e) => setBookingGuestPhone(e.target.value)}
+                    className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="store-booking-date" className="font-bold text-navy block mb-1">Date *</label>
+                    <input
+                      id="store-booking-date"
+                      type="date"
+                      required
+                      value={bookingDate}
+                      onChange={(e) => setBookingDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="store-booking-time" className="font-bold text-navy block mb-1">Time Slot *</label>
+                    <select
+                      id="store-booking-time"
+                      value={bookingTimeSlot}
+                      onChange={(e) => setBookingTimeSlot(e.target.value)}
+                      className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
+                    >
+                      <option value="12:30 PM">12:30 PM (Lunch)</option>
+                      <option value="01:30 PM">01:30 PM (Lunch)</option>
+                      <option value="02:30 PM">02:30 PM (Lunch)</option>
+                      <option value="07:30 PM">07:30 PM (Dinner)</option>
+                      <option value="08:30 PM">08:30 PM (Dinner)</option>
+                      <option value="09:30 PM">09:30 PM (Dinner)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="store-booking-guests" className="font-bold text-navy block mb-1">Number of Guests</label>
                   <select
-                    id="store-booking-time"
-                    value={bookingTimeSlot}
-                    onChange={(e) => setBookingTimeSlot(e.target.value)}
+                    id="store-booking-guests"
+                    value={bookingGuestCount}
+                    onChange={(e) => setBookingGuestCount(Number(e.target.value))}
                     className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
                   >
-                    <option value="12:30 PM">12:30 PM (Lunch)</option>
-                    <option value="01:30 PM">01:30 PM (Lunch)</option>
-                    <option value="02:30 PM">02:30 PM (Lunch)</option>
-                    <option value="07:30 PM">07:30 PM (Dinner)</option>
-                    <option value="08:30 PM">08:30 PM (Dinner)</option>
-                    <option value="09:30 PM">09:30 PM (Dinner)</option>
+                    <option value={1}>1 Guest</option>
+                    <option value={2}>2 Guests</option>
+                    <option value={4}>4 Guests (Family Table)</option>
+                    <option value={6}>6 Guests (Group)</option>
+                    <option value={8}>8+ Guests (Party)</option>
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="store-booking-guests" className="font-bold text-navy block mb-1">Number of Guests</label>
-                <select
-                  id="store-booking-guests"
-                  value={bookingGuestCount}
-                  onChange={(e) => setBookingGuestCount(Number(e.target.value))}
-                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs font-bold text-navy"
-                >
-                  <option value={1}>1 Guest</option>
-                  <option value={2}>2 Guests</option>
-                  <option value={4}>4 Guests (Family Table)</option>
-                  <option value={6}>6 Guests (Group)</option>
-                  <option value={8}>8+ Guests (Party)</option>
-                </select>
-              </div>
+                <div>
+                  <label htmlFor="store-booking-requests" className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
+                  <input
+                    id="store-booking-requests"
+                    type="text"
+                    placeholder="e.g. Quiet corner table, AC seating"
+                    value={bookingRequests}
+                    onChange={(e) => setBookingRequests(e.target.value)}
+                    className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="store-booking-requests" className="font-bold text-navy block mb-1">Special Requests (Optional)</label>
-                <input
-                  id="store-booking-requests"
-                  type="text"
-                  placeholder="e.g. Quiet corner table, AC seating"
-                  value={bookingRequests}
-                  onChange={(e) => setBookingRequests(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 border rounded-xl bg-slate-50 outline-none text-xs"
-                />
-              </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 flex-1 rounded-xl text-xs"
-                  onClick={() => setTableBookingOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={bookingSubmitting}
-                  className="min-h-11 flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
-                >
-                  {bookingSubmitting ? 'Submitting...' : 'Confirm Table Booking'}
-                </Button>
-              </div>
-            </form>
-          </div>
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 flex-1 rounded-xl text-xs"
+                    onClick={() => setTableBookingOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={bookingSubmitting}
+                    className="min-h-11 flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs border-none"
+                  >
+                    {bookingSubmitting ? 'Submitting...' : 'Confirm Table Booking'}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -2203,138 +2398,138 @@ const StorePage = () => {
       {quickViewProduct && (
         <Dialog open onOpenChange={(open) => { if (!open) setQuickViewProduct(null); }}>
           <DialogContent aria-describedby={undefined} className="w-[calc(100vw-1rem)] max-w-2xl rounded-3xl p-0 gap-0 overflow-hidden shadow-2xl [&>button]:z-20 [&>button]:top-2 [&>button]:right-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:text-slate-900 [&>button]:opacity-100 [&>button]:shadow-md">
-          <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 text-left">
-            {(() => {
-              const p = quickViewProduct;
-              const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
-              const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
-              const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
-              const rating = p.ratings || p.rating || 4.8;
-              const reviewCount = p.numberOfRatings || p.reviews || 0;
-              const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
-              const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
-              const title = p.itemName || p.name || "Product Details";
-              const img = p.images?.[0] || p.thumbnail || "/placeholder-product.png";
-              const brandName = p.brand || store?.businessName || "Verified Store";
-              const subAvailable = p.isSubscriptionAvailable === true && (p.status === 'Live' || p.status === undefined);
+            <div className="max-h-[calc(100dvh-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 text-left">
+              {(() => {
+                const p = quickViewProduct;
+                const sellingPrice = p.adminPricing?.customerSellingAmount ?? p.adminPricing?.sellingPrice ?? p.afterDiscount ?? p.baseSellingPrice ?? p.userPrice ?? 0;
+                const mrp = p.adminPricing?.mrp ?? p.baseMrp ?? p.userPrice ?? 0;
+                const percentOff = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+                const rating = p.ratings || p.rating || 0;
+                const reviewCount = p.numberOfRatings || p.reviews || 0;
+                const shippingFee = p.adminPricing?.shippingCharge ?? p.shippingCharge ?? 0;
+                const packingFee = p.adminPricing?.packingCharge ?? p.packingCharge ?? 0;
+                const title = p.itemName || p.name || "Product Details";
+                const img = p.thumbnail || p.images?.[0] || "/placeholder-product.svg";
+                const brandName = p.brand || store?.businessName || "Verified Store";
+                const subAvailable = p.isSubscriptionAvailable === true && (p.status === 'Live' || p.status === undefined);
 
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start min-w-0 break-words">
-                  {/* LEFT IMAGE GALLERY */}
-                  <div className="space-y-3">
-                    <div className="h-64 sm:h-72 bg-slate-50 rounded-2xl p-4 flex items-center justify-center border border-slate-100 relative overflow-hidden">
-                      <img src={img} alt={title} className="max-h-full max-w-full object-contain" />
-                      {percentOff > 0 && (
-                        <span className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-md">
-                          {percentOff}% OFF
-                        </span>
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start min-w-0 break-words">
+                    {/* LEFT IMAGE GALLERY */}
+                    <div className="space-y-3">
+                      <div className="h-64 sm:h-72 bg-slate-50 rounded-2xl p-4 flex items-center justify-center border border-slate-100 relative overflow-hidden">
+                        <img src={img} alt={title} className="max-h-full max-w-full object-contain" />
+                        {percentOff > 0 && (
+                          <span className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-md">
+                            {percentOff}% OFF
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RIGHT PRODUCT INFO */}
+                    <div className="min-w-0 space-y-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="bg-amber-100 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            🏪 {brandName}
+                          </span>
+                          <span className="bg-emerald-50 text-emerald-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified Merchant
+                          </span>
+                        </div>
+                        <DialogTitle className="text-lg sm:text-xl font-black text-[#0A1128] font-heading leading-snug">
+                          {title}
+                        </DialogTitle>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <div className="flex items-center space-x-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 font-bold text-xs">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span>{rating}</span>
+                          </div>
+                          <span className="text-xs text-slate-400 font-semibold">({reviewCount > 0 ? `${reviewCount} customer reviews` : 'Verified Quality'})</span>
+                        </div>
+                      </div>
+
+                      {/* PRICING BLOCK */}
+                      <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1.5">
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          <span className="text-2xl font-black text-[#0A1128]">{formatPrice(sellingPrice)}</span>
+                          {mrp > sellingPrice && (
+                            <span className="text-sm text-slate-400 line-through font-semibold">{formatPrice(mrp)}</span>
+                          )}
+                          {mrp > sellingPrice && (
+                            <span className="text-xs font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                              You Save {formatPrice(mrp - sellingPrice)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-semibold">Inclusive of all local taxes &amp; store discounts</p>
+                      </div>
+
+                      {/* DELIVERY & PACKING CHARGES BREAKDOWN */}
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-extrabold text-[#0A1128] flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-amber-500" /> Doorstep Delivery Details
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 font-medium text-slate-700 text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-bold">SHIPPING CHARGE</span>
+                            <span className="font-extrabold text-emerald-600">
+                              {shippingFee > 0 ? formatPrice(shippingFee) : "🚚 FREE Delivery"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-bold">PACKING CHARGE</span>
+                            <span className="font-extrabold text-slate-800">
+                              {packingFee > 0 ? formatPrice(packingFee) : "📦 ₹0.00"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* DESCRIPTION */}
+                      {p.description && (
+                        <div className="space-y-1 text-xs">
+                          <h4 className="font-extrabold text-[#0A1128]">Product Description</h4>
+                          <p className="text-slate-600 leading-relaxed font-medium text-xs max-h-24 overflow-y-auto">
+                            {p.description}
+                          </p>
+                        </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* RIGHT PRODUCT INFO */}
-                  <div className="min-w-0 space-y-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="bg-amber-100 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          🏪 {brandName}
-                        </span>
-                        <span className="bg-emerald-50 text-emerald-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-500" /> Verified Merchant
-                        </span>
-                      </div>
-                      <DialogTitle className="text-lg sm:text-xl font-black text-[#0A1128] font-heading leading-snug">
-                        {title}
-                      </DialogTitle>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <div className="flex items-center space-x-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 font-bold text-xs">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span>{rating}</span>
-                        </div>
-                        <span className="text-xs text-slate-400 font-semibold">({reviewCount > 0 ? `${reviewCount} customer reviews` : 'Verified Quality'})</span>
-                      </div>
-                    </div>
-
-                    {/* PRICING BLOCK */}
-                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1.5">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="text-2xl font-black text-[#0A1128]">{formatPrice(sellingPrice)}</span>
-                        {mrp > sellingPrice && (
-                          <span className="text-sm text-slate-400 line-through font-semibold">{formatPrice(mrp)}</span>
-                        )}
-                        {mrp > sellingPrice && (
-                          <span className="text-xs font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            You Save {formatPrice(mrp - sellingPrice)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-semibold">Inclusive of all local taxes &amp; store discounts</p>
-                    </div>
-
-                    {/* DELIVERY & PACKING CHARGES BREAKDOWN */}
-                    <div className="space-y-2 text-xs">
-                      <h4 className="font-extrabold text-[#0A1128] flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-amber-500" /> Doorstep Delivery Details
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 font-medium text-slate-700 text-xs">
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-bold">SHIPPING CHARGE</span>
-                          <span className="font-extrabold text-emerald-600">
-                            {shippingFee > 0 ? formatPrice(shippingFee) : "🚚 FREE Delivery"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-bold">PACKING CHARGE</span>
-                          <span className="font-extrabold text-slate-800">
-                            {packingFee > 0 ? formatPrice(packingFee) : "📦 ₹0.00"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* DESCRIPTION */}
-                    {p.description && (
-                      <div className="space-y-1 text-xs">
-                        <h4 className="font-extrabold text-[#0A1128]">Product Description</h4>
-                        <p className="text-slate-600 leading-relaxed font-medium text-xs max-h-24 overflow-y-auto">
-                          {p.description}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* ACTION BUTTONS */}
-                    <div className="pt-2 space-y-2">
-                      <Button
-                        className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-md flex items-center justify-center space-x-2 border-none cursor-pointer"
-                        disabled={cartAddingId === p._id}
-                        onClick={(e) => {
-                          handleOpenCustomizer(p, e);
-                          setQuickViewProduct(null);
-                        }}
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Buy Now ({formatPrice(sellingPrice)})</span>
-                      </Button>
-
-                      {subAvailable && (
+                      {/* ACTION BUTTONS */}
+                      <div className="pt-2 space-y-2">
                         <Button
-                          variant="outline"
-                          className="w-full py-2.5 border-orange-500/40 bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white font-extrabold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                          className="w-full py-3 bg-[#0A1128] hover:bg-amber-500 text-white hover:text-[#0A1128] font-black text-xs sm:text-sm rounded-2xl transition duration-300 shadow-md flex items-center justify-center space-x-2 border-none cursor-pointer"
+                          disabled={cartAddingId === p._id}
                           onClick={(e) => {
-                            openSubscribeModal(p, e);
+                            handleOpenCustomizer(p, e);
                             setQuickViewProduct(null);
                           }}
                         >
-                          <CalendarDays className="w-4 h-4" />
-                          <span>Subscribe Daily / Weekly</span>
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Buy Now ({formatPrice(sellingPrice)})</span>
                         </Button>
-                      )}
+
+                        {subAvailable && (
+                          <Button
+                            variant="outline"
+                            className="w-full py-2.5 border-orange-500/40 bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white font-extrabold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                            onClick={(e) => {
+                              openSubscribeModal(p, e);
+                              setQuickViewProduct(null);
+                            }}
+                          >
+                            <CalendarDays className="w-4 h-4" />
+                            <span>Set Up Recurring Delivery</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
-          </div>
+                );
+              })()}
+            </div>
           </DialogContent>
         </Dialog>
       )}

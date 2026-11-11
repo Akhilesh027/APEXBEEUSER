@@ -109,24 +109,38 @@ const readItemFlags = (item: any) => {
   const fulfillment = item?.fulfillment || {};
   const preOrder = item?.preOrder || {};
 
+  // Check explicit vendor / product pickup settings
   const explicitSelfPickup =
     item?.isSelfPickup !== undefined ? Boolean(item.isSelfPickup) :
-      item?.product?.isSelfPickup !== undefined ? Boolean(item.product.isSelfPickup) :
-        item?.productId?.isSelfPickup !== undefined ? Boolean(item.productId.isSelfPickup) : true;
+      item?.storePickup !== undefined ? Boolean(item.storePickup) :
+        item?.product?.isSelfPickup !== undefined ? Boolean(item.product.isSelfPickup) :
+          item?.product?.storePickup !== undefined ? Boolean(item.product.storePickup) :
+            item?.productId?.isSelfPickup !== undefined ? Boolean(item.productId.isSelfPickup) :
+              item?.productId?.storePickup !== undefined ? Boolean(item.productId.storePickup) :
+                item?.vendor?.isSelfPickup !== undefined ? Boolean(item.vendor.isSelfPickup) :
+                  item?.sellerId?.isSelfPickup !== undefined ? Boolean(item.sellerId.isSelfPickup) :
+                    item?.product?.sellerId?.isSelfPickup !== undefined ? Boolean(item.product.sellerId.isSelfPickup) :
+                      false;
 
   const pickupEnabled =
     Boolean(fulfillment?.pickupEnabled) ||
     Boolean(item?.allowPickup) ||
     Boolean(item?.pickupAvailable) ||
+    Boolean(item?.product?.allowPickup) ||
+    Boolean(item?.product?.pickupAvailable) ||
+    Boolean(item?.productId?.allowPickup) ||
+    Boolean(item?.productId?.pickupAvailable) ||
+    Boolean(item?.storePickup) ||
+    Boolean(item?.product?.storePickup) ||
     explicitSelfPickup;
 
-  const mode = fulfillment?.mode || "both";
+  const mode = fulfillment?.mode || item?.deliveryMode || item?.product?.deliveryMode;
 
   const allowPickup =
-    pickupEnabled ||
     explicitSelfPickup ||
-    mode === "both" ||
-    mode === "pickup_only";
+    (pickupEnabled && mode !== "delivery_only") ||
+    mode === "pickup_only" ||
+    mode === "pickup";
 
   const isPreOrder =
     Boolean(preOrder?.enabled) ||
@@ -168,10 +182,11 @@ const readItemFlags = (item: any) => {
     item?.pickupShopPincode ||
     item?.shopPincode ||
     item?.vendor?.pincode ||
+    item?.sellerId?.pincode ||
     item?.storePincode ||
     null;
 
-  const pincodeMatchOnly = fulfillment?.pickupRules?.pincodeMatchOnly ?? false;
+  const pincodeMatchOnly = false; // Store self-pickup in person is not blocked by customer delivery pincode
 
   return {
     allowPickup,
@@ -384,7 +399,7 @@ const Checkout = () => {
 
   // Fulfillment & Delivery Preferences
   const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">(
-    "delivery"
+    location.state?.fulfillmentType === "pickup" || location.state?.deliveryType === "pickup" ? "pickup" : "delivery"
   );
   const [deliveryMode, setDeliveryMode] = useState<"standard" | "express" | "same_day" | "scheduled">("standard");
   const [deliveryInstruction, setDeliveryInstruction] = useState<string>("call_before");
@@ -400,6 +415,10 @@ const Checkout = () => {
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [pickupLocationId, setPickupLocationId] = useState<string>("");
   const [pickupSlot, setPickupSlot] = useState<PickupSlot | null>(null);
+
+  const selectedPickupLocation = useMemo(() => {
+    return pickupLocations.find((l) => l._id === pickupLocationId) || pickupLocations[0] || null;
+  }, [pickupLocations, pickupLocationId]);
 
   // Scheduled Subscription State
   const [isScheduled, setIsScheduled] = useState(false);
@@ -666,32 +685,24 @@ const Checkout = () => {
     }
   }, [selectedPayment]);
 
-  /** ✅ compute if pickup is possible based on items + location (pickup is ONLY possible when customer is in the local store area) */
+  /** ✅ compute if pickup is possible based on items + location state */
   const pickupPossible = useMemo(() => {
-    if (!orderDetails.items?.length) return false;
-    if (outOfLocalInfo.hasOutOfLocal || undeliverableInfo.hasUndeliverable) return false; // Block pickup for out-of-local deliveries!
+    const statePickup = Boolean(location.state?.pickupPossible);
+    if (!orderDetails.items?.length) return statePickup;
 
     const flags = orderDetails.items.map((it: any) => readItemFlags(it));
-    const allPickupEnabled = flags.every((f) => f.allowPickup);
-    if (!allPickupEnabled) return false;
+    const anyPickup = flags.some((f) => f.allowPickup);
+    const allPickup = flags.every((f) => f.allowPickup);
 
-    const needsMatch = flags.some((f) => f.pincodeMatchOnly);
-    if (!needsMatch && !outOfLocalInfo.hasOutOfLocal) return true;
+    return Boolean(allPickup || anyPickup || statePickup);
+  }, [orderDetails.items, location.state]);
 
-    if (!userPincode) return true;
-
-    const allHaveShopPin = flags.every(
-      (f) => !f.pincodeMatchOnly || !!normPincode(f.shopPincode)
-    );
-    if (!allHaveShopPin) return true;
-
-    const allMatch = flags.every((f) => {
-      if (!f.pincodeMatchOnly) return true;
-      return !f.shopPincode || normPincode(f.shopPincode) === userPincode;
-    });
-
-    return allMatch;
-  }, [orderDetails.items, userPincode, outOfLocalInfo.hasOutOfLocal]);
+  // If pickup is not available, guarantee fulfillment fallback is delivery
+  useEffect(() => {
+    if (!pickupPossible && fulfillmentType === "pickup") {
+      setFulfillmentType("delivery");
+    }
+  }, [pickupPossible, fulfillmentType]);
 
   /** ✅ Pre-order compute max availableOn */
   const preOrderInfo = useMemo(() => {
@@ -712,8 +723,8 @@ const Checkout = () => {
     const datedItems = preItems.filter((it: any) => it.preOrderDeliveryDate || it.availableOn);
     const maxDate = datedItems.length > 0
       ? datedItems
-          .map((it: any) => new Date(it.preOrderDeliveryDate || it.availableOn))
-          .reduce((a: Date, b: Date) => (a > b ? a : b))
+        .map((it: any) => new Date(it.preOrderDeliveryDate || it.availableOn))
+        .reduce((a: Date, b: Date) => (a > b ? a : b))
       : null;
 
     const firstScheduled = preItems.find((it: any) => it.preOrderDeliveryDate);
@@ -797,12 +808,50 @@ const Checkout = () => {
     return orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
   }, [orderDetails.items]);
 
-  const totalGstAmount = useMemo(() => {
-    const finalShipping = fulfillmentType === "pickup" || preOrderInfo?.hasPreOrder ? 0 : orderDetails.shipping;
-    const discountedPrice = Math.max(0, orderDetails.subtotal - (couponDiscount || 0));
-    const taxable = discountedPrice + totalPackageCharges + finalShipping + totalPlatformCharges + (giftWrap ? 29 : 0);
-    return Math.round(taxable * 0.05);
-  }, [orderDetails.subtotal, couponDiscount, totalPackageCharges, orderDetails.shipping, totalPlatformCharges, giftWrap, fulfillmentType, preOrderInfo?.hasPreOrder]);
+  const gstBreakdown = useMemo(() => {
+    let inclusiveCgstTotal = 0;
+    let inclusiveSgstTotal = 0;
+    let exclusiveCgstTotal = 0;
+    let exclusiveSgstTotal = 0;
+
+    orderDetails.items.forEach((item: any) => {
+      const price = getItemPrice(item);
+      const qty = Number(item.quantity || 1);
+      const lineTotal = price * qty;
+      const rate = Number(item.gstRate ?? item.product?.gstRate ?? item.productId?.gstRate ?? 0);
+      const mode = item.gstPricingMode || item.product?.gstPricingMode || item.productId?.gstPricingMode || 'inclusive';
+
+      if (rate > 0) {
+        if (mode === 'exclusive') {
+          const itemTax = (lineTotal * rate) / 100;
+          const half = Math.round((itemTax / 2) * 100) / 100;
+          exclusiveCgstTotal += half;
+          exclusiveSgstTotal += half;
+        } else {
+          const base = lineTotal / (1 + rate / 100);
+          const itemTax = lineTotal - base;
+          const half = Math.round((itemTax / 2) * 100) / 100;
+          inclusiveCgstTotal += half;
+          inclusiveSgstTotal += half;
+        }
+      }
+    });
+
+    const exclusiveGst = exclusiveCgstTotal + exclusiveSgstTotal;
+    const inclusiveGst = inclusiveCgstTotal + inclusiveSgstTotal;
+
+    return {
+      inclusiveGst,
+      inclusiveCgst: inclusiveCgstTotal,
+      inclusiveSgst: inclusiveSgstTotal,
+      exclusiveGst,
+      cgst: exclusiveCgstTotal,
+      sgst: exclusiveSgstTotal,
+      totalGst: inclusiveGst + exclusiveGst,
+    };
+  }, [orderDetails.items]);
+
+  const totalGstAmount = gstBreakdown.exclusiveGst;
 
   useEffect(() => {
     setCheckoutIdempotencyKey(`idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
@@ -998,11 +1047,6 @@ const Checkout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fulfillmentType, pickupPossible, userPincode]);
 
-  /** ✅ If pickup isn’t possible, force delivery */
-  useEffect(() => {
-    if (!pickupPossible && fulfillmentType === "pickup") setFulfillmentType("delivery");
-  }, [pickupPossible, fulfillmentType]);
-
   /**
    * ✅ Shipping rule:
    * - pickup OR preorder => shipping = 0
@@ -1044,24 +1088,30 @@ const Checkout = () => {
       }
 
       if (!locs.length && orderDetails.items?.length > 0) {
-        const firstItem = orderDetails.items[0];
-        const storeName = firstItem.storeName || firstItem.vendorName || firstItem.product?.sellerId?.name || "ApexBee Store Hub";
-        const storeAddress = firstItem.storeAddress || firstItem.vendorAddress || "Main Market Storefront, ApexBee Verified Hub";
-        locs = [
-          {
-            _id: `store_pickup_${firstItem._id || firstItem.productId || 'default'}`,
-            name: `🏪 ${storeName} (In-Store Pickup)`,
-            address: storeAddress,
-            pincode: pincode || firstItem.vendorPincode || firstItem.sellerId?.pincode || '',
-            slots: [
-              { date: 'Today', time: '10:00 AM - 01:00 PM' },
-              { date: 'Today', time: '02:00 PM - 06:00 PM' },
-              { date: 'Today', time: '06:00 PM - 09:00 PM' },
-              { date: 'Tomorrow', time: '10:00 AM - 01:00 PM' },
-              { date: 'Tomorrow', time: '02:00 PM - 06:00 PM' },
-            ],
-          },
-        ];
+        const sellerMap = new Map<string, any>();
+        orderDetails.items.forEach((item: any, idx: number) => {
+          const seller = item.sellerId || item.vendor || item.product?.sellerId || {};
+          const sellerId = seller._id || seller.id || item.vendorId || `seller_${idx}`;
+          if (!sellerMap.has(sellerId)) {
+            const name = item.storeName || item.vendorName || seller.businessName || seller.storeDesign?.name || seller.name || "ApexBee Store Hub";
+            const addr = item.storeAddress || item.vendorAddress || seller.address || seller.storeDesign?.address || "Storefront, ApexBee Verified Local Hub";
+            const pin = seller.pincode || item.vendorPincode || pincode || "";
+            sellerMap.set(sellerId, {
+              _id: `pickup_${sellerId}`,
+              name: `🏪 ${name} (Store Pickup)`,
+              address: addr + (pin ? ` - ${pin}` : ""),
+              pincode: pin,
+              slots: [
+                { date: 'Today', time: '10:00 AM - 01:00 PM' },
+                { date: 'Today', time: '02:00 PM - 06:00 PM' },
+                { date: 'Today', time: '06:00 PM - 09:00 PM' },
+                { date: 'Tomorrow', time: '10:00 AM - 01:00 PM' },
+                { date: 'Tomorrow', time: '02:00 PM - 06:00 PM' },
+              ],
+            });
+          }
+        });
+        locs = Array.from(sellerMap.values());
       }
 
       setPickupLocations(locs);
@@ -1618,16 +1668,27 @@ const Checkout = () => {
 
     setCouponDiscount(disc);
 
-    // GST Tax applied on the discounted price + packing + shipping + platform fee + gift wrap (after coupon discount)
+    // GST Tax applied based on each item's saved GST rate and pricing mode (Req 02)
     const discountedPrice = Math.max(0, calculatedSubtotal - disc);
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
     const totalPlatform = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
     const giftWrapFee = giftWrap ? 29 : 0;
-    const taxableAmount = discountedPrice + totalPacking + currentShipping + totalPlatform + giftWrapFee;
-    const gstAmount = Math.round(taxableAmount * 0.05);
 
-    // Base Total = Taxable Amount + GST
-    const baseTotal = taxableAmount + gstAmount;
+    let itemExclusiveGst = 0;
+    orderDetails.items.forEach((item: any) => {
+      const price = getItemPrice(item);
+      const qty = Number(item.quantity || 1);
+      const lineTotal = price * qty;
+      const rate = Number(item.gstRate ?? item.product?.gstRate ?? item.productId?.gstRate ?? 0);
+      const mode = item.gstPricingMode || item.product?.gstPricingMode || item.productId?.gstPricingMode || 'inclusive';
+      if (mode === 'exclusive' && rate > 0) {
+        itemExclusiveGst += Math.round((lineTotal * rate) / 100);
+      }
+    });
+
+    const serviceFees = totalPacking + currentShipping + totalPlatform + giftWrapFee;
+    // Base Total = Discounted Price + Service Fees + Exclusive GST (if any)
+    const baseTotal = discountedPrice + serviceFees + itemExclusiveGst;
 
     // Deductions
     let pointsDeducted = 0;
@@ -1694,21 +1755,23 @@ const Checkout = () => {
 
     // Pickup requirements
     if (fulfillmentType === "pickup") {
-      if (!pickupPossible) {
-        toast({
-          title: "Pickup not allowed",
-          description:
-            "Pickup is available only when your pincode matches the shop pincode for these items.",
-          variant: "destructive",
-        });
+      let activeLocationId = pickupLocationId;
+      if (!activeLocationId && pickupLocations.length > 0) {
+        activeLocationId = pickupLocations[0]._id;
+        setPickupLocationId(activeLocationId);
+      }
+      let activeSlot = pickupSlot;
+      if (!activeSlot && pickupLocations.length > 0 && pickupLocations[0].slots?.length) {
+        activeSlot = pickupLocations[0].slots[0];
+        setPickupSlot(activeSlot);
+      }
+
+      if (!activeLocationId) {
+        toast({ title: "Pickup location required", description: "Please select a store to pick up your order.", variant: "destructive" });
         return;
       }
-      if (!pickupLocationId) {
-        toast({ title: "Pickup location required", variant: "destructive" });
-        return;
-      }
-      if (!pickupSlot?.date || !pickupSlot?.time) {
-        toast({ title: "Pickup slot required", variant: "destructive" });
+      if (!activeSlot?.date || !activeSlot?.time) {
+        toast({ title: "Pickup slot required", description: "Please select a pickup time slot.", variant: "destructive" });
         return;
       }
     }
@@ -1721,15 +1784,18 @@ const Checkout = () => {
       finalCouponDiscount = couponDiscount;
     }
 
-    // GST Tax applied on the discounted price + packing + shipping + platform fee (after coupon discount)
+    // GST Tax applied based on each item's saved GST rate and pricing mode
     const discountedPrice = Math.max(0, calculatedSubtotal - finalCouponDiscount);
     const totalPacking = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPackingFee(item) * (item.quantity || 1)), 0);
     const totalPlatform = orderDetails.items.reduce((sum: number, item: any) => sum + (getItemPlatformFee(item) * (item.quantity || 1)), 0);
-    const taxableAmount = discountedPrice + totalPacking + finalShipping + totalPlatform;
-    const gstAmount = Math.round(taxableAmount * 0.05);
+    const giftWrapFee = giftWrap ? 29 : 0;
+    const serviceFees = totalPacking + finalShipping + totalPlatform + giftWrapFee;
 
-    // Grand total = taxableAmount + GST
-    const baseTotal = taxableAmount + gstAmount;
+    const exclusiveGst = gstBreakdown.exclusiveGst;
+    const totalTax = gstBreakdown.totalGst > 0 ? gstBreakdown.totalGst : exclusiveGst;
+
+    // Grand total = Discounted Price + Service Fees + Exclusive GST (rounded)
+    const baseTotal = Math.round(discountedPrice + serviceFees + exclusiveGst);
 
     let pointsDeducted = 0;
     if (useRewardPoints) {
@@ -1786,6 +1852,7 @@ const Checkout = () => {
       // Handle Razorpay Online Payment Flow
       let razorpayTransactionDetails: any = null;
       if (finalPaymentMethod === "razorpay" && finalTotal > 0) {
+        const productIds = orderDetails.items.map((item: any) => String(item.productId || item._id || item.id)).filter((id: string) => /^[a-f\d]{24}$/i.test(id));
         const rzpInitRes = await fetch(`${API_BASE}/payment/create-order`, {
           method: "POST",
           headers: {
@@ -1794,6 +1861,7 @@ const Checkout = () => {
           },
           body: JSON.stringify({
             amount: finalTotal,
+            ...(productIds.length ? { productIds } : {}),
             userId: user.id || user._id,
             receipt: `rcpt_${Date.now()}`
           })
@@ -1909,6 +1977,7 @@ const Checkout = () => {
 
         shippingAddress: fulfillmentType === "delivery" ? selectedAddress : null,
         fulfillment,
+        deliveryType: fulfillmentType === "pickup" ? "pickup" : "delivery",
         referralCode: localStorage.getItem("apexbee_ref") || localStorage.getItem("referral_code") || undefined,
 
         preOrder: {
@@ -1967,7 +2036,9 @@ const Checkout = () => {
           couponDiscount: finalCouponDiscount,
           walletDeduction: walletDeducted,
           rewardsDeduction: pointsDeducted,
-          tax: gstAmount,
+          tax: totalTax,
+          cgst: gstBreakdown.cgst,
+          sgst: gstBreakdown.sgst,
           total: finalTotal,
           grandTotal: finalTotal,
         },
@@ -2142,11 +2213,6 @@ const Checkout = () => {
 
   const formatAddress = (addr: Address | null) =>
     addr ? `${addr.address}, ${addr.city}, ${addr.state} - ${addr.pincode}` : "";
-
-  const selectedPickupLocation = useMemo(
-    () => pickupLocations.find((l) => l._id === pickupLocationId) || null,
-    [pickupLocations, pickupLocationId]
-  );
 
   /** ✅ show why pickup is disabled */
   const pickupDisabledReason = useMemo(() => {
@@ -2384,21 +2450,19 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Simple Clean Radio Buttons for Fulfillment */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {/* Simple Clean Radio Buttons for Fulfillment - Scope 05: Only show Store Self Pickup when supported */}
+              <div className={`grid grid-cols-1 ${pickupPossible ? "sm:grid-cols-2" : ""} gap-3 mb-4`}>
                 {/* 🚚 Home Delivery Radio Card */}
                 <label
                   onClick={() => setFulfillmentType("delivery")}
-                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
-                    fulfillmentType === "delivery"
+                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${fulfillmentType === "delivery"
                       ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
                       : "border-slate-200 hover:border-slate-300 bg-white"
-                  }`}
+                    }`}
                 >
                   <div className="pt-0.5">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                      fulfillmentType === "delivery" ? "border-navy bg-white" : "border-slate-300"
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${fulfillmentType === "delivery" ? "border-navy bg-white" : "border-slate-300"
+                      }`}>
                       {fulfillmentType === "delivery" && <div className="w-2 h-2 rounded-full bg-navy" />}
                     </div>
                   </div>
@@ -2424,39 +2488,37 @@ const Checkout = () => {
                   </div>
                 </label>
 
-                {/* 🏪 Self Pickup Radio Card */}
-                <label
-                  onClick={() => pickupPossible && setFulfillmentType("pickup")}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    !pickupPossible
-                      ? "opacity-60 bg-slate-100 border-slate-200 cursor-not-allowed"
-                      : fulfillmentType === "pickup"
-                        ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20 cursor-pointer"
-                        : "border-slate-200 hover:border-slate-300 bg-white cursor-pointer"
-                  } flex items-start gap-3.5`}
-                >
-                  <div className="pt-0.5">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                      fulfillmentType === "pickup" ? "border-navy bg-white" : "border-slate-300"
-                    }`}>
-                      {fulfillmentType === "pickup" && <div className="w-2 h-2 rounded-full bg-navy" />}
+                {/* 🏪 Self Pickup Radio Card - Only rendered when explicitly enabled by vendor */}
+                {pickupPossible && (
+                  <label
+                    onClick={() => setFulfillmentType("pickup")}
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${fulfillmentType === "pickup"
+                        ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                      } flex items-start gap-3.5`}
+                  >
+                    <div className="pt-0.5">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${fulfillmentType === "pickup" ? "border-navy bg-white" : "border-slate-300"
+                        }`}>
+                        {fulfillmentType === "pickup" && <div className="w-2 h-2 rounded-full bg-navy" />}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm text-navy flex items-center gap-1.5">
-                        <span>🏪</span>
-                        <span>Store Self Pickup</span>
-                      </span>
-                      <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        FREE
-                      </span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-sm text-navy flex items-center gap-1.5">
+                          <span>🏪</span>
+                          <span>Store Self Pickup</span>
+                        </span>
+                        <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          FREE
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Pick up in person directly from the seller&apos;s store
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {!pickupPossible ? (pickupDisabledReason || "Not available for this location") : "Pick up in person directly from the seller's store"}
-                    </p>
-                  </div>
-                </label>
+                  </label>
+                )}
               </div>
 
               {/* 📅 PRE-ORDER IN-CHECKOUT SCHEDULER & CUSTOM INSTRUCTIONS (ApexBee Gold/Navy) */}
@@ -2525,11 +2587,10 @@ const Checkout = () => {
                             key={slot.id}
                             type="button"
                             onClick={() => setCheckoutPreOrderSlot(slot.id)}
-                            className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${
-                              isSelected
+                            className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${isSelected
                                 ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm"
                                 : "bg-white text-slate-800 border-amber-200 hover:border-amber-400"
-                            }`}
+                              }`}
                           >
                             <span className="flex items-center justify-between">
                               <span>{slot.label}</span>
@@ -3356,14 +3417,53 @@ const Checkout = () => {
                               </div>
                             )}
 
+                            {/* Variant / Attributes Display */}
+                            {(() => {
+                              const vBadges: { label: string; value: string }[] = [];
+                              const vName = item.variantName || item.selectedVariant?.name || item.selectedVariant?.title;
+                              if (vName && !["default", "standard", "regular", "base"].includes(String(vName).toLowerCase())) {
+                                vBadges.push({ label: "Variant", value: String(vName) });
+                              }
+                              const col = item.selectedColor || item.color;
+                              if (col && !["default", "none", "n/a"].includes(String(col).toLowerCase())) {
+                                vBadges.push({ label: "Color", value: String(col) });
+                              }
+                              const sz = item.size || item.selectedSize;
+                              if (sz && !["default", "none", "n/a", "one size"].includes(String(sz).toLowerCase())) {
+                                vBadges.push({ label: "Size", value: String(sz) });
+                              }
+                              const rawAttrs = item.selectedAttributes || item.attributes;
+                              if (rawAttrs && typeof rawAttrs === "object") {
+                                Object.entries(rawAttrs).forEach(([k, v]) => {
+                                  if (v === null || v === undefined) return;
+                                  const keyLower = k.toLowerCase().trim();
+                                  if (["color", "size", "default", "distributedfrom", "commissiontype", "commissionpercent"].includes(keyLower)) return;
+                                  const valStr = Array.isArray(v) ? v.join(", ") : String(v);
+                                  if (!valStr || valStr === "default" || valStr === "none") return;
+                                  const cleanLabel = k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                                  if (!vBadges.some((b) => b.value.toLowerCase() === valStr.toLowerCase())) {
+                                    vBadges.push({ label: cleanLabel, value: valStr });
+                                  }
+                                });
+                              }
+                              if (vBadges.length === 0) return null;
+                              return (
+                                <div className="flex flex-wrap gap-1 my-1">
+                                  {vBadges.map((badge, bIdx) => (
+                                    <span
+                                      key={bIdx}
+                                      className="inline-flex items-center text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-200/80 px-1.5 py-0.2 rounded"
+                                    >
+                                      <span className="text-amber-700 font-semibold mr-1">{badge.label}:</span> {badge.value}
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+
                             <div className="flex flex-wrap gap-1 sm:gap-2 text-muted-foreground text-xs mb-1">
                               <span>Qty: {quantity}</span>
-                              {item.selectedColor && item.selectedColor.toLowerCase() !== "default" && item.selectedColor.toLowerCase() !== "none" && (
-                                <span>• Color: {item.selectedColor}</span>
-                              )}
-                              {item.size && item.size.toLowerCase() !== "default" && item.size.toLowerCase() !== "none" && (
-                                <span>• Size: {item.size}</span>
-                              )}
+                              {item.sku && <span>• SKU: {item.sku}</span>}
                             </div>
 
                             <p className="font-semibold text-sm text-navy dark:text-amber-400">
@@ -3424,10 +3524,31 @@ const Checkout = () => {
                   </span>
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">GST (5%)</span>
-                  <span>₹{totalGstAmount.toFixed(2)}</span>
-                </div>
+                {totalGstAmount > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground text-sm">CGST (Central Tax)</span>
+                      <span className="font-semibold text-navy">+₹{gstBreakdown.cgst.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground text-sm">SGST (State Tax)</span>
+                      <span className="font-semibold text-navy">+₹{gstBreakdown.sgst.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+
+                {gstBreakdown.inclusiveGst > 0 && (
+                  <div className="text-[11px] text-muted-foreground bg-slate-50 p-2 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <div className="flex justify-between font-medium">
+                      <span>GST Included in Item Price:</span>
+                      <span className="font-bold text-slate-700 font-mono">₹{gstBreakdown.inclusiveGst.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Breakdown:</span>
+                      <span>CGST: ₹{gstBreakdown.inclusiveCgst.toFixed(2)} + SGST: ₹{gstBreakdown.inclusiveSgst.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
 
                 {giftWrap && (
                   <div className="flex justify-between">

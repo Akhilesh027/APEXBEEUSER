@@ -1043,11 +1043,10 @@ const ProductCard = ({ product, className = "" }: ProductCardProps) => {
               type="button"
               onClick={handleBuyNow}
               disabled={isOutOfStock}
-              className={`flex-1 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50 ${
-                isPreOrder
+              className={`flex-1 font-black py-1.5 px-1.5 sm:px-2.5 rounded-md flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs hover:shadow-md transition cursor-pointer border-none text-[9.5px] sm:text-[10px] whitespace-nowrap disabled:opacity-50 ${isPreOrder
                   ? "bg-[#0A1128] hover:bg-[#070e24] text-amber-400 border border-amber-400/40 shadow-[#0A1128]/20"
                   : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950"
-              }`}
+                }`}
             >
               {isPreOrder ? (
                 <>

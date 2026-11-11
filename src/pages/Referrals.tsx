@@ -613,15 +613,40 @@ const Referrals = () => {
       const idKey = String(r._id || `ref-${idx}`);
       if (seenIds.has(idKey)) return;
       seenIds.add(idKey);
+      if (r._id) seenIds.add(String(r._id));
+      if ((r as any).transactionId) seenIds.add(String((r as any).transactionId));
 
       const rawOrd = (r as any).orderId || (r as any).orderNumber;
-      const orderNum = (rawOrd && typeof rawOrd === "object")
-        ? String((rawOrd as any).orderNumber || (rawOrd as any)._id || "")
-        : (typeof rawOrd === "string" ? rawOrd : "");
+      let orderNum = "";
+      let orderMongoId = "";
+      if (rawOrd && typeof rawOrd === "object") {
+        orderNum = String((rawOrd as any).orderNumber || (rawOrd as any)._id || "");
+        orderMongoId = String((rawOrd as any)._id || "");
+      } else if (typeof rawOrd === "string") {
+        orderNum = rawOrd;
+        orderMongoId = rawOrd;
+      }
       if (orderNum) seenIds.add(orderNum);
+      if (orderMongoId) seenIds.add(orderMongoId);
 
       const amt = Math.round(Number(r.rewardAmount || (r as any).amount || 0));
       if (amt <= 0) return;
+
+      // Find matching wallet entry to cross-reference real wallet transaction ID and hold status
+      const matchingWallet = walletEntries.find((w) => {
+        if (w.referenceId && String(w.referenceId) === String(r._id)) return true;
+        if (orderNum && String(w.referenceId) === orderNum) return true;
+        if (orderMongoId && String(w.referenceId) === orderMongoId) return true;
+        const wRem = String(w.remarks || w.description || "");
+        if (orderMongoId && wRem.includes(orderMongoId)) return true;
+        if (orderNum && wRem.includes(orderNum)) return true;
+        return false;
+      });
+
+      if (matchingWallet) {
+        if (matchingWallet.transactionId) seenIds.add(matchingWallet.transactionId);
+        if (matchingWallet._id) seenIds.add(String(matchingWallet._id));
+      }
 
       const rawType = [
         (r as any).transactionType,
@@ -653,8 +678,13 @@ const Referrals = () => {
         category = "Retail Store";
       }
 
-      const cleanTxnId = (r as any).transactionId || (orderNum ? `APX-${orderNum}` : `APX-REF-${idx + 100}`);
+      const cleanTxnId = (r as any).transactionId || matchingWallet?.transactionId || (orderNum ? `APX-${orderNum}` : `APX-REF-${idx + 100}`);
       const refName = (r.referredUserId as any)?.name || r.referredUser?.name || "Direct Referral";
+      const resolvedStatus = matchingWallet?.status?.toLowerCase() === "hold"
+        ? "hold"
+        : (matchingWallet?.status?.toLowerCase() === "pending" || r.status === "placed" || r.status === "pending"
+          ? "pending"
+          : (r.status || "credited"));
 
       list.push({
         id: idKey,
@@ -666,10 +696,10 @@ const Referrals = () => {
         category,
         orderId: orderNum || (displayType === "Signup Bonus" ? `BONUS-${String(idKey).slice(-6).toUpperCase()}` : `REF-${idx + 1}`),
         amount: amt,
-        status: r.status || "credited",
+        status: resolvedStatus,
         channel: "referral",
         entryType: "credit",
-        remarks: (r as any).rewardReason || `Referral reward for ${displayType}`,
+        remarks: (r as any).rewardReason || matchingWallet?.remarks || `${displayType} earned from ${refName}`,
       });
     });
 
@@ -683,11 +713,61 @@ const Referrals = () => {
 
       const idKey = String(c._id || orderNum || `c-${idx}`);
       if (seenIds.has(idKey)) return;
-      seenIds.add(idKey);
-      if (orderNum) seenIds.add(orderNum);
 
       const amt = Math.round(Number(c.commissionAmount || c.amount || 0));
       if (amt <= 0) return;
+
+      // Deduplicate: If this commission settlement has already been credited to wallet
+      // or already exists in wallet ledger entries, skip it so only the actual wallet credit is displayed!
+      const isAlreadyInWallet = walletEntries.some((w) => {
+        const wAmt = Math.round(Number(w.amount || 0));
+        if (wAmt !== amt) return false;
+
+        // 1. Transaction ID match
+        if (c.releasedTransactionId && (w.transactionId === c.releasedTransactionId || w.referenceId === c.releasedTransactionId)) {
+          return true;
+        }
+
+        // 2. Reference ID match (territory ID, order ID, etc.)
+        if (c.referenceId && (String(w.referenceId) === String(c.referenceId) || String((w as any).orderId) === String(c.referenceId))) {
+          return true;
+        }
+        if (orderNum && orderNum !== "N/A" && (String(w.referenceId) === orderNum || String((w as any).orderId) === orderNum)) {
+          return true;
+        }
+
+        // 3. Exact or substring match on remarks / notes
+        const wRem = String(w.remarks || w.description || "").trim().toLowerCase();
+        const cRem = String(c.notes || (c as any).remarks || "").trim().toLowerCase();
+        if (wRem && cRem && (wRem.includes(cRem) || cRem.includes(wRem))) {
+          return true;
+        }
+
+        // 4. Booking fee / Franchise fee match: same amount and contains franchise booking
+        if (
+          (wRem.includes("franchise") || wRem.includes("booking") || wRem.includes("district") || wRem.includes("state") || wRem.includes("mandal")) &&
+          (cRem.includes("franchise") || cRem.includes("booking") || cRem.includes("district") || cRem.includes("state") || cRem.includes("mandal"))
+        ) {
+          const wDate = new Date(w.createdAt || w.date || 0).toDateString();
+          const cDate = new Date(c.date || c.createdAt || 0).toDateString();
+          if (wDate === cDate) return true;
+        }
+
+        // 5. General commission credit on same date with same amount
+        const isWalletComm = String(w.category || "").toLowerCase().includes("commission") || String(w.source || "").toLowerCase().includes("commission");
+        if (isWalletComm && (c.walletCredited || c.status === "released")) {
+          const wDate = new Date(w.createdAt || w.date || 0).toDateString();
+          const cDate = new Date(c.date || c.createdAt || 0).toDateString();
+          if (wDate === cDate) return true;
+        }
+
+        return false;
+      });
+
+      if (isAlreadyInWallet) return;
+
+      seenIds.add(idKey);
+      if (orderNum) seenIds.add(orderNum);
 
       const customerKey = String(c.userName || (c as any).referredUserName || (c as any).recipientId || `user-${idx}`);
       const isCustomerFirstOrder = !seenCustomerOrders.has(customerKey);
@@ -754,9 +834,23 @@ const Referrals = () => {
 
     // 3. Ingest actual wallet ledger entries from WalletEngine (/wallet/my-wallet)
     walletEntries.forEach((w, idx) => {
+      // Deduplicate: If this wallet entry was created for a referral transaction or order already ingested above, skip!
+      if (w._id && seenIds.has(String(w._id))) return;
+      if (w.transactionId && seenIds.has(String(w.transactionId))) return;
+      if (w.referenceId && seenIds.has(String(w.referenceId))) return;
+      if ((w as any).orderId && seenIds.has(String((w as any).orderId))) return;
+
+      const wRemarks = String(w.remarks || w.description || "");
+      const orderMatch = wRemarks.match(/order\s+([a-zA-Z0-9_-]+)/i);
+      if (orderMatch && orderMatch[1] && seenIds.has(orderMatch[1])) {
+        return;
+      }
+
       const idKey = String(w._id || w.transactionId || w.referenceId || `w-${idx}`);
       if (seenIds.has(idKey)) return;
       seenIds.add(idKey);
+      if (w.transactionId) seenIds.add(w.transactionId);
+      if (w.referenceId) seenIds.add(String(w.referenceId));
 
       const amt = Math.round(Number(w.amount || 0));
       if (amt === 0) return;
@@ -2262,7 +2356,7 @@ const Referrals = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 w-full max-w-full min-w-0">
                 <Button className="h-auto bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] sm:text-xs font-black py-3.5 sm:py-5 rounded-2xl flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm border-none active:scale-95 transition" onClick={shareReferral}>
                   <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.413Z"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.413Z" />
                   </svg>
                   <span>Share WhatsApp</span>
                 </Button>

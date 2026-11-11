@@ -71,6 +71,7 @@ type Subscription = {
   quantity: number;
   unitPrice: number;
   frequency: string;
+  billingCycle?: 'weekly' | 'monthly';
   customDays?: string[];
   deliverySlot: string;
   status: 'active' | 'paused';
@@ -770,7 +771,7 @@ export const LocalStores: React.FC = () => {
                   <div key={sub._id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
                     <div>
                       <div className="font-extrabold text-slate-900">{sub.productName || 'Daily Subscription'}</div>
-                      <div className="text-[11px] text-slate-500">Frequency: {sub.frequency} • Slot: {sub.deliverySlot}</div>
+                      <div className="text-[11px] text-slate-500">Delivery: {sub.frequency} • {sub.billingCycle ? `Billing: ${sub.billingCycle} • ` : ''}Slot: {sub.deliverySlot}</div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${sub.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>

@@ -47,12 +47,14 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://server.apexbee.in/api"
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
+const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
 const PORTAL_LINKS: Record<string, { label: string; url: string }> = {
-  customer: { label: "Customer Portal", url: "/" },
-  admin: { label: "Admin Panel", url: "http://localhost:5173" },
-  vendor: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
-  wholesaler: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
-  manufacturer: { label: "Vendor Portal", url: "https://apexbeevendor.apexbee.in/" },
+  customer: { label: "User / Customer Portal", url: "/" },
+  admin: { label: "Admin Panel", url: isLocalhost ? "http://localhost:5173" : "https://apexbee.in" },
+  vendor: { label: "Vendor Portal", url: isLocalhost ? "http://localhost:5174" : "https://apexbeevendor.apexbee.in/" },
+  wholesaler: { label: "Vendor Portal", url: isLocalhost ? "http://localhost:5174" : "https://apexbeevendor.apexbee.in/" },
+  manufacturer: { label: "Vendor Portal", url: isLocalhost ? "http://localhost:5174" : "https://apexbeevendor.apexbee.in/" },
   franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
   state_franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
   district_franchise: { label: "Franchise Management", url: "https://franchser.apexbee.in/" },
@@ -958,6 +960,19 @@ const Navbar = () => {
 
   const handleSwitchPortal = (role: string, url: string) => {
     localStorage.setItem("activeRole", role);
+    try {
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
+      const urlObj = new URL(url, window.location.origin);
+      if (token && urlObj.origin !== window.location.origin) {
+        urlObj.searchParams.set("auth_token", token);
+        if (userStr) {
+          urlObj.searchParams.set("auth_user", encodeURIComponent(userStr));
+        }
+        window.location.href = urlObj.toString();
+        return;
+      }
+    } catch { }
     window.location.href = url;
   };
 

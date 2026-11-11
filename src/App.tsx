@@ -16,6 +16,7 @@ import Login from "./pages/Login";
 import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import MyOrders from "./pages/MyOrders";
+import MyBusinessRequests from './pages/MyBusinessRequests';
 import SuperVendor from "./pages/LocalStores";
 import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
@@ -45,11 +46,15 @@ import TrackOrder from "./pages/TrackOrder";
 import AdminReviews from "./pages/AdminReviews";
 import AdminPersonalization from "./pages/AdminPersonalization";
 import AdminTransactions from "./pages/AdminTransactions";
+import AdminOrders from "./pages/AdminOrders";
 import AbhiAssistant from "./components/AbhiAssistant";
 import LocalStores from "./pages/LocalStores";
 import { FoodDining } from "./pages/FoodDining";
 import { RestaurantDetail } from "./pages/RestaurantDetail";
 import PublicPayInvoice from "./pages/PublicPayInvoice";
+import WaterCanWorkspace from "./pages/WaterCanWorkspace";
+import VendorPortal from "./pages/VendorPortal";
+import DeliveryPartnerPortal from "./pages/DeliveryPartnerPortal";
 import BottomNav from "./components/BottomNav";
 import DownloadAppPopup from "./components/DownloadAppPopup";
 
@@ -100,6 +105,42 @@ const ReferralParamTracker = () => {
   return null;
 };
 
+/**
+ * Global cross-portal auth parameter synchronizer.
+ * Captures tokens passed when switching between portals (e.g. localhost:5174 -> localhost:5173).
+ */
+const AuthSyncTracker = () => {
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const authToken = params.get("auth_token") || params.get("sso_token") || params.get("token");
+      const authUserStr = params.get("auth_user") || params.get("user");
+      if (authToken) {
+        localStorage.setItem("token", authToken);
+        if (authUserStr) {
+          try {
+            const parsedUser = JSON.parse(decodeURIComponent(authUserStr));
+            localStorage.setItem("user", JSON.stringify(parsedUser));
+          } catch {
+            // ignore
+          }
+        }
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("auth_token");
+        cleanUrl.searchParams.delete("sso_token");
+        cleanUrl.searchParams.delete("token");
+        cleanUrl.searchParams.delete("auth_user");
+        cleanUrl.searchParams.delete("user");
+        window.history.replaceState({}, "", cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : ""));
+        window.dispatchEvent(new Event("storage"));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -110,6 +151,7 @@ const App = () => (
         {/* Automatically scrolls to top on every route change */}
         <ScrollToTop />
         <ReferralParamTracker />
+        <AuthSyncTracker />
 
         <Routes>
           {/* ===== Public Routes — accessible without login ===== */}
@@ -189,12 +231,31 @@ const App = () => (
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
           <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+          <Route path="/my-requests" element={<ProtectedRoute><MyBusinessRequests /></ProtectedRoute>} />
           <Route path="/track-order/:orderId" element={<ProtectedRoute><TrackOrder /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+          <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
+          <Route path="/admin" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/reviews" element={<ProtectedRoute><AdminReviews /></ProtectedRoute>} />
           <Route path="/admin/personalization" element={<ProtectedRoute><AdminPersonalization /></ProtectedRoute>} />
           <Route path="/admin/transactions" element={<ProtectedRoute><AdminTransactions /></ProtectedRoute>} />
+          <Route path="/vendor/workspace/water" element={<ProtectedRoute><WaterCanWorkspace /></ProtectedRoute>} />
+          <Route path="/vendor/water" element={<ProtectedRoute><WaterCanWorkspace /></ProtectedRoute>} />
+          <Route path="/vendor/portal" element={<ProtectedRoute><VendorPortal /></ProtectedRoute>} />
+          <Route path="/vendor/dashboard" element={<ProtectedRoute><VendorPortal /></ProtectedRoute>} />
+          <Route path="/vendor-dashboard" element={<ProtectedRoute><VendorPortal /></ProtectedRoute>} />
+          <Route path="/delivery/portal" element={<ProtectedRoute><DeliveryPartnerPortal /></ProtectedRoute>} />
+          <Route path="/delivery/dashboard" element={<ProtectedRoute><DeliveryPartnerPortal /></ProtectedRoute>} />
+          <Route path="/delivery-partner" element={<ProtectedRoute><DeliveryPartnerPortal /></ProtectedRoute>} />
+
+          {/* ===== Customer / User Portal Aliases ===== */}
+          <Route path="/user/portal" element={<Navigate to="/" replace />} />
+          <Route path="/user-portal" element={<Navigate to="/" replace />} />
+          <Route path="/customer/portal" element={<Navigate to="/" replace />} />
+          <Route path="/customer-portal" element={<Navigate to="/" replace />} />
+          <Route path="/user" element={<Navigate to="/account" replace />} />
+          <Route path="/portal" element={<Navigate to="/" replace />} />
 
           {/* ===== Catch-all ===== */}
           <Route path="*" element={<NotFound />} />
