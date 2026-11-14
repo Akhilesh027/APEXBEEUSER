@@ -71,14 +71,14 @@ export function SubscriptionDeliveryCode({ subscriptionId }: { subscriptionId: s
 
   return (
     <section className={`mt-4 rounded-2xl border p-4 space-y-3 transition-all ${isDelivered
-        ? 'border-emerald-300 bg-emerald-50/90'
-        : status === 'failed'
-          ? 'border-rose-300 bg-rose-50/90'
-          : status === 'started'
-            ? 'border-sky-300 bg-sky-50/90'
-            : status === 'assigned'
-              ? 'border-indigo-300 bg-indigo-50/90'
-              : 'border-amber-300 bg-amber-50/70'
+      ? 'border-emerald-300 bg-emerald-50/90'
+      : status === 'failed'
+        ? 'border-rose-300 bg-rose-50/90'
+        : status === 'started'
+          ? 'border-sky-300 bg-sky-50/90'
+          : status === 'assigned'
+            ? 'border-indigo-300 bg-indigo-50/90'
+            : 'border-amber-300 bg-amber-50/70'
       }`}>
       {/* Header bar with Live Status Indicator */}
       <div className="flex flex-wrap items-center justify-between gap-2">

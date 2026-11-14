@@ -2030,13 +2030,18 @@ const Checkout = () => {
           mrpDiscount,
           subtotal: finalSubtotal,
           packageCharge: totalPacking,
+          packingFee: totalPacking,
+          packagingCharge: totalPacking,
           platformFee: totalPlatform,
           shipping: finalShipping,
+          shippingFee: finalShipping,
           discount: mrpDiscount + finalCouponDiscount,
           couponDiscount: finalCouponDiscount,
           walletDeduction: walletDeducted,
           rewardsDeduction: pointsDeducted,
           tax: totalTax,
+          exclusiveTax: gstBreakdown.exclusiveGst,
+          inclusiveTax: gstBreakdown.inclusiveGst,
           cgst: gstBreakdown.cgst,
           sgst: gstBreakdown.sgst,
           total: finalTotal,
@@ -2104,6 +2109,11 @@ const Checkout = () => {
       // Clear local cart
       localStorage.removeItem("cart");
       localStorage.setItem("hasOrderedOnce", "true");
+
+      if (result.order) {
+        localStorage.setItem("lastOrder", JSON.stringify(result.order));
+        localStorage.setItem("last_placed_order", JSON.stringify(result.order));
+      }
 
       setUpiTransactionId("");
       setPaymentProof(null);
@@ -2456,8 +2466,8 @@ const Checkout = () => {
                 <label
                   onClick={() => setFulfillmentType("delivery")}
                   className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${fulfillmentType === "delivery"
-                      ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
-                      : "border-slate-200 hover:border-slate-300 bg-white"
+                    ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
+                    : "border-slate-200 hover:border-slate-300 bg-white"
                     }`}
                 >
                   <div className="pt-0.5">
@@ -2493,8 +2503,8 @@ const Checkout = () => {
                   <label
                     onClick={() => setFulfillmentType("pickup")}
                     className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${fulfillmentType === "pickup"
-                        ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
+                      ? "border-navy bg-slate-50/80 shadow-xs ring-1 ring-navy/20"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
                       } flex items-start gap-3.5`}
                   >
                     <div className="pt-0.5">
@@ -2588,8 +2598,8 @@ const Checkout = () => {
                             type="button"
                             onClick={() => setCheckoutPreOrderSlot(slot.id)}
                             className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${isSelected
-                                ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm"
-                                : "bg-white text-slate-800 border-amber-200 hover:border-amber-400"
+                              ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm"
+                              : "bg-white text-slate-800 border-amber-200 hover:border-amber-400"
                               }`}
                           >
                             <span className="flex items-center justify-between">

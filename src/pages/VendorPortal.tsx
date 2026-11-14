@@ -1067,8 +1067,8 @@ export default function VendorPortal() {
                         type="button"
                         onClick={() => setDairySubTab(tab.id as any)}
                         className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 border ${isSel
-                            ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128] shadow-xs"
-                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128] shadow-xs"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                           }`}
                       >
                         <span>{tab.label}</span>
@@ -1171,8 +1171,8 @@ export default function VendorPortal() {
                                 type="button"
                                 onClick={() => setSubscriberFilter(f.id)}
                                 className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition border ${subscriberFilter === f.id
-                                    ? "bg-navy text-[#F3BA12] border-navy"
-                                    : "bg-white text-gray-600 border-gray-200 hover:bg-slate-50"
+                                  ? "bg-navy text-[#F3BA12] border-navy"
+                                  : "bg-white text-gray-600 border-gray-200 hover:bg-slate-50"
                                   }`}
                               >
                                 {f.label}
@@ -1229,10 +1229,10 @@ export default function VendorPortal() {
                                       <div className="flex flex-wrap items-center gap-2">
                                         <span className="font-extrabold text-navy text-sm">{sub.customerName || "Customer"}</span>
                                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase border ${isAct
-                                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                            : isPaused
-                                              ? "bg-amber-50 text-amber-800 border-amber-200"
-                                              : "bg-slate-100 text-slate-700 border-slate-200"
+                                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                          : isPaused
+                                            ? "bg-amber-50 text-amber-800 border-amber-200"
+                                            : "bg-slate-100 text-slate-700 border-slate-200"
                                           }`}>
                                           {sub.status}
                                         </span>
@@ -2394,8 +2394,8 @@ export default function VendorPortal() {
                               : '📦 Standard'}
                         </span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${shippingFee === 0
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-amber-100 text-amber-900 border-amber-300'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-amber-100 text-amber-900 border-amber-300'
                           }`}>
                           {shippingFee === 0 ? 'Delivery: FREE' : `Delivery: ₹${shippingFee}`}
                         </span>
@@ -2826,8 +2826,8 @@ export default function VendorPortal() {
                         type="button"
                         onClick={() => setSlotExtensionMinutes(opt.mins)}
                         className={`py-2 px-3 rounded-xl font-bold border text-xs transition ${slotExtensionMinutes === opt.mins
-                            ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128]"
-                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128]"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                           }`}
                       >
                         {opt.label}

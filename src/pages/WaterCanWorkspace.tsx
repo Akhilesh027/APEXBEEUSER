@@ -485,8 +485,8 @@ export default function WaterCanWorkspace() {
           <button
             onClick={() => setActiveTab("accounts")}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition ${activeTab === "accounts"
-                ? "bg-navy text-white shadow-sm"
-                : "text-gray-600 hover:text-navy hover:bg-slate-100"
+              ? "bg-navy text-white shadow-sm"
+              : "text-gray-600 hover:text-navy hover:bg-slate-100"
               }`}
           >
             Customer Container Accounts ({accounts.length})
@@ -494,8 +494,8 @@ export default function WaterCanWorkspace() {
           <button
             onClick={() => setActiveTab("movements")}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition ${activeTab === "movements"
-                ? "bg-navy text-white shadow-sm"
-                : "text-gray-600 hover:text-navy hover:bg-slate-100"
+              ? "bg-navy text-white shadow-sm"
+              : "text-gray-600 hover:text-navy hover:bg-slate-100"
               }`}
           >
             Audit Ledger ({movements.length})
@@ -503,8 +503,8 @@ export default function WaterCanWorkspace() {
           <button
             onClick={() => setActiveTab("products")}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition ${activeTab === "products"
-                ? "bg-navy text-white shadow-sm"
-                : "text-gray-600 hover:text-navy hover:bg-slate-100"
+              ? "bg-navy text-white shadow-sm"
+              : "text-gray-600 hover:text-navy hover:bg-slate-100"
               }`}
           >
             Container Product Settings ({products.length})
@@ -569,8 +569,8 @@ export default function WaterCanWorkspace() {
                         <td className="py-3.5 px-3">
                           <span
                             className={`inline-flex items-center px-2.5 py-1 rounded-full font-extrabold text-xs ${acc.outstanding > 0
-                                ? "bg-blue-100 text-blue-800 border border-blue-200"
-                                : "bg-emerald-100 text-emerald-800"
+                              ? "bg-blue-100 text-blue-800 border border-blue-200"
+                              : "bg-emerald-100 text-emerald-800"
                               }`}
                           >
                             {acc.outstanding} {acc.outstanding === 1 ? "Can" : "Cans"} Held
@@ -638,8 +638,8 @@ export default function WaterCanWorkspace() {
                     key={kind}
                     onClick={() => setMovementFilter(kind)}
                     className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${movementFilter === kind
-                        ? "bg-navy text-white"
-                        : "bg-slate-100 text-gray-600 hover:bg-slate-200"
+                      ? "bg-navy text-white"
+                      : "bg-slate-100 text-gray-600 hover:bg-slate-200"
                       }`}
                   >
                     {kind === "ALL"
@@ -765,8 +765,8 @@ export default function WaterCanWorkspace() {
                           <h4 className="font-black text-navy text-sm leading-snug">{prod.name}</h4>
                           <span
                             className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${details?.returnable
-                                ? "bg-blue-100 text-blue-800 border border-blue-200"
-                                : "bg-gray-100 text-gray-600"
+                              ? "bg-blue-100 text-blue-800 border border-blue-200"
+                              : "bg-gray-100 text-gray-600"
                               }`}
                           >
                             {details?.returnable ? "Returnable Asset" : "Non-Returnable"}
@@ -823,10 +823,10 @@ export default function WaterCanWorkspace() {
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center ${modalKind === "return"
-                        ? "bg-blue-100 text-blue-700"
-                        : modalKind === "dispatch"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
+                      ? "bg-blue-100 text-blue-700"
+                      : modalKind === "dispatch"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
                       }`}
                   >
                     {modalKind === "return" ? <ArrowDownLeft size={18} /> : modalKind === "dispatch" ? <ArrowUpRight size={18} /> : <Shield size={18} />}

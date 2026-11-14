@@ -66,6 +66,7 @@ export default function DeliveryPartnerPortal() {
   const [dismissedBroadcastIds, setDismissedBroadcastIds] = useState<string[]>([]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const prevBroadcastCount = React.useRef(0);
+  const prevPendingCount = React.useRef(0);
 
   // Synthesized chime audio for order alert
   const playAlertChime = useCallback(() => {
@@ -225,6 +226,7 @@ export default function DeliveryPartnerPortal() {
       }).catch(() => null);
 
       setDismissedBroadcastIds((prev) => [...prev, String(orderId)]);
+      void loadDeliveryData();
     } catch (err) {
       console.error("Decline order error:", err);
     } finally {
@@ -280,6 +282,31 @@ export default function DeliveryPartnerPortal() {
     return assignments.filter((a) => !a.isBroadcast && a.status !== "Broadcast");
   }, [assignments]);
 
+  // Separate assigned orders into Pending Acceptance (must accept first) vs Active in Progress
+  const { pendingAcceptanceOrders, activeInProgressOrders, sortedAssignedOrders } = useMemo(() => {
+    const pending: typeof myAssignedOrders = [];
+    const active: typeof myAssignedOrders = [];
+
+    myAssignedOrders.forEach((item) => {
+      const ord = item.orderId || {};
+      const status = String(item.status || ord.orderStatus || "Assigned").trim();
+      const isDelivered = ["Delivered", "delivered", "completed"].includes(status);
+      const isFailed = ["Failed to Deliver", "Failed", "failed"].includes(status);
+
+      if (!isDelivered && !isFailed && ["Assigned", "Pending", "assigned", "pending"].includes(status)) {
+        pending.push(item);
+      } else {
+        active.push(item);
+      }
+    });
+
+    return {
+      pendingAcceptanceOrders: pending,
+      activeInProgressOrders: active,
+      sortedAssignedOrders: [...pending, ...active]
+    };
+  }, [myAssignedOrders]);
+
   // Audio chime notification when a new packed broadcast order arrives
   useEffect(() => {
     if (broadcastOrders.length > prevBroadcastCount.current) {
@@ -287,6 +314,14 @@ export default function DeliveryPartnerPortal() {
     }
     prevBroadcastCount.current = broadcastOrders.length;
   }, [broadcastOrders.length, playAlertChime]);
+
+  // Audio chime alert when a new assigned order is waiting for rider acceptance
+  useEffect(() => {
+    if (pendingAcceptanceOrders.length > prevPendingCount.current) {
+      playAlertChime();
+    }
+    prevPendingCount.current = pendingAcceptanceOrders.length;
+  }, [pendingAcceptanceOrders.length, playAlertChime]);
 
   return (
     <div className="min-h-screen bg-[#F4F6FA] text-[#0A1128] font-sans">
@@ -323,8 +358,8 @@ export default function DeliveryPartnerPortal() {
               <button
                 onClick={() => handleToggleDuty(dashboard?.partner?.status !== "active")}
                 className={`px-4 py-2 rounded-2xl text-xs font-black transition flex items-center gap-2 ${dashboard?.partner?.status === "active"
-                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                    : "bg-slate-700 hover:bg-slate-600 text-slate-200"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : "bg-slate-700 hover:bg-slate-600 text-slate-200"
                   }`}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${dashboard?.partner?.status === "active" ? "bg-white animate-pulse" : "bg-red-400"}`} />
@@ -334,14 +369,20 @@ export default function DeliveryPartnerPortal() {
           </div>
 
           {/* Quick Counter Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-5 border-t border-white/10 text-xs">
             <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
               <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Territory Broadcasts</span>
               <span className="text-xl font-black text-[#F3BA12]">{broadcastOrders.length} Ready</span>
             </div>
+            <div className={`p-3 rounded-2xl border transition ${pendingAcceptanceOrders.length > 0 ? "bg-amber-500/20 border-amber-400/60" : "bg-white/5 border-white/10"}`}>
+              <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Awaiting Acceptance</span>
+              <span className={`text-xl font-black ${pendingAcceptanceOrders.length > 0 ? "text-amber-300 animate-pulse" : "text-slate-300"}`}>
+                {pendingAcceptanceOrders.length} To Accept
+              </span>
+            </div>
             <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
               <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">My Active Runs</span>
-              <span className="text-xl font-black text-sky-400">{myAssignedOrders.length} In Progress</span>
+              <span className="text-xl font-black text-sky-400">{activeInProgressOrders.length} In Progress</span>
             </div>
             <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
               <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Today’s Subscriptions</span>
@@ -392,8 +433,8 @@ export default function DeliveryPartnerPortal() {
                     if (next) playAlertChime();
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border transition ${soundEnabled
-                      ? "bg-amber-100 border-amber-300 text-amber-900"
-                      : "bg-slate-100 border-slate-300 text-slate-600"
+                    ? "bg-amber-100 border-amber-300 text-amber-900"
+                    : "bg-slate-100 border-slate-300 text-slate-600"
                     }`}
                   title="Toggle audio alert chime"
                 >
@@ -431,8 +472,8 @@ export default function DeliveryPartnerPortal() {
                           📦 Status: Packed &amp; Ready
                         </span>
                         <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-md border ${isExtended
-                            ? "bg-amber-50 text-amber-800 border-amber-300"
-                            : "bg-blue-50 text-blue-900 border-blue-200"
+                          ? "bg-amber-50 text-amber-800 border-amber-300"
+                          : "bg-blue-50 text-blue-900 border-blue-200"
                           }`}>
                           🕒 Time Slot: {slotStr}
                           {isExtended && extendedUntil && (
@@ -550,7 +591,12 @@ export default function DeliveryPartnerPortal() {
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           {[
-            { id: "assigned", label: `My Assigned Runs (${myAssignedOrders.length})`, icon: Truck },
+            {
+              id: "assigned",
+              label: `My Assigned Runs (${myAssignedOrders.length}${pendingAcceptanceOrders.length > 0 ? ` · ${pendingAcceptanceOrders.length} Action Needed` : ""})`,
+              icon: Truck,
+              hasPending: pendingAcceptanceOrders.length > 0
+            },
             { id: "broadcast", label: `Broadcast Offers (${broadcastOrders.length})`, icon: Package },
             { id: "subscriptions", label: `Dairy Subscriptions (${subscriptions.length})`, icon: Calendar },
             { id: "earnings", label: "Wallet & COD Cash", icon: DollarSign }
@@ -563,11 +609,19 @@ export default function DeliveryPartnerPortal() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-4 py-2.5 rounded-2xl text-xs font-black transition flex items-center gap-2 border ${isSel
                     ? "bg-[#0A1128] text-[#F3BA12] border-[#0A1128] shadow-sm"
-                    : "bg-white text-gray-700 border-gray-200 hover:bg-slate-50"
+                    : tab.hasPending
+                      ? "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-slate-50"
                   }`}
               >
                 <Icon size={14} />
                 <span>{tab.label}</span>
+                {tab.hasPending && !isSel && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                  </span>
+                )}
               </button>
             );
           })}
@@ -576,7 +630,29 @@ export default function DeliveryPartnerPortal() {
         {/* TAB 1: MY ASSIGNED RUNS */}
         {activeTab === "assigned" && (
           <div className="space-y-4">
-            {myAssignedOrders.length === 0 ? (
+            {/* Prominent Banner if any assigned tasks need rider acceptance */}
+            {pendingAcceptanceOrders.length > 0 && (
+              <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-400/90 rounded-3xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="p-2.5 bg-amber-400 text-navy rounded-2xl shrink-0">
+                    <Bell size={20} className="animate-bounce" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-navy flex items-center gap-2">
+                      {pendingAcceptanceOrders.length} New Delivery Task{pendingAcceptanceOrders.length > 1 ? "s" : ""} Assigned — Acceptance Required
+                    </h3>
+                    <p className="text-xs text-slate-600 font-medium">
+                      You must accept each assigned delivery before starting the run and heading to the merchant store.
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-amber-400 text-navy font-black text-xs px-3 py-1 rounded-full animate-pulse shrink-0 self-start sm:self-auto">
+                  ⚡ Action Required
+                </Badge>
+              </div>
+            )}
+
+            {sortedAssignedOrders.length === 0 ? (
               <div className="bg-white border border-gray-150 rounded-3xl p-12 text-center text-gray-400 space-y-3">
                 <Truck size={36} className="mx-auto text-slate-300" />
                 <h3 className="text-base font-extrabold text-navy">No active orders assigned</h3>
@@ -592,13 +668,14 @@ export default function DeliveryPartnerPortal() {
                 </Button>
               </div>
             ) : (
-              myAssignedOrders.map((item) => {
+              sortedAssignedOrders.map((item) => {
                 const ord = item.orderId || {};
                 const ordId = ord._id || ord.id || item._id;
                 const ordNum = ord.orderNumber || ordId;
                 const currentStatus = String(item.status || ord.orderStatus || "Assigned").trim();
                 const isDelivered = ["Delivered", "delivered", "completed"].includes(currentStatus);
                 const isFailed = ["Failed to Deliver", "Failed", "failed"].includes(currentStatus);
+                const isPendingAcceptance = ["Assigned", "Pending", "assigned", "pending"].includes(currentStatus) && !isDelivered && !isFailed;
 
                 // Slot and extension metadata
                 const slotStr = item.deliverySlot || ord.deliverySlot || ord.preOrderTimeSlot || "Scheduled Slot";
@@ -612,7 +689,10 @@ export default function DeliveryPartnerPortal() {
                 return (
                   <div
                     key={item._id}
-                    className="bg-white border border-gray-150 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 hover:border-gray-300 transition"
+                    className={`bg-white rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 transition ${isPendingAcceptance
+                        ? "border-2 border-amber-400 ring-2 ring-amber-400/20"
+                        : "border border-gray-150 hover:border-gray-300"
+                      }`}
                   >
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
@@ -622,9 +702,18 @@ export default function DeliveryPartnerPortal() {
                             ? "bg-emerald-100 text-emerald-900 border-emerald-300"
                             : isFailed
                               ? "bg-rose-100 text-rose-900 border-rose-300"
-                              : "bg-indigo-100 text-indigo-900 border-indigo-300"
+                              : isPendingAcceptance
+                                ? "bg-amber-100 text-amber-900 border-amber-300 animate-pulse flex items-center gap-1"
+                                : "bg-indigo-100 text-indigo-900 border-indigo-300"
                           }`}>
-                          {currentStatus}
+                          {isPendingAcceptance ? (
+                            <>
+                              <Clock size={11} className="animate-spin" />
+                              Pending Acceptance
+                            </>
+                          ) : (
+                            currentStatus
+                          )}
                         </Badge>
 
                         {/* Delivery Slot Badge */}
@@ -643,6 +732,50 @@ export default function DeliveryPartnerPortal() {
                         COD Expected: <span className="text-emerald-700 font-black">₹{ord.totalAmount || 0}</span>
                       </div>
                     </div>
+
+                    {/* Pending Acceptance Action Alert Banner */}
+                    {isPendingAcceptance && (
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="relative flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                            </span>
+                            <span className="text-xs font-black text-amber-950 uppercase tracking-wider">
+                              New Order Assigned — Confirmation Required
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-900 font-medium">
+                            Review store pickup and customer delivery details below. You must accept this order before starting the delivery run.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={actionInProgress === ordId}
+                            onClick={() => handleDeclineOrder(ordId)}
+                            className="w-1/2 sm:w-auto border-red-300 text-red-700 hover:bg-red-50 rounded-xl text-xs font-extrabold px-4 py-2"
+                          >
+                            <X size={14} className="mr-1" />
+                            Decline / Pass
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={actionInProgress === ordId}
+                            onClick={() => handleAcceptOrder(ordId)}
+                            className="w-1/2 sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md px-5 py-2"
+                          >
+                            <Check size={14} className="mr-1" />
+                            {actionInProgress === ordId ? "Accepting..." : "Accept Order & Start Delivery"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Slot Warning Notice */}
                     {isFailed ? (
@@ -722,94 +855,124 @@ export default function DeliveryPartnerPortal() {
                     {/* Step-by-Step Delivery Progression Controls */}
                     {!isDelivered && !isFailed && (
                       <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
-                        {/* Step 1: Heading to Store */}
-                        {["Assigned", "Accepted"].includes(currentStatus) && (
-                          <Button
-                            size="sm"
-                            disabled={actionInProgress === ordId}
-                            onClick={() => handleOrderStatusStep(ordId, "reached-pickup")}
-                            className="bg-[#0A1128] hover:bg-navy/90 text-[#F3BA12] rounded-xl text-xs font-bold"
-                          >
-                            📍 Reached Merchant Store
-                          </Button>
-                        )}
+                        {isPendingAcceptance ? (
+                          <div className="w-full bg-slate-50 border border-dashed border-amber-300 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                            <span className="text-slate-700 font-bold flex items-center gap-1.5">
+                              <AlertCircle size={15} className="text-amber-600 shrink-0" />
+                              Fulfillment process is locked until you accept the order.
+                            </span>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={actionInProgress === ordId}
+                                onClick={() => handleDeclineOrder(ordId)}
+                                className="border-red-300 text-red-700 hover:bg-red-50 text-xs font-bold rounded-xl"
+                              >
+                                Decline / Pass
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={actionInProgress === ordId}
+                                onClick={() => handleAcceptOrder(ordId)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow"
+                              >
+                                {actionInProgress === ordId ? "Accepting..." : "✅ Accept Order & Start Delivery"}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Step 1: Heading to Store - ONLY when status is Accepted */}
+                            {["Accepted", "accepted"].includes(currentStatus) && (
+                              <Button
+                                size="sm"
+                                disabled={actionInProgress === ordId}
+                                onClick={() => handleOrderStatusStep(ordId, "reached-pickup")}
+                                className="bg-[#0A1128] hover:bg-navy/90 text-[#F3BA12] rounded-xl text-xs font-bold"
+                              >
+                                📍 Reached Merchant Store
+                              </Button>
+                            )}
 
-                        {/* Step 2: At Store - Verify Pickup OTP */}
-                        {["Reached Vendor", "reached_vendor"].includes(currentStatus) && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Input
-                              placeholder="Merchant Pickup OTP"
-                              value={pickupOtps[ordId] || ""}
-                              onChange={(e) => setPickupOtps({ ...pickupOtps, [ordId]: e.target.value })}
-                              className="w-36 text-xs rounded-xl"
-                            />
+                            {/* Step 2: At Store - Verify Pickup OTP */}
+                            {["Reached Vendor", "reached_vendor"].includes(currentStatus) && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Input
+                                  placeholder="Merchant Pickup OTP"
+                                  value={pickupOtps[ordId] || ""}
+                                  onChange={(e) => setPickupOtps({ ...pickupOtps, [ordId]: e.target.value })}
+                                  className="w-36 text-xs rounded-xl"
+                                />
+                                <Button
+                                  size="sm"
+                                  disabled={actionInProgress === ordId}
+                                  onClick={() => handleOrderStatusStep(ordId, "pickup", { otp: pickupOtps[ordId] })}
+                                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold"
+                                >
+                                  Verify Pickup OTP & Collect Package
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Step 3: Package in Hand - Start Delivery */}
+                            {["Picked Up", "picked_up"].includes(currentStatus) && (
+                              <Button
+                                size="sm"
+                                disabled={actionInProgress === ordId}
+                                onClick={() => handleOrderStatusStep(ordId, "out-for-delivery")}
+                                className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold"
+                              >
+                                🚚 Start Delivery Run (Out for Delivery)
+                              </Button>
+                            )}
+
+                            {/* Step 4: On the way - Reached Doorstep */}
+                            {["Out for Delivery", "out_for_delivery", "Shipped"].includes(currentStatus) && (
+                              <Button
+                                size="sm"
+                                disabled={actionInProgress === ordId}
+                                onClick={() => handleOrderStatusStep(ordId, "reached-customer")}
+                                className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold"
+                              >
+                                📍 Arrived at Customer Doorstep
+                              </Button>
+                            )}
+
+                            {/* Step 5: At Doorstep - Verify Customer Delivery OTP */}
+                            {["Reached Customer", "reached_customer"].includes(currentStatus) && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Input
+                                  placeholder="Customer Delivery OTP"
+                                  value={deliveryOtps[ordId] || ""}
+                                  onChange={(e) => setDeliveryOtps({ ...deliveryOtps, [ordId]: e.target.value })}
+                                  className="w-36 text-xs rounded-xl font-mono text-center tracking-widest font-bold"
+                                />
+                                <Button
+                                  size="sm"
+                                  disabled={actionInProgress === ordId}
+                                  onClick={() => handleOrderStatusStep(ordId, "delivered", { otp: deliveryOtps[ordId] })}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold"
+                                >
+                                  ✅ Verify OTP & Confirm Delivered
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Mark Failed Button */}
                             <Button
                               size="sm"
-                              disabled={actionInProgress === ordId}
-                              onClick={() => handleOrderStatusStep(ordId, "pickup", { otp: pickupOtps[ordId] })}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold"
+                              variant="outline"
+                              onClick={() => {
+                                setTargetFailureOrder(item);
+                                setFailureModalOpen(true);
+                              }}
+                              className="border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold ml-auto"
                             >
-                              Verify Pickup OTP & Collect Package
+                              ⚠️ Report Missed / Delivery Failed
                             </Button>
-                          </div>
+                          </>
                         )}
-
-                        {/* Step 3: Package in Hand - Start Delivery */}
-                        {["Picked Up", "picked_up"].includes(currentStatus) && (
-                          <Button
-                            size="sm"
-                            disabled={actionInProgress === ordId}
-                            onClick={() => handleOrderStatusStep(ordId, "out-for-delivery")}
-                            className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold"
-                          >
-                            🚚 Start Delivery Run (Out for Delivery)
-                          </Button>
-                        )}
-
-                        {/* Step 4: On the way - Reached Doorstep */}
-                        {["Out for Delivery", "out_for_delivery", "Shipped"].includes(currentStatus) && (
-                          <Button
-                            size="sm"
-                            disabled={actionInProgress === ordId}
-                            onClick={() => handleOrderStatusStep(ordId, "reached-customer")}
-                            className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold"
-                          >
-                            📍 Arrived at Customer Doorstep
-                          </Button>
-                        )}
-
-                        {/* Step 5: At Doorstep - Verify Customer Delivery OTP */}
-                        {["Reached Customer", "reached_customer"].includes(currentStatus) && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Input
-                              placeholder="Customer Delivery OTP"
-                              value={deliveryOtps[ordId] || ""}
-                              onChange={(e) => setDeliveryOtps({ ...deliveryOtps, [ordId]: e.target.value })}
-                              className="w-36 text-xs rounded-xl font-mono text-center tracking-widest font-bold"
-                            />
-                            <Button
-                              size="sm"
-                              disabled={actionInProgress === ordId}
-                              onClick={() => handleOrderStatusStep(ordId, "delivered", { otp: deliveryOtps[ordId] })}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold"
-                            >
-                              ✅ Verify OTP & Confirm Delivered
-                            </Button>
-                          </div>
-                        )}
-
-                        {/* Mark Failed Button */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setTargetFailureOrder(item);
-                            setFailureModalOpen(true);
-                          }}
-                          className="border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold ml-auto"
-                        >
-                          ⚠️ Report Missed / Delivery Failed
-                        </Button>
                       </div>
                     )}
                   </div>
@@ -1018,8 +1181,8 @@ export default function DeliveryPartnerPortal() {
                     type="button"
                     onClick={() => setFailureReason(r)}
                     className={`w-full text-left p-2.5 rounded-xl border text-xs font-semibold transition ${failureReason === r
-                        ? "bg-rose-50 text-rose-900 border-rose-300 font-bold"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-rose-50 text-rose-900 border-rose-300 font-bold"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     {r}

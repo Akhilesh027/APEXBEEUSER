@@ -2308,18 +2308,18 @@ const EarnWithApexBee = () => {
                 key={label}
                 aria-current={isCurrent ? 'step' : undefined}
                 className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition-all ${isCurrent
-                    ? 'bg-navy text-white shadow-sm ring-2 ring-navy/20'
-                    : isPassed
-                      ? 'text-navy bg-amber-50 border border-amber-200'
-                      : 'text-slate-400 bg-slate-50/50'
+                  ? 'bg-navy text-white shadow-sm ring-2 ring-navy/20'
+                  : isPassed
+                    ? 'text-navy bg-amber-50 border border-amber-200'
+                    : 'text-slate-400 bg-slate-50/50'
                   }`}
               >
                 <span
                   className={`h-5 w-5 shrink-0 rounded-full grid place-items-center text-[10px] font-black ${isCurrent
-                      ? 'bg-amber-400 text-navy'
-                      : isPassed
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-200 text-slate-600'
+                    ? 'bg-amber-400 text-navy'
+                    : isPassed
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-200 text-slate-600'
                     }`}
                 >
                   {isPassed ? <Check size={12} strokeWidth={3} /> : index + 1}
@@ -2405,8 +2405,8 @@ const EarnWithApexBee = () => {
                       setSelectedSubcategories([item.name]);
                     }}
                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group ${isSelected
-                        ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-[1.02]"
-                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                      ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-400/50 shadow-md scale-[1.02]"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                   >
                     <div>

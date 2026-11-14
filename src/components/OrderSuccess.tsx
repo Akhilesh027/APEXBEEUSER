@@ -64,12 +64,25 @@ type ShippingAddress = {
 
 type OrderSummary = {
   subtotal?: number;
+  totalMrp?: number;
+  mrpDiscount?: number;
   discount?: number;
   couponDiscount?: number;
   walletDeduction?: number;
   rewardsDeduction?: number;
+  rewardPointsUsed?: number;
   shipping?: number;
+  shippingFee?: number;
+  deliveryFee?: number;
+  packingFee?: number;
+  packageCharge?: number;
+  packagingCharge?: number;
+  platformFee?: number;
   tax?: number;
+  exclusiveTax?: number;
+  inclusiveTax?: number;
+  cgst?: number;
+  sgst?: number;
   total?: number;
   grandTotal?: number;
   itemsCount?: number;
@@ -80,7 +93,9 @@ type FullOrder = {
   orderNumber?: string;
   createdAt?: string;
   status?: string;
+  orderStatus?: string;
   orderItems?: OrderItem[];
+  items?: any[];
   subOrders?: SubOrder[];
   shippingAddress?: ShippingAddress;
   paymentDetails?: {
@@ -88,12 +103,13 @@ type FullOrder = {
     status?: string;
     amount?: number;
   };
+  totalAmount?: number;
   orderSummary?: OrderSummary;
   deliveryDetails?: {
     expectedDelivery?: string;
     shippingMethod?: string;
   };
-  coupon?: { code?: string } | null;
+  coupon?: { code?: string; discount?: number } | null;
 };
 
 // ─────────────────────────────────────────────
@@ -257,13 +273,63 @@ const OrderSuccess = () => {
     const state: any = location.state;
     if (state?.order) {
       setOrder(state.order);
-    }
-    if (state?.paymentMethod) {
-      setPaymentMethod(state.paymentMethod);
+      if (state?.paymentMethod) {
+        setPaymentMethod(state.paymentMethod);
+      }
+    } else {
+      // 1. Check URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const qOrderId = params.get("orderId") || params.get("orderNumber") || params.get("id");
+
+      // 2. Check localStorage cache
+      const cached = localStorage.getItem("lastOrder") || localStorage.getItem("last_placed_order");
+      let foundCached = false;
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (!qOrderId || parsed._id === qOrderId || parsed.orderNumber === qOrderId) {
+            setOrder(parsed);
+            if (parsed.paymentDetails?.method) {
+              setPaymentMethod(parsed.paymentDetails.method);
+            }
+            foundCached = true;
+          }
+        } catch (e) {
+          console.error("Failed to parse cached order", e);
+        }
+      }
+
+      // 3. If not cached, attempt to fetch order from API
+      if (!foundCached) {
+        const token = localStorage.getItem("token");
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        if (token) {
+          const targetUrl = qOrderId
+            ? `${API_ORIGIN}/api/orders/${qOrderId}`
+            : user?.id || user?._id
+              ? `${API_ORIGIN}/api/orders/user/${user.id || user._id}?limit=1`
+              : `${API_ORIGIN}/api/orders/active-order`;
+
+          fetch(targetUrl, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+            .then(res => res.json())
+            .then(data => {
+              const fetched = data.order || (Array.isArray(data.orders) && data.orders[0]) || data.activeOrder;
+              if (fetched) {
+                setOrder(fetched);
+                if (fetched.paymentDetails?.method) {
+                  setPaymentMethod(fetched.paymentDetails.method);
+                }
+              }
+            })
+            .catch(err => console.error("Error fetching order in OrderSuccess:", err));
+        }
+      }
     }
 
     // Brief celebration animation, then reveal full confirmation
-    const t = setTimeout(() => setPhase("confirm"), 2800);
+    const t = setTimeout(() => setPhase("confirm"), 2400);
     return () => clearTimeout(t);
   }, [location.state]);
 
@@ -272,13 +338,14 @@ const OrderSuccess = () => {
     if (!order) return [];
     if (order.subOrders && order.subOrders.length > 0) return order.subOrders;
 
+    const rawItems = (order.orderItems && order.orderItems.length > 0) ? order.orderItems : (order.items || []);
     // Fallback: group orderItems by vendorId
     const map: Record<string, SubOrder> = {};
-    (order.orderItems || []).forEach((item) => {
-      const vid = item.vendorId || "unknown";
+    rawItems.forEach((item: any) => {
+      const vid = item.vendorId ? String(item.vendorId) : "unknown";
       if (!map[vid]) {
         map[vid] = {
-          subOrderId: `SUB-${vid.replace("vendor_", "").toUpperCase()}-${Date.now().toString().slice(-4)}`,
+          subOrderId: `SUB-${vid.replace("vendor_", "").slice(-6).toUpperCase()}-${Date.now().toString().slice(-4)}`,
           vendorId: vid,
           vendorName: item.vendorName || "ApexBee Store",
           estimatedDelivery: order.deliveryDetails?.expectedDelivery || new Date(Date.now() + 4 * 86400000).toISOString(),
@@ -287,35 +354,85 @@ const OrderSuccess = () => {
         };
       }
       map[vid].items.push(item);
-      const lineTotal = (item.price || 0) * (item.quantity || 1);
+      const itPrice = Number(item.price || (item as any).sellingPrice || (item as any).productId?.price || 0);
+      const itQty = Number(item.quantity || 1);
+      const lineTotal = Number(item.itemTotal || (itPrice * itQty));
       map[vid].summary.subtotal += lineTotal;
       map[vid].summary.total += lineTotal;
     });
     return Object.values(map);
   })();
 
+  // ─────────────────────────────────────────────
+  // Order Summary Calculations (Accurate & Itemized)
+  // ─────────────────────────────────────────────
+  const summary = order?.orderSummary || {};
+  const addr = order?.shippingAddress;
+  const rawItems = (order?.orderItems && order.orderItems.length > 0) ? order.orderItems : (order?.items || []);
+
+  const subtotal = Number(summary.subtotal ?? rawItems.reduce((sum: number, it: any) => sum + (Number(it.price || it.sellingPrice || it.productId?.price || 0) * Number(it.quantity || 1)), 0));
+  const mrpDiscount = Number(summary.mrpDiscount || 0);
+  const couponDiscount = Number(summary.couponDiscount || (order?.coupon ? summary.discount : 0) || 0);
+  const totalDiscount = Number(summary.discount || 0);
+  // Avoid double-counting discount if couponDiscount is already part of totalDiscount
+  const productDiscount = Math.max(0, totalDiscount - couponDiscount);
+
+  const packingFee = Number(summary.packingFee ?? summary.packageCharge ?? summary.packagingCharge ?? 0);
+  const platformFee = Number(summary.platformFee ?? 0);
+  const shippingFee = Number(summary.shipping ?? summary.shippingFee ?? summary.deliveryFee ?? 0);
+
+  const walletUsed = Number(summary.walletDeduction || 0);
+  const rewardsUsed = Number(summary.rewardsDeduction || summary.rewardPointsUsed || 0);
+
+  const totalTax = Number(summary.tax ?? ((Number(summary.cgst || 0) + Number(summary.sgst || 0))) ?? 0);
+  const cgst = Number(summary.cgst || (totalTax > 0 ? (totalTax / 2) : 0));
+  const sgst = Number(summary.sgst || (totalTax > 0 ? (totalTax / 2) : 0));
+
+  // Determine whether tax is exclusive (added to bill) or inclusive (already in subtotal)
+  const isTaxExclusive = (() => {
+    if (typeof summary.exclusiveTax === "number") {
+      return summary.exclusiveTax > 0;
+    }
+    if (typeof summary.inclusiveTax === "number" && summary.inclusiveTax > 0) {
+      return false;
+    }
+    if (totalTax === 0) return false;
+    const actualGrand = Number(summary.grandTotal ?? summary.total ?? order?.paymentDetails?.amount ?? order?.totalAmount ?? 0);
+    const expectedWithoutTax = Math.round(subtotal - couponDiscount - productDiscount + packingFee + platformFee + shippingFee - walletUsed - rewardsUsed);
+    return Math.abs(expectedWithoutTax + totalTax - actualGrand) <= 1.0;
+  })();
+
+  const grandTotal = Number(
+    summary.grandTotal ??
+    summary.total ??
+    order?.paymentDetails?.amount ??
+    order?.totalAmount ??
+    Math.max(0, subtotal - couponDiscount - productDiscount + packingFee + platformFee + shippingFee + (isTaxExclusive ? totalTax : 0) - walletUsed - rewardsUsed)
+  );
+
   const handleDownloadInvoice = () => {
     const printWindow = window.open("", "_blank", "width=900,height=700");
     if (!printWindow) return;
 
-    const addr = order?.shippingAddress;
-    const summary = order?.orderSummary;
-
-    const itemRows = (order?.orderItems || [])
+    const itemRows = rawItems
       .map(
-        (item, i) => {
+        (item: any, i: number) => {
+          const itName = item.name || item.productName || item.itemName || item.productId?.name || "Product";
+          const itQty = Number(item.quantity || 1);
+          const itPrice = Number(item.price || item.sellingPrice || item.productId?.price || 0);
+          const itTotal = Number(item.itemTotal || (itPrice * itQty));
           const vDetails = getOrderItemVariantDetails(item);
           const variantDesc = vDetails.length > 0 ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">${vDetails.map(v => `${v.label}: ${v.value}`).join(" | ")}</div>` : "";
           return `
         <tr style="border-bottom:1px solid #e5e7eb;">
           <td style="padding:8px 4px;">${i + 1}</td>
           <td style="padding:8px 4px;">
-            <div style="font-weight:600;">${item.name || "—"}</div>
+            <div style="font-weight:600;">${itName}</div>
             ${variantDesc}
           </td>
-          <td style="padding:8px 4px;">${item.quantity || 1}</td>
-          <td style="padding:8px 4px;text-align:right;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
-          <td style="padding:8px 4px;text-align:right;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
+          <td style="padding:8px 4px;">${itQty}</td>
+          <td style="padding:8px 4px;text-align:right;">₹${itPrice.toLocaleString("en-IN")}</td>
+          <td style="padding:8px 4px;text-align:right;">₹${itTotal.toLocaleString("en-IN")}</td>
         </tr>`;
         }
       )
@@ -379,15 +496,18 @@ const OrderSuccess = () => {
     <tbody>${itemRows}</tbody>
   </table>
 
-  <table class="totals-table" style="width:300px;margin-left:auto;">
-    <tr><td>Subtotal</td><td style="text-align:right;">₹${(summary?.subtotal || 0).toLocaleString("en-IN")}</td></tr>
-    ${(summary?.discount || 0) > 0 ? `<tr><td>Product Discount</td><td style="text-align:right;color:green;">-₹${(summary?.discount || 0).toLocaleString("en-IN")}</td></tr>` : ""}
-    ${(summary?.couponDiscount || 0) > 0 ? `<tr><td>Coupon (${order?.coupon?.code || ""})</td><td style="text-align:right;color:green;">-₹${(summary?.couponDiscount || 0).toLocaleString("en-IN")}</td></tr>` : ""}
-    ${(summary?.walletDeduction || 0) > 0 ? `<tr><td>Wallet Used</td><td style="text-align:right;color:green;">-₹${(summary?.walletDeduction || 0).toLocaleString("en-IN")}</td></tr>` : ""}
-    ${(summary?.rewardsDeduction || 0) > 0 ? `<tr><td>Rewards Points</td><td style="text-align:right;color:green;">-₹${(summary?.rewardsDeduction || 0).toLocaleString("en-IN")}</td></tr>` : ""}
-    <tr><td>Delivery</td><td style="text-align:right;">${(summary?.shipping || 0) === 0 ? "Free" : `₹${(summary?.shipping || 0).toLocaleString("en-IN")}`}</td></tr>
-    <tr><td>GST (5%)</td><td style="text-align:right;">₹${(summary?.tax || 0).toLocaleString("en-IN")}</td></tr>
-    <tr class="grand-total"><td>Grand Total</td><td style="text-align:right;">₹${(summary?.grandTotal || summary?.total || 0).toLocaleString("en-IN")}</td></tr>
+  <table class="totals-table" style="width:340px;margin-left:auto;">
+    <tr><td>Subtotal</td><td style="text-align:right;">₹${subtotal.toLocaleString("en-IN")}</td></tr>
+    ${productDiscount > 0 ? `<tr><td>Product Discount</td><td style="text-align:right;color:green;">-₹${productDiscount.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${couponDiscount > 0 ? `<tr><td>Coupon (${order?.coupon?.code || "Applied"})</td><td style="text-align:right;color:green;">-₹${couponDiscount.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${packingFee > 0 ? `<tr><td>Packaging Charge</td><td style="text-align:right;">+₹${packingFee.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${platformFee > 0 ? `<tr><td>Platform Fee</td><td style="text-align:right;">+₹${platformFee.toLocaleString("en-IN")}</td></tr>` : ""}
+    <tr><td>Delivery</td><td style="text-align:right;">${shippingFee === 0 ? "Free" : `₹${shippingFee.toLocaleString("en-IN")}`}</td></tr>
+    ${isTaxExclusive && totalTax > 0 ? `<tr><td>Taxes & GST (${cgst > 0 && sgst > 0 ? `CGST ₹${cgst.toFixed(0)} + SGST ₹${sgst.toFixed(0)}` : "Exclusive"})</td><td style="text-align:right;">+₹${totalTax.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${!isTaxExclusive && totalTax > 0 ? `<tr style="color:#6b7280;font-size:11px;"><td>GST (${cgst > 0 && sgst > 0 ? `CGST ₹${cgst.toFixed(0)} + SGST ₹${sgst.toFixed(0)}` : "Included in subtotal"})</td><td style="text-align:right;">₹${totalTax.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${walletUsed > 0 ? `<tr><td>Wallet Used</td><td style="text-align:right;color:green;">-₹${walletUsed.toLocaleString("en-IN")}</td></tr>` : ""}
+    ${rewardsUsed > 0 ? `<tr><td>Reward Points</td><td style="text-align:right;color:green;">-₹${rewardsUsed.toLocaleString("en-IN")}</td></tr>` : ""}
+    <tr class="grand-total"><td>Grand Total</td><td style="text-align:right;">₹${grandTotal.toLocaleString("en-IN")}</td></tr>
   </table>
 
   <div class="footer">
@@ -458,9 +578,6 @@ const OrderSuccess = () => {
       </div>
     );
   }
-
-  const summary = order.orderSummary || {};
-  const addr = order.shippingAddress;
 
   // ─── FULL CONFIRMATION PAGE ──────────────────────────────────────────────
   return (
@@ -543,6 +660,9 @@ const OrderSuccess = () => {
                   <div className="space-y-3">
                     {sub.items.map((item, i) => {
                       const vDetails = getOrderItemVariantDetails(item);
+                      const itPrice = Number(item.price || (item as any).sellingPrice || (item as any).productId?.price || 0);
+                      const itQty = Number(item.quantity || 1);
+                      const itTotal = Number(item.itemTotal || (itPrice * itQty));
                       return (
                         <div key={i} className="flex gap-3 items-start">
                           <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -568,13 +688,13 @@ const OrderSuccess = () => {
                               </div>
                             )}
                             <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
-                              <span>Qty: {item.quantity || 1}</span>
+                              <span>Qty: {itQty}</span>
                               {(item as any).sku && <span>SKU: {(item as any).sku}</span>}
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="font-semibold text-navy">{formatCurrency((item.price || 0) * (item.quantity || 1))}</p>
-                            <p className="text-xs text-muted-foreground">{formatCurrency(item.price)} × {item.quantity || 1}</p>
+                            <p className="font-semibold text-navy">{formatCurrency(itTotal)}</p>
+                            <p className="text-xs text-muted-foreground">{formatCurrency(itPrice)} × {itQty}</p>
                           </div>
                         </div>
                       );
@@ -583,7 +703,14 @@ const OrderSuccess = () => {
 
                   {/* Sub-order mini total */}
                   <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sub-total (incl. ₹{sub.summary.tax} GST + ₹{sub.summary.deliveryFee} delivery)</span>
+                    <span className="text-muted-foreground">
+                      {sub.summary.deliveryFee > 0 || sub.summary.tax > 0
+                        ? `Sub-total (${[
+                          sub.summary.tax > 0 ? `₹${sub.summary.tax} GST` : null,
+                          sub.summary.deliveryFee > 0 ? `₹${sub.summary.deliveryFee} delivery` : null,
+                        ].filter(Boolean).join(" + ")})`
+                        : "Sub-total"}
+                    </span>
                     <span className="font-semibold text-navy">{formatCurrency(sub.summary.total)}</span>
                   </div>
                 </CardContent>
@@ -632,50 +759,89 @@ const OrderSuccess = () => {
             <Card>
               <CardContent className="p-5">
                 <h3 className="font-semibold text-navy mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4" /> Order Summary
+                  <Star className="w-4 h-4 text-amber-500" /> Order Summary
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal ({summary.itemsCount || (order.orderItems || []).length} items)</span>
-                    <span>{formatCurrency(summary.subtotal)}</span>
+                    <span className="text-muted-foreground">Subtotal ({summary.itemsCount || rawItems.length} items)</span>
+                    <span className="font-medium text-navy">{formatCurrency(subtotal)}</span>
                   </div>
-                  {(summary.discount || 0) > 0 && (
+
+                  {mrpDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>MRP Discount</span>
+                      <span>-{formatCurrency(mrpDiscount)}</span>
+                    </div>
+                  )}
+
+                  {productDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Product Discount</span>
-                      <span>-{formatCurrency(summary.discount)}</span>
+                      <span>-{formatCurrency(productDiscount)}</span>
                     </div>
                   )}
-                  {(summary.couponDiscount || 0) > 0 && (
+
+                  {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Coupon {order.coupon?.code ? `(${order.coupon.code})` : ""}</span>
-                      <span>-{formatCurrency(summary.couponDiscount)}</span>
+                      <span>-{formatCurrency(couponDiscount)}</span>
                     </div>
                   )}
-                  {(summary.walletDeduction || 0) > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Wallet Used</span>
-                      <span>-{formatCurrency(summary.walletDeduction)}</span>
+
+                  {packingFee > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Packaging Charges</span>
+                      <span>+{formatCurrency(packingFee)}</span>
                     </div>
                   )}
-                  {(summary.rewardsDeduction || 0) > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Reward Points</span>
-                      <span>-{formatCurrency(summary.rewardsDeduction)}</span>
+
+                  {platformFee > 0 && (
+                    <div className="flex justify-between text-amber-800 font-medium">
+                      <span>Platform Fee</span>
+                      <span>+{formatCurrency(platformFee)}</span>
                     </div>
                   )}
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery</span>
-                    <span className={(summary.shipping || 0) === 0 ? "text-green-600 font-medium" : ""}>
-                      {(summary.shipping || 0) === 0 ? "Free" : formatCurrency(summary.shipping)}
+                    <span className={shippingFee === 0 ? "text-green-600 font-medium" : ""}>
+                      {shippingFee === 0 ? "Free" : `+${formatCurrency(shippingFee)}`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">GST (5%)</span>
-                    <span>{formatCurrency(summary.tax)}</span>
-                  </div>
+
+                  {isTaxExclusive && totalTax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Taxes & GST {cgst > 0 && sgst > 0 ? `(CGST + SGST)` : ""}
+                      </span>
+                      <span>+{formatCurrency(totalTax)}</span>
+                    </div>
+                  )}
+
+                  {!isTaxExclusive && totalTax > 0 && (
+                    <div className="flex justify-between text-xs text-muted-foreground bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      <span>GST Included in Subtotal {cgst > 0 && sgst > 0 ? `(CGST ₹${cgst.toFixed(0)} + SGST ₹${sgst.toFixed(0)})` : "(Inclusive)"}</span>
+                      <span className="font-mono font-medium text-slate-700">{formatCurrency(totalTax)}</span>
+                    </div>
+                  )}
+
+                  {walletUsed > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Wallet Used</span>
+                      <span>-{formatCurrency(walletUsed)}</span>
+                    </div>
+                  )}
+
+                  {rewardsUsed > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Reward Points</span>
+                      <span>-{formatCurrency(rewardsUsed)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between font-bold text-base pt-2 border-t text-navy">
                     <span>Grand Total</span>
-                    <span>{formatCurrency(summary.grandTotal || summary.total)}</span>
+                    <span>{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
               </CardContent>

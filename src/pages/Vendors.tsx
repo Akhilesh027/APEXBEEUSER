@@ -1240,8 +1240,8 @@ const StorePage = () => {
                       onClick={() => setViewMode("grid")}
                       title="Grid View"
                       className={`p-1.5 rounded-lg transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "grid"
-                          ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                          : "text-slate-500 hover:text-slate-800"
+                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
                         }`}
                     >
                       <LayoutGrid className="w-4 h-4" />
@@ -1252,8 +1252,8 @@ const StorePage = () => {
                       onClick={() => setViewMode("list")}
                       title="List View"
                       className={`p-1.5 rounded-lg transition cursor-pointer border-none flex items-center gap-1 ${viewMode === "list"
-                          ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
-                          : "text-slate-500 hover:text-slate-800"
+                        ? "bg-[#0A1128] text-[#F3BA12] shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
                         }`}
                     >
                       <List className="w-4 h-4" />

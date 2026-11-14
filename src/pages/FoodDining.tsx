@@ -1185,8 +1185,8 @@ export const FoodDining: React.FC = () => {
                     <span>{cat.name}</span>
                     {typeof cat.count === 'number' && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected
-                          ? 'bg-amber-400/25 text-amber-300'
-                          : 'bg-slate-100 text-slate-500'
+                        ? 'bg-amber-400/25 text-amber-300'
+                        : 'bg-slate-100 text-slate-500'
                         }`}>
                         {cat.count}
                       </span>
@@ -1356,8 +1356,8 @@ export const FoodDining: React.FC = () => {
                     <span>{c.name}</span>
                     {typeof c.count === 'number' && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected
-                          ? 'bg-amber-400/25 text-amber-300'
-                          : 'bg-slate-100 text-slate-500'
+                        ? 'bg-amber-400/25 text-amber-300'
+                        : 'bg-slate-100 text-slate-500'
                         }`}>
                         {c.count}
                       </span>

@@ -1160,8 +1160,8 @@ const ProductDetail = () => {
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {product.gstRate !== undefined && Number(product.gstRate) > 0 ? (
                   <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${product.gstPricingMode === 'exclusive'
-                      ? 'bg-amber-50 text-amber-900 border-amber-300'
-                      : 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : 'bg-emerald-50 text-emerald-900 border-emerald-300'
                     }`}>
                     {product.gstPricingMode === 'exclusive' ? (
                       <>
@@ -1301,8 +1301,8 @@ const ProductDetail = () => {
                             type="button"
                             onClick={() => setSelectedPreOrderTimeSlot(slot.id)}
                             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left cursor-pointer flex flex-col gap-0.5 ${isSelected
-                                ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm shadow-amber-500/20"
-                                : "bg-white text-slate-800 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
+                              ? "bg-[#0A1128] text-amber-400 border-amber-400 shadow-sm shadow-amber-500/20"
+                              : "bg-white text-slate-800 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
                               }`}
                           >
                             <span className="flex items-center justify-between">
@@ -1571,8 +1571,8 @@ const ProductDetail = () => {
               <Button
                 onClick={() => handleAddToCart(true)}
                 className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${isPreOrder
-                    ? "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black shadow-amber-500/20"
-                    : "bg-accent hover:bg-accent/90 text-white"
+                  ? "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black shadow-amber-500/20"
+                  : "bg-accent hover:bg-accent/90 text-white"
                   }`}
                 disabled={isOutOfStock}
               >
@@ -1581,8 +1581,8 @@ const ProductDetail = () => {
               <Button
                 onClick={handleBuyNow}
                 className={`flex-1 font-bold h-12 rounded-xl shadow-md cursor-pointer transition-all ${isPreOrder
-                    ? "bg-[#0A1128] hover:bg-[#060c20] text-amber-400 border border-amber-400/40 font-black shadow-md shadow-[#0A1128]/30"
-                    : "bg-navy hover:bg-navy/90 text-white"
+                  ? "bg-[#0A1128] hover:bg-[#060c20] text-amber-400 border border-amber-400/40 font-black shadow-md shadow-[#0A1128]/30"
+                  : "bg-navy hover:bg-navy/90 text-white"
                   }`}
                 disabled={isOutOfStock}
               >
